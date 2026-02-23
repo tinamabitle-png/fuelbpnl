@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FuelStation;
 use App\Models\FuelVoucher;
 use App\Models\Settlement;
+use App\Services\FuelPriceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -56,6 +57,7 @@ class DashboardController extends Controller
                 'approvedVouchers' => collect(),
                 'initialVouchers' => [],
                 'wsConfig' => $this->websocketConfig(),
+                'stationPrices' => [],
             ]);
         }
 
@@ -103,6 +105,9 @@ class DashboardController extends Controller
             ->map(fn (FuelVoucher $voucher) => $this->voucherPayload($voucher))
             ->values();
 
+        $fuelPriceService = app(FuelPriceService::class);
+        $stationPrices = $fuelPriceService->resolveStationPrices((int) $station->id, true);
+
         return view('merchant.dashboard', [
             'station' => $station,
             'summary' => $summary,
@@ -111,7 +116,103 @@ class DashboardController extends Controller
             'approvedVouchers' => $approvedVouchers,
             'initialVouchers' => $initialVouchers,
             'wsConfig' => $this->websocketConfig(),
+            'stationPrices' => $stationPrices,
         ]);
+    }
+
+    public function settings(Request $request, FuelPriceService $fuelPriceService)
+    {
+        $user = Auth::user();
+        $this->authorizeMerchantPortal($user);
+
+        $station = $this->resolveMerchantStation($user, $request);
+        abort_unless($station, 404, 'No station linked to this account.');
+
+        $stationPrices = $fuelPriceService->resolveStationPrices((int) $station->id, true);
+
+        return view('merchant.settings', [
+            'station' => $station,
+            'stationPrices' => $stationPrices,
+        ]);
+    }
+
+    public function updateStationSettings(Request $request)
+    {
+        $user = Auth::user();
+        $this->authorizeMerchantPortal($user);
+
+        $station = $this->resolveMerchantStation($user, $request);
+        abort_unless($station, 404, 'No station linked to this account.');
+
+        $validated = $request->validate([
+            'contact_person' => 'nullable|string|max:255',
+            'contact_phone' => 'nullable|string|max:50',
+            'contact_email' => 'nullable|email|max:255',
+            'address' => 'nullable|string|max:500',
+            'city' => 'nullable|string|max:120',
+            'country' => 'nullable|string|max:120',
+            'payout_method' => 'nullable|string|in:bank_transfer,paystack_transfer,paystack_direct_deposit',
+            'payout_bank_name' => 'nullable|string|max:255',
+            'payout_bank_code' => 'nullable|string|max:50',
+            'payout_account_name' => 'nullable|string|max:255',
+            'payout_account_number' => 'nullable|string|max:50',
+            'payout_branch_code' => 'nullable|string|max:50',
+            'payout_reference' => 'nullable|string|max:255',
+            'payout_email' => 'nullable|email|max:255',
+        ]);
+
+        foreach ($validated as $key => $value) {
+            if (is_string($value)) {
+                $validated[$key] = trim($value);
+            }
+        }
+
+        $station->update($validated);
+
+        return redirect()
+            ->route('merchant.settings', $user->hasAnyRole(['super_admin', 'admin']) ? ['station_id' => $station->id] : [])
+            ->with('success', 'Merchant settings saved successfully.');
+    }
+
+    public function updateFuelPrices(Request $request, FuelPriceService $fuelPriceService)
+    {
+        $user = Auth::user();
+        $this->authorizeMerchantPortal($user);
+
+        $station = $this->resolveMerchantStation($user, $request);
+        abort_unless($station, 404, 'No station linked to this account.');
+
+        $validated = $request->validate([
+            'prices' => 'required|array',
+            'prices.petrol' => 'nullable|numeric|min:0|max:999.99',
+            'prices.diesel' => 'nullable|numeric|min:0|max:999.99',
+            'prices.super' => 'nullable|numeric|min:0|max:999.99',
+        ]);
+
+        $saved = 0;
+        foreach ($fuelPriceService->supportedFuelTypes() as $fuelType) {
+            $raw = data_get($validated, 'prices.' . $fuelType);
+            if ($raw === null || $raw === '') {
+                continue;
+            }
+            $price = (float) $raw;
+            if ($price <= 0) {
+                continue;
+            }
+
+            $fuelPriceService->setMerchantCustomPrice((int) $station->id, $fuelType, $price, (int) $user->id);
+            $saved++;
+        }
+
+        if ($saved === 0) {
+            return redirect()
+                ->route('merchant.settings', $user->hasAnyRole(['super_admin', 'admin']) ? ['station_id' => $station->id] : [])
+                ->with('error', 'No valid fuel prices were provided.');
+        }
+
+        return redirect()
+            ->route('merchant.settings', $user->hasAnyRole(['super_admin', 'admin']) ? ['station_id' => $station->id] : [])
+            ->with('success', 'Fuel prices updated successfully.');
     }
 
     public function vouchers(Request $request)

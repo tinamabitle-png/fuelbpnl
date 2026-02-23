@@ -262,6 +262,7 @@
                     ['route' => 'admin.vouchers.index', 'icon' => 'fas fa-ticket-alt', 'label' => 'Vouchers', 'badge' => $pendingVouchers],
                     ['route' => 'admin.leases.index', 'icon' => 'fas fa-file-contract', 'label' => 'Leases', 'badge' => '3'],
                     ['route' => 'admin.settlements.index', 'icon' => 'fas fa-money-check-alt', 'label' => 'Settlements', 'badge' => $pendingSettlements],
+                    ['route' => 'admin.repayments.ops', 'icon' => 'fas fa-repeat', 'label' => 'Repayment Ops', 'badge' => null],
                     ['route' => 'admin.feedback.index', 'icon' => 'fas fa-comments', 'label' => 'Feedback', 'badge' => $feedbackCount],
                     ['route' => 'admin.reports.index', 'icon' => 'fas fa-chart-bar', 'label' => 'Reports', 'badge' => null],
                     ['route' => 'admin.settings.index', 'icon' => 'fas fa-cog', 'label' => 'Settings', 'badge' => null],

@@ -50,6 +50,25 @@
         </div>
     @endif
 
+    @if($errors->any())
+        <div class="mt-6 bw-error-alert" data-error-alert>
+            <button type="button" aria-label="close-error" class="bw-error-alert-close" data-alert-close>
+                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="16" width="16" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                </svg>
+            </button>
+            <p class="bw-error-alert-text">
+                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="28" width="28" xmlns="http://www.w3.org/2000/svg">
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                    <path d="M12 9v4"></path>
+                    <path d="M12 17h.01"></path>
+                </svg>
+                {{ $errors->first() }}
+            </p>
+        </div>
+    @endif
+
     @if(!$station)
         <div class="glass rounded-2xl p-6 mt-8">
             <p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">

@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
+use App\Http\Controllers\Admin\RepaymentOpsController as AdminRepaymentOpsController;
 use App\Http\Controllers\Employee\DashboardController as EmployeeDashboardController;
 use App\Http\Controllers\Employee\ApprovalController as EmployeeApprovalController;
 use App\Http\Controllers\Merchant\DashboardController as MerchantDashboardController;
@@ -25,6 +26,15 @@ use App\Http\Controllers\FeedbackController;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/repayments/request/{repayment}', [DriverDashboardController::class, 'publicRepaymentRequest'])
+    ->middleware('signed')
+    ->name('driver.repayments.request.show');
+Route::post('/repayments/request/{repayment}/pay', [DriverDashboardController::class, 'publicRepaymentRequestPay'])
+    ->middleware('signed')
+    ->name('driver.repayments.request.pay');
+Route::get('/repayments/request/paystack/callback', [DriverDashboardController::class, 'publicRepaymentRequestCallback'])
+    ->name('driver.repayments.request.callback');
 
 // ========== SETUP & FIX ROUTES ==========
 Route::get('/setup-roles', function() {
@@ -138,6 +148,19 @@ Route::middleware(['auth'])->group(function () {
             checkUserAccess(['super_admin', 'admin', 'employee']);
             return app(AdminFeedbackController::class)->index(request());
         })->name('feedback.index');
+
+        Route::get('/repayments/ops', function() {
+            checkUserAccess(['super_admin', 'admin', 'employee']);
+            return app(AdminRepaymentOpsController::class)->index(app(\App\Services\RepaymentPolicyService::class));
+        })->name('repayments.ops');
+        Route::post('/repayments/ops/policy', function() {
+            checkUserAccess(['super_admin', 'admin', 'employee']);
+            return app(AdminRepaymentOpsController::class)->updatePolicy(request(), app(\App\Services\RepaymentPolicyService::class));
+        })->name('repayments.ops.policy.update');
+        Route::post('/repayments/ops/run-now', function() {
+            checkUserAccess(['super_admin', 'admin', 'employee']);
+            return app(AdminRepaymentOpsController::class)->runNow();
+        })->name('repayments.ops.run-now');
         
         // ========== USERS ROUTES ==========
         Route::get('/users', function() {
@@ -492,6 +515,9 @@ Route::middleware(['auth'])->group(function () {
     // Merchant
     Route::prefix('merchant')->name('merchant.')->group(function () {
         Route::get('/dashboard', [MerchantDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/settings', [MerchantDashboardController::class, 'settings'])->name('settings');
+        Route::post('/settings', [MerchantDashboardController::class, 'updateStationSettings'])->name('settings.update');
+        Route::post('/settings/fuel-prices', [MerchantDashboardController::class, 'updateFuelPrices'])->name('settings.fuel-prices.update');
         Route::get('/vouchers', [MerchantDashboardController::class, 'vouchers'])->name('vouchers.index');
         Route::get('/vouchers/stream', [MerchantDashboardController::class, 'stream'])->name('vouchers.stream');
         Route::post('/vouchers/redeem', [MerchantDashboardController::class, 'redeem'])->name('vouchers.redeem');

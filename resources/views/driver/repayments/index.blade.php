@@ -142,6 +142,7 @@
                     @forelse($repayments as $repayment)
                         @php
                             $stationName = optional(optional($repayment->lease)->vouchers->first())->fuelStation->name ?? 'N/A';
+                            $voucherCode = optional(optional($repayment->lease)->vouchers->sortByDesc('id')->first())->code;
                             $isActivated = collect(optional($repayment->lease)->vouchers)
                                 ->contains(fn ($voucher) => $voucher->status === 'redeemed');
                         @endphp
@@ -156,22 +157,39 @@
                                 @else
                                     <span class="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">Awaiting voucher redemption</span>
                                 @endif
+                                <p class="text-[11px] text-slate-500 mt-1">Voucher: {{ $voucherCode ?: 'N/A' }}</p>
                             </td>
                             <td class="px-4 py-3">
                                 @if(in_array($repayment->status, ['pending', 'overdue'], true) && $isActivated)
+                                    @php
+                                        $requestUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                                            'driver.repayments.request.show',
+                                            now()->addDays(7),
+                                            ['repayment' => $repayment->id]
+                                        );
+                                        $shareText = sprintf(
+                                            'Please help me settle my Bwiser repayment of R %s for voucher %s due on %s.',
+                                            number_format((float) $repayment->amount, 2),
+                                            $voucherCode ?: ('#' . (string) $repayment->id),
+                                            \Illuminate\Support\Carbon::parse($repayment->due_date)->format('d M Y')
+                                        );
+                                        $shareTextWithUrl = $shareText . ' ' . $requestUrl;
+                                    @endphp
                                     <form method="POST" action="{{ route('payments.paystack.repayment', $repayment) }}" class="flex flex-wrap gap-2">
                                         @csrf
-                                        <button name="payment_method" value="apple_pay" class="px-3 py-2 rounded-lg text-xs font-semibold bg-black text-white hover:bg-slate-800">
-                                            <i class="fab fa-apple mr-1"></i> Apple Pay
-                                        </button>
-                                        <button name="payment_method" value="google_pay" class="px-3 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-300 text-slate-800 hover:bg-slate-50">
-                                            <i class="fab fa-google mr-1"></i> Google Pay
-                                        </button>
-                                        <button name="payment_method" value="card" class="btn-primary px-3 py-2 rounded-lg text-xs font-semibold">Card</button>
+                                        <input type="hidden" name="payment_intent" value="force_now">
+                                        <button name="payment_method" value="card" class="btn-primary px-3 py-2 rounded-lg text-xs font-semibold">Force Card Pay</button>
                                         <button type="button" class="px-3 py-2 rounded-lg text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 cursor-not-allowed" title="Ethereum repayments coming soon" disabled>
                                             <i class="fab fa-ethereum mr-1"></i> ETH (Soon)
                                         </button>
                                     </form>
+                                    <div class="mt-2">
+                                        <a href="https://wa.me/?text={{ urlencode($shareTextWithUrl) }}" target="_blank" rel="noopener" class="pay-for-me-btn">
+                                            <span class="pay-for-me-btn-label">Pay for me</span>
+                                            <span class="pay-for-me-btn-sub">Share on WhatsApp</span>
+                                        </a>
+                                    </div>
+                                    <p class="text-[11px] text-slate-500 mt-2">Voucher {{ $voucherCode ?: 'N/A' }} • Manual buttons perform a one-time override only. Auto-pay remains enabled for upcoming repayments.</p>
                                 @elseif(!in_array($repayment->status, ['pending', 'overdue'], true))
                                     <span class="text-xs text-emerald-600 font-medium">Paid</span>
                                 @else
@@ -189,6 +207,35 @@
         </div>
         <div class="px-4 py-4 bg-white border-t border-slate-100">
             {{ $repayments->links() }}
+        </div>
+    </div>
+
+    <div class="glass rounded-2xl mt-6 p-6">
+        <div class="flex items-center justify-between gap-3">
+            <h2 class="brand-font text-xl text-slate-900">Auto-Pay History</h2>
+            <span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 font-semibold">Latest 12</span>
+        </div>
+        <div class="mt-4 space-y-2">
+            @forelse(($autopayEvents ?? collect()) as $event)
+                @php
+                    $tone = str_contains((string) $event->action, 'failed') || str_contains((string) $event->action, 'disabled')
+                        ? 'border-rose-200 bg-rose-50 text-rose-800'
+                        : (str_contains((string) $event->action, 'succeeded') || str_contains((string) $event->action, 'verified')
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                            : 'border-slate-200 bg-slate-50 text-slate-700');
+                @endphp
+                <div class="rounded-xl border px-3 py-2 {{ $tone }}">
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="text-xs font-semibold uppercase">{{ str_replace('_', ' ', $event->action) }}</p>
+                        <p class="text-[11px] opacity-80">{{ $event->created_at?->format('d M Y H:i') }}</p>
+                    </div>
+                    @if($event->description)
+                        <p class="text-xs mt-1">{{ $event->description }}</p>
+                    @endif
+                </div>
+            @empty
+                <p class="text-sm text-slate-500">No auto-pay events yet.</p>
+            @endforelse
         </div>
     </div>
 </section>
@@ -258,6 +305,43 @@
 
     .ethpay-card:hover {
         transform: scale(1.04) rotate(-1deg);
+    }
+
+    .pay-for-me-btn {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 0.1rem;
+        padding: 0.55rem 0.85rem;
+        border-radius: 0.75rem;
+        border: 1px solid rgba(16, 185, 129, 0.45);
+        background: linear-gradient(130deg, #10b981 0%, #22c55e 55%, #34d399 100%);
+        color: #ffffff;
+        text-decoration: none;
+        box-shadow: 0 10px 22px -14px rgba(5, 150, 105, 0.9);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+
+    .pay-for-me-btn:hover {
+        transform: translateY(-1px);
+        filter: saturate(1.05);
+        box-shadow: 0 14px 28px -14px rgba(5, 150, 105, 0.9);
+    }
+
+    .pay-for-me-btn-label {
+        font-size: 0.78rem;
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+
+    .pay-for-me-btn-sub {
+        font-size: 0.65rem;
+        opacity: 0.92;
+        line-height: 1;
+        letter-spacing: 0.04em;
     }
 
     @keyframes ethpayAnim {

@@ -1,11 +1,11 @@
 @php
     $merchantTabs = [
         ['label' => 'Dashboard', 'route' => 'merchant.dashboard'],
+        ['label' => 'Settings', 'route' => 'merchant.settings'],
         ['label' => 'All Vouchers', 'route' => 'merchant.vouchers.index'],
         ['label' => 'Developer Credentials', 'route' => 'merchant.developer.credentials'],
         ['label' => 'API Docs', 'route' => 'merchant.developer.docs'],
         ['label' => 'Sandbox', 'route' => 'merchant.developer.sandbox'],
-        ['label' => 'Direct Bank Deposits', 'route' => 'merchant.payout.edit'],
         ['label' => 'Assets', 'route' => 'merchant.energy-assets.index'],
         ['label' => 'Projects', 'route' => 'merchant.energy-projects.index'],
         ['label' => 'Subscriptions', 'route' => 'merchant.energy-subscriptions.index'],

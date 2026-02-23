@@ -8,7 +8,9 @@ use App\Models\FuelStation;
 use App\Models\FuelVoucher;
 use App\Models\Lease;
 use App\Models\Repayment;
+use App\Models\AuditLog;
 use App\Services\AuditTrailService;
+use App\Services\DriverUnderwritingService;
 use App\Services\FuelPriceService;
 use App\Services\PaystackService;
 use App\Services\RepaymentSettlementService;
@@ -16,7 +18,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 
 class DashboardController extends Controller
@@ -26,7 +30,8 @@ class DashboardController extends Controller
     public function __construct(
         private FuelPriceService $fuelPriceService,
         private PaystackService $paystackService,
-        private RepaymentSettlementService $repaymentSettlementService
+        private RepaymentSettlementService $repaymentSettlementService,
+        private DriverUnderwritingService $driverUnderwritingService
     )
     {
     }
@@ -111,7 +116,8 @@ class DashboardController extends Controller
 
     public function createVoucher()
     {
-        $this->authorizeDriverPortal(Auth::user());
+        $user = Auth::user();
+        $this->authorizeDriverPortal($user);
 
         $stationsPayload = Cache::remember('driver:voucher:stations-payload:v1', now()->addMinute(), function () {
             $stations = FuelStation::where('status', 'active')
@@ -183,6 +189,10 @@ class DashboardController extends Controller
             ];
         });
 
+        $underwriting = $this->driverUnderwritingService->resolveForUser($user);
+        // Keep policy hidden; only use effective rate for accurate projection math in UI.
+        $leaseDefaults['rate'] = round((float) $leaseDefaults['rate'] + (float) ($underwriting['rate_penalty'] ?? 0), 2);
+
         return view('driver.vouchers.create', compact('stationsPayload', 'leaseDefaults'));
     }
 
@@ -223,8 +233,31 @@ class DashboardController extends Controller
         $baseTerm = max(7, min(60, $baseTerm));
         $termDays = (int) ($validated['repayment_days'] ?? $baseTerm);
         $termDays = max(7, min(60, $termDays));
-        $rate = $this->calculateLeaseRate($baseRate, $baseTerm, $termDays);
         $principal = (float) $validated['amount'];
+        $underwriting = $this->driverUnderwritingService->resolveForUser($user);
+
+        if ($principal > (float) ($underwriting['max_amount'] ?? self::STARTER_MAX_VOUCHER_AMOUNT)) {
+            AuditTrailService::record(
+                'voucher_underwriting_limit_blocked',
+                $user,
+                [],
+                [
+                    'requested_amount' => $principal,
+                    'max_amount' => (float) ($underwriting['max_amount'] ?? DriverUnderwritingService::STARTER_MAX_VOUCHER_AMOUNT),
+                    'account_age_days' => (int) ($underwriting['account_age_days'] ?? 0),
+                    'late_repayment_detected' => (bool) ($underwriting['late_repayment_detected'] ?? false),
+                ],
+                'Voucher blocked by underwriting amount cap'
+            );
+
+            throw ValidationException::withMessages([
+                'amount' => 'Requested amount exceeds your current approval limit. Please submit a smaller request.',
+            ]);
+        }
+
+        $rate = $this->calculateLeaseRate($baseRate, $baseTerm, $termDays);
+        $rate += (float) ($underwriting['rate_penalty'] ?? 0);
+        $rate = round(max(0, min(50, $rate)), 2);
         $interestAmount = round($principal * ($rate / 100), 2);
         $totalAmount = round($principal + $interestAmount, 2);
         $dailyRepayment = round($totalAmount / max($termDays, 1), 2);
@@ -250,6 +283,19 @@ class DashboardController extends Controller
                 ->sum('amount');
             $availableCapacity = max(0, (float) $station->wallet_balance - (float) $openExposure);
             if ($availableCapacity < $principal) {
+                AuditTrailService::record(
+                    'voucher_issue_blocked_station_wallet',
+                    $station,
+                    [],
+                    [
+                        'driver_id' => (int) $user->id,
+                        'requested_amount' => (float) $principal,
+                        'available_capacity' => (float) $availableCapacity,
+                        'open_exposure' => (float) $openExposure,
+                        'wallet_balance' => (float) $station->wallet_balance,
+                    ],
+                    'Voucher issuance blocked by insufficient station pre-funded balance'
+                );
                 throw ValidationException::withMessages([
                     'amount' => sprintf(
                         'Station wallet has insufficient pre-funded balance for this voucher. Available capacity: R%.2f.',
@@ -357,7 +403,22 @@ class DashboardController extends Controller
             'last_attempt_at' => $user->autopay_last_attempt_at,
         ];
 
-        return view('driver.repayments.index', compact('repayments', 'summary', 'autopay'));
+        $autopayEvents = AuditLog::query()
+            ->where('user_id', $user->id)
+            ->whereIn('action', [
+                'repayment_autopay_succeeded',
+                'repayment_autopay_failed',
+                'repayment_autopay_retry_scheduled',
+                'repayment_autopay_disabled_for_user',
+                'repayment_user_notification',
+                'repayment_checkout_verified',
+                'repayment_checkout_initialized',
+            ])
+            ->latest()
+            ->limit(12)
+            ->get();
+
+        return view('driver.repayments.index', compact('repayments', 'summary', 'autopay', 'autopayEvents'));
     }
 
     public function profile()
@@ -435,8 +496,13 @@ class DashboardController extends Controller
             return back()->with('error', 'Repayment has already been processed.');
         }
 
+        $intent = strtolower(trim((string) $request->input('payment_intent', '')));
+        if ($intent !== 'force_now') {
+            return back()->with('error', 'Manual checkout is disabled unless you explicitly choose Force Pay Now.');
+        }
+
         $method = $request->input('payment_method', 'card');
-        if (!in_array($method, ['apple_pay', 'google_pay', 'card'], true)) {
+        if (!in_array($method, ['card'], true)) {
             $method = 'card';
         }
 
@@ -460,10 +526,11 @@ class DashboardController extends Controller
                 [],
                 [
                     'payment_method' => "paystack_{$method}",
+                    'payment_intent' => $intent,
                     'reference' => (string) ($checkout['reference'] ?? ''),
                     'amount' => (float) $repayment->amount,
                 ],
-                'Repayment Paystack checkout initialized'
+                'Repayment Paystack checkout initialized (force pay now override)'
             );
 
             $url = (string) ($checkout['authorization_url'] ?? '');
@@ -474,6 +541,161 @@ class DashboardController extends Controller
             return redirect()->away($url);
         } catch (\Throwable $e) {
             return back()->with('error', 'Failed to initialize Paystack repayment: ' . $e->getMessage());
+        }
+    }
+
+    public function publicRepaymentRequest(Request $request, Repayment $repayment)
+    {
+        $repayment->loadMissing('lease.vouchers');
+        $stationName = optional(optional($repayment->lease)->vouchers->first())->fuelStation->name ?? 'N/A';
+        $voucherCode = optional($repayment->lease?->vouchers?->sortByDesc('id')?->first())->code;
+        $isPayable = in_array((string) $repayment->status, ['pending', 'overdue'], true);
+        $payerEmailPrefill = trim((string) $request->query('email', ''));
+
+        $payUrl = URL::temporarySignedRoute(
+            'driver.repayments.request.pay',
+            now()->addDays(7),
+            ['repayment' => $repayment->id]
+        );
+
+        return view('driver.repayments.request', compact(
+            'repayment',
+            'stationName',
+            'voucherCode',
+            'isPayable',
+            'payUrl',
+            'payerEmailPrefill'
+        ));
+    }
+
+    public function publicRepaymentRequestPay(Request $request, Repayment $repayment)
+    {
+        $validated = $request->validate([
+            'payer_email' => 'nullable|email|max:255',
+        ]);
+
+        if (!in_array((string) $repayment->status, ['pending', 'overdue'], true)) {
+            return back()->with('error', 'This repayment is already settled or not payable.');
+        }
+
+        $driver = $repayment->user;
+        if (!$driver) {
+            return back()->with('error', 'Driver profile is missing for this repayment.');
+        }
+
+        $payerEmail = trim((string) ($validated['payer_email'] ?? ''));
+
+        try {
+            $checkout = $this->paystackService->initializeRepaymentCheckout(
+                $driver,
+                $repayment,
+                'card',
+                route('driver.repayments.request.callback'),
+                $payerEmail !== '' ? $payerEmail : null,
+                'repayment_request'
+            );
+
+            $repayment->forceFill([
+                'transaction_reference' => (string) ($checkout['reference'] ?? ''),
+                'autopay_status' => 'checkout_initialized',
+                'autopay_last_attempt_at' => now(),
+            ])->save();
+
+            AuditTrailService::record(
+                'repayment_public_request_checkout_initialized',
+                $repayment,
+                [],
+                [
+                    'reference' => (string) ($checkout['reference'] ?? ''),
+                    'amount' => (float) $repayment->amount,
+                    'payer_email' => $payerEmail,
+                ],
+                'Public repayment request checkout initialized'
+            );
+
+            $url = (string) ($checkout['authorization_url'] ?? '');
+            if ($url === '') {
+                return back()->with('error', 'Paystack did not return an authorization URL.');
+            }
+
+            return redirect()->away($url);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Failed to initialize repayment request: ' . $e->getMessage());
+        }
+    }
+
+    public function publicRepaymentRequestCallback(Request $request)
+    {
+        $reference = trim((string) ($request->query('reference') ?: $request->query('trxref') ?: ''));
+        if ($reference === '') {
+            return view('driver.repayments.request-result', [
+                'success' => false,
+                'title' => 'Payment reference missing',
+                'message' => 'We could not find a Paystack payment reference in this callback.',
+            ]);
+        }
+
+        try {
+            $verified = $this->paystackService->verifyTransaction($reference);
+            $metadata = (array) ($verified['metadata'] ?? []);
+            $scope = (string) ($metadata['scope'] ?? '');
+            $repaymentId = (int) ($metadata['repayment_id'] ?? 0);
+
+            if ($repaymentId <= 0 || $scope !== 'repayment_request') {
+                return view('driver.repayments.request-result', [
+                    'success' => false,
+                    'title' => 'Invalid payment metadata',
+                    'message' => 'This payment is not linked to a valid repayment request.',
+                ]);
+            }
+
+            $repayment = Repayment::findOrFail($repaymentId);
+            $expectedMinor = (int) round((float) $repayment->amount * 100);
+            $paidMinor = (int) ($verified['amount'] ?? 0);
+            if ($paidMinor < $expectedMinor) {
+                return view('driver.repayments.request-result', [
+                    'success' => false,
+                    'title' => 'Payment amount mismatch',
+                    'message' => 'Received amount does not match the repayment request.',
+                ]);
+            }
+
+            $beforeStatus = (string) $repayment->status;
+            $this->repaymentSettlementService->settleRepayment(
+                $repayment,
+                'paystack_shared_link_card',
+                $reference,
+                ['source' => 'public_repayment_request_callback']
+            );
+
+            $freshRepayment = $repayment->fresh();
+
+            AuditTrailService::record(
+                'repayment_public_request_checkout_verified',
+                $freshRepayment,
+                ['status' => $beforeStatus],
+                [
+                    'status' => (string) ($freshRepayment->status ?? $beforeStatus),
+                    'reference' => $reference,
+                    'gateway_status' => (string) ($verified['status'] ?? 'success'),
+                    'paid_minor' => $paidMinor,
+                ],
+                'Public repayment request callback verified and settled'
+            );
+
+            return view('driver.repayments.request-result', [
+                'success' => true,
+                'title' => 'Payment received',
+                'message' => 'Thank you. This repayment has been successfully paid.',
+                'repayment' => $freshRepayment,
+            ]);
+        } catch (\Throwable $e) {
+            return view('driver.repayments.request-result', [
+                'success' => false,
+                'title' => 'Payment verification failed',
+                'message' => 'We could not verify this payment. Please retry or contact support.',
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -502,7 +724,7 @@ class DashboardController extends Controller
 
             $this->repaymentSettlementService->settleRepayment(
                 $repayment,
-                'paystack_card',
+                $this->resolvePaystackPaymentMethodFromMetadata($metadata),
                 $reference,
                 ['source' => 'driver_checkout_callback']
             );
@@ -526,10 +748,21 @@ class DashboardController extends Controller
                 'Repayment Paystack callback verified and settled'
             );
 
+            $this->notifyRepaymentUser(
+                $user,
+                'Repayment received',
+                "Your repayment of R " . number_format((float) $repayment->amount, 2) . " was received successfully."
+            );
+
             return redirect()
                 ->route('driver.repayments.index')
                 ->with('success', 'Repayment paid successfully. Daily 24-hour auto-pay is now ready.');
         } catch (\Throwable $e) {
+            $this->notifyRepaymentUser(
+                $user,
+                'Repayment verification failed',
+                'We could not verify your Paystack repayment callback. Please retry or contact support.'
+            );
             return redirect()->route('driver.repayments.index')->with('error', 'Paystack callback verification failed: ' . $e->getMessage());
         }
     }
@@ -596,6 +829,33 @@ class DashboardController extends Controller
         return in_array($status, ['active', 'retrying', 'disabled', 'inactive', 'failed'], true)
             ? $status
             : 'inactive';
+    }
+
+    private function resolvePaystackPaymentMethodFromMetadata(array $metadata): string
+    {
+        return 'paystack_card';
+    }
+
+    private function notifyRepaymentUser($user, string $subject, string $message): void
+    {
+        $email = trim((string) ($user->email ?? ''));
+        if ($email !== '') {
+            try {
+                Mail::raw($message, function ($mail) use ($email, $subject) {
+                    $mail->to($email)->subject($subject);
+                });
+            } catch (\Throwable $e) {
+                // Keep repayment flow non-blocking.
+            }
+        }
+
+        AuditTrailService::record(
+            'repayment_user_notification',
+            $user,
+            [],
+            ['subject' => $subject, 'message' => $message],
+            'Repayment notification emitted'
+        );
     }
 
     private function buildSimpleTextPdf(array $lines): string

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\CreditLimit;
+use App\Services\DriverUnderwritingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
@@ -92,11 +93,16 @@ class UserController extends Controller
             ->with('success', 'User created successfully.');
     }
 
-    public function show(User $user)
+    public function show(User $user, DriverUnderwritingService $driverUnderwritingService)
     {
         $user->load(['wallet', 'creditLimit', 'vouchers', 'leases.repayments', 'roles']);
-        
-        return view('admin.users.show', compact('user'));
+
+        $underwritingSummary = null;
+        if ($user->hasRole('driver')) {
+            $underwritingSummary = $driverUnderwritingService->resolveForUser($user);
+        }
+
+        return view('admin.users.show', compact('user', 'underwritingSummary'));
     }
 
     public function edit(User $user)

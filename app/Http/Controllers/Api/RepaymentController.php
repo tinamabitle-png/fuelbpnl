@@ -335,9 +335,6 @@ class RepaymentController extends Controller
             ], 422);
         }
 
-        // In production, save these settings to database
-        // For now, simulate saving
-        
         $settings = [
             'enabled' => $request->enabled,
             'payment_method' => $request->payment_method,
@@ -346,6 +343,21 @@ class RepaymentController extends Controller
             'phone' => $request->phone,
             'updated_at' => now(),
         ];
+
+        $nextAutoPaymentAt = null;
+        if ((bool) $request->enabled) {
+            $nextAutoPaymentAt = $this->calculateNextAutoPayment($user, $settings);
+        }
+
+        // Persist auto-pay state on user so voucher gating can rely on it.
+        $user->update([
+            'autopay_enabled' => (bool) $request->enabled,
+            'autopay_gateway' => (string) ($request->payment_method ?? $user->autopay_gateway ?? 'wallet'),
+            'autopay_status' => (bool) $request->enabled ? 'active' : 'disabled',
+            'autopay_details' => $settings,
+            'autopay_last_attempt_at' => now(),
+            'autopay_next_attempt_at' => $nextAutoPaymentAt,
+        ]);
 
         activity()
             ->performedOn($user)
@@ -359,8 +371,7 @@ class RepaymentController extends Controller
                 'Auto-payment enabled' : 'Auto-payment disabled',
             'data' => [
                 'settings' => $settings,
-                'next_auto_payment' => $request->enabled ? 
-                    $this->calculateNextAutoPayment($user, $settings) : null,
+                'next_auto_payment' => $nextAutoPaymentAt,
                 'estimated_savings' => $request->enabled ? 
                     $this->calculateAutoPaymentSavings($user) : 0,
             ]

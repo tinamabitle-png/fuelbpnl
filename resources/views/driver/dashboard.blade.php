@@ -30,9 +30,16 @@
     @include('driver.partials.nav')
 
     <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="glass rounded-2xl p-5">
-            <p class="text-sm text-slate-500">Active Vouchers</p>
-            <p class="mt-2 text-2xl font-semibold text-slate-900">{{ $activeVoucherCount }}</p>
+        <div class="driver-active-voucher-card-wrap">
+            <article class="driver-active-voucher-card">
+                <div class="main-content">
+                    <div class="header">
+                        <p class="heading">Active Vouchers</p>
+                    </div>
+                    <p class="driver-active-voucher-count">{{ $activeVoucherCount }}</p>
+                </div>
+                <p class="footer">Available now</p>
+            </article>
         </div>
         <div class="glass rounded-2xl p-5">
             <p class="text-sm text-slate-500">Pending Repayments</p>
@@ -250,6 +257,8 @@
                         $dueDate = $repayment->due_date ? \Illuminate\Support\Carbon::parse($repayment->due_date) : null;
                         $isDueToday = $dueDate?->isToday() ?? false;
                         $isOverdue = ($repayment->status === 'overdue') || (($dueDate?->isPast() ?? false) && !$isDueToday && $repayment->status !== 'paid');
+                        $isActivated = collect(optional($repayment->lease)->vouchers)
+                            ->contains(fn ($voucher) => $voucher->status === 'redeemed');
                     @endphp
                     <div class="rounded-xl border px-4 py-3 {{ $isOverdue ? 'border-red-200 bg-red-50/70' : ($isDueToday ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200 bg-white') }}">
                         <div class="flex items-center justify-between">
@@ -259,6 +268,18 @@
                         <p class="text-xs mt-1 uppercase {{ $isOverdue ? 'text-red-700 font-semibold' : ($isDueToday ? 'text-amber-700 font-semibold' : 'text-slate-500') }}">
                             {{ $isOverdue ? 'OVERDUE' : ($isDueToday ? 'DUE TODAY' : $repayment->status) }}
                         </p>
+                        @if(in_array($repayment->status, ['pending', 'overdue'], true) && $isActivated)
+                            <form method="POST" action="{{ route('payments.paystack.repayment', $repayment) }}" class="mt-3 flex flex-wrap gap-2">
+                                @csrf
+                                <input type="hidden" name="payment_intent" value="force_now">
+                                <button name="payment_method" value="card" class="btn-primary px-3 py-1.5 rounded-lg text-xs font-semibold">
+                                    Force Card Pay
+                                </button>
+                            </form>
+                            <p class="text-[11px] text-slate-500 mt-2">One-time override. Auto-pay still runs on future due repayments.</p>
+                        @elseif(!$isActivated)
+                            <p class="text-xs text-amber-700 font-medium mt-2">Awaiting voucher redemption before payment.</p>
+                        @endif
                     </div>
                 @empty
                     <p class="text-sm text-slate-500">No pending repayments.</p>
@@ -273,6 +294,79 @@
 </section>
 
 <style>
+    .driver-active-voucher-card-wrap {
+        display: flex;
+        align-items: stretch;
+    }
+
+    .driver-active-voucher-card {
+        --card-accent-a: #1d4ed8;
+        --card-accent-b: #0ea5e9;
+        --card-accent-c: #16a34a;
+        width: 100%;
+        max-width: 320px;
+        min-height: 260px;
+        padding: 20px;
+        color: #0f172a;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 55%, #eef2ff 100%);
+        border: 2px solid color-mix(in srgb, var(--card-accent-a) 55%, #dbeafe);
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+        transform-origin: center center;
+        transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 14px 28px rgba(2, 6, 23, 0.2);
+    }
+
+    .driver-active-voucher-card .main-content {
+        flex: 1;
+    }
+
+    .driver-active-voucher-card .header {
+        margin-bottom: 24px;
+    }
+
+    .driver-active-voucher-card .heading {
+        font-size: 32px;
+        font-weight: 400;
+        line-height: 1.2;
+        margin: 0;
+        color: #0f172a;
+    }
+
+    .driver-active-voucher-count {
+        margin: 0;
+        font-size: 4rem;
+        line-height: 1;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .driver-active-voucher-card .footer {
+        font-weight: 400;
+        margin-right: 4px;
+        margin-bottom: 0;
+        opacity: 0.88;
+        color: #334155;
+    }
+
+    .driver-active-voucher-card:hover {
+        border-radius: 12px;
+        border-color: color-mix(in srgb, var(--card-accent-b) 70%, #ffffff);
+        background: linear-gradient(135deg, var(--card-accent-a) 0%, var(--card-accent-b) 56%, var(--card-accent-c) 100%);
+        color: #ffffff;
+        scale: 0.95;
+        rotate: 8deg;
+        box-shadow: 0px 3px 187.5px 7.5px rgba(29, 78, 216, 0.28);
+    }
+
+    .driver-active-voucher-card:hover .heading,
+    .driver-active-voucher-card:hover .driver-active-voucher-count,
+    .driver-active-voucher-card:hover .footer {
+        color: #ffffff;
+    }
+
     .driver-greet-card {
         background: transparent;
         padding: 0;
@@ -819,5 +913,6 @@
         render();
         window.setInterval(render, 1000);
     })();
+
 </script>
 @endsection

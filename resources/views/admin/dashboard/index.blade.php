@@ -4,12 +4,13 @@
 @section('page-title', 'Dashboard Overview')
 
 @section('content')
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+<div class="space-y-8">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
     <!-- Stats Cards -->
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
         <div class="flex items-center">
-            <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
-                <i class="fas fa-users text-2xl"></i>
+            <div class="p-2 rounded-lg bg-blue-50 text-blue-600 mr-3">
+                <i class="fas fa-users text-base"></i>
             </div>
             <div>
                 <p class="text-sm text-gray-600">Total Users</p>
@@ -18,10 +19,10 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
         <div class="flex items-center">
-            <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
-                <i class="fas fa-gas-pump text-2xl"></i>
+            <div class="p-2 rounded-lg bg-green-50 text-green-600 mr-3">
+                <i class="fas fa-gas-pump text-base"></i>
             </div>
             <div>
                 <p class="text-sm text-gray-600">Active Stations</p>
@@ -30,10 +31,10 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
         <div class="flex items-center">
-            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
-                <i class="fas fa-ticket-alt text-2xl"></i>
+            <div class="p-2 rounded-lg bg-amber-50 text-amber-600 mr-3">
+                <i class="fas fa-ticket-alt text-base"></i>
             </div>
             <div>
                 <p class="text-sm text-gray-600">Pending Vouchers</p>
@@ -42,10 +43,10 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
         <div class="flex items-center">
-            <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
-                <i class="fas fa-money-bill-wave text-2xl"></i>
+            <div class="p-2 rounded-lg bg-rose-50 text-rose-600 mr-3">
+                <i class="fas fa-money-bill-wave text-base"></i>
             </div>
             <div>
                 <p class="text-sm text-gray-600">Total Settlements</p>
@@ -56,13 +57,13 @@
 </div>
 
 <!-- Welcome Card -->
-<div class="mb-8 bg-white rounded-lg shadow p-6">
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
     <div class="flex items-center">
-        <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
-            <i class="fas fa-user text-2xl"></i>
+        <div class="p-2 rounded-lg bg-blue-50 text-blue-600 mr-3">
+            <i class="fas fa-user text-base"></i>
         </div>
         <div>
-            <h3 class="text-lg font-semibold">Welcome, {{ auth()->user()->name }}!</h3>
+            <h3 class="text-base font-semibold text-slate-900">Welcome, {{ auth()->user()->name }}!</h3>
             <p class="text-gray-600">You are logged in as {{ auth()->user()->getRoleNames()->first() ?? 'User' }}</p>
             <p class="text-sm text-gray-500 mt-1">Email: {{ auth()->user()->email }}</p>
             <p class="text-sm text-gray-500">Last login: {{ auth()->user()->last_login_at ? auth()->user()->last_login_at->diffForHumans() : 'First login' }}</p>
@@ -70,17 +71,17 @@
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
     <!-- Recent Vouchers -->
-    <div class="bg-white rounded-lg shadow">
-        <div class="px-6 py-4 border-b">
-            <h3 class="text-lg font-semibold">Recent Vouchers</h3>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div class="px-5 py-4 border-b border-slate-200">
+            <h3 class="text-base font-semibold text-slate-900">Recent Vouchers</h3>
         </div>
-        <div class="p-6">
+        <div class="p-5">
             @if($recent_vouchers->count() > 0)
             <div class="space-y-4">
                 @foreach($recent_vouchers as $voucher)
-                <div class="flex items-center justify-between border-b pb-3">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div>
                         <p class="font-medium">{{ $voucher->code }}</p>
                         <p class="text-sm text-gray-600">{{ $voucher->user->name ?? 'Unknown User' }}</p>
@@ -102,7 +103,7 @@
             </div>
             @else
             <div class="text-center py-8">
-                <i class="fas fa-ticket-alt text-gray-300 text-4xl mb-4"></i>
+                <i class="fas fa-ticket-alt text-gray-300 text-2xl mb-3"></i>
                 <p class="text-gray-500">No vouchers found</p>
             </div>
             @endif
@@ -110,15 +111,15 @@
     </div>
 
     <!-- Recent Users -->
-    <div class="bg-white rounded-lg shadow">
-        <div class="px-6 py-4 border-b">
-            <h3 class="text-lg font-semibold">Recent Users</h3>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div class="px-5 py-4 border-b border-slate-200">
+            <h3 class="text-base font-semibold text-slate-900">Recent Users</h3>
         </div>
-        <div class="p-6">
+        <div class="p-5">
             @if($recent_users->count() > 0)
             <div class="space-y-4">
                 @foreach($recent_users as $user)
-                <div class="flex items-center justify-between border-b pb-3">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div>
                         <p class="font-medium">{{ $user->name }}</p>
                         <p class="text-sm text-gray-600">{{ $user->email }}</p>
@@ -140,7 +141,7 @@
             </div>
             @else
             <div class="text-center py-8">
-                <i class="fas fa-users text-gray-300 text-4xl mb-4"></i>
+                <i class="fas fa-users text-gray-300 text-2xl mb-3"></i>
                 <p class="text-gray-500">No users found</p>
             </div>
             @endif
@@ -148,33 +149,40 @@
     </div>
 </div>
 
-<div class="mt-8 bg-white rounded-lg shadow p-6">
-    <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+    <h3 class="text-base font-semibold text-slate-900 mb-3">Quick Actions</h3>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <a href="{{ route('admin.users.create') }}" 
-           class="bg-blue-50 hover:bg-blue-100 p-4 rounded-lg text-center transition duration-200">
-            <i class="fas fa-user-plus text-blue-600 text-2xl mb-2"></i>
-            <p class="font-medium">Add New User</p>
+           class="bg-slate-50 hover:bg-slate-100 border border-slate-200 p-4 rounded-lg text-center transition duration-200">
+            <i class="fas fa-user-plus text-blue-600 text-base mb-2"></i>
+            <p class="font-medium text-slate-900">Add New User</p>
             <p class="text-sm text-gray-600 mt-1">Create new system user</p>
         </a>
         
         <a href="{{ route('admin.vouchers.pending') }}" 
-           class="bg-yellow-50 hover:bg-yellow-100 p-4 rounded-lg text-center transition duration-200">
-            <i class="fas fa-check-circle text-yellow-600 text-2xl mb-2"></i>
-            <p class="font-medium">Approve Vouchers</p>
+           class="bg-slate-50 hover:bg-slate-100 border border-slate-200 p-4 rounded-lg text-center transition duration-200">
+            <i class="fas fa-check-circle text-amber-600 text-base mb-2"></i>
+            <p class="font-medium text-slate-900">Approve Vouchers</p>
             <p class="text-sm text-gray-600 mt-1">Review pending vouchers</p>
         </a>
         
         <a href="{{ route('admin.settlements.index') }}" 
-           class="bg-green-50 hover:bg-green-100 p-4 rounded-lg text-center transition duration-200">
-            <i class="fas fa-money-check-alt text-green-600 text-2xl mb-2"></i>
-            <p class="font-medium">Process Settlements</p>
+           class="bg-slate-50 hover:bg-slate-100 border border-slate-200 p-4 rounded-lg text-center transition duration-200">
+            <i class="fas fa-money-check-alt text-emerald-600 text-base mb-2"></i>
+            <p class="font-medium text-slate-900">Process Settlements</p>
             <p class="text-sm text-gray-600 mt-1">Manage station payouts</p>
+        </a>
+
+        <a href="{{ route('admin.repayments.ops') }}"
+           class="bg-slate-50 hover:bg-slate-100 border border-slate-200 p-4 rounded-lg text-center transition duration-200">
+            <i class="fas fa-repeat text-blue-600 text-base mb-2"></i>
+            <p class="font-medium text-slate-900">Repayment Ops</p>
+            <p class="text-sm text-gray-600 mt-1">Autopay policy and retries</p>
         </a>
     </div>
 </div>
 
-<div class="mt-8 bg-white rounded-lg shadow p-6">
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
     <div class="flex items-center justify-between gap-3">
         <h3 class="text-lg font-semibold text-gray-900">Weekly Payout Cycles</h3>
         <a href="{{ route('admin.settlements.index') }}" class="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-200">
@@ -203,7 +211,7 @@
     </div>
 </div>
 
-<div class="mt-8 rounded-lg bg-white p-6 shadow">
+<div class="rounded-xl bg-white p-5 border border-slate-200 shadow-sm">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-gray-900">User Feedback Inbox</h3>
             <a href="{{ route('admin.feedback.index') }}" class="inline-flex items-center rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700 hover:bg-blue-100">Open inbox</a>
@@ -227,12 +235,12 @@
 </div>
 
 <!-- System Status -->
-<div class="mt-8 bg-white rounded-lg shadow p-6">
-    <h3 class="text-lg font-semibold mb-4">System Status</h3>
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+    <h3 class="text-base font-semibold text-slate-900 mb-3">System Status</h3>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="flex items-center">
-            <div class="p-2 rounded-full bg-green-100 text-green-600 mr-3">
-                <i class="fas fa-database"></i>
+            <div class="p-2 rounded-lg bg-emerald-50 text-emerald-600 mr-3">
+                <i class="fas fa-database text-sm"></i>
             </div>
             <div>
                 <p class="text-sm text-gray-600">Database</p>
@@ -241,8 +249,8 @@
         </div>
         
         <div class="flex items-center">
-            <div class="p-2 rounded-full bg-green-100 text-green-600 mr-3">
-                <i class="fas fa-server"></i>
+            <div class="p-2 rounded-lg bg-emerald-50 text-emerald-600 mr-3">
+                <i class="fas fa-server text-sm"></i>
             </div>
             <div>
                 <p class="text-sm text-gray-600">Server</p>
@@ -251,8 +259,8 @@
         </div>
         
         <div class="flex items-center">
-            <div class="p-2 rounded-full bg-blue-100 text-blue-600 mr-3">
-                <i class="fas fa-shield-alt"></i>
+            <div class="p-2 rounded-lg bg-blue-50 text-blue-600 mr-3">
+                <i class="fas fa-shield-alt text-sm"></i>
             </div>
             <div>
                 <p class="text-sm text-gray-600">Security</p>
@@ -261,8 +269,8 @@
         </div>
         
         <div class="flex items-center">
-            <div class="p-2 rounded-full bg-blue-100 text-blue-600 mr-3">
-                <i class="fas fa-sync-alt"></i>
+            <div class="p-2 rounded-lg bg-blue-50 text-blue-600 mr-3">
+                <i class="fas fa-sync-alt text-sm"></i>
             </div>
             <div>
                 <p class="text-sm text-gray-600">Last Updated</p>
@@ -270,6 +278,8 @@
             </div>
         </div>
     </div>
+</div>
+
 </div>
 
 @endsection

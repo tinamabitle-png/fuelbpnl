@@ -33,6 +33,28 @@
         <div class="bg-white border border-gray-200 rounded-xl p-4"><p class="text-xs text-gray-500">Settlement Amount</p><p class="text-2xl font-bold">R {{ number_format($summary['settlement_amount'],2) }}</p></div>
     </div>
 
+    <div class="bg-white border border-gray-200 rounded-2xl p-5">
+        <h3 class="font-semibold mb-4">Guardrail Signals</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="rounded-xl border border-gray-200 p-4 bg-slate-50">
+                <p class="text-xs text-gray-500">Voucher Blocks (Wallet Capacity)</p>
+                <p class="text-2xl font-bold text-rose-700">{{ number_format((int) ($guardrails['voucher_blocks'] ?? 0)) }}</p>
+            </div>
+            <div class="rounded-xl border border-gray-200 p-4 bg-slate-50">
+                <p class="text-xs text-gray-500">AutoPay Failures</p>
+                <p class="text-2xl font-bold text-amber-700">{{ number_format((int) ($guardrails['autopay_failures'] ?? 0)) }}</p>
+            </div>
+            <div class="rounded-xl border border-gray-200 p-4 bg-slate-50">
+                <p class="text-xs text-gray-500">AutoPay Disabled</p>
+                <p class="text-2xl font-bold text-rose-700">{{ number_format((int) ($guardrails['autopay_disables'] ?? 0)) }}</p>
+            </div>
+            <div class="rounded-xl border border-gray-200 p-4 bg-slate-50">
+                <p class="text-xs text-gray-500">Duplicate Payout Prevented</p>
+                <p class="text-2xl font-bold text-blue-700">{{ number_format((int) ($guardrails['duplicate_payout_prevented'] ?? 0)) }}</p>
+            </div>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div class="bg-white border border-gray-200 rounded-2xl p-5">
             <h3 class="font-semibold mb-4">Daily Voucher Activity</h3>

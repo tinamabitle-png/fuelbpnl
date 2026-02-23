@@ -271,6 +271,48 @@
                 </div>
             </div>
 
+            @if(!empty($underwritingSummary))
+                <div class="bg-white rounded-2xl shadow-sm border border-blue-200 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-sliders-h text-blue-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">Driver Underwriting</h3>
+                                <p class="text-gray-600 text-sm">Internal voucher risk policy snapshot</p>
+                            </div>
+                        </div>
+                        <span class="text-xs px-3 py-1 rounded-full font-medium {{ ($underwritingSummary['tier'] ?? 'starter') === 'growth' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                            {{ $underwritingSummary['tier_label'] ?? 'STARTER' }}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                            <p class="text-xs uppercase tracking-wider text-gray-500">Current Voucher Cap</p>
+                            <p class="text-xl font-semibold text-gray-900 mt-1">ZAR {{ number_format((float) ($underwritingSummary['max_amount'] ?? 0), 2) }}</p>
+                        </div>
+                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                            <p class="text-xs uppercase tracking-wider text-gray-500">Rate Adjustment</p>
+                            <p class="text-xl font-semibold {{ (float) ($underwritingSummary['rate_penalty'] ?? 0) > 0 ? 'text-rose-700' : 'text-emerald-700' }} mt-1">
+                                {{ (float) ($underwritingSummary['rate_penalty'] ?? 0) > 0 ? '+' : '' }}{{ number_format((float) ($underwritingSummary['rate_penalty'] ?? 0), 2) }}%
+                            </p>
+                        </div>
+                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                            <p class="text-xs uppercase tracking-wider text-gray-500">Account Age</p>
+                            <p class="text-xl font-semibold text-gray-900 mt-1">{{ (int) ($underwritingSummary['account_age_days'] ?? 0) }} days</p>
+                        </div>
+                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                            <p class="text-xs uppercase tracking-wider text-gray-500">Late Repayment Flag</p>
+                            <p class="text-xl font-semibold {{ !empty($underwritingSummary['late_repayment_detected']) ? 'text-rose-700' : 'text-emerald-700' }} mt-1">
+                                {{ !empty($underwritingSummary['late_repayment_detected']) ? 'Detected' : 'Clear' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <!-- Financial Overview -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
                 <div class="flex items-center justify-between mb-6">

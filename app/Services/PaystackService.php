@@ -14,12 +14,22 @@ class PaystackService
         return trim((string) config('services.paystack.secret_key')) !== '';
     }
 
-    public function initializeRepaymentCheckout(User $user, Repayment $repayment, string $channel, string $callbackUrl): array
+    public function initializeRepaymentCheckout(
+        User $user,
+        Repayment $repayment,
+        string $channel,
+        string $callbackUrl,
+        ?string $payerEmail = null,
+        string $scope = 'repayment'
+    ): array
     {
         $this->assertConfigured();
 
         $reference = 'RPY-' . $repayment->id . '-' . strtoupper(Str::random(10));
-        $email = $this->resolveEmail($user);
+        $email = trim((string) ($payerEmail ?: $this->resolveEmail($user)));
+        if ($email === '') {
+            $email = $this->resolveEmail($user);
+        }
 
         $payload = [
             'email' => $email,
@@ -28,11 +38,12 @@ class PaystackService
             'reference' => $reference,
             'callback_url' => $callbackUrl,
             'metadata' => [
-                'scope' => 'repayment',
+                'scope' => $scope,
                 'repayment_id' => (int) $repayment->id,
                 'lease_id' => (int) $repayment->lease_id,
                 'user_id' => (int) $user->id,
                 'requested_channel' => $channel,
+                'requested_by' => $scope === 'repayment_request' ? 'public_share' : 'driver_portal',
             ],
         ];
 
@@ -201,4 +212,3 @@ class PaystackService
         return 'Unexpected Paystack response.';
     }
 }
-
