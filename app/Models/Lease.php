@@ -138,9 +138,13 @@ public function getInvestorOwnershipPercentageAttribute()
         ]);
 
         // Update user's wallet
-        $this->user->wallet->decrement('outstanding_balance', $amountToApply);
-        $this->user->wallet->increment('total_repayments', $amountToApply);
-        $this->user->creditLimit->releaseCredit($amountToApply);
+        if ($this->user->wallet) {
+            $this->user->wallet->decrement('outstanding_balance', $amountToApply);
+            $this->user->wallet->increment('total_repayments', $amountToApply);
+        }
+        if ($this->user->creditLimit) {
+            $this->user->creditLimit->releaseCredit($amountToApply);
+        }
 
         // Check if lease is fully paid
         if ($this->remaining_balance <= 0) {
@@ -188,5 +192,32 @@ public function getInvestorOwnershipPercentageAttribute()
         }
 
         return $this;
+    }
+
+    /**
+     * Build repayment terms from lease defaults when no schedule exists yet.
+     * Used when voucher is redeemed and admin has not created custom repayments.
+     */
+    public function ensureRepaymentSchedule(?Carbon $startDate = null): void
+    {
+        if ($this->repayments()->exists()) {
+            return;
+        }
+
+        $start = ($startDate ?? now())->copy()->startOfDay();
+
+        for ($i = 1; $i <= $this->term_days; $i++) {
+            $this->repayments()->create([
+                'user_id' => $this->user_id,
+                'amount' => $this->daily_repayment,
+                'due_date' => $start->copy()->addDays($i)->toDateString(),
+                'status' => 'pending',
+            ]);
+        }
+
+        $expectedDueDate = $start->copy()->addDays($this->term_days)->toDateString();
+        if (!$this->due_date || Carbon::parse($this->due_date)->lt($start)) {
+            $this->update(['due_date' => $expectedDueDate]);
+        }
     }
 }

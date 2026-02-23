@@ -11,7 +11,6 @@
     $activeStations = App\Models\FuelStation::active()->count();
     $inactiveStations = App\Models\FuelStation::where('status', 'inactive')->count();
     $suspendedStations = App\Models\FuelStation::where('status', 'suspended')->count();
-    $pendingStations = App\Models\FuelStation::where('status', 'pending')->count();
     
     $totalWalletBalance = App\Models\FuelStation::sum('wallet_balance');
     $totalSettlements = App\Models\FuelStation::sum('total_settlements');
@@ -172,18 +171,17 @@
             </div>
         </a>
         
-        <a href="{{ route('admin.stations.index', ['status' => 'pending']) }}" 
-           class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 hover:bg-yellow-100 transition-colors">
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-yellow-700 font-medium">Pending</p>
-                    <p class="text-xm font-bold text-yellow-900">{{ $pendingStations }}</p>
+                    <p class="text-sm text-blue-700 font-medium">With Merchant</p>
+                    <p class="text-xm font-bold text-blue-900">{{ App\Models\FuelStation::whereNotNull('owner_id')->count() }}</p>
                 </div>
-                <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-clock text-yellow-600"></i>
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-user-check text-blue-600"></i>
                 </div>
             </div>
-        </a>
+        </div>
     </div>
 
     <!-- Search and Filters -->
@@ -219,7 +217,6 @@
                     <option value="">All Status</option>
                     <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
                     <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                     <option value="suspended" {{ request('status') == 'suspended' ? 'selected' : '' }}>Suspended</option>
                 </select>
             </div>

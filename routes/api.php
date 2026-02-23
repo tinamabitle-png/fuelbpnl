@@ -2,13 +2,17 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
-use App\Http\Controllers\Api\V1\ProfileController;
-use App\Http\Controllers\Api\V1\WalletController;
-use App\Http\Controllers\Api\V1\FuelVoucherController;
-use App\Http\Controllers\Api\V1\LeaseController;
-use App\Http\Controllers\Api\V1\FuelStationController;
-use App\Http\Controllers\Api\V1\RepaymentController;
-use App\Http\Controllers\Api\V1\CreditAssessmentController;
+use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\WalletController;
+use App\Http\Controllers\Api\FuelVoucherController;
+use App\Http\Controllers\Api\LeaseController;
+use App\Http\Controllers\Api\FuelStationController;
+use App\Http\Controllers\Api\RepaymentController;
+use App\Http\Controllers\Api\CreditAssessmentController;
+use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\VoucherController;
+use App\Http\Controllers\Api\V1\StationController;
+use App\Http\Controllers\Api\V1\MerchantDeveloperController;
 
 Route::prefix('v1')->group(function () {
     
@@ -110,6 +114,23 @@ Route::prefix('v1')->group(function () {
         Route::middleware(['role:merchant'])->group(function () {
             Route::post('/merchant/redeem-voucher', [VoucherController::class, 'redeem']);
             Route::get('/merchant/settlements', [StationController::class, 'settlements']);
+
+            Route::prefix('merchant/developer')->group(function () {
+                Route::get('/stations', [MerchantDeveloperController::class, 'stations']);
+                Route::get('/summary', [MerchantDeveloperController::class, 'summary']);
+                Route::get('/vouchers', [MerchantDeveloperController::class, 'vouchers']);
+                Route::get('/vouchers/latest', [MerchantDeveloperController::class, 'latestVouchers']);
+                Route::post('/vouchers/redeem', [MerchantDeveloperController::class, 'redeem']);
+                Route::get('/repayments', [MerchantDeveloperController::class, 'repayments']);
+
+                Route::prefix('sandbox')->group(function () {
+                    Route::get('/health', [MerchantDeveloperController::class, 'sandboxHealth']);
+                    Route::get('/stations', [MerchantDeveloperController::class, 'sandboxStations']);
+                    Route::get('/vouchers', [MerchantDeveloperController::class, 'sandboxVouchers']);
+                    Route::post('/vouchers/redeem', [MerchantDeveloperController::class, 'sandboxRedeem']);
+                    Route::get('/repayments', [MerchantDeveloperController::class, 'sandboxRepayments']);
+                });
+            });
         });
     });
 });

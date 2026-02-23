@@ -231,4 +231,36 @@ class VoucherController extends Controller
             ]);
         }
     }
+
+    public function redeem(Request $request)
+    {
+        $request->validate([
+            'code' => 'required_without:voucher_id|string',
+            'voucher_id' => 'required_without:code|integer',
+        ]);
+
+        $voucherQuery = FuelVoucher::query();
+        if ($request->filled('voucher_id')) {
+            $voucherQuery->where('id', $request->integer('voucher_id'));
+        } else {
+            $voucherQuery->where('code', (string) $request->input('code'));
+        }
+        $voucher = $voucherQuery->first();
+
+        if (!$voucher) {
+            return response()->json(['success' => false, 'message' => 'Voucher not found'], 404);
+        }
+
+        if (!$voucher->is_redeemable) {
+            return response()->json(['success' => false, 'message' => 'Voucher cannot be redeemed'], 422);
+        }
+
+        $voucher->redeem();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Voucher redeemed successfully',
+            'data' => $voucher->fresh(),
+        ]);
+    }
 }

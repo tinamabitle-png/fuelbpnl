@@ -12,12 +12,14 @@ use App\Http\Controllers\Admin\LeaseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
+use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Employee\DashboardController as EmployeeDashboardController;
 use App\Http\Controllers\Employee\ApprovalController as EmployeeApprovalController;
 use App\Http\Controllers\Merchant\DashboardController as MerchantDashboardController;
 use App\Http\Controllers\Driver\DashboardController as DriverDashboardController;
 use App\Http\Controllers\Investor\InvestorDashboardController;
 use App\Http\Controllers\Admin\InvestorController as AdminInvestorController;
+use App\Http\Controllers\FeedbackController;
 
 // ========== PUBLIC ROUTES ==========
 Route::get('/', function () {
@@ -70,7 +72,7 @@ Route::get('/add-investor-role', function() {
 // ========== AUTH ROUTES ==========
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 
 // ========== HELPER FUNCTION FOR ACCESS CONTROL ==========
 function checkUserAccess($requiredRoles = [])
@@ -131,6 +133,11 @@ Route::middleware(['auth'])->group(function () {
             checkUserAccess(['super_admin', 'admin', 'employee']);
             return app(AdminDashboardController::class)->index();
         })->name('dashboard');
+
+        Route::get('/feedback', function() {
+            checkUserAccess(['super_admin', 'admin', 'employee']);
+            return app(AdminFeedbackController::class)->index(request());
+        })->name('feedback.index');
         
         // ========== USERS ROUTES ==========
         Route::get('/users', function() {
@@ -241,18 +248,52 @@ Route::middleware(['auth'])->group(function () {
             
             Route::get('/create', [SettlementController::class, 'create'])->name('create');
             Route::post('/', [SettlementController::class, 'store'])->name('store');
-            Route::get('/{settlement}', [SettlementController::class, 'show'])->name('show');
-            Route::get('/{settlement}/edit', [SettlementController::class, 'edit'])->name('edit');
-            Route::put('/{settlement}', [SettlementController::class, 'update'])->name('update');
-            Route::delete('/{settlement}', [SettlementController::class, 'destroy'])->name('destroy');
+            Route::post('/quick-topup', [SettlementController::class, 'quickTopup'])->name('quick-topup');
+            Route::post('/quick-topup-immediate', [SettlementController::class, 'quickTopupImmediate'])->name('quick-topup-immediate');
+            Route::get('/{settlement}', [SettlementController::class, 'show'])->whereNumber('settlement')->name('show');
+            Route::get('/{settlement}/edit', [SettlementController::class, 'edit'])->whereNumber('settlement')->name('edit');
+            Route::put('/{settlement}', [SettlementController::class, 'update'])->whereNumber('settlement')->name('update');
+            Route::delete('/{settlement}', [SettlementController::class, 'destroy'])->whereNumber('settlement')->name('destroy');
             
-            Route::post('/{settlement}/process', [SettlementController::class, 'process'])->name('process');
-            Route::post('/{settlement}/mark-as-failed', [SettlementController::class, 'markAsFailed'])->name('mark-as-failed');
+            Route::post('/{settlement}/process', [SettlementController::class, 'process'])->whereNumber('settlement')->name('process');
+            Route::post('/{settlement}/mark-as-failed', [SettlementController::class, 'markAsFailed'])->whereNumber('settlement')->name('mark-as-failed');
+            Route::post('/{settlement}/verify-paystack', [SettlementController::class, 'verifyPaystackTransfer'])->whereNumber('settlement')->name('verify-paystack');
+            Route::post('/{settlement}/finalize-paystack-otp', [SettlementController::class, 'finalizePaystackOtp'])->whereNumber('settlement')->name('finalize-paystack-otp');
             
             Route::post('/bulk-process', function() {
                 checkUserAccess(['super_admin', 'admin', 'employee']);
                 return app(SettlementController::class)->bulkProcess(request());
             })->name('bulk-process');
+
+            Route::post('/process-brand', function() {
+                checkUserAccess(['super_admin', 'admin', 'employee']);
+                return app(SettlementController::class)->processBrand(request());
+            })->name('process-brand');
+
+            Route::post('/cycles/brand', function() {
+                checkUserAccess(['super_admin', 'admin', 'employee']);
+                return app(SettlementController::class)->saveBrandCycle(request());
+            })->name('cycles.brand');
+
+            Route::post('/cycles/station', function() {
+                checkUserAccess(['super_admin', 'admin', 'employee']);
+                return app(SettlementController::class)->saveStationCycle(request());
+            })->name('cycles.station');
+
+            Route::post('/cycles/run-due', function() {
+                checkUserAccess(['super_admin', 'admin', 'employee']);
+                return app(SettlementController::class)->runDueWeeklyCycles();
+            })->name('cycles.run-due');
+
+            Route::post('/cycles/toggle', function() {
+                checkUserAccess(['super_admin', 'admin', 'employee']);
+                return app(SettlementController::class)->toggleWeeklyCycles(request());
+            })->name('cycles.toggle');
+
+            Route::post('/stations/{station}/partner', function(\App\Models\FuelStation $station) {
+                checkUserAccess(['super_admin', 'admin', 'employee']);
+                return app(SettlementController::class)->setPartnerStation(request(), $station);
+            })->name('stations.partner');
             
             Route::get('/export', function() {
                 checkUserAccess(['super_admin', 'admin', 'employee']);
@@ -263,6 +304,21 @@ Route::middleware(['auth'])->group(function () {
                 checkUserAccess(['super_admin', 'admin', 'employee']);
                 return app(SettlementController::class)->getPendingAmount(request());
             })->name('api.pending-amount');
+
+            Route::get('/api/stations-search', function() {
+                checkUserAccess(['super_admin', 'admin', 'employee']);
+                return app(SettlementController::class)->stationSearch(request());
+            })->name('api.stations-search');
+
+            Route::get('/api/paystack-health', function() {
+                checkUserAccess(['super_admin', 'admin', 'employee']);
+                return app(SettlementController::class)->paystackHealth(request());
+            })->name('api.paystack-health');
+
+            Route::get('/api/paystack-banks', function() {
+                checkUserAccess(['super_admin', 'admin', 'employee']);
+                return app(SettlementController::class)->paystackBanks(request());
+            })->name('api.paystack-banks');
             
             Route::get('/api/statistics', function() {
                 checkUserAccess(['super_admin', 'admin', 'employee']);
@@ -277,6 +333,17 @@ Route::middleware(['auth'])->group(function () {
                 checkUserAccess(['super_admin', 'admin', 'employee']);
                 return app(VoucherController::class)->index(request());
             })->name('index');
+
+            // Create voucher
+            Route::get('/create', function() {
+                checkUserAccess(['super_admin', 'admin', 'employee']);
+                return app(VoucherController::class)->create();
+            })->name('create');
+
+            Route::post('/', function() {
+                checkUserAccess(['super_admin', 'admin', 'employee']);
+                return app(VoucherController::class)->store(request());
+            })->name('store');
             
             // Pending vouchers
             Route::get('/pending', function() {
@@ -424,19 +491,36 @@ Route::middleware(['auth'])->group(function () {
     
     // Merchant
     Route::prefix('merchant')->name('merchant.')->group(function () {
-        Route::get('/dashboard', function() {
-            checkUserAccess(['super_admin', 'admin', 'merchant']);
-            return app(MerchantDashboardController::class)->index();
-        })->name('dashboard');
+        Route::get('/dashboard', [MerchantDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/vouchers', [MerchantDashboardController::class, 'vouchers'])->name('vouchers.index');
+        Route::get('/vouchers/stream', [MerchantDashboardController::class, 'stream'])->name('vouchers.stream');
+        Route::post('/vouchers/redeem', [MerchantDashboardController::class, 'redeem'])->name('vouchers.redeem');
+        Route::get('/developer/credentials', [MerchantDashboardController::class, 'developerCredentials'])->name('developer.credentials');
+        Route::post('/developer/tokens', [MerchantDashboardController::class, 'storeDeveloperToken'])->name('developer.tokens.store');
+        Route::delete('/developer/tokens/{token}', [MerchantDashboardController::class, 'revokeDeveloperToken'])->name('developer.tokens.destroy');
+        Route::get('/developer/docs', [MerchantDashboardController::class, 'developerDocs'])->name('developer.docs');
+        Route::get('/developer/sandbox', [MerchantDashboardController::class, 'developerSandbox'])->name('developer.sandbox');
     });
     
     // Driver
     Route::prefix('driver')->name('driver.')->group(function () {
-        Route::get('/dashboard', function() {
-            checkUserAccess(['super_admin', 'admin', 'driver', 'investor']);
-            return app(DriverDashboardController::class)->index();
-        })->name('dashboard');
+        Route::get('/dashboard', [DriverDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/vouchers', [DriverDashboardController::class, 'vouchers'])->name('vouchers.index');
+        Route::get('/vouchers/create', [DriverDashboardController::class, 'createVoucher'])->name('vouchers.create');
+        Route::post('/vouchers', [DriverDashboardController::class, 'storeVoucher'])->name('vouchers.store');
+        Route::get('/repayments', [DriverDashboardController::class, 'repayments'])->name('repayments.index');
+        Route::get('/repayments/upcoming/export-pdf', [DriverDashboardController::class, 'exportUpcomingRepaymentsPdf'])->name('repayments.upcoming.export-pdf');
+        Route::get('/profile', [DriverDashboardController::class, 'profile'])->name('profile');
     });
+
+    Route::post('/payments/paystack/repayments/{repayment}', [DriverDashboardController::class, 'payRepayment'])
+        ->name('payments.paystack.repayment');
+    Route::get('/driver/repayments/paystack/callback', [DriverDashboardController::class, 'payRepaymentCallback'])
+        ->name('driver.repayments.paystack.callback');
+    Route::post('/driver/repayments/autopay/toggle', [DriverDashboardController::class, 'toggleAutopayDaily'])
+        ->name('driver.repayments.autopay.toggle');
+
+    Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
 });
 
 // ========== UTILITY ROUTES ==========
@@ -460,3 +544,35 @@ Route::get('/quick-login/{userId?}', function($userId = 1) {
     
     return "No user found";
 });
+
+Route::get('/quick-login/role/{role}', function(string $role) {
+    $allowedRoles = ['admin', 'investor', 'merchant', 'driver', 'employee', 'super_admin'];
+    $role = strtolower($role);
+
+    if (!in_array($role, $allowedRoles, true)) {
+        abort(404);
+    }
+
+    if (!app()->environment('local', 'development')) {
+        abort(403, 'One-click login is only available in local/development.');
+    }
+
+    $user = \App\Models\User::role($role)->orderByDesc('id')->first();
+    if (!$user) {
+        return response("No user exists with role '{$role}'.", 404);
+    }
+
+    auth()->login($user);
+
+    if ($user->hasAnyRole(['super_admin', 'admin', 'employee'])) {
+        return redirect()->route('admin.dashboard');
+    }
+    if ($user->hasRole('investor')) {
+        return redirect()->route('investor.dashboard');
+    }
+    if ($user->hasRole('merchant')) {
+        return redirect()->route('merchant.dashboard');
+    }
+
+    return redirect()->route('driver.dashboard');
+})->name('quick-login.role');

@@ -1,24 +1,29 @@
 @extends('layouts.admin')
 
-@section('title', 'Settlements Management')
-@section('page-title', 'Settlement Processing')
-@section('page-description', 'Manage fuel station settlements and payments')
-@section('breadcrumb', 'Settlements')
+@section('title', 'Direct Bank Deposits Management')
+@section('page-title', 'Direct Bank Deposit Processing')
+@section('page-description', 'Manage fuel station direct bank deposits and payments')
+@section('breadcrumb', 'Direct Bank Deposits')
 
 @php
     // Additional stats calculations
-    $todaySettlements = App\Models\Settlement::whereDate('settlement_date', today())->sum('amount');
-    $thisMonthSettlements = App\Models\Settlement::whereMonth('settlement_date', now()->month)->sum('amount');
-    $avgSettlementAmount = $stats['total_settlements'] > 0 ? $stats['total_amount'] / $stats['total_settlements'] : 0;
+    $todayDirectDeposits = App\Models\Settlement::whereDate('settlement_date', today())->sum('amount');
+    $thisMonthDirectDeposits = App\Models\Settlement::whereMonth('settlement_date', now()->month)->sum('amount');
+    $avgDirectDepositAmount = $stats['total_settlements'] > 0 ? $stats['total_amount'] / $stats['total_settlements'] : 0;
+    $allBrands = collect($fuelStations ?? [])->pluck('company')->filter()->unique()->sort()->values();
+    $stationLabelMap = collect($fuelStations ?? [])->mapWithKeys(function ($station) {
+        $label = trim(((string) ($station->company ?? '') !== '' ? $station->company . ' - ' : '') . $station->name);
+        return [$station->id => $label !== '' ? $label : ('Station #' . $station->id)];
+    });
 @endphp
 
 @section('stats')
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-    <!-- Total Settlements -->
+    <!-- Total Direct Bank Deposits -->
     <div class="bg-gradient-to-br from-blue-50 to-white p-5 rounded-2xl shadow-sm border border-blue-100">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-blue-600 text-sm font-semibold">Total Settlements</p>
+                <p class="text-blue-600 text-sm font-semibold">Total Direct Bank Deposits</p>
                 <p class="text-3xl font-bold text-gray-900 mt-2">{{ number_format($stats['total_settlements']) }}</p>
             </div>
             <div class="p-3 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl">
@@ -30,11 +35,11 @@
         </div>
     </div>
 
-    <!-- Pending Settlements -->
+    <!-- Pending Direct Bank Deposits -->
     <div class="bg-gradient-to-br from-yellow-50 to-white p-5 rounded-2xl shadow-sm border border-yellow-100">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-yellow-600 text-sm font-semibold">Pending Settlements</p>
+                <p class="text-yellow-600 text-sm font-semibold">Pending Direct Bank Deposits</p>
                 <p class="text-3xl font-bold text-gray-900 mt-2">{{ number_format($stats['pending_count']) }}</p>
             </div>
             <div class="p-3 bg-gradient-to-br from-yellow-100 to-yellow-50 rounded-xl">
@@ -46,7 +51,7 @@
         </div>
     </div>
 
-    <!-- Completed Settlements -->
+    <!-- Completed Direct Bank Deposits -->
     <div class="bg-gradient-to-br from-green-50 to-white p-5 rounded-2xl shadow-sm border border-green-100">
         <div class="flex items-center justify-between">
             <div>
@@ -62,12 +67,12 @@
         </div>
     </div>
 
-    <!-- Average Settlement -->
+    <!-- Average Direct Bank Deposit -->
     <div class="bg-gradient-to-br from-purple-50 to-white p-5 rounded-2xl shadow-sm border border-purple-100">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-purple-600 text-sm font-semibold">Avg. Settlement</p>
-                <p class="text-3xl font-bold text-gray-900 mt-2">ZAR {{ number_format($avgSettlementAmount, 2) }}</p>
+                <p class="text-purple-600 text-sm font-semibold">Avg. Direct Bank Deposit</p>
+                <p class="text-3xl font-bold text-gray-900 mt-2">ZAR {{ number_format($avgDirectDepositAmount, 2) }}</p>
             </div>
             <div class="p-3 bg-gradient-to-br from-purple-100 to-purple-50 rounded-xl">
                 <i class="fas fa-chart-line text-purple-600 text-xl"></i>
@@ -85,13 +90,13 @@
     <!-- Header with Actions -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <div>
-            <h2 class="text-2xl font-bold text-gray-900">Settlement Management</h2>
+            <h2 class="text-2xl font-bold text-gray-900">Direct Bank Deposit Management</h2>
             <p class="text-gray-600 mt-1">Process payments to fuel stations for redeemed vouchers</p>
         </div>
         <div class="flex space-x-3 mt-4 md:mt-0">
             <a href="{{ route('admin.settlements.create') }}" 
                class="px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 shadow-md hover:shadow-lg transition-all duration-300 flex items-center group">
-                <i class="fas fa-plus mr-2 group-hover:rotate-90 transition-transform"></i> New Settlement
+                <i class="fas fa-plus mr-2 group-hover:rotate-90 transition-transform"></i> New Direct Bank Deposit
             </a>
             <a href="{{ route('admin.settlements.export') }}" 
                class="px-5 py-3 bg-white border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 shadow-sm hover:shadow transition-all duration-300 flex items-center">
@@ -104,31 +109,380 @@
         </div>
     </div>
 
-    <!-- Quick Stats -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-            <p class="text-sm text-gray-600">Today's Settlements</p>
-            <p class="text-xl font-bold text-gray-900">ZAR {{ number_format($todaySettlements, 2) }}</p>
-        </div>
-        <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-            <p class="text-sm text-gray-600">This Month</p>
-            <p class="text-xl font-bold text-gray-900">ZAR {{ number_format($thisMonthSettlements, 2) }}</p>
-        </div>
-        <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-            <p class="text-sm text-gray-600">Failed Settlements</p>
-            <p class="text-xl font-bold text-red-600">{{ number_format($stats['failed_count']) }}</p>
-        </div>
-        <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-            <p class="text-sm text-gray-600">Avg. Vouchers/Settlement</p>
-            <p class="text-xl font-bold text-gray-900">
-                {{ $stats['total_settlements'] > 0 ? number_format(DB::table('fuel_vouchers')->whereNotNull('settlement_id')->count() / $stats['total_settlements'], 1) : 0 }}
-            </p>
-        </div>
+    <div class="mb-6 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+        <span class="font-semibold">How payouts work:</span>
+        1) Admin tops up station wallets via direct deposit. 2) Drivers redeem vouchers against station wallet balance. 3) Each station is protected from duplicate payout in the same week unless force is explicitly selected.
     </div>
 
+    @php
+        $baseQuery = request()->except(['page', 'history']);
+        $historyActive = strtolower((string) request('history', ''));
+    @endphp
+    <div class="mb-6 flex flex-wrap items-center gap-2">
+        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">History</span>
+        <a
+            href="{{ route('admin.settlements.index', $baseQuery) }}"
+            class="px-3 py-1.5 rounded-full text-xs font-semibold border {{ $historyActive === '' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50' }}">
+            All ({{ number_format($stats['total_settlements']) }})
+        </a>
+        <a
+            href="{{ route('admin.settlements.index', array_merge($baseQuery, ['history' => 'immediate'])) }}"
+            class="px-3 py-1.5 rounded-full text-xs font-semibold border {{ $historyActive === 'immediate' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50' }}">
+            Immediate Pay ({{ number_format($immediateHistoryCount ?? 0) }})
+        </a>
+        <a
+            href="{{ route('admin.settlements.index', array_merge($baseQuery, ['history' => 'standard'])) }}"
+            class="px-3 py-1.5 rounded-full text-xs font-semibold border {{ $historyActive === 'standard' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50' }}">
+            Standard ({{ number_format($standardHistoryCount ?? 0) }})
+        </a>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mb-6">
+        <div class="flex items-center justify-between gap-3">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900">Set Settlement Amount (Pre-Fund)</h3>
+                <p class="text-sm text-gray-600 mt-1">Use this when franchises/stations are paid before vouchers are created.</p>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 font-semibold">Paystack Only</span>
+        </div>
+
+        <form method="POST" action="{{ route('admin.settlements.quick-topup') }}" class="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+            @csrf
+            <div class="md:col-span-2">
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Station</label>
+                <div class="relative">
+                    <input
+                        type="text"
+                        class="js-station-typeahead w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm"
+                        placeholder="Type to search station..."
+                        autocomplete="off"
+                        data-hidden-target="prefundStationId"
+                        value="{{ old('fuel_station_id') ? ($stationLabelMap[(int) old('fuel_station_id')] ?? '') : '' }}">
+                    <input type="hidden" id="prefundStationId" name="fuel_station_id" value="{{ old('fuel_station_id') }}">
+                    <div class="js-station-suggestions hidden absolute z-20 mt-1 w-full rounded-lg border border-slate-200 bg-white shadow-lg max-h-56 overflow-y-auto"></div>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Amount (ZAR)</label>
+                <input type="number" name="amount" min="0.01" step="0.01" required class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm" placeholder="0.00">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Settlement Date</label>
+                <input type="date" name="settlement_date" value="{{ now()->toDateString() }}" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm">
+            </div>
+            <div class="md:col-span-5">
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Notes (optional)</label>
+                <input type="text" name="notes" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm" placeholder="e.g. Weekly franchise prefund">
+            </div>
+            <div class="md:col-span-5 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p class="text-xs font-semibold text-slate-700">Optional: Fill missing payout details for Immediate Pay</p>
+                <p class="text-[11px] text-slate-500 mt-1">If station bank details are missing, these fields will be saved to the station before Paystack transfer.</p>
+                <div class="mt-3 grid grid-cols-1 md:grid-cols-4 gap-2">
+                    <input id="payoutAccountName" type="text" name="payout_account_name" value="{{ old('payout_account_name') }}" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-xs" placeholder="Account name">
+                    <input id="payoutAccountNumber" type="text" name="payout_account_number" value="{{ old('payout_account_number') }}" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-xs" placeholder="Account number">
+                    <select id="paystackBankName" name="payout_bank_name" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-xs">
+                        <option value="">{{ old('payout_bank_name') ? 'Loading banks...' : 'Select bank (Paystack)' }}</option>
+                    </select>
+                    <input id="paystackBankCode" type="text" name="payout_bank_code" value="{{ old('payout_bank_code') }}" readonly class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-slate-100 text-xs" placeholder="Bank code (auto-filled)">
+                </div>
+            </div>
+            <div class="md:col-span-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <label class="inline-flex items-center gap-2 text-xs text-slate-600">
+                    <input type="checkbox" name="force_weekly_duplicate" value="1" class="rounded border-slate-300">
+                    Allow duplicate payout in same week (force)
+                </label>
+                <div class="flex items-center gap-2">
+                    <button
+                        type="submit"
+                        formaction="{{ route('admin.settlements.quick-topup-immediate') }}"
+                        class="px-4 py-2.5 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700">
+                        Pay Immediately
+                    </button>
+                    <button type="submit" class="px-4 py-2.5 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700">
+                        Create Pre-Funded Settlement
+                    </button>
+                </div>
+            </div>
+            <div class="md:col-span-5">
+                <p class="text-xs text-slate-500">
+                    <span class="font-semibold text-slate-700">Pay Immediately:</span> creates and processes the direct bank deposit in one step via Paystack.
+                </p>
+            </div>
+        </form>
+    </div>
+
+    <details class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mb-6">
+        <summary class="cursor-pointer list-none flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900">Weekly Payout Cycles</h3>
+                <p class="text-sm text-gray-600 mt-1">Automation settings for brand and station payout days.</p>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-full {{ !empty($weeklyCycles['enabled']) ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">
+                {{ !empty($weeklyCycles['enabled']) ? 'ON' : 'OFF' }}
+            </span>
+        </summary>
+
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pb-4 border-b border-slate-200">
+            <div>
+                <p class="text-sm text-gray-600 mt-2">Configure weekly direct-to-account payout days for franchises (brands) and specific stations.</p>
+                <p class="text-xs mt-1 {{ !empty($weeklyCycles['enabled']) ? 'text-emerald-700' : 'text-rose-700' }}">
+                    Automation: <span class="font-semibold">{{ !empty($weeklyCycles['enabled']) ? 'ON' : 'OFF' }}</span>
+                    @if(!empty($weeklyCycles['next_cycle']))
+                        • Next cycle: <span class="font-semibold">{{ $weeklyCycles['next_cycle']['label'] }}</span>
+                        ({{ $weeklyCycles['next_cycle']['type'] === 'brand' ? 'Brand' : 'Station' }}: {{ $weeklyCycles['next_cycle']['name'] }})
+                    @else
+                        • Next cycle: <span class="font-semibold">Not configured</span>
+                    @endif
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                    Today: {{ ucfirst($weeklyCycles['today'] ?? strtolower(now()->format('l'))) }}
+                </span>
+                <form method="POST" action="{{ route('admin.settlements.cycles.toggle') }}">
+                    @csrf
+                    <input type="hidden" name="enabled" value="{{ !empty($weeklyCycles['enabled']) ? 0 : 1 }}">
+                    <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold {{ !empty($weeklyCycles['enabled']) ? 'bg-rose-100 text-rose-700 hover:bg-rose-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' }}">
+                        {{ !empty($weeklyCycles['enabled']) ? 'Turn Off' : 'Turn On' }}
+                    </button>
+                </form>
+                <form method="POST" action="{{ route('admin.settlements.cycles.run-due') }}">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800">
+                        Run Due Cycles Now
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p class="text-sm font-semibold text-slate-900">Franchise / Brand Cycle</p>
+                <p class="text-xs text-slate-500 mt-1">Brand cycle bulk-pays only Partner Stations.</p>
+                <form method="POST" action="{{ route('admin.settlements.cycles.brand') }}" class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
+                    @csrf
+                    <select name="brand" class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm" required>
+                        <option value="">Select brand</option>
+                        @foreach(($allBrands ?? collect()) as $brandName)
+                            <option value="{{ $brandName }}">{{ $brandName }}</option>
+                        @endforeach
+                    </select>
+                    <select name="day" class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm" required>
+                        @foreach(($weeklyCycles['days'] ?? ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']) as $day)
+                            <option value="{{ $day }}">{{ ucfirst($day) }}</option>
+                        @endforeach
+                    </select>
+                    <div class="flex items-center gap-2">
+                        <label class="inline-flex items-center gap-2 text-xs text-slate-700">
+                            <input type="hidden" name="enabled" value="0">
+                            <input type="checkbox" name="enabled" value="1" class="rounded border-slate-300" checked>
+                            Enabled
+                        </label>
+                        <button type="submit" class="ml-auto px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700">
+                            Save Brand Cycle
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p class="text-sm font-semibold text-slate-900">Station Cycle (Individual)</p>
+                <p class="text-xs text-slate-500 mt-1">Use station-specific weekly payout even if the station is not in partner bulk list.</p>
+                <form method="POST" action="{{ route('admin.settlements.cycles.station') }}" class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
+                    @csrf
+                    <div class="relative">
+                        <input
+                            type="text"
+                            class="js-station-typeahead w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm"
+                            placeholder="Type to search station..."
+                            autocomplete="off"
+                            data-hidden-target="stationCycleStationId">
+                        <input type="hidden" id="stationCycleStationId" name="station_id" required>
+                        <div class="js-station-suggestions hidden absolute z-20 mt-1 w-full rounded-lg border border-slate-200 bg-white shadow-lg max-h-56 overflow-y-auto"></div>
+                    </div>
+                    <select name="day" class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm" required>
+                        @foreach(($weeklyCycles['days'] ?? ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']) as $day)
+                            <option value="{{ $day }}">{{ ucfirst($day) }}</option>
+                        @endforeach
+                    </select>
+                    <div class="flex items-center gap-2">
+                        <label class="inline-flex items-center gap-2 text-xs text-slate-700">
+                            <input type="hidden" name="enabled" value="0">
+                            <input type="checkbox" name="enabled" value="1" class="rounded border-slate-300" checked>
+                            Enabled
+                        </label>
+                        <button type="submit" class="ml-auto px-3 py-2 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700">
+                            Save Station Cycle
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="rounded-xl border border-slate-200 bg-white p-4">
+                <p class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Configured Brand Cycles</p>
+                <div class="mt-2 space-y-2 max-h-40 overflow-y-auto pr-1">
+                    @forelse(($weeklyCycles['brand_cycles'] ?? []) as $brandName => $cycle)
+                        <div class="flex items-center justify-between rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">
+                            <p class="text-sm text-slate-800">{{ $brandName }}</p>
+                            <span class="text-xs font-semibold px-2 py-1 rounded-full {{ !empty($cycle['enabled']) ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600' }}">
+                                {{ ucfirst((string) ($cycle['day'] ?? '-')) }} • {{ !empty($cycle['enabled']) ? 'Enabled' : 'Disabled' }}
+                            </span>
+                        </div>
+                    @empty
+                        <p class="text-xs text-slate-500">No brand cycle configured yet.</p>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-slate-200 bg-white p-4">
+                <p class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Configured Station Cycles</p>
+                <div class="mt-2 space-y-2 max-h-40 overflow-y-auto pr-1">
+                    @forelse(($weeklyCycles['station_cycles'] ?? []) as $stationId => $cycle)
+                        @php
+                            $stationName = optional(($fuelStations ?? collect())->firstWhere('id', (int) $stationId))->name ?: ('Station #' . $stationId);
+                        @endphp
+                        <div class="flex items-center justify-between rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">
+                            <p class="text-sm text-slate-800">{{ $stationName }}</p>
+                            <span class="text-xs font-semibold px-2 py-1 rounded-full {{ !empty($cycle['enabled']) ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600' }}">
+                                {{ ucfirst((string) ($cycle['day'] ?? '-')) }} • {{ !empty($cycle['enabled']) ? 'Enabled' : 'Disabled' }}
+                            </span>
+                        </div>
+                    @empty
+                        <p class="text-xs text-slate-500">No station cycle configured yet.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    </details>
+
+    <details class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mb-6">
+        <summary class="cursor-pointer list-none flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900">Retail Brand Payout Engine</h3>
+                <p class="text-sm text-gray-600 mt-1">Franchise bulk payouts + partner station assignment.</p>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700">Advanced</span>
+        </summary>
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+                <p class="text-sm text-gray-600 mt-1">Brands are franchise groupings. Bulk runs process only stations marked as <span class="font-semibold text-emerald-700">Partner Station</span> and payout-ready. Non-partner stations are individual payout only.</p>
+            </div>
+            <form method="POST" action="{{ route('admin.settlements.process-brand') }}">
+                @csrf
+                <input type="hidden" name="brand" value="__all__">
+                <details class="inline-block mr-2">
+                    <summary class="text-xs text-amber-700 cursor-pointer">Advanced override</summary>
+                    <label class="inline-flex items-center gap-2 text-xs text-slate-600 mt-1">
+                        <input type="checkbox" name="force_weekly_duplicate" value="1" class="rounded border-slate-300">
+                        Force weekly duplicates
+                    </label>
+                </details>
+                <button type="submit" class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-700 text-white rounded-xl text-sm font-semibold hover:from-indigo-700 hover:to-blue-800">
+                    Process All Brands
+                </button>
+            </form>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            @forelse($brandPayouts as $brandRow)
+                <div class="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-900">{{ $brandRow['brand'] }}</p>
+                            <p class="text-xs text-slate-500 mt-1">{{ $brandRow['count'] }} pending settlement{{ $brandRow['count'] != 1 ? 's' : '' }}</p>
+                        </div>
+                        <span class="text-xs font-semibold px-2 py-1 rounded-full {{ $brandRow['blocked_count'] > 0 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700' }}">
+                            {{ $brandRow['blocked_count'] > 0 ? 'Partially Ready' : 'Ready' }}
+                        </span>
+                    </div>
+
+                    <p class="mt-3 text-lg font-bold text-slate-900">ZAR {{ number_format((float) $brandRow['amount'], 2) }}</p>
+                    <p class="text-xs mt-1 text-slate-600">
+                        Ready: {{ $brandRow['ready_count'] }} • Blocked: {{ $brandRow['blocked_count'] }}
+                    </p>
+                    <p class="text-xs mt-1 text-slate-600">
+                        Partner Stations: {{ $brandRow['partner_station_count'] ?? 0 }} / {{ $brandRow['total_station_count'] ?? 0 }}
+                    </p>
+
+                    <form method="POST" action="{{ route('admin.settlements.process-brand') }}" class="mt-3">
+                        @csrf
+                        <input type="hidden" name="brand" value="{{ $brandRow['brand'] }}">
+                        @if(!empty($brandRow['stations']))
+                            <div class="relative mb-2">
+                                <input
+                                    type="text"
+                                    class="js-station-typeahead w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-xs text-slate-700"
+                                    placeholder="All stations in {{ $brandRow['brand'] }} (type to narrow)"
+                                    autocomplete="off"
+                                    data-hidden-target="brandStationId{{ $loop->index }}"
+                                    data-brand-value="{{ $brandRow['brand'] }}">
+                                <input type="hidden" id="brandStationId{{ $loop->index }}" name="station_id">
+                                <div class="js-station-suggestions hidden absolute z-20 mt-1 w-full rounded-lg border border-slate-200 bg-white shadow-lg max-h-56 overflow-y-auto"></div>
+                            </div>
+                        @endif
+                        <details class="mb-2">
+                            <summary class="text-[11px] text-amber-700 cursor-pointer">Advanced override</summary>
+                            <label class="inline-flex items-center gap-2 text-[11px] text-slate-600 mt-1">
+                                <input type="checkbox" name="force_weekly_duplicate" value="1" class="rounded border-slate-300">
+                                Force weekly duplicates
+                            </label>
+                        </details>
+                        <button type="submit" class="w-full px-3 py-2 rounded-lg text-sm font-semibold {{ $brandRow['ready_count'] > 0 ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-slate-200 text-slate-500 cursor-not-allowed' }}" {{ $brandRow['ready_count'] > 0 ? '' : 'disabled' }}>
+                            Process {{ $brandRow['brand'] }}
+                        </button>
+                    </form>
+
+                    @if(!empty($brandRow['stations']))
+                        <div class="mt-3 space-y-2 max-h-52 overflow-y-auto pr-1">
+                            @foreach($brandRow['stations'] as $brandStation)
+                                <div class="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-semibold text-slate-800 truncate">
+                                                {{ $brandStation['name'] ?: ('Station #' . $brandStation['id']) }}
+                                            </p>
+                                            <p class="text-[11px] text-slate-500 mt-0.5">
+                                                Pending {{ (int) ($brandStation['pending_count'] ?? 0) }} •
+                                                ZAR {{ number_format((float) ($brandStation['pending_amount'] ?? 0), 2) }}
+                                            </p>
+                                            <div class="mt-1 flex flex-wrap gap-1">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold {{ !empty($brandStation['partner']) ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">
+                                                    {{ !empty($brandStation['partner']) ? 'Partner Station' : 'Individual Only' }}
+                                                </span>
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold {{ !empty($brandStation['ready']) ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700' }}">
+                                                    {{ !empty($brandStation['ready']) ? 'Payout Ready' : 'Payout Blocked' }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <form method="POST" action="{{ route('admin.settlements.stations.partner', ['station' => $brandStation['id']]) }}">
+                                            @csrf
+                                            <input type="hidden" name="is_partner" value="{{ !empty($brandStation['partner']) ? 0 : 1 }}">
+                                            <button type="submit" class="px-2 py-1 rounded-md text-[11px] font-semibold {{ !empty($brandStation['partner']) ? 'bg-rose-100 text-rose-700 hover:bg-rose-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' }}">
+                                                {{ !empty($brandStation['partner']) ? 'Remove Partner' : 'Set Partner' }}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            @empty
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                    No pending brand payouts at the moment.
+                </div>
+            @endforelse
+        </div>
+    </details>
+
     <!-- Search and Filters -->
-    <div id="filterSection" class="bg-gradient-to-r from-gray-50 to-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-6">
+    <div id="filterSection" class="hidden bg-gradient-to-r from-gray-50 to-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-6">
         <form action="{{ route('admin.settlements.index') }}" method="GET" class="space-y-4">
+            @if(request()->filled('history'))
+                <input type="hidden" name="history" value="{{ request('history') }}">
+            @endif
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <!-- Search -->
                 <div class="md:col-span-2 relative">
@@ -150,15 +504,18 @@
                 </select>
                 
                 <!-- Station Filter -->
-                <select name="fuel_station_id" 
-                        class="border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm">
-                    <option value="">All Stations</option>
-                    @foreach($fuelStations as $station)
-                        <option value="{{ $station->id }}" {{ request('fuel_station_id') == $station->id ? 'selected' : '' }}>
-                            {{ $station->name }}
-                        </option>
-                    @endforeach
-                </select>
+                <div class="relative">
+                    <input
+                        type="text"
+                        class="js-station-typeahead js-filter-field w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm"
+                        placeholder="All stations (type to search)"
+                        autocomplete="off"
+                        data-hidden-target="settlementFilterStationId"
+                        data-auto-submit="1"
+                        value="{{ request('fuel_station_id') ? ($stationLabelMap[(int) request('fuel_station_id')] ?? '') : '' }}">
+                    <input type="hidden" id="settlementFilterStationId" name="fuel_station_id" value="{{ request('fuel_station_id') }}">
+                    <div class="js-station-suggestions hidden absolute z-20 mt-1 w-full rounded-lg border border-slate-200 bg-white shadow-lg max-h-56 overflow-y-auto"></div>
+                </div>
             </div>
             
             <!-- Date Range -->
@@ -190,7 +547,7 @@
             <!-- Action Buttons -->
             <div class="flex justify-between items-center pt-2">
                 <div class="text-sm text-gray-600">
-                    Found {{ $settlements->total() }} settlements
+                    Found {{ $settlements->total() }} direct bank deposits
                 </div>
                 <div class="flex space-x-2">
                     <button type="submit" 
@@ -206,7 +563,7 @@
         </form>
     </div>
 
-    <!-- Settlements Table -->
+    <!-- Direct Bank Deposits Table -->
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
@@ -222,7 +579,7 @@
                             Station Details
                         </th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                            Settlement Info
+                            Direct Bank Deposit Info
                         </th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                             Status
@@ -250,6 +607,11 @@
                                     <div class="text-xs text-gray-400">
                                         ID: {{ $settlement->id }}
                                     </div>
+                                    @if(Str::contains((string) $settlement->notes, 'Immediate pre-funded top-up'))
+                                        <div class="text-[10px] inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">
+                                            Immediate Pay
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </td>
@@ -276,7 +638,7 @@
                             </div>
                         </td>
                         
-                        <!-- Settlement Info -->
+                        <!-- Direct Bank Deposit Info -->
                         <td class="px-6 py-5">
                             <div class="space-y-2">
                                 <div>
@@ -356,10 +718,11 @@
                                         
                                         <form action="{{ route('admin.settlements.process', $settlement) }}" method="POST" class="inline">
                                             @csrf
+                                            <input type="hidden" name="force_weekly_duplicate" value="0">
                                             <button type="submit" 
                                                     class="text-green-600 hover:text-green-900 p-2 hover:bg-green-50 rounded-lg transition-colors"
-                                                    onclick="return confirm('Process settlement {{ $settlement->reference }}?')"
-                                                    title="Process Settlement">
+                                                    onclick="return confirm('Process direct bank deposit {{ $settlement->reference }}?')"
+                                                    title="Process Direct Bank Deposit">
                                                 <i class="fas fa-play-circle"></i>
                                             </button>
                                         </form>
@@ -377,7 +740,7 @@
                                         @method('DELETE')
                                         <button type="submit" 
                                                 class="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                                                onclick="return confirm('Delete settlement {{ $settlement->reference }}?')"
+                                                onclick="return confirm('Delete direct bank deposit {{ $settlement->reference }}?')"
                                                 title="Delete">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -409,11 +772,11 @@
                         <td colspan="5" class="px-6 py-12 text-center">
                             <div class="text-gray-500">
                                 <i class="fas fa-money-check-alt text-4xl mb-4 opacity-20"></i>
-                                <p class="text-lg font-medium text-gray-700">No settlements found</p>
-                                <p class="text-gray-500 mt-1">Create your first settlement to get started</p>
+                                <p class="text-lg font-medium text-gray-700">No direct bank deposits found</p>
+                                <p class="text-gray-500 mt-1">Create your first direct bank deposit to get started</p>
                                 <a href="{{ route('admin.settlements.create') }}" 
                                    class="inline-block mt-4 px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                                    <i class="fas fa-plus mr-2"></i> Create Settlement
+                                    <i class="fas fa-plus mr-2"></i> Create Direct Bank Deposit
                                 </a>
                             </div>
                         </td>
@@ -430,7 +793,7 @@
                 <div class="text-sm text-gray-700">
                     Showing <span class="font-semibold">{{ $settlements->firstItem() }}</span> 
                     to <span class="font-semibold">{{ $settlements->lastItem() }}</span> 
-                    of <span class="font-semibold">{{ $settlements->total() }}</span> settlements
+                    of <span class="font-semibold">{{ $settlements->total() }}</span> direct bank deposits
                 </div>
                 <div class="flex space-x-2">
                     @if($settlements->onFirstPage())
@@ -464,74 +827,6 @@
         </div>
         @endif
     </div>
-
-    <!-- Additional Information Sections -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-        <!-- Quick Actions -->
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div class="space-y-3">
-                <a href="{{ route('admin.settlements.create') }}" 
-                   class="flex items-center p-3 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition-colors">
-                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                        <i class="fas fa-plus text-blue-600"></i>
-                    </div>
-                    <span class="font-medium">Create New Settlement</span>
-                </a>
-                
-                <button onclick="showBulkProcess()" 
-                        class="w-full flex items-center p-3 bg-green-50 text-green-700 rounded-xl hover:bg-green-100 transition-colors text-left">
-                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                        <i class="fas fa-play-circle text-green-600"></i>
-                    </div>
-                    <span class="font-medium">Bulk Process Settlements</span>
-                </button>
-                
-                <a href="{{ route('admin.settlements.export') }}" 
-                   class="flex items-center p-3 bg-purple-50 text-purple-700 rounded-xl hover:bg-purple-100 transition-colors">
-                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                        <i class="fas fa-download text-purple-600"></i>
-                    </div>
-                    <span class="font-medium">Export All Settlements</span>
-                </a>
-                
-                <a href="{{ route('admin.stations.index') }}" 
-                   class="flex items-center p-3 bg-yellow-50 text-yellow-700 rounded-xl hover:bg-yellow-100 transition-colors">
-                    <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
-                        <i class="fas fa-gas-pump text-yellow-600"></i>
-                    </div>
-                    <span class="font-medium">View All Stations</span>
-                </a>
-            </div>
-        </div>
-
-        <!-- Recent Activity -->
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-            <div class="space-y-3">
-                @php
-                    $recentSettlements = App\Models\Settlement::latest()->take(5)->get();
-                @endphp
-                @foreach($recentSettlements as $recent)
-                <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
-                    <div class="flex items-center">
-                        <div class="w-8 h-8 rounded-lg {{ $recent->status === 'completed' ? 'bg-green-100' : ($recent->status === 'failed' ? 'bg-red-100' : 'bg-yellow-100') }} flex items-center justify-center mr-3">
-                            <i class="fas {{ $recent->status === 'completed' ? 'fa-check text-green-600' : ($recent->status === 'failed' ? 'fa-times text-red-600' : 'fa-clock text-yellow-600') }} text-sm"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">{{ $recent->reference }}</p>
-                            <p class="text-xs text-gray-500">{{ $recent->fuelStation->name }}</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-sm font-bold text-gray-900">ZAR {{ number_format($recent->amount, 2) }}</p>
-                        <p class="text-xs text-gray-500">{{ $recent->created_at->diffForHumans() }}</p>
-                    </div>
-                </div>
-                @endforeach
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Bulk Actions Dropdown -->
@@ -541,9 +836,9 @@
             <span class="text-gray-700 font-medium">Bulk Actions:</span>
             <select id="bulkActionSelect" class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">Choose action...</option>
-                <option value="process">Process Settlements</option>
+                <option value="process">Process Direct Bank Deposits</option>
                 <option value="export">Export Selected</option>
-                <option value="delete">Delete Settlements</option>
+                <option value="delete">Delete Direct Bank Deposits</option>
             </select>
             <button onclick="applyBulkAction()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                 Apply
@@ -568,8 +863,8 @@
                     </button>
                 </div>
                 <div class="mb-4">
-                    <p class="text-gray-600">Settlement: <span id="failSettlementRef" class="font-semibold text-gray-900"></span></p>
-                    <p class="text-sm text-gray-500 mt-1">Provide a reason for marking this settlement as failed.</p>
+                    <p class="text-gray-600">Direct Bank Deposit: <span id="failDirectDepositRef" class="font-semibold text-gray-900"></span></p>
+                    <p class="text-sm text-gray-500 mt-1">Provide a reason for marking this direct bank deposit as failed.</p>
                 </div>
                 <div class="space-y-4">
                     <div>
@@ -580,7 +875,7 @@
                                   required
                                   rows="3"
                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  placeholder="Explain why this settlement failed..."></textarea>
+                                  placeholder="Explain why this direct bank deposit failed..."></textarea>
                     </div>
                 </div>
                 <div class="flex justify-end space-x-3 mt-6">
@@ -604,7 +899,7 @@
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl">
         <div class="p-6">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-gray-900">Settlement Vouchers</h3>
+                <h3 class="text-xl font-bold text-gray-900">Direct Bank Deposit Vouchers</h3>
                 <button type="button" onclick="closeVouchersModal()" class="text-gray-500 hover:text-gray-700">
                     <i class="fas fa-times"></i>
                 </button>
@@ -623,18 +918,18 @@
             @csrf
             <div class="p-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold text-gray-900">Bulk Process Settlements</h3>
+                    <h3 class="text-xl font-bold text-gray-900">Bulk Process Direct Bank Deposits</h3>
                     <button type="button" onclick="closeBulkProcessModal()" class="text-gray-500 hover:text-gray-700">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
                 
                 <div class="mb-6">
-                    <p class="text-gray-600">Select multiple pending settlements to process them all at once.</p>
-                    <p class="text-sm text-gray-500 mt-1">This will credit station wallets for all selected settlements.</p>
+                    <p class="text-gray-600">Select multiple pending direct bank deposits to process them all at once.</p>
+                    <p class="text-sm text-gray-500 mt-1">This will credit station wallets for all selected direct bank deposits.</p>
                 </div>
                 
-                <!-- Settlements Selection -->
+                <!-- Direct Bank Deposits Selection -->
                 <div class="space-y-4 max-h-96 overflow-y-auto pr-2">
                     @foreach(App\Models\Settlement::pending()->with('fuelStation')->get() as $settlement)
                     <div class="flex items-center p-4 border border-gray-200 rounded-xl hover:border-blue-300 transition-colors">
@@ -667,8 +962,8 @@
                     @if(App\Models\Settlement::pending()->count() === 0)
                     <div class="text-center py-8 text-gray-500">
                         <i class="fas fa-check-circle text-3xl mb-3 opacity-20"></i>
-                        <p>No pending settlements available</p>
-                        <p class="text-sm mt-1">All settlements are already processed</p>
+                        <p>No pending direct bank deposits available</p>
+                        <p class="text-sm mt-1">All direct bank deposits are already processed</p>
                     </div>
                     @endif
                 </div>
@@ -678,7 +973,7 @@
                     <div class="flex justify-between items-center">
                         <div>
                             <p class="text-sm text-gray-600">Selected</p>
-                            <p id="bulkSelectedCount" class="text-xl font-bold text-gray-900">0 settlements</p>
+                            <p id="bulkSelectedCount" class="text-xl font-bold text-gray-900">0 direct bank deposits</p>
                         </div>
                         <div class="text-right">
                             <p class="text-sm text-gray-600">Total Amount</p>
@@ -730,7 +1025,7 @@
 
     // Fail Modal
     function showFailModal(settlementId, settlementRef) {
-        document.getElementById('failSettlementRef').textContent = settlementRef;
+        document.getElementById('failDirectDepositRef').textContent = settlementRef;
         const form = document.getElementById('failForm');
         form.action = `/admin/settlements/${settlementId}/mark-as-failed`;
         document.getElementById('failModal').classList.remove('hidden');
@@ -813,7 +1108,7 @@
             totalAmount += amount;
         });
         
-        document.getElementById('bulkSelectedCount').textContent = selectedCount + ' settlement' + (selectedCount !== 1 ? 's' : '');
+        document.getElementById('bulkSelectedCount').textContent = selectedCount + ' direct bank deposit' + (selectedCount !== 1 ? 's' : '');
         document.getElementById('bulkTotalAmount').textContent = 'ZAR ' + totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 });
         document.getElementById('bulkProcessBtn').disabled = selectedCount === 0;
     }
@@ -830,11 +1125,11 @@
         const selectedCount = document.querySelectorAll('.bulk-checkbox:checked').length;
         if (selectedCount === 0) {
             e.preventDefault();
-            alert('Please select at least one settlement to process');
+            alert('Please select at least one direct bank deposit to process');
             return;
         }
         
-        const confirmation = confirm(`Process ${selectedCount} settlement(s)? This will credit station wallets.`);
+        const confirmation = confirm(`Process ${selectedCount} direct bank deposit(s)? This will credit station wallets.`);
         if (!confirmation) {
             e.preventDefault();
         }
@@ -847,7 +1142,7 @@
                                        .map(cb => cb.value);
         
         if (selectedSettlements.length === 0) {
-            alert('Please select at least one settlement');
+            alert('Please select at least one direct bank deposit');
             return;
         }
         
@@ -866,16 +1161,220 @@
                 : `/admin/settlements/export`;
             window.location.href = url;
         } else if (action === 'delete') {
-            if (confirm(`Delete ${selectedSettlements.length} settlement(s)? This will release all vouchers back to unsettled state.`)) {
+            if (confirm(`Delete ${selectedSettlements.length} direct bank deposit(s)? This will release all vouchers back to unsettled state.`)) {
                 // In a real app, you would make an AJAX request here
-                alert(`Deleting ${selectedSettlements.length} settlement(s)...`);
+                alert(`Deleting ${selectedSettlements.length} direct bank deposit(s)...`);
                 toggleBulkActions();
             }
         }
     }
 
+    function debounce(fn, wait = 220) {
+        let t = null;
+        return (...args) => {
+            window.clearTimeout(t);
+            t = window.setTimeout(() => fn(...args), wait);
+        };
+    }
+
+    function initStationTypeaheads() {
+        const endpoint = '{{ route('admin.settlements.api.stations-search') }}';
+        const inputs = document.querySelectorAll('.js-station-typeahead');
+        const payoutAccountNameInput = document.getElementById('payoutAccountName');
+        const payoutAccountNumberInput = document.getElementById('payoutAccountNumber');
+        const payoutBankNameSelect = document.getElementById('paystackBankName');
+        const payoutBankCodeInput = document.getElementById('paystackBankCode');
+
+        const autoFillPayoutDetails = (item, hiddenTargetId) => {
+            if (hiddenTargetId !== 'prefundStationId' || !item) return;
+
+            const accountName = (item.payout_account_name || '').trim();
+            const accountNumber = (item.payout_account_number || '').trim();
+            const bankName = (item.payout_bank_name || '').trim();
+            const bankCode = (item.payout_bank_code || '').trim();
+
+            if (accountName && payoutAccountNameInput) {
+                payoutAccountNameInput.value = accountName;
+            }
+            if (accountNumber && payoutAccountNumberInput) {
+                payoutAccountNumberInput.value = accountNumber;
+            }
+            if (bankCode && payoutBankCodeInput) {
+                payoutBankCodeInput.value = bankCode;
+            }
+            if (bankName && payoutBankNameSelect) {
+                payoutBankNameSelect.value = bankName;
+                if (!payoutBankNameSelect.value) {
+                    const dynamic = document.createElement('option');
+                    dynamic.value = bankName;
+                    dynamic.textContent = bankCode ? `${bankName} (${bankCode})` : bankName;
+                    dynamic.dataset.code = bankCode;
+                    payoutBankNameSelect.appendChild(dynamic);
+                    payoutBankNameSelect.value = bankName;
+                }
+            }
+        };
+
+        inputs.forEach((input) => {
+            if (input.dataset.typeaheadBound === '1') return;
+            input.dataset.typeaheadBound = '1';
+
+            const hiddenId = input.dataset.hiddenTarget;
+            const hidden = hiddenId ? document.getElementById(hiddenId) : null;
+            const suggestions = input.parentElement.querySelector('.js-station-suggestions');
+            if (!hidden || !suggestions) return;
+
+            const clearSelection = () => {
+                hidden.value = '';
+            };
+
+            const closeSuggestions = () => {
+                suggestions.classList.add('hidden');
+                suggestions.innerHTML = '';
+            };
+
+            const maybeAutoSubmit = () => {
+                if (input.dataset.autoSubmit === '1' && input.form) {
+                    input.form.submit();
+                }
+            };
+
+            const renderSuggestions = (items) => {
+                if (!Array.isArray(items) || items.length === 0) {
+                    suggestions.innerHTML = '<p class="px-3 py-2 text-xs text-slate-500">No stations found.</p>';
+                    suggestions.classList.remove('hidden');
+                    return;
+                }
+
+                suggestions.innerHTML = items.map((item) => {
+                    const partnerTag = item.partner
+                        ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">Partner</span>'
+                        : '<span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">Individual</span>';
+                    const readyTag = item.payout_ready
+                        ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Ready</span>'
+                        : '<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Blocked</span>';
+
+                    return `
+                        <button
+                            type="button"
+                            class="w-full text-left px-3 py-2 hover:bg-slate-50 border-b last:border-b-0 border-slate-100 station-suggestion"
+                            data-id="${item.id}"
+                            data-label="${(item.label || '').replace(/"/g, '&quot;')}">
+                            <p class="text-xs font-semibold text-slate-800">${item.label || ('Station #' + item.id)}</p>
+                            <p class="text-[11px] text-slate-500 mt-0.5">${item.city || 'Unknown city'}</p>
+                            <div class="mt-1 flex gap-1">${partnerTag}${readyTag}</div>
+                        </button>
+                    `;
+                }).join('');
+
+                suggestions.classList.remove('hidden');
+
+                suggestions.querySelectorAll('.station-suggestion').forEach((button) => {
+                    button.addEventListener('click', () => {
+                        hidden.value = button.dataset.id || '';
+                        input.value = button.dataset.label || '';
+                        const selected = items.find((row) => String(row.id) === String(button.dataset.id));
+                        autoFillPayoutDetails(selected, hiddenId);
+                        closeSuggestions();
+                        maybeAutoSubmit();
+                    });
+                });
+            };
+
+            const fetchSuggestions = debounce(async () => {
+                const q = input.value.trim();
+                const params = new URLSearchParams({ limit: '12' });
+                if (q.length > 0) params.set('q', q);
+                if (input.dataset.brandValue) params.set('brand', input.dataset.brandValue);
+
+                try {
+                    const resp = await fetch(`${endpoint}?${params.toString()}`, {
+                        headers: { 'Accept': 'application/json' },
+                    });
+                    if (!resp.ok) throw new Error('Failed');
+                    const data = await resp.json();
+                    renderSuggestions(data.items || []);
+                } catch (e) {
+                    suggestions.innerHTML = '<p class="px-3 py-2 text-xs text-rose-600">Failed to load stations.</p>';
+                    suggestions.classList.remove('hidden');
+                }
+            }, 240);
+
+            input.addEventListener('input', () => {
+                clearSelection();
+                fetchSuggestions();
+            });
+
+            input.addEventListener('focus', () => {
+                fetchSuggestions();
+            });
+
+            input.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') {
+                    closeSuggestions();
+                }
+            });
+
+            input.addEventListener('blur', () => {
+                window.setTimeout(() => {
+                    if (!hidden.value && input.dataset.autoSubmit === '1') {
+                        input.value = '';
+                        maybeAutoSubmit();
+                    }
+                    closeSuggestions();
+                }, 150);
+            });
+        });
+    }
+
+    initStationTypeaheads();
+
+    async function initPaystackBankPicker() {
+        const bankSelect = document.getElementById('paystackBankName');
+        const codeInput = document.getElementById('paystackBankCode');
+        if (!bankSelect || !codeInput) return;
+
+        const endpoint = '{{ route('admin.settlements.api.paystack-banks') }}';
+        const existingBankName = (bankSelect.value || @json(old('payout_bank_name')) || '').trim();
+        const existingBankCode = (codeInput.value || @json(old('payout_bank_code')) || '').trim();
+
+        try {
+            const response = await fetch(endpoint, { headers: { 'Accept': 'application/json' } });
+            const payload = await response.json();
+            const items = Array.isArray(payload.items) ? payload.items : [];
+
+            bankSelect.innerHTML = '<option value="">Select bank (Paystack)</option>';
+
+            items.forEach((bank) => {
+                const option = document.createElement('option');
+                option.value = bank.name || '';
+                option.textContent = `${bank.name || 'Unknown'} (${bank.code || '-'})`;
+                option.dataset.code = bank.code || '';
+                if (existingBankName && bank.name === existingBankName) {
+                    option.selected = true;
+                }
+                bankSelect.appendChild(option);
+            });
+
+            if (existingBankCode) {
+                codeInput.value = existingBankCode;
+            } else if (bankSelect.selectedOptions.length > 0) {
+                codeInput.value = bankSelect.selectedOptions[0].dataset.code || '';
+            }
+
+            bankSelect.addEventListener('change', () => {
+                const selected = bankSelect.selectedOptions[0];
+                codeInput.value = selected?.dataset?.code || '';
+            });
+        } catch (error) {
+            bankSelect.innerHTML = '<option value="">Could not load Paystack banks</option>';
+        }
+    }
+
+    initPaystackBankPicker();
+
     // Auto-submit date changes
-    document.querySelectorAll('input[type="date"], select[name="status"], select[name="fuel_station_id"]').forEach(element => {
+    document.querySelectorAll('input[type="date"], select[name="status"], .js-filter-field').forEach(element => {
         element.addEventListener('change', function() {
             if (this.form) this.form.submit();
         });
@@ -902,10 +1401,10 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Settlement marked as failed!');
+                alert('Direct Bank Deposit marked as failed!');
                 location.reload();
             } else {
-                alert('Failed to mark settlement as failed');
+                alert('Failed to mark direct bank deposit as failed');
                 submitButton.textContent = originalText;
                 submitButton.disabled = false;
             }

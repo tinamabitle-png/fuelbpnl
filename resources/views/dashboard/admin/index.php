@@ -48,7 +48,7 @@
                 <i class="fas fa-money-bill-wave text-2xl"></i>
             </div>
             <div>
-                <p class="text-sm text-gray-600">Total Settlements</p>
+                <p class="text-sm text-gray-600">Total Direct Bank Deposits</p>
                 <p class="text-2xl font-bold">ZAR {{ number_format($stats['total_settlement_amount'] ?? 0, 2) }}</p>
             </div>
         </div>
@@ -168,8 +168,8 @@
         <a href="{{ route('admin.settlements.index') }}" 
            class="bg-green-50 hover:bg-green-100 p-4 rounded-lg text-center transition duration-200">
             <i class="fas fa-money-check-alt text-green-600 text-2xl mb-2"></i>
-            <p class="font-medium">Process Settlements</p>
-            <p class="text-sm text-gray-600 mt-1">Manage station payouts</p>
+            <p class="font-medium">Process Direct Bank Deposits</p>
+            <p class="text-sm text-gray-600 mt-1">Manage station direct bank deposits</p>
         </a>
     </div>
 </div>

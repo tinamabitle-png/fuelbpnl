@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class FuelStationController extends Controller
 {
@@ -62,7 +63,7 @@ class FuelStationController extends Controller
      */
     public function create()
     {
-        $owners = User::role('station_owner')->orWhere('id', 1)->get(); // Get station owners or admin
+        $owners = $this->merchantOwners();
         return view('admin.stations.create', compact('owners'));
     }
 
@@ -78,15 +79,17 @@ class FuelStationController extends Controller
             'address' => 'required|string',
             'city' => 'required|string',
             'country' => 'required|string',
-            'latitude' => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'contact_person' => 'required|string|max:255',
             'contact_phone' => 'required|string',
             'contact_email' => 'nullable|email',
-            'status' => 'required|in:active,inactive,pending,suspended',
-            'owner_id' => 'nullable|exists:users,id',
+            'status' => 'required|in:active,inactive,suspended',
+            'owner_id' => 'required|exists:users,id',
             'wallet_balance' => 'nullable|numeric|min:0',
         ]);
+
+        $this->assertMerchantOwner((int) $validated['owner_id']);
 
         // Set default values
         $validated['wallet_balance'] = $validated['wallet_balance'] ?? 0;
@@ -110,7 +113,7 @@ public function show(FuelStation $station)
     // Get statistics
     $stats = [
         'total_vouchers' => $station->vouchers()->count(),
-        'active_vouchers' => $station->vouchers()->where('status', 'active')->count(),
+        'active_vouchers' => $station->vouchers()->whereIn('status', ['issued', 'approved'])->count(),
         'redeemed_vouchers' => $station->vouchers()->where('status', 'redeemed')->count(),
         'total_settlement_amount' => $station->settlements()->sum('amount'),
         'pending_settlement' => $station->getPendingSettlementAmount(),
@@ -143,7 +146,7 @@ public function show(FuelStation $station)
      */
     public function edit(FuelStation $station)
     {
-        $owners = User::role('station_owner')->orWhere('id', 1)->get();
+        $owners = $this->merchantOwners();
         return view('admin.stations.edit', compact('station', 'owners'));
     }
 
@@ -163,14 +166,16 @@ public function show(FuelStation $station)
             'address' => 'required|string',
             'city' => 'required|string',
             'country' => 'required|string',
-            'latitude' => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'contact_person' => 'required|string|max:255',
             'contact_phone' => 'required|string',
             'contact_email' => 'nullable|email',
-            'status' => 'required|in:active,inactive,pending,suspended',
-            'owner_id' => 'nullable|exists:users,id',
+            'status' => 'required|in:active,inactive,suspended',
+            'owner_id' => 'required|exists:users,id',
         ]);
+
+        $this->assertMerchantOwner((int) $validated['owner_id']);
 
         $station->update($validated);
 
@@ -401,5 +406,24 @@ public function show(FuelStation $station)
         });
 
         return back()->with('success', 'Bulk action completed successfully.');
+    }
+
+    private function merchantOwners()
+    {
+        return User::role('merchant')
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function assertMerchantOwner(int $ownerId): void
+    {
+        $merchantUser = User::find($ownerId);
+
+        if (!$merchantUser || !$merchantUser->hasRole('merchant')) {
+            throw ValidationException::withMessages([
+                'owner_id' => 'Every station must be assigned to a user with the merchant role.',
+            ]);
+        }
     }
 }

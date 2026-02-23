@@ -677,11 +677,11 @@
                             <input type="number" 
                                    name="term_days" 
                                    required
-                                   min="1"
-                                   max="365"
+                                   min="7"
+                                   max="60"
                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                    placeholder="Enter term in days"
-                                   value="30">
+                                    value="30">
                         </div>
                         
                         <!-- Start Date -->
@@ -750,6 +750,9 @@
                                 <span id="previewDaily" class="font-medium text-blue-600 ml-2">ZAR 0.00</span>
                             </div>
                         </div>
+                        <p id="createLeaseValidationMessage" class="mt-3 text-xs font-medium text-gray-600">
+                            Minimum repayment: R30.00 per day. Term must be between 7 and 60 days.
+                        </p>
                     </div>
                 </div>
                 
@@ -760,6 +763,7 @@
                         Cancel
                     </button>
                     <button type="submit" 
+                            id="createLeaseSubmitBtn"
                             class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                         Create Lease
                     </button>
@@ -1108,16 +1112,38 @@
     function updateCalculationPreview() {
         const principal = parseFloat(document.querySelector('input[name="principal_amount"]')?.value) || 0;
         const interestRate = parseFloat(document.querySelector('input[name="interest_rate"]')?.value) || 0;
-        const termDays = parseInt(document.querySelector('input[name="term_days"]')?.value) || 0;
+        const termInput = document.querySelector('input[name="term_days"]');
+        let termDays = parseInt(termInput?.value) || 0;
+        termDays = Math.max(7, Math.min(60, termDays));
+        if (termInput && termInput.value !== '' && Number(termInput.value) !== termDays) {
+            termInput.value = String(termDays);
+        }
         
         const interest = principal * (interestRate / 100);
         const total = principal + interest;
         const daily = termDays > 0 ? total / termDays : 0;
+        const isValid = termDays >= 7 && termDays <= 60 && daily >= 30;
         
         document.getElementById('previewPrincipal').textContent = `ZAR ${principal.toFixed(2)}`;
         document.getElementById('previewInterest').textContent = `ZAR ${interest.toFixed(2)}`;
         document.getElementById('previewTotal').textContent = `ZAR ${total.toFixed(2)}`;
         document.getElementById('previewDaily').textContent = `ZAR ${daily.toFixed(2)}`;
+
+        const validationMessage = document.getElementById('createLeaseValidationMessage');
+        const submitBtn = document.getElementById('createLeaseSubmitBtn');
+        if (validationMessage) {
+            validationMessage.textContent = isValid
+                ? 'Minimum repayment: R30.00 per day. Term must be between 7 and 60 days.'
+                : 'Daily repayment must be at least R30.00 and term must be between 7 and 60 days.';
+            validationMessage.className = isValid
+                ? 'mt-3 text-xs font-medium text-emerald-700'
+                : 'mt-3 text-xs font-medium text-red-600';
+        }
+        if (submitBtn) {
+            submitBtn.disabled = !isValid;
+            submitBtn.classList.toggle('opacity-60', !isValid);
+            submitBtn.classList.toggle('cursor-not-allowed', !isValid);
+        }
     }
 
     // Attach calculation preview to input events

@@ -11,19 +11,19 @@ class CreditLimit extends Model
 
     protected $fillable = [
         'user_id',
-        'credit_limit', // Changed from 'limit'
+        'limit',
         'used',
         'review_date',
         'status',
     ];
 
     protected $casts = [
-        'credit_limit' => 'decimal:2', // Changed from 'limit'
+        'limit' => 'decimal:2',
         'used' => 'decimal:2',
         'review_date' => 'date',
     ];
 
-    protected $appends = ['available'];
+    protected $appends = ['available', 'credit_limit'];
 
     // Relationships
     public function user()
@@ -34,7 +34,18 @@ class CreditLimit extends Model
     // Accessors
     public function getAvailableAttribute()
     {
-        return max(0, $this->credit_limit - $this->used); // Changed from 'limit'
+        return max(0, $this->limit - $this->used);
+    }
+
+    // Backward-compatible alias used by older parts of the app.
+    public function getCreditLimitAttribute()
+    {
+        return $this->limit;
+    }
+
+    public function setCreditLimitAttribute($value): void
+    {
+        $this->attributes['limit'] = $value;
     }
 
     // Business logic methods
@@ -61,8 +72,8 @@ class CreditLimit extends Model
 
     public function updateLimit($newLimit, $reason = '')
     {
-        $oldLimit = $this->credit_limit; // Changed from 'limit'
-        $this->update(['credit_limit' => $newLimit]); // Changed from 'limit'
+        $oldLimit = $this->credit_limit;
+        $this->update(['limit' => $newLimit]);
 
         // Log this change
         activity()

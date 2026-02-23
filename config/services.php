@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'paystack' => [
+        'public_key' => env('PAYSTACK_PUBLIC_KEY'),
+        'secret_key' => env('PAYSTACK_SECRET_KEY'),
+        'base_url' => env('PAYSTACK_BASE_URL', 'https://api.paystack.co'),
+        'currency' => env('PAYSTACK_CURRENCY', 'ZAR'),
+        'transfer_source' => env('PAYSTACK_TRANSFER_SOURCE', 'balance'),
+        'timeout' => env('PAYSTACK_TIMEOUT', 15),
+    ],
+
 ];

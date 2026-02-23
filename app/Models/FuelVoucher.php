@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class FuelVoucher extends Model
@@ -25,7 +26,9 @@ class FuelVoucher extends Model
         'redeemed_at',
         'expires_at',
         'settlement_id',
+        'settled_at',
         'transaction_reference',
+        'pump_number',
     ];
 
     protected $casts = [
@@ -34,6 +37,7 @@ class FuelVoucher extends Model
         'issued_at' => 'datetime',
         'redeemed_at' => 'datetime',
         'expires_at' => 'datetime',
+        'settled_at' => 'datetime',
     ];
 
     protected static function boot()
@@ -88,11 +92,16 @@ class FuelVoucher extends Model
         return $query->where('status', 'redeemed');
     }
 
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'approved');
+    }
+
     public function scopeExpired($query)
     {
         return $query->where('status', 'expired')
             ->orWhere(function ($q) {
-                $q->where('status', 'issued')
+                $q->whereIn('status', ['issued', 'approved'])
                   ->where('expires_at', '<', now());
             });
     }
@@ -106,7 +115,7 @@ class FuelVoucher extends Model
     // Accessors
     public function getIsActiveAttribute()
     {
-        return $this->status === 'issued' && $this->expires_at > now();
+        return in_array($this->status, ['issued', 'approved'], true) && $this->expires_at > now();
     }
 
     public function getIsExpiredAttribute()
@@ -116,7 +125,7 @@ class FuelVoucher extends Model
 
     public function getIsRedeemableAttribute()
     {
-        return $this->status === 'issued' && 
+        return $this->status === 'approved' && 
                $this->expires_at > now() && 
                $this->issued_at <= now();
     }
@@ -124,16 +133,38 @@ class FuelVoucher extends Model
     // Business logic methods
     public function redeem()
     {
-        if (!$this->is_redeemable) {
-            throw new \Exception('Voucher cannot be redeemed');
+        return DB::transaction(function () {
+            $voucher = self::whereKey($this->id)->lockForUpdate()->firstOrFail();
+            if (!$voucher->is_redeemable) {
+                throw new \Exception('Voucher cannot be redeemed');
+            }
+
+            $station = FuelStation::whereKey($voucher->fuel_station_id)->lockForUpdate()->firstOrFail();
+            $station->deductFromWallet(
+                (float) $voucher->amount,
+                'Voucher redemption: ' . $voucher->code
+            );
+
+            $voucher->update([
+                'status' => 'redeemed',
+                'redeemed_at' => now(),
+            ]);
+
+            return $voucher->fresh();
+        });
+    }
+
+    public static function stationOpenExposure(int $stationId, ?int $excludeVoucherId = null): float
+    {
+        $query = self::query()
+            ->where('fuel_station_id', $stationId)
+            ->whereIn('status', ['issued', 'approved']);
+
+        if ($excludeVoucherId) {
+            $query->where('id', '!=', $excludeVoucherId);
         }
 
-        $this->update([
-            'status' => 'redeemed',
-            'redeemed_at' => now(),
-        ]);
-
-        return $this;
+        return (float) $query->sum('amount');
     }
 
     public function cancel()

@@ -163,8 +163,8 @@
                                 <input type="number" 
                                        name="term_days" 
                                        required
-                                       min="1"
-                                       max="365"
+                                       min="7"
+                                       max="60"
                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('term_days') border-red-500 @enderror"
                                        value="{{ old('term_days', $lease->term_days) }}">
                                 @error('term_days')
@@ -244,6 +244,9 @@
                             <i class="fas fa-info-circle mr-2"></i>
                             Changing financial details will recalculate the repayment schedule
                         </div>
+                        <p id="editLeaseValidationMessage" class="mt-2 text-xs font-medium text-blue-700">
+                            Minimum repayment: R30.00 per day. Term must be between 7 and 60 days.
+                        </p>
                     </div>
 
                     <!-- Form Actions -->
@@ -264,6 +267,7 @@
                                 Reset Changes
                             </button>
                             <button type="submit" 
+                                    id="updateLeaseSubmitBtn"
                                     class="px-6 py-2.5 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-lg font-semibold hover:from-yellow-700 hover:to-yellow-800 shadow-md hover:shadow-lg transition-all duration-300 flex items-center">
                                 <i class="fas fa-save mr-2"></i> Update Lease
                             </button>
@@ -318,7 +322,12 @@
     function updateCalculationPreview() {
         const principal = parseFloat(document.querySelector('input[name="principal_amount"]').value) || 0;
         const interestRate = parseFloat(document.querySelector('input[name="interest_rate"]').value) || 0;
-        const termDays = parseInt(document.querySelector('input[name="term_days"]').value) || 0;
+        const termInput = document.querySelector('input[name="term_days"]');
+        let termDays = parseInt(termInput.value) || 0;
+        termDays = Math.max(7, Math.min(60, termDays));
+        if (termInput.value !== '' && Number(termInput.value) !== termDays) {
+            termInput.value = String(termDays);
+        }
         
         // Calculate from fuel if provided
         const liters = parseFloat(document.querySelector('input[name="liters"]').value);
@@ -334,11 +343,28 @@
         const interestAmount = calculatedPrincipal * (interestRate / 100);
         const totalAmount = calculatedPrincipal + interestAmount;
         const dailyRepayment = termDays > 0 ? totalAmount / termDays : 0;
+        const isValid = termDays >= 7 && termDays <= 60 && dailyRepayment >= 30;
 
         document.getElementById('previewPrincipal').textContent = 'ZAR ' + calculatedPrincipal.toFixed(2);
         document.getElementById('previewInterest').textContent = 'ZAR ' + interestAmount.toFixed(2);
         document.getElementById('previewTotal').textContent = 'ZAR ' + totalAmount.toFixed(2);
         document.getElementById('previewDaily').textContent = 'ZAR ' + dailyRepayment.toFixed(2);
+
+        const validationMessage = document.getElementById('editLeaseValidationMessage');
+        const submitBtn = document.getElementById('updateLeaseSubmitBtn');
+        if (validationMessage) {
+            validationMessage.textContent = isValid
+                ? 'Minimum repayment: R30.00 per day. Term must be between 7 and 60 days.'
+                : 'Daily repayment must be at least R30.00 and term must be between 7 and 60 days.';
+            validationMessage.className = isValid
+                ? 'mt-2 text-xs font-medium text-emerald-700'
+                : 'mt-2 text-xs font-medium text-red-600';
+        }
+        if (submitBtn) {
+            submitBtn.disabled = !isValid;
+            submitBtn.classList.toggle('opacity-60', !isValid);
+            submitBtn.classList.toggle('cursor-not-allowed', !isValid);
+        }
     }
 
     // Attach calculation preview to input events

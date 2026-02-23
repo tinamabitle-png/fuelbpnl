@@ -21,6 +21,7 @@ class Settlement extends Model
         'payment_method',
         'transaction_reference',
         'notes',
+        'approved_by',
     ];
 
     protected $casts = [

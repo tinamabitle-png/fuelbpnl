@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 class FuelVoucherController extends Controller
 {
+    private const MIN_REPAYMENT_AMOUNT = 30.00;
+
     /**
      * Request a fuel voucher
      */
@@ -80,6 +82,21 @@ class FuelVoucherController extends Controller
             }
 
             // Create voucher
+            $lockedStation = FuelStation::whereKey((int) $request->fuel_station_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $openExposure = FuelVoucher::where('fuel_station_id', $lockedStation->id)
+                ->whereIn('status', ['issued', 'approved'])
+                ->lockForUpdate()
+                ->sum('amount');
+            $availableCapacity = max(0, (float) $lockedStation->wallet_balance - (float) $openExposure);
+            if ($availableCapacity < (float) $request->amount) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Insufficient station pre-funded balance. Available capacity: R%.2f.',
+                    $availableCapacity
+                ));
+            }
+
             $voucher = FuelVoucher::create([
                 'user_id' => $user->id,
                 'fuel_station_id' => $request->fuel_station_id,
@@ -115,6 +132,13 @@ class FuelVoucherController extends Controller
                 ]
             ]);
 
+        } catch (\InvalidArgumentException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
         } catch (\Exception $e) {
             DB::rollBack();
             
@@ -258,7 +282,13 @@ class FuelVoucherController extends Controller
         $termDays = 30; // 30-day term
         $interestAmount = ($amount * $interestRate * $termDays) / (365 * 100);
         $totalAmount = $amount + $interestAmount;
-        $dailyRepayment = $totalAmount / $termDays;
+        $dailyRepayment = round($totalAmount / max($termDays, 1), 2);
+        if ($dailyRepayment < self::MIN_REPAYMENT_AMOUNT) {
+            throw new \InvalidArgumentException(sprintf(
+                'Repayment per day cannot be below R%.2f. Increase voucher amount.',
+                self::MIN_REPAYMENT_AMOUNT
+            ));
+        }
 
         $lease = Lease::create([
             'user_id' => $user->id,

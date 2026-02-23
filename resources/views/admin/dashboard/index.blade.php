@@ -174,6 +174,58 @@
     </div>
 </div>
 
+<div class="mt-8 bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between gap-3">
+        <h3 class="text-lg font-semibold text-gray-900">Weekly Payout Cycles</h3>
+        <a href="{{ route('admin.settlements.index') }}" class="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-200">
+            Open Settlements
+        </a>
+    </div>
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="rounded-lg border {{ !empty($weeklyCycleStatus['enabled']) ? 'border-emerald-200 bg-emerald-50' : 'border-rose-200 bg-rose-50' }} p-4">
+            <p class="text-sm text-slate-600">Automation</p>
+            <p class="text-xl font-bold {{ !empty($weeklyCycleStatus['enabled']) ? 'text-emerald-700' : 'text-rose-700' }}">
+                {{ !empty($weeklyCycleStatus['enabled']) ? 'ON' : 'OFF' }}
+            </p>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p class="text-sm text-slate-600">Next Run</p>
+            @if(!empty($weeklyCycleStatus['next_cycle']))
+                <p class="text-sm font-semibold text-slate-900 mt-1">{{ $weeklyCycleStatus['next_cycle']['label'] }}</p>
+                <p class="text-xs text-slate-600 mt-1">
+                    {{ $weeklyCycleStatus['next_cycle']['type'] === 'brand' ? 'Brand' : 'Station' }}:
+                    {{ $weeklyCycleStatus['next_cycle']['name'] }} • {{ $weeklyCycleStatus['next_cycle']['human'] }}
+                </p>
+            @else
+                <p class="text-sm font-semibold text-slate-500 mt-1">Not configured</p>
+            @endif
+        </div>
+    </div>
+</div>
+
+<div class="mt-8 rounded-lg bg-white p-6 shadow">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">User Feedback Inbox</h3>
+            <a href="{{ route('admin.feedback.index') }}" class="inline-flex items-center rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700 hover:bg-blue-100">Open inbox</a>
+        </div>
+        <div class="space-y-3">
+            @forelse(($recent_feedback ?? collect())->take(4) as $item)
+                <div class="rounded-md border border-slate-200 bg-slate-50 p-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="text-sm font-semibold text-slate-800">{{ $item->user?->name ?? 'System User' }}</p>
+                        <span class="text-xs font-semibold px-2 py-1 rounded-full {{ $item->sentiment === 'positive' ? 'bg-emerald-100 text-emerald-700' : ($item->sentiment === 'negative' ? 'bg-rose-100 text-rose-700' : 'bg-slate-200 text-slate-700') }}">
+                            {{ strtoupper($item->sentiment) }}
+                        </span>
+                    </div>
+                    <p class="text-sm text-slate-600 mt-2">{{ $item->message }}</p>
+                    <p class="text-xs text-slate-400 mt-2">{{ $item->created_at?->diffForHumans() }}</p>
+                </div>
+            @empty
+                <p class="text-sm text-slate-500">No feedback submitted yet.</p>
+            @endforelse
+        </div>
+</div>
+
 <!-- System Status -->
 <div class="mt-8 bg-white rounded-lg shadow p-6">
     <h3 class="text-lg font-semibold mb-4">System Status</h3>
@@ -219,4 +271,5 @@
         </div>
     </div>
 </div>
+
 @endsection

@@ -44,7 +44,8 @@ class Wallet extends Model
 
     public function hasAvailableCredit($amount)
     {
-        $availableCredit = $this->user->creditLimit->limit - $this->outstanding_balance;
+        $limit = (float) optional($this->user->creditLimit)->limit;
+        $availableCredit = $limit - (float) $this->outstanding_balance;
         return $availableCredit >= $amount;
     }
 

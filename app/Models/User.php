@@ -16,10 +16,21 @@ class User extends Authenticatable
         'name',
         'email',
         'phone',
+        'id_number',
         'password',
         'device_fingerprint',
         'credit_score',
         'status',
+        'autopay_enabled',
+        'autopay_gateway',
+        'autopay_token',
+        'autopay_email',
+        'autopay_customer_code',
+        'autopay_details',
+        'autopay_status',
+        'autopay_failures',
+        'autopay_last_attempt_at',
+        'autopay_next_attempt_at',
         'last_login_at',
         'last_login_ip',
     ];
@@ -33,6 +44,11 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'last_login_at' => 'datetime',
         'credit_score' => 'integer',
+        'autopay_enabled' => 'boolean',
+        'autopay_details' => 'array',
+        'autopay_failures' => 'integer',
+        'autopay_last_attempt_at' => 'datetime',
+        'autopay_next_attempt_at' => 'datetime',
     ];
 
     protected $appends = ['available_credit'];
@@ -51,6 +67,11 @@ class User extends Authenticatable
     public function vouchers()
     {
         return $this->hasMany(FuelVoucher::class);
+    }
+
+    public function ownedStations()
+    {
+        return $this->hasMany(FuelStation::class, 'owner_id');
     }
 
     public function leases()
@@ -89,7 +110,8 @@ class User extends Authenticatable
         if (!$this->creditLimit) {
             return 0;
         }
-        return max(0, $this->creditLimit->limit - $this->wallet->outstanding_balance);
+        $outstanding = (float) optional($this->wallet)->outstanding_balance;
+        return max(0, (float) $this->creditLimit->limit - $outstanding);
     }
 
     public function getIsDriverAttribute()

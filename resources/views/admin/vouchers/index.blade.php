@@ -108,6 +108,10 @@
             <p class="text-gray-600 mt-1">View and manage all fuel vouchers in the system</p>
         </div>
         <div class="flex space-x-3 mt-4 md:mt-0">
+            <a href="{{ route('admin.vouchers.create') }}"
+               class="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-800 shadow-md hover:shadow-lg transition-all duration-300 flex items-center">
+                <i class="fas fa-plus mr-2"></i> Create Voucher
+            </a>
             <a href="{{ route('admin.vouchers.pending') }}" 
                class="px-5 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-xl font-semibold hover:from-yellow-700 hover:to-yellow-800 shadow-md hover:shadow-lg transition-all duration-300 flex items-center group">
                 <i class="fas fa-clock mr-2"></i> Pending Vouchers

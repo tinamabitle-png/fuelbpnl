@@ -57,7 +57,7 @@
            class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white 
                   {{ request()->routeIs('admin.settlements.*') ? 'bg-gray-700' : '' }}">
             <i class="fas fa-money-check-alt mr-3"></i>
-            Settlements
+            Direct Bank Deposits
             @if($pending_settlements = \App\Models\Settlement::where('status', 'pending')->count())
                 <span class="ml-auto bg-yellow-500 text-white text-xs rounded-full px-2 py-1">
                     {{ $pending_settlements }}

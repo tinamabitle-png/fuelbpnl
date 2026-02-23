@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Validator;
 
 class LeaseController extends Controller
 {
+    private const MIN_REPAYMENT_AMOUNT = 30.00;
+
     /**
      * Display a listing of leases.
      */
@@ -150,7 +152,17 @@ class LeaseController extends Controller
             $interestRate = $request->interest_rate;
             $interestAmount = $principal * ($interestRate / 100);
             $totalAmount = $principal + $interestAmount;
-            $dailyRepayment = $totalAmount / $request->term_days;
+            $dailyRepayment = round($totalAmount / max((int) $request->term_days, 1), 2);
+            if ($dailyRepayment < self::MIN_REPAYMENT_AMOUNT) {
+                return redirect()->back()
+                    ->withErrors([
+                        'term_days' => sprintf(
+                            'Repayment per day cannot be below R%.2f. Increase principal or reduce term days.',
+                            self::MIN_REPAYMENT_AMOUNT
+                        ),
+                    ])
+                    ->withInput();
+            }
 
             // Check user credit limit
             if ($user->available_credit < $totalAmount) {
@@ -185,6 +197,21 @@ class LeaseController extends Controller
 
             // Create fuel voucher if station selected
             if ($request->filled('fuel_station_id')) {
+                $station = FuelStation::whereKey((int) $request->fuel_station_id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+                $openExposure = FuelVoucher::where('fuel_station_id', $station->id)
+                    ->whereIn('status', ['issued', 'approved'])
+                    ->lockForUpdate()
+                    ->sum('amount');
+                $availableCapacity = max(0, (float) $station->wallet_balance - (float) $openExposure);
+                if ($availableCapacity < (float) $principal) {
+                    throw new \Exception(sprintf(
+                        'Insufficient station pre-funded balance. Available capacity: R%.2f.',
+                        $availableCapacity
+                    ));
+                }
+
                 $voucher = FuelVoucher::create([
                     'user_id' => $user->id,
                     'fuel_station_id' => $request->fuel_station_id,
@@ -270,7 +297,17 @@ class LeaseController extends Controller
             $interestRate = $request->interest_rate;
             $interestAmount = $principal * ($interestRate / 100);
             $totalAmount = $principal + $interestAmount;
-            $dailyRepayment = $totalAmount / $request->term_days;
+            $dailyRepayment = round($totalAmount / max((int) $request->term_days, 1), 2);
+            if ($dailyRepayment < self::MIN_REPAYMENT_AMOUNT) {
+                return redirect()->back()
+                    ->withErrors([
+                        'term_days' => sprintf(
+                            'Repayment per day cannot be below R%.2f. Increase principal or reduce term days.',
+                            self::MIN_REPAYMENT_AMOUNT
+                        ),
+                    ])
+                    ->withInput();
+            }
 
             // Check if user credit limit needs adjustment
             $creditDifference = $totalAmount - $lease->total_amount;
@@ -857,7 +894,16 @@ class LeaseController extends Controller
             $interestRate = $request->interest_rate;
             $interestAmount = $principal * ($interestRate / 100);
             $totalAmount = $principal + $interestAmount;
-            $dailyRepayment = $totalAmount / $request->term_days;
+            $dailyRepayment = round($totalAmount / max((int) $request->term_days, 1), 2);
+            if ($dailyRepayment < self::MIN_REPAYMENT_AMOUNT) {
+                return response()->json([
+                    'success' => false,
+                    'message' => sprintf(
+                        'Repayment per day cannot be below R%.2f. Increase principal or reduce term days.',
+                        self::MIN_REPAYMENT_AMOUNT
+                    ),
+                ], 422);
+            }
 
             return response()->json([
                 'success' => true,

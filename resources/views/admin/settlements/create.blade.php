@@ -1,21 +1,12 @@
 @extends('layouts.admin')
 
-@section('title', 'Create New Settlement')
-@section('page-title', 'New Settlement')
-@section('page-description', 'Create a new settlement for fuel station')
+@section('title', 'Create New Direct Bank Deposit')
+@section('page-title', 'New Direct Bank Deposit')
+@section('page-description', 'Create a new direct bank deposit for a fuel station')
 @section('breadcrumb')
-<li class="breadcrumb-item"><a href="{{ route('admin.settlements.index') }}">Settlements</a></li>
+<li class="breadcrumb-item"><a href="{{ route('admin.settlements.index') }}">Direct Bank Deposits</a></li>
 <li class="breadcrumb-item active">Create</li>
 @endsection
-
-@php
-    $paymentMethods = [
-        'bank_transfer' => 'Bank Transfer',
-        'mpesa' => 'M-Pesa',
-        'equity' => 'Equity',
-        'airtel_money' => 'Airtel Money'
-    ];
-@endphp
 
 @section('content')
 <div class="p-6">
@@ -27,10 +18,21 @@
                    class="text-blue-600 hover:text-blue-800 mr-4">
                     <i class="fas fa-arrow-left"></i>
                 </a>
-                <h2 class="text-2xl font-bold text-gray-900">Create New Settlement</h2>
+                <h2 class="text-2xl font-bold text-gray-900">Create New Direct Bank Deposit</h2>
             </div>
-            <p class="text-gray-600">Select a fuel station and vouchers to create settlement</p>
+            <p class="text-gray-600">Select a fuel station and vouchers to create a direct bank deposit</p>
         </div>
+
+        @if ($errors->any())
+            <div class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
+                <p class="text-sm font-semibold text-red-700">Please fix the following:</p>
+                <ul class="mt-2 text-sm text-red-700 list-disc pl-5">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
         <!-- Two Column Layout -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -124,7 +126,7 @@
                     <input type="hidden" name="fuel_station_id" value="{{ $selectedStation->id }}">
                     
                     <!-- Vouchers Selection -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <div id="voucherSelectionCard" class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
                         <div class="flex items-center justify-between mb-6">
                             <h3 class="text-lg font-semibold text-gray-900">Select Vouchers</h3>
                             <div class="text-sm text-gray-600">
@@ -186,15 +188,33 @@
                         @endif
                     </div>
 
-                    <!-- Settlement Details -->
+                    <!-- Direct Bank Deposit Details -->
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-6">Settlement Details</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-6">Direct Bank Deposit Details</h3>
+
+                        <div class="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <p class="text-sm font-semibold text-slate-900">Top-up Source</p>
+                            <p class="text-xs text-slate-600 mt-1">Choose whether this top-up is based on selected vouchers or a manual amount.</p>
+                            @php
+                                $defaultTopupSource = old('topup_source', $pendingVouchers->count() > 0 ? 'vouchers' : 'manual');
+                            @endphp
+                            <div class="mt-3 flex flex-wrap gap-4">
+                                <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                                    <input type="radio" name="topup_source" value="vouchers" class="topup-source rounded border-slate-300" {{ $defaultTopupSource === 'vouchers' ? 'checked' : '' }}>
+                                    From selected vouchers
+                                </label>
+                                <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                                    <input type="radio" name="topup_source" value="manual" class="topup-source rounded border-slate-300" {{ $defaultTopupSource === 'manual' ? 'checked' : '' }}>
+                                    Manual top-up amount
+                                </label>
+                            </div>
+                        </div>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Amount -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Settlement Amount *
+                                    Direct Bank Deposit Amount *
                                 </label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -204,8 +224,8 @@
                                            name="amount" 
                                            id="amount"
                                            step="0.01"
+                                           min="0.01"
                                            required
-                                           readonly
                                            class="w-full pl-16 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 font-bold text-xl"
                                            placeholder="0.00">
                                 </div>
@@ -214,10 +234,10 @@
                                 </p>
                             </div>
 
-                            <!-- Settlement Date -->
+                            <!-- Direct Bank Deposit Date -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Settlement Date *
+                                    Direct Bank Deposit Date *
                                 </label>
                                 <input type="date" 
                                        name="settlement_date" 
@@ -231,16 +251,11 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
                                     Payment Method *
                                 </label>
-                                <select name="payment_method" 
-                                        required
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    <option value="">Select method</option>
-                                    @foreach($paymentMethods as $value => $label)
-                                        <option value="{{ $value }}" {{ old('payment_method') == $value ? 'selected' : '' }}>
-                                            {{ $label }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <input type="hidden" name="payment_method" value="paystack_transfer">
+                                <div class="w-full px-4 py-3 border border-emerald-200 bg-emerald-50 rounded-xl">
+                                    <p class="text-sm font-semibold text-emerald-700">Paystack Direct Transfer</p>
+                                    <p class="text-xs text-emerald-700/80 mt-1">Settlements use Paystack only.</p>
+                                </div>
                             </div>
 
                             <!-- Transaction Reference -->
@@ -263,7 +278,7 @@
                                 <textarea name="notes" 
                                           rows="3"
                                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                          placeholder="Additional notes about this settlement...">{{ old('notes') }}</textarea>
+                                          placeholder="Additional notes about this direct bank deposit...">{{ old('notes') }}</textarea>
                             </div>
                         </div>
 
@@ -291,7 +306,7 @@
                                     id="submitBtn"
                                     class="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                     disabled>
-                                <i class="fas fa-check-circle mr-2"></i> Create Settlement
+                                <i class="fas fa-check-circle mr-2"></i> Create Direct Bank Deposit
                             </button>
                         </div>
                     </div>
@@ -302,7 +317,7 @@
                     <i class="fas fa-gas-pump text-5xl text-gray-300 mb-6"></i>
                     <h3 class="text-xl font-semibold text-gray-700 mb-3">Select a Fuel Station</h3>
                     <p class="text-gray-600 mb-8 max-w-md mx-auto">
-                        Choose a fuel station from the list to view pending vouchers and create a settlement
+                        Choose a fuel station from the list to view pending vouchers and create a direct bank deposit
                     </p>
                     <div class="inline-block bg-blue-50 text-blue-700 px-6 py-3 rounded-xl">
                         <i class="fas fa-hand-point-left mr-2"></i> Select station from the left panel
@@ -326,15 +341,15 @@
                     <ul class="mt-2 space-y-2 text-sm text-yellow-700">
                         <li class="flex items-start">
                             <i class="fas fa-check-circle text-yellow-600 mt-0.5 mr-2 text-xs"></i>
-                            <span>Review vouchers carefully before creating settlement</span>
+                            <span>Review vouchers carefully before creating a direct bank deposit</span>
                         </li>
                         <li class="flex items-start">
                             <i class="fas fa-check-circle text-yellow-600 mt-0.5 mr-2 text-xs"></i>
-                            <span>Settlement amount should match total of selected vouchers</span>
+                            <span>Voucher mode auto-calculates amount from selected vouchers; Manual mode allows custom amount.</span>
                         </li>
                         <li class="flex items-start">
                             <i class="fas fa-check-circle text-yellow-600 mt-0.5 mr-2 text-xs"></i>
-                            <span>Once created, settlement will be in "Pending" status</span>
+                            <span>Once created, the direct bank deposit will be in "Pending" status</span>
                         </li>
                     </ul>
                 </div>
@@ -348,7 +363,7 @@
 <div id="loadingModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
     <div class="bg-white rounded-2xl p-8 text-center">
         <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-        <p class="text-lg font-semibold text-gray-900">Creating Settlement</p>
+        <p class="text-lg font-semibold text-gray-900">Creating Direct Bank Deposit</p>
         <p class="text-gray-600 mt-2">Please wait while we process your request...</p>
     </div>
 </div>
@@ -358,6 +373,8 @@
     let totalAmount = 0;
     let selectedCount = 0;
     const voucherCheckboxes = document.querySelectorAll('.voucher-checkbox');
+    const topupSourceRadios = document.querySelectorAll('.topup-source');
+    const voucherSelectionCard = document.getElementById('voucherSelectionCard');
     const amountInput = document.getElementById('amount');
     const selectedCountSpan = document.getElementById('selectedCount');
     const selectedVouchersCount = document.getElementById('selectedVouchersCount');
@@ -394,19 +411,31 @@
     });
     
     function updateUI() {
+        const topupSource = getTopupSource();
+
         // Update selected count
         selectedCountSpan.textContent = `${selectedCount} selected`;
         selectedVouchersCount.textContent = selectedCount;
-        
-        // Update amounts
-        amountInput.value = totalAmount.toFixed(2);
-        totalAmountDisplay.textContent = `ZAR ${totalAmount.toFixed(2)}`;
-        
-        // Update voucher count text
-        voucherCountText.textContent = `${selectedCount} voucher${selectedCount !== 1 ? 's' : ''} selected`;
-        
-        // Enable/disable submit button
-        submitBtn.disabled = selectedCount === 0 || totalAmount === 0;
+
+        if (topupSource === 'vouchers') {
+            amountInput.readOnly = true;
+            amountInput.classList.add('bg-gray-50');
+            amountInput.classList.remove('bg-white');
+            amountInput.value = totalAmount.toFixed(2);
+            totalAmountDisplay.textContent = `ZAR ${totalAmount.toFixed(2)}`;
+            voucherCountText.textContent = `${selectedCount} voucher${selectedCount !== 1 ? 's' : ''} selected`;
+            if (voucherSelectionCard) voucherSelectionCard.classList.remove('hidden');
+            submitBtn.disabled = selectedCount === 0 || totalAmount <= 0;
+        } else {
+            amountInput.readOnly = false;
+            amountInput.classList.remove('bg-gray-50');
+            amountInput.classList.add('bg-white');
+            if (voucherSelectionCard) voucherSelectionCard.classList.add('hidden');
+            const manualAmount = parseFloat(amountInput.value) || 0;
+            totalAmountDisplay.textContent = `ZAR ${manualAmount.toFixed(2)}`;
+            voucherCountText.textContent = 'Manual top-up mode';
+            submitBtn.disabled = manualAmount <= 0;
+        }
         
         // Update select all checkbox
         if (selectAllCheckbox) {
@@ -417,18 +446,36 @@
             selectAllCheckbox.indeterminate = someChecked && !allChecked;
         }
     }
+
+    function getTopupSource() {
+        const selected = document.querySelector('.topup-source:checked');
+        return selected ? selected.value : 'vouchers';
+    }
+
+    topupSourceRadios.forEach(radio => {
+        radio.addEventListener('change', updateUI);
+    });
+
+    amountInput?.addEventListener('input', () => {
+        if (getTopupSource() === 'manual') {
+            updateUI();
+        }
+    });
     
     // Handle form submission
     document.getElementById('settlementForm')?.addEventListener('submit', function(e) {
-        if (selectedCount === 0) {
+        const topupSource = getTopupSource();
+        const manualAmount = parseFloat(amountInput.value) || 0;
+
+        if (topupSource === 'vouchers' && selectedCount === 0) {
             e.preventDefault();
-            alert('Please select at least one voucher');
+            alert('Please select at least one voucher or switch to manual top-up mode.');
             return;
         }
-        
-        if (totalAmount === 0) {
+
+        if (manualAmount <= 0) {
             e.preventDefault();
-            alert('Settlement amount cannot be zero');
+            alert('Direct bank deposit amount must be greater than zero.');
             return;
         }
         
@@ -459,6 +506,10 @@
             selectedCount++;
         }
     });
+
+    if (amountInput && !amountInput.value) {
+        amountInput.value = "{{ old('amount', '0.00') }}";
+    }
     updateUI();
 </script>
 @endsection

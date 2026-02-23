@@ -128,6 +128,66 @@
             overflow-y: auto;
             height: 0; /* This allows flexbox to control height */
         }
+
+        #sidebar {
+            width: 16rem;
+            transition: width 0.25s ease, transform 0.3s ease;
+        }
+
+        #mainContent {
+            transition: margin-left 0.25s ease;
+        }
+
+        @media (min-width: 1024px) {
+            #mainContent {
+                margin-left: 16rem;
+            }
+
+            body.sidebar-collapsed #sidebar {
+                width: 5.5rem;
+            }
+
+            body.sidebar-collapsed #mainContent {
+                margin-left: 5.5rem;
+            }
+
+            body.sidebar-collapsed.sidebar-hover-open #sidebar {
+                width: 16rem;
+            }
+
+            body.sidebar-collapsed.sidebar-hover-open #mainContent {
+                margin-left: 16rem;
+            }
+
+            body.sidebar-collapsed:not(.sidebar-hover-open) .sidebar-logo-row {
+                justify-content: center;
+            }
+
+            body.sidebar-collapsed:not(.sidebar-hover-open) .sidebar-logo-text,
+            body.sidebar-collapsed:not(.sidebar-hover-open) .sidebar-collapsible,
+            body.sidebar-collapsed:not(.sidebar-hover-open) .sidebar-user-panel,
+            body.sidebar-collapsed:not(.sidebar-hover-open) .sidebar-quick-stats,
+            body.sidebar-collapsed:not(.sidebar-hover-open) .sidebar-footer-meta {
+                display: none;
+            }
+
+            body.sidebar-collapsed:not(.sidebar-hover-open) .sidebar-link {
+                justify-content: center;
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+
+            body.sidebar-collapsed:not(.sidebar-hover-open) .sidebar-link-inner {
+                justify-content: center;
+            }
+
+            body.sidebar-collapsed:not(.sidebar-hover-open) .sidebar-link .sidebar-label,
+            body.sidebar-collapsed:not(.sidebar-hover-open) .sidebar-link .sidebar-badge,
+            body.sidebar-collapsed:not(.sidebar-hover-open) .sidebar-logout .sidebar-label {
+                display: none;
+            }
+        }
+
     </style>
     
     @stack('styles')
@@ -145,26 +205,28 @@
     
     <div class="main-content-wrapper">
         <!-- Sidebar -->
-<aside id="sidebar" class="fixed lg:fixed w-64 bg-gradient-to-b from-gray-900 to-gray-800 text-white transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-50 lg:z-0 h-screen shadow-2xl flex flex-col">
+<aside id="sidebar" class="fixed lg:fixed bg-gradient-to-b from-gray-900 to-gray-800 text-white transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-50 lg:z-0 h-screen shadow-2xl flex flex-col">
             <!-- Logo Area -->
             <div class="p-6 border-b border-gray-700/50">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                        <i class="fas fa-gas-pump text-white text-lg"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-xl font-bold tracking-tight">Fuel BNPL</h2>
-                        <p class="text-xs text-gray-400 font-medium">Admin Console</p>
+                <div class="flex items-center justify-between sidebar-logo-row">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="fas fa-gas-pump text-white text-lg"></i>
+                        </div>
+                        <div class="sidebar-logo-text">
+                            <h2 class="text-xl font-bold tracking-tight">Fuel BNPL</h2>
+                            <p class="text-xs text-gray-400 font-medium">Admin Console</p>
+                        </div>
                     </div>
                 </div>
-                <div class="mt-4 flex items-center space-x-2 text-sm text-gray-400 bg-gray-800/50 px-3 py-2 rounded-lg">
+                <div class="mt-4 flex items-center space-x-2 text-sm text-gray-400 bg-gray-800/50 px-3 py-2 rounded-lg sidebar-collapsible">
                     <i class="fas fa-circle text-green-500 text-xs animate-pulse"></i>
                     <span>System: <span class="text-green-400 font-medium">Active</span></span>
                 </div>
             </div>
             
             <!-- User Profile -->
-            <div class="p-4 border-b border-gray-700/50 bg-gradient-to-r from-gray-800/50 to-transparent mx-4 rounded-xl mt-2">
+            <div class="p-4 border-b border-gray-700/50 bg-gradient-to-r from-gray-800/50 to-transparent mx-4 rounded-xl mt-2 sidebar-user-panel">
                 <div class="flex items-center space-x-3">
                     <div class="relative">
                         <div class="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center shadow-md">
@@ -188,6 +250,9 @@
                     $currentRoute = request()->route()->getName();
                     $pendingSettlements = App\Models\Settlement::pending()->count();
                     $pendingVouchers = App\Models\FuelVoucher::where('status', 'issued')->count();
+                    $feedbackCount = \Illuminate\Support\Facades\Schema::hasTable('admin_feedback')
+                        ? App\Models\AdminFeedback::count()
+                        : 0;
                 @endphp
                 
                 @foreach([
@@ -197,6 +262,7 @@
                     ['route' => 'admin.vouchers.index', 'icon' => 'fas fa-ticket-alt', 'label' => 'Vouchers', 'badge' => $pendingVouchers],
                     ['route' => 'admin.leases.index', 'icon' => 'fas fa-file-contract', 'label' => 'Leases', 'badge' => '3'],
                     ['route' => 'admin.settlements.index', 'icon' => 'fas fa-money-check-alt', 'label' => 'Settlements', 'badge' => $pendingSettlements],
+                    ['route' => 'admin.feedback.index', 'icon' => 'fas fa-comments', 'label' => 'Feedback', 'badge' => $feedbackCount],
                     ['route' => 'admin.reports.index', 'icon' => 'fas fa-chart-bar', 'label' => 'Reports', 'badge' => null],
                     ['route' => 'admin.settings.index', 'icon' => 'fas fa-cog', 'label' => 'Settings', 'badge' => null],
                 ] as $item)
@@ -210,21 +276,22 @@
                     @endphp
                     
                     <a href="{{ route($item['route']) }}" 
+                       title="{{ $item['label'] }}"
                        class="sidebar-link group flex items-center justify-between px-4 py-3 rounded-xl hover-lift
                               {{ $isActive ? 'bg-gradient-to-r from-blue-900/40 to-blue-800/20 border-l-4 border-blue-400 shadow-lg' : 'hover:bg-gray-700/30' }}">
-                        <div class="flex items-center space-x-3">
+                        <div class="flex items-center space-x-3 sidebar-link-inner">
                             <div class="relative">
                                 <i class="{{ $item['icon'] }} {{ $isActive ? 'text-blue-400' : 'text-gray-400 group-hover:text-white' }} w-5"></i>
                                 @if($isActive)
                                 <div class="absolute -top-1 -right-1 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
                                 @endif
                             </div>
-                            <span class="font-medium {{ $isActive ? 'text-white' : 'text-gray-300 group-hover:text-white' }}">
+                            <span class="sidebar-label font-medium {{ $isActive ? 'text-white' : 'text-gray-300 group-hover:text-white' }}">
                                 {{ $item['label'] }}
                             </span>
                         </div>
                         @if($item['badge'])
-                            <span class="px-2 py-1 text-xs rounded-full font-bold min-w-[24px] text-center shadow-sm {{ $badgeColor }} text-white">
+                            <span class="sidebar-badge px-2 py-1 text-xs rounded-full font-bold min-w-[24px] text-center shadow-sm {{ $badgeColor }} text-white">
                                 {{ $item['badge'] }}
                             </span>
                         @endif
@@ -232,7 +299,7 @@
                 @endforeach
                 
                 <!-- Quick Stats -->
-                <div class="mt-8 p-4 bg-gradient-to-br from-gray-800/50 to-gray-900/30 rounded-xl border border-gray-700/50">
+                <div class="mt-8 p-4 bg-gradient-to-br from-gray-800/50 to-gray-900/30 rounded-xl border border-gray-700/50 sidebar-quick-stats">
                     <p class="text-xs text-gray-400 font-medium mb-2">Quick Stats</p>
                     <div class="space-y-2">
                         <div class="flex justify-between items-center">
@@ -256,14 +323,14 @@
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" 
-                            class="w-full flex items-center justify-center space-x-3 px-4 py-3 rounded-xl text-gray-300 
+                            class="sidebar-logout w-full flex items-center justify-center space-x-3 px-4 py-3 rounded-xl text-gray-300 
                                    bg-gradient-to-r from-gray-800/50 to-gray-700/30 hover:from-red-900/30 hover:to-red-800/20 
                                    hover:text-white transition-all duration-200 hover-lift group">
                         <i class="fas fa-sign-out-alt transform group-hover:translate-x-1 transition-transform"></i>
-                        <span class="font-medium">Logout</span>
+                        <span class="sidebar-label font-medium">Logout</span>
                     </button>
                 </form>
-                <div class="mt-3 flex justify-between items-center text-xs text-gray-500">
+                <div class="mt-3 flex justify-between items-center text-xs text-gray-500 sidebar-footer-meta">
                     <span>v2.1.0</span>
                     <span>{{ date('h:i A') }}</span>
                 </div>
@@ -271,7 +338,7 @@
         </aside>
         
         <!-- Main Content Area -->
-        <div class="content-area lg:ml-64">
+        <div id="mainContent" class="content-area">
             <!-- Top Navigation -->
             <header class="bg-white border-b border-gray-200 px-6 py-4 shadow-sm sticky top-0 z-30">
                 <div class="flex items-center justify-between">
@@ -593,10 +660,37 @@
 
     <!-- JavaScript -->
     <script>
-        // Mobile sidebar toggle
+        // Sidebar toggles
         const mobileToggle = document.getElementById('mobileSidebarToggle');
         const sidebar = document.getElementById('sidebar');
         const mobileOverlay = document.getElementById('mobileOverlay');
+        const isDesktop = () => window.matchMedia('(min-width: 1024px)').matches;
+
+        function initializeDesktopSidebarState() {
+            if (!isDesktop()) {
+                document.body.classList.remove('sidebar-collapsed');
+                document.body.classList.remove('sidebar-hover-open');
+                return;
+            }
+            document.body.classList.add('sidebar-collapsed');
+        }
+
+        initializeDesktopSidebarState();
+
+        window.addEventListener('resize', initializeDesktopSidebarState);
+
+        if (sidebar) {
+            sidebar.addEventListener('mouseenter', () => {
+                if (isDesktop()) {
+                    document.body.classList.add('sidebar-hover-open');
+                }
+            });
+            sidebar.addEventListener('mouseleave', () => {
+                if (isDesktop()) {
+                    document.body.classList.remove('sidebar-hover-open');
+                }
+            });
+        }
         
         if (mobileToggle) {
             mobileToggle.addEventListener('click', () => {
@@ -645,9 +739,7 @@
             // Escape to close modals
             if (e.key === 'Escape') {
                 closeDeleteModal();
-                const sidebar = document.getElementById('sidebar');
-                const mobileOverlay = document.getElementById('mobileOverlay');
-                if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
+                if (!isDesktop() && sidebar && !sidebar.classList.contains('-translate-x-full')) {
                     sidebar.classList.add('-translate-x-full');
                     mobileOverlay?.classList.add('hidden');
                     document.body.style.overflow = 'auto';
