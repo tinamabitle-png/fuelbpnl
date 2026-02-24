@@ -446,10 +446,9 @@ class RepaymentController extends Controller
         
         $validator = Validator::make($request->all(), [
             'enabled' => 'required|boolean',
-            'payment_method' => 'required_if:enabled,true|in:wallet,mpesa,paystack',
-            'phone' => 'required_if:payment_method,mpesa|string',
-            'authorization_code' => 'required_if:payment_method,paystack|string|max:255',
-            'paystack_email' => 'required_if:payment_method,paystack|email|max:255',
+            'payment_method' => 'required_if:enabled,true|in:paystack',
+            'authorization_code' => 'nullable|string|max:255',
+            'paystack_email' => 'nullable|email|max:255',
             'threshold_days' => 'required_if:enabled,true|integer|min:1|max:7',
             'max_amount' => 'required_if:enabled,true|numeric|min:100|max:50000',
         ]);
@@ -461,12 +460,28 @@ class RepaymentController extends Controller
             ], 422);
         }
 
+        if ((bool) $request->enabled) {
+            $gateway = (string) ($request->payment_method ?? 'paystack');
+            if ($gateway !== 'paystack') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only Paystack AutoPay is supported.',
+                ], 422);
+            }
+
+            if (trim((string) ($request->authorization_code ?? $user->autopay_token ?? '')) === '') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Paystack authorization is required before enabling AutoPay.',
+                ], 422);
+            }
+        }
+
         $settings = [
             'enabled' => $request->enabled,
-            'payment_method' => $request->payment_method,
+            'payment_method' => $request->payment_method ?? 'paystack',
             'threshold_days' => $request->threshold_days,
             'max_amount' => $request->max_amount,
-            'phone' => $request->phone,
             'authorization_code' => $request->authorization_code,
             'paystack_email' => $request->paystack_email,
             'updated_at' => now(),
@@ -480,7 +495,7 @@ class RepaymentController extends Controller
         // Persist auto-pay state on user so voucher gating can rely on it.
         $user->update([
             'autopay_enabled' => (bool) $request->enabled,
-            'autopay_gateway' => (string) ($request->payment_method ?? $user->autopay_gateway ?? 'wallet'),
+            'autopay_gateway' => (string) ($request->payment_method ?? $user->autopay_gateway ?? 'paystack'),
             'autopay_token' => (bool) $request->enabled && (string) $request->payment_method === 'paystack'
                 ? (string) ($request->authorization_code ?? $user->autopay_token ?? '')
                 : $user->autopay_token,
@@ -510,6 +525,103 @@ class RepaymentController extends Controller
                     $this->calculateAutoPaymentSavings($user) : 0,
             ]
         ]);
+    }
+
+    public function initializeAutopayPaystack(Request $request, PaystackService $paystack)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'nullable|email|max:255',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        try {
+            $callback = (string) config('app.url');
+            if ($callback === '') {
+                $callback = 'http://localhost';
+            }
+            $callback = rtrim($callback, '/') . '/driver/repayments/paystack/callback';
+            $probeAmount = (float) config('services.paystack.autopay_probe_amount', 5.00);
+            $checkout = $paystack->initializeAutopayAuthorization(
+                $user,
+                $probeAmount,
+                $callback,
+                $request->input('email')
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Paystack AutoPay authorization started.',
+                'data' => [
+                    'reference' => (string) ($checkout['reference'] ?? ''),
+                    'authorization_url' => (string) ($checkout['authorization_url'] ?? ''),
+                    'access_code' => (string) ($checkout['access_code'] ?? ''),
+                    'probe_amount' => $probeAmount,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to initialize AutoPay authorization: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function verifyAutopayPaystack(Request $request, PaystackService $paystack)
+    {
+        $validator = Validator::make($request->all(), [
+            'reference' => 'required|string|max:255',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = $request->user();
+        try {
+            $verified = $paystack->verifyTransaction((string) $request->input('reference'));
+            $meta = (array) ($verified['metadata'] ?? []);
+            $scope = strtolower((string) ($meta['scope'] ?? ''));
+            $metaUserId = (int) ($meta['user_id'] ?? 0);
+
+            if ($scope !== 'autopay_setup') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid AutoPay authorization transaction scope.',
+                ], 422);
+            }
+
+            if ($metaUserId > 0 && $metaUserId !== (int) $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authorization transaction does not belong to this user.',
+                ], 403);
+            }
+
+            $paystack->storeAuthorizationFromTransaction($user, $verified);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'AutoPay authorization verified and tokenized.',
+                'data' => [
+                    'reference' => (string) ($verified['reference'] ?? ''),
+                    'autopay_ready' => $user->fresh()->isAutopayReady(),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'AutoPay authorization verification failed: ' . $e->getMessage(),
+            ], 422);
+        }
     }
 
     /**

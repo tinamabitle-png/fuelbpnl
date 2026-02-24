@@ -39,10 +39,10 @@ class FuelVoucherController extends Controller
             ], 422);
         }
 
-        if (!$user->autopay_enabled) {
+        if (!$user->isAutopayReady()) {
             return response()->json([
                 'success' => false,
-                'message' => 'AutoPay must be enabled before requesting a voucher.'
+                'message' => 'AutoPay is not ready. Complete Paystack authorization and ensure AutoPay is enabled before requesting a voucher.'
             ], 422);
         }
 

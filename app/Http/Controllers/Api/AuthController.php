@@ -501,6 +501,13 @@ class AuthController extends Controller
                 'available_credit' => $user->available_credit,
                 'default_risk' => $user->getDefaultRisk(),
                 'devices' => $user->devices,
+                'autopay_enabled' => (bool) $user->autopay_enabled,
+                'autopay_gateway' => (string) ($user->autopay_gateway ?? ''),
+                'autopay_status' => (string) ($user->autopay_status ?? 'inactive'),
+                'autopay_has_token' => trim((string) ($user->autopay_token ?? '')) !== '',
+                'autopay_ready' => $user->isAutopayReady(),
+                'autopay_last_attempt_at' => $user->autopay_last_attempt_at,
+                'autopay_next_attempt_at' => $user->autopay_next_attempt_at,
             ],
         ]);
     }

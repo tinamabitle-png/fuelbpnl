@@ -157,4 +157,23 @@ class User extends Authenticatable
         
         return ($defaults / $total) * 100;
     }
+
+    public function isAutopayReady(): bool
+    {
+        if (!$this->autopay_enabled) {
+            return false;
+        }
+
+        if (strtolower((string) $this->autopay_gateway) !== 'paystack') {
+            return false;
+        }
+
+        if (trim((string) $this->autopay_token) === '') {
+            return false;
+        }
+
+        $status = strtolower((string) ($this->autopay_status ?? 'inactive'));
+        $blocked = ['disabled', 'failed', 'max_retries_exceeded', 'inactive'];
+        return !in_array($status, $blocked, true);
+    }
 }

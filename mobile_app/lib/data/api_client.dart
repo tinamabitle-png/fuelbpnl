@@ -45,10 +45,34 @@ class ApiClient {
   ];
 
   static final List<Map<String, dynamic>> _mockStations = [
-    {'id': 1, 'name': 'Shell Sandton', 'city': 'Johannesburg'},
-    {'id': 2, 'name': 'BP Midrand', 'city': 'Midrand'},
-    {'id': 3, 'name': 'Engen Rosebank', 'city': 'Johannesburg'},
-    {'id': 4, 'name': 'Sasol Pretoria East', 'city': 'Pretoria'},
+    {
+      'id': 1,
+      'name': 'Shell Sandton',
+      'city': 'Johannesburg',
+      'is_partner': true,
+      'wallet_balance': 25000,
+    },
+    {
+      'id': 2,
+      'name': 'BP Midrand',
+      'city': 'Midrand',
+      'is_partner': true,
+      'wallet_balance': 14000,
+    },
+    {
+      'id': 3,
+      'name': 'Engen Rosebank',
+      'city': 'Johannesburg',
+      'is_partner': false,
+      'wallet_balance': 12000,
+    },
+    {
+      'id': 4,
+      'name': 'Sasol Pretoria East',
+      'city': 'Pretoria',
+      'is_partner': true,
+      'wallet_balance': 0,
+    },
   ];
 
   static final List<RepaymentItem> _mockRepayments = [
@@ -182,18 +206,23 @@ class ApiClient {
     }
 
     final response = await _request(method: 'GET', path: '/auth/profile');
-    return _extractData(response.body);
+    final data = _extractData(response.body);
+    final user = (data['user'] as Map?)?.cast<String, dynamic>();
+    return user ?? data;
   }
 
   Future<void> setAutopay({
     required bool enabled,
-    String method = 'wallet',
+    String method = 'paystack',
     String? paystackAuthorizationCode,
     String? paystackEmail,
   }) async {
     if (mockMode) {
       final current = await profile();
       current['autopay_enabled'] = enabled;
+      current['autopay_gateway'] = 'paystack';
+      current['autopay_has_token'] = enabled;
+      current['autopay_ready'] = enabled;
       _mockUser = Map<String, dynamic>.from(current);
       final token = await _store.token() ?? 'mock-token';
       final role = await _store.role() ?? 'driver';
@@ -228,17 +257,73 @@ class ApiClient {
     }
   }
 
+  Future<Map<String, dynamic>> initializeAutopayPaystack({
+    String? email,
+  }) async {
+    if (mockMode) {
+      return {
+        'reference': 'AUTOSETUP-MOCK-${DateTime.now().millisecondsSinceEpoch}',
+        'authorization_url': 'https://paystack.com/pay/mock-autopay',
+        'access_code': 'mock-access-code',
+        'probe_amount': 5.0,
+      };
+    }
+
+    final response = await _request(
+      method: 'POST',
+      path: '/repayments/autopay/paystack/initialize',
+      body: {
+        if (email != null && email.trim().isNotEmpty) 'email': email.trim(),
+      },
+    );
+    return _extractData(response.body);
+  }
+
+  Future<Map<String, dynamic>> verifyAutopayPaystack({
+    required String reference,
+  }) async {
+    if (mockMode) {
+      final current = await profile();
+      current['autopay_enabled'] = true;
+      current['autopay_gateway'] = 'paystack';
+      current['autopay_has_token'] = true;
+      current['autopay_ready'] = true;
+      _mockUser = Map<String, dynamic>.from(current);
+      final token = await _store.token() ?? 'mock-token';
+      final role = await _store.role() ?? 'driver';
+      await _store.saveSession(token: token, user: current, role: role);
+      return {'reference': reference, 'autopay_ready': true};
+    }
+
+    final response = await _request(
+      method: 'POST',
+      path: '/repayments/autopay/paystack/verify',
+      body: {'reference': reference},
+    );
+    return _extractData(response.body);
+  }
+
   Future<List<VoucherItem>> driverVouchers() async {
     if (mockMode) {
       return List<VoucherItem>.from(_mockDriverVouchers);
     }
 
-    final response = await _request(method: 'GET', path: '/vouchers?limit=50');
-    final data = _extractData(response.body);
-    final vouchersNode = (data['vouchers'] as Map?)?.cast<String, dynamic>() ??
-        <String, dynamic>{};
-    final rows = _asList(vouchersNode['data'] ?? data['data'] ?? data);
-    return rows.map(VoucherItem.fromDriverMap).toList();
+    try {
+      final response = await _request(method: 'GET', path: '/vouchers?limit=50');
+      final data = _extractData(response.body);
+      final vouchersNode = (data['vouchers'] as Map?)?.cast<String, dynamic>() ??
+          <String, dynamic>{};
+      final rows = _asList(vouchersNode['data'] ?? data['data'] ?? data);
+      return rows.map(VoucherItem.fromDriverMap).toList();
+    } catch (_) {
+      // Fallback if paginator/query variants differ.
+      final response = await _request(method: 'GET', path: '/vouchers');
+      final data = _extractData(response.body);
+      final vouchersNode = (data['vouchers'] as Map?)?.cast<String, dynamic>() ??
+          <String, dynamic>{};
+      final rows = _asList(vouchersNode['data'] ?? data['data'] ?? data);
+      return rows.map(VoucherItem.fromDriverMap).toList();
+    }
   }
 
   Future<void> applyVoucher({
@@ -296,6 +381,15 @@ class ApiClient {
                 'id': _toInt(e['id']),
                 'name': (e['name'] ?? 'Station').toString(),
                 'city': (e['city'] ?? '').toString(),
+                'is_partner': e['is_partner'] ??
+                    e['partner'] ??
+                    e['is_active_partner'] ??
+                    e['partner_station'],
+                'wallet_balance': e['wallet_balance'] ??
+                    e['available_balance'] ??
+                    e['balance'] ??
+                    e['prefunded_balance'] ??
+                    e['funded_amount'],
               })
           .where((e) => (e['id'] as int) > 0)
           .toList();
@@ -409,18 +503,28 @@ class ApiClient {
       };
     }
 
+    final parsedCode = _extractVoucherCode(scanInput);
+
     try {
       final response = await _request(
         method: 'POST',
         path: '/merchant/developer/vouchers/redeem',
         body: {
           'scan_input': scanInput,
+          'voucher_code': parsedCode,
+          'code': parsedCode,
         },
       );
       final data = _extractData(response.body);
       final payload = Map<String, dynamic>.from(
         (data['data'] as Map?)?.cast<String, dynamic>() ?? data,
       );
+      final ok = payload['success'] == null ? true : payload['success'] == true;
+      if (!ok) {
+        throw Exception(
+          (payload['message'] ?? 'Voucher redemption failed.').toString(),
+        );
+      }
       payload['transaction_status'] = 'successful';
       return payload;
     } catch (_) {
@@ -429,7 +533,8 @@ class ApiClient {
         path: '/merchant/redeem-voucher',
         body: {
           'scan_input': scanInput,
-          'code': _extractVoucherCode(scanInput),
+          'voucher_code': parsedCode,
+          'code': parsedCode,
         },
       );
       final data = _extractData(response.body);
@@ -449,24 +554,74 @@ class ApiClient {
         ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
     }
 
-    final upcomingRes = await _request(method: 'GET', path: '/repayments/upcoming?limit=100');
-    final overdueRes = await _request(method: 'GET', path: '/repayments/overdue');
+    List<Map<String, dynamic>> upcomingRows = const [];
+    List<Map<String, dynamic>> overdueRows = const [];
 
-    final upcomingData = _extractData(upcomingRes.body);
-    final overdueData = _extractData(overdueRes.body);
+    try {
+      final upcomingRes = await _request(
+        method: 'GET',
+        path: '/repayments/upcoming?limit=100',
+      );
+      final upcomingData = _extractData(upcomingRes.body);
+      upcomingRows = _asList(
+        ((upcomingData['repayments'] as Map?)?.cast<String, dynamic>() ??
+                <String, dynamic>{})['data'] ??
+            upcomingData['data'] ??
+            upcomingData,
+      );
+    } catch (_) {
+      // Non-fatal: upcoming repayments endpoint may be unavailable in some envs.
+    }
 
-    final upcomingRows = _asList(
-      ((upcomingData['repayments'] as Map?)?.cast<String, dynamic>() ??
-              <String, dynamic>{})['data'] ??
-          upcomingData['data'],
-    );
+    try {
+      final overdueRes = await _request(method: 'GET', path: '/repayments/overdue');
+      final overdueData = _extractData(overdueRes.body);
+      overdueRows = _asList(
+        ((overdueData['repayments'] as Map?)?.cast<String, dynamic>() ??
+                <String, dynamic>{})['data'] ??
+            overdueData['repayments'] ??
+            overdueData['data'] ??
+            overdueData,
+      );
+    } catch (_) {
+      // Non-fatal: overdue endpoint may fail when schema is inconsistent.
+    }
 
-    final overdueRows = _asList(overdueData['repayments'] ?? overdueData['data']);
+    if (upcomingRows.isEmpty && overdueRows.isEmpty) {
+      // Final fallback: history endpoint, then filter in-app.
+      try {
+        final historyRes = await _request(
+          method: 'GET',
+          path: '/repayments/history?limit=120',
+        );
+        final historyData = _extractData(historyRes.body);
+        final historyRows = _asList(
+          ((historyData['repayments'] as Map?)?.cast<String, dynamic>() ??
+                  <String, dynamic>{})['data'] ??
+              historyData['data'] ??
+              historyData,
+        );
+        upcomingRows = historyRows
+            .where(
+              (row) => ((row['status'] ?? '').toString().toLowerCase() == 'pending'),
+            )
+            .toList();
+        overdueRows = historyRows
+            .where(
+              (row) => ((row['status'] ?? '').toString().toLowerCase() == 'overdue'),
+            )
+            .toList();
+      } catch (_) {
+        // keep empty list rather than hard-failing app screens
+      }
+    }
 
     final merged = <int, RepaymentItem>{};
     for (final row in [...upcomingRows, ...overdueRows]) {
       final item = _repaymentFromMap(row);
-      merged[item.id] = item;
+      if (item.id > 0) {
+        merged[item.id] = item;
+      }
     }
 
     final list = merged.values.toList()

@@ -63,6 +63,47 @@ class PaystackService
         ];
     }
 
+    public function initializeAutopayAuthorization(
+        User $user,
+        float $amount,
+        string $callbackUrl,
+        ?string $payerEmail = null
+    ): array
+    {
+        $this->assertConfigured();
+
+        $reference = 'AUTOSETUP-' . $user->id . '-' . strtoupper(Str::random(10));
+        $email = trim((string) ($payerEmail ?: $this->resolveEmail($user)));
+        if ($email === '') {
+            $email = $this->resolveEmail($user);
+        }
+
+        $payload = [
+            'email' => $email,
+            'amount' => $this->toMinor(max(1, $amount)),
+            'currency' => strtoupper((string) config('services.paystack.currency', 'ZAR')),
+            'reference' => $reference,
+            'callback_url' => $callbackUrl,
+            'channels' => ['card'],
+            'metadata' => [
+                'scope' => 'autopay_setup',
+                'user_id' => (int) $user->id,
+                'requested_by' => 'driver_portal',
+            ],
+        ];
+
+        $response = $this->http()->post($this->baseUrl() . '/transaction/initialize', $payload);
+        if (!$response->successful() || !$response->json('status')) {
+            throw new \RuntimeException('Paystack initialize failed: ' . $this->extractError($response));
+        }
+
+        return [
+            'reference' => (string) $reference,
+            'authorization_url' => (string) $response->json('data.authorization_url'),
+            'access_code' => (string) $response->json('data.access_code'),
+        ];
+    }
+
     public function verifyTransaction(string $reference): array
     {
         $this->assertConfigured();

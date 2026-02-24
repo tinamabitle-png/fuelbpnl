@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -58,8 +59,9 @@ class _DriverShellState extends State<DriverShell> {
           padding: const EdgeInsets.only(left: 12, top: 8, bottom: 8),
           child: Container(
             decoration: BoxDecoration(
-              gradient: AppTheme.actionGradient,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: const Center(child: LogoMark(size: 22)),
           ),
@@ -194,20 +196,22 @@ class _DriverHomePageState extends State<DriverHomePage> {
       loading = true;
       error = null;
     });
-    try {
-      final p = await widget.api.profile();
-      final v = await widget.api.driverVouchers();
-      final r = await widget.api.driverRepayments();
-      setState(() {
-        profile = p;
-        vouchers = v;
-        repayments = r;
-      });
-    } catch (e) {
-      setState(() => error = e.toString().replaceFirst('Exception: ', ''));
-    } finally {
-      if (mounted) setState(() => loading = false);
-    }
+    final p = await widget.api.profile().catchError((_) => <String, dynamic>{});
+    final v = await widget.api.driverVouchers().catchError((_) => <VoucherItem>[]);
+    final r =
+        await widget.api.driverRepayments().catchError((_) => <RepaymentItem>[]);
+
+    if (!mounted) return;
+    setState(() {
+      profile = p;
+      vouchers = v;
+      repayments = r;
+      // Show hard error only when all dynamic endpoints failed.
+      error = (p.isEmpty && v.isEmpty && r.isEmpty)
+          ? 'Failed to load live data. Check API base URL and token.'
+          : null;
+      loading = false;
+    });
   }
 
   @override
@@ -271,6 +275,8 @@ class _DriverHomePageState extends State<DriverHomePage> {
           const SizedBox(height: 12),
           _brandsCard(),
           const SizedBox(height: 12),
+          _wisdomCard(),
+          const SizedBox(height: 12),
           const FeedbackPanel(compact: true),
         ],
       ),
@@ -326,11 +332,11 @@ class _DriverHomePageState extends State<DriverHomePage> {
             height: 42,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              color: Colors.white.withValues(alpha: 0.16),
+              color: Colors.white,
             ),
             child: const Icon(
               Icons.local_gas_station_rounded,
-              color: Colors.white,
+              color: Color(0xFF3A66D8),
             ),
           ),
         ],
@@ -357,7 +363,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
             height: 42,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              color: Colors.white.withValues(alpha: 0.65),
+              color: Colors.white,
             ),
             child: Icon(icon, color: const Color(0xFF3A66D8)),
           ),
@@ -470,6 +476,12 @@ class _DriverHomePageState extends State<DriverHomePage> {
               itemCount: brands.length,
               separatorBuilder: (_, index) => const SizedBox(width: 8),
               itemBuilder: (context, i) {
+                final initials = brands[i]
+                    .split(' ')
+                    .where((part) => part.isNotEmpty)
+                    .take(2)
+                    .map((part) => part[0].toUpperCase())
+                    .join();
                 return Container(
                   width: 120,
                   decoration: BoxDecoration(
@@ -479,19 +491,115 @@ class _DriverHomePageState extends State<DriverHomePage> {
                       colors: [Color(0xFF111827), Color(0xFF1F2937)],
                     ),
                   ),
-                  child: Center(
-                    child: Text(
-                      brands[i],
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.slate,
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: Text(
+                          brands[i],
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.slate,
+                          ),
+                        ),
                       ),
-                    ),
+                      Positioned(
+                        left: 8,
+                        bottom: 8,
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Center(
+                            child: Text(
+                              initials.isEmpty ? 'B' : initials,
+                              style: const TextStyle(
+                                color: Color(0xFF0F172A),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _wisdomCard() {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 220),
+      decoration: BoxDecoration(
+        color: const Color(0xFFB7E219),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Quote of the day',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF7F9B1D),
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Icon(
+            Icons.format_quote_rounded,
+            size: 42,
+            color: Color(0xFFDFF886),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Wisdom is the only gift you can never lose.',
+            style: TextStyle(
+              fontSize: 24,
+              height: 1.1,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF465512),
+            ),
+          ),
+          const Spacer(),
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFF9EC415),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 20,
+                    color: Color(0xFF6F871A),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'BWISER Driver Wisdom',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF7F9B1D),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -692,7 +800,7 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
 
     await showModalBottomSheet<void>(
       context: context,
-      isScrollControlled: false,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
         return StatefulBuilder(
@@ -707,12 +815,18 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                 color: Color(0xFF0B1220),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               child: SafeArea(
                 top: false,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    16,
+                    20,
+                    24 + MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                     Container(
                       width: 42,
                       height: 4,
@@ -935,13 +1049,14 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                       'ZAR ${v.amount.toStringAsFixed(2)} • ${v.status}',
                       style: const TextStyle(color: Color(0xFF94A3B8)),
                     ),
-                    const SizedBox(height: 12),
-                    FxButton(
-                      label: 'Close',
-                      fullWidth: true,
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      FxButton(
+                        label: 'Close',
+                        fullWidth: true,
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -964,11 +1079,16 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
   bool loading = true;
   bool submitting = false;
   bool autopayEnabled = false;
+  bool autopayReady = false;
   String? error;
   final amountCtrl = TextEditingController(text: '500');
   final stationCtrl = TextEditingController();
   String fuelType = 'petrol';
   List<Map<String, dynamic>> stations = [];
+  Timer? approvalPollTimer;
+  int approvedBeforeSubmit = 0;
+  String? selectedStationName;
+  Map<String, dynamic>? selectedStation;
   int? stationId;
 
   @override
@@ -979,6 +1099,7 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
 
   @override
   void dispose() {
+    approvalPollTimer?.cancel();
     amountCtrl.dispose();
     stationCtrl.dispose();
     super.dispose();
@@ -992,9 +1113,24 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
     try {
       final profile = await widget.api.profile();
       final st = await widget.api.stations();
+      final vouchers = await widget.api.driverVouchers();
+      final gateway = (profile['autopay_gateway'] ?? '').toString().toLowerCase();
+      final hasToken = (profile['autopay_has_token'] ?? false) == true ||
+          ((profile['autopay_token'] ?? '').toString().trim().isNotEmpty);
+      final status = (profile['autopay_status'] ?? 'inactive').toString().toLowerCase();
+      final blocked = {'disabled', 'failed', 'max_retries_exceeded', 'inactive'};
+      final ready = (profile['autopay_ready'] ?? false) == true ||
+          (((profile['autopay_enabled'] ?? false) == true) &&
+              gateway == 'paystack' &&
+              hasToken &&
+              !blocked.contains(status));
       setState(() {
         stations = st;
         autopayEnabled = (profile['autopay_enabled'] ?? false) == true;
+        autopayReady = ready;
+        approvedBeforeSubmit = vouchers
+            .where((v) => v.status.toLowerCase() == 'approved')
+            .length;
       });
     } catch (e) {
       setState(() => error = e.toString().replaceFirst('Exception: ', ''));
@@ -1004,10 +1140,10 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
   }
 
   Future<void> submit() async {
-    if (!autopayEnabled) {
+    if (!autopayReady) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Enable AutoPay in Profile before applying.'),
+          content: Text('AutoPay is not ready. Complete Paystack AutoPay setup in Profile before applying.'),
         ),
       );
       return;
@@ -1017,6 +1153,33 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Select station.')));
+      return;
+    }
+
+    final station = selectedStation ??
+        stations.firstWhere(
+          (s) => (s['id'] ?? 0).toString() == stationId.toString(),
+          orElse: () => <String, dynamic>{},
+        );
+    final partner = _stationIsPartner(station);
+    final funded = _stationHasFunds(station);
+
+    if (!partner) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selected station is not a partner station yet.'),
+        ),
+      );
+      return;
+    }
+    if (!funded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Selected partner station currently has no available funds.',
+          ),
+        ),
+      );
       return;
     }
 
@@ -1031,6 +1194,7 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Voucher request submitted.')),
       );
+      _startApprovalPolling();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1039,6 +1203,69 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
     } finally {
       if (mounted) setState(() => submitting = false);
     }
+  }
+
+  bool _stationIsPartner(Map<String, dynamic> station) {
+    final dynamic raw = station['is_partner'] ??
+        station['partner'] ??
+        station['is_active_partner'] ??
+        station['partner_station'];
+    if (raw == null) return true;
+    if (raw is bool) return raw;
+    final text = raw.toString().trim().toLowerCase();
+    return text == '1' || text == 'true' || text == 'yes' || text == 'partner';
+  }
+
+  bool _stationHasFunds(Map<String, dynamic> station) {
+    final dynamic raw = station['wallet_balance'] ??
+        station['available_balance'] ??
+        station['balance'] ??
+        station['prefunded_balance'] ??
+        station['funded_amount'];
+    if (raw == null) return true;
+    final amount = double.tryParse(raw.toString().replaceAll(',', '').trim()) ?? 0;
+    return amount > 0;
+  }
+
+  void _startApprovalPolling() {
+    approvalPollTimer?.cancel();
+    final startedAt = DateTime.now();
+    approvalPollTimer = Timer.periodic(const Duration(seconds: 12), (timer) async {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (DateTime.now().difference(startedAt).inMinutes >= 5) {
+        timer.cancel();
+        return;
+      }
+      try {
+        final vouchers = await widget.api.driverVouchers();
+        final approved = vouchers
+            .where((v) => v.status.toLowerCase() == 'approved')
+            .toList();
+        final grew = approved.length > approvedBeforeSubmit;
+        final matchesStation = selectedStationName == null
+            ? grew
+            : approved.any(
+                (v) => (v.stationName ?? '')
+                    .toLowerCase()
+                    .contains(selectedStationName!.toLowerCase()),
+              );
+        if (grew && matchesStation) {
+          approvedBeforeSubmit = approved.length;
+          timer.cancel();
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Voucher approved. You can now use it in Vouchers.'),
+            ),
+          );
+        }
+      } catch (_) {
+        // Keep polling quietly.
+      }
+    });
   }
 
   @override
@@ -1054,7 +1281,7 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                if (!autopayEnabled) ...[
+                if (!autopayReady) ...[
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
@@ -1064,7 +1291,7 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                       border: Border.all(color: const Color(0xFF3B82F6)),
                     ),
                     child: const Text(
-                      'AutoPay is required to apply for vouchers. Enable it in Profile.',
+                      'AutoPay is required and must be healthy. Re-authorize Paystack AutoPay in Profile to continue.',
                       style: TextStyle(
                         color: Color(0xFFBFDBFE),
                         fontWeight: FontWeight.w600,
@@ -1073,29 +1300,85 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                   ),
                   const SizedBox(height: 12),
                 ],
-                TextField(
-                  controller: stationCtrl,
-                  readOnly: true,
-                  decoration: InputDecoration(
-                    labelText: 'Station',
-                    suffixIcon: PopupMenuButton<Map<String, dynamic>>(
-                      icon: const Icon(Icons.search),
-                      itemBuilder: (context) => stations
-                          .map(
-                            (s) => PopupMenuItem<Map<String, dynamic>>(
-                              value: s,
-                              child: Text('${s['name']} (${s['city'] ?? '-'})'),
-                            ),
-                          )
-                          .toList(),
-                      onSelected: (s) {
-                        setState(() {
-                          stationId = (s['id'] ?? 0) as int;
-                          stationCtrl.text = s['name'].toString();
-                        });
+                RawAutocomplete<Map<String, dynamic>>(
+                  textEditingController: stationCtrl,
+                  optionsBuilder: (TextEditingValue value) {
+                    final query = value.text.trim().toLowerCase();
+                    if (query.isEmpty) return stations.take(8);
+                    return stations.where((s) {
+                      final name = (s['name'] ?? '').toString().toLowerCase();
+                      final city = (s['city'] ?? '').toString().toLowerCase();
+                      return name.contains(query) || city.contains(query);
+                    }).take(8);
+                  },
+                  displayStringForOption: (option) =>
+                      '${option['name'] ?? 'Station'}',
+                  onSelected: (s) {
+                    setState(() {
+                      selectedStation = s;
+                      stationId = int.tryParse('${s['id'] ?? 0}') ?? 0;
+                      selectedStationName = (s['name'] ?? '').toString();
+                      stationCtrl.text = selectedStationName ?? '';
+                    });
+                  },
+                  fieldViewBuilder:
+                      (context, controller, focusNode, onFieldSubmitted) {
+                    return TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      decoration: const InputDecoration(
+                        labelText: 'Station',
+                        hintText: 'Type station name',
+                        suffixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (_) {
+                        if (stationId != null) {
+                          setState(() {
+                            stationId = null;
+                            selectedStation = null;
+                            selectedStationName = null;
+                          });
+                        }
                       },
-                    ),
-                  ),
+                    );
+                  },
+                  optionsViewBuilder: (context, onSelected, options) {
+                    return Align(
+                      alignment: Alignment.topLeft,
+                      child: Material(
+                        color: const Color(0xFF0B1220),
+                        borderRadius: BorderRadius.circular(12),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxHeight: 220,
+                            maxWidth: 460,
+                          ),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            itemCount: options.length,
+                            itemBuilder: (context, index) {
+                              final s = options.elementAt(index);
+                              final partner = _stationIsPartner(s);
+                              final funded = _stationHasFunds(s);
+                              return ListTile(
+                                dense: true,
+                                title: Text(
+                                  '${s['name']}',
+                                  style: const TextStyle(color: Color(0xFFE2E8F0)),
+                                ),
+                                subtitle: Text(
+                                  '${s['city'] ?? '-'} • ${partner ? 'Partner' : 'Non-partner'} • ${funded ? 'Funded' : 'No funds'}',
+                                  style: const TextStyle(color: Color(0xFF94A3B8)),
+                                ),
+                                onTap: () => onSelected(s),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -1133,7 +1416,7 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                         label: 'Apply for Voucher',
                         icon: Icons.send_rounded,
                         fullWidth: true,
-                        onPressed: autopayEnabled ? submit : null,
+                        onPressed: autopayReady ? submit : null,
                       ),
               ],
             ),
@@ -1336,24 +1619,11 @@ class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
                     ),
                     const SizedBox(height: 10),
                     if (!isPaid)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: FxButton(
-                              label: 'Pay now',
-                              icon: Icons.check_circle_outline,
-                              onPressed: () => payNow(item),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: FxButton(
-                              label: 'Paystack',
-                              icon: Icons.open_in_new_rounded,
-                              onPressed: () => payWithPaystack(item),
-                            ),
-                          ),
-                        ],
+                      FxButton(
+                        label: 'Pay with Paystack',
+                        icon: Icons.open_in_new_rounded,
+                        fullWidth: true,
+                        onPressed: () => payWithPaystack(item),
                       ),
                   ],
                 ),
@@ -1383,8 +1653,11 @@ class DriverProfilePage extends StatefulWidget {
 class _DriverProfilePageState extends State<DriverProfilePage> {
   bool loading = true;
   bool enabled = false;
+  bool ready = false;
+  bool hasToken = false;
   String? error;
-  String paymentMethod = 'wallet';
+  String paymentMethod = 'paystack';
+  String? autopayEmail;
 
   @override
   void initState() {
@@ -1399,9 +1672,17 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
     });
     try {
       final p = await widget.api.profile();
+      final isEnabled = (p['autopay_enabled'] ?? false) == true;
       setState(() {
-        enabled = (p['autopay_enabled'] ?? false) == true;
-        paymentMethod = (p['autopay_gateway'] ?? 'wallet').toString();
+        enabled = isEnabled;
+        paymentMethod = (p['autopay_gateway'] ?? 'paystack').toString();
+        hasToken = (p['autopay_has_token'] ?? false) == true ||
+            ((p['autopay_token'] ?? '').toString().trim().isNotEmpty);
+        final status = (p['autopay_status'] ?? 'inactive').toString().toLowerCase();
+        final blocked = {'disabled', 'failed', 'max_retries_exceeded', 'inactive'};
+        ready = (p['autopay_ready'] ?? false) == true ||
+            (isEnabled && paymentMethod.toLowerCase() == 'paystack' && hasToken && !blocked.contains(status));
+        autopayEmail = (p['autopay_email'] ?? p['email'] ?? '').toString();
       });
     } catch (e) {
       setState(() => error = e.toString().replaceFirst('Exception: ', ''));
@@ -1411,33 +1692,25 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
   }
 
   Future<void> toggle(bool value) async {
-    String method = paymentMethod;
-    String? authCode;
-    String? paystackEmail;
-
     if (value) {
-      final picked = await _showAutopaySetupDialog();
-      if (picked == null) return;
-      method = picked.$1;
-      authCode = picked.$2;
-      paystackEmail = picked.$3;
+      final configured = await _setupPaystackAutopay();
+      if (!configured) return;
     }
 
     setState(() => loading = true);
     try {
       await widget.api.setAutopay(
         enabled: value,
-        method: method,
-        paystackAuthorizationCode: authCode,
-        paystackEmail: paystackEmail,
+        method: 'paystack',
       );
       setState(() {
         enabled = value;
-        paymentMethod = method;
+        paymentMethod = 'paystack';
+        ready = value ? hasToken : false;
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(value ? 'AutoPay enabled' : 'AutoPay disabled')),
+        SnackBar(content: Text(value ? 'AutoPay enabled (Paystack)' : 'AutoPay disabled')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -1449,94 +1722,109 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
     }
   }
 
-  Future<(String, String?, String?)?> _showAutopaySetupDialog() async {
-    var method = paymentMethod == 'paystack' ? 'paystack' : 'wallet';
-    final authCtrl = TextEditingController();
-    final emailCtrl = TextEditingController();
-
-    final result = await showDialog<(String, String?, String?)>(
+  Future<String?> _askAutopayEmail() async {
+    final emailCtrl = TextEditingController(text: autopayEmail ?? '');
+    final result = await showDialog<String>(
       context: context,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setLocalState) {
-            return AlertDialog(
-              title: const Text('AutoPay Setup'),
-              content: SizedBox(
-                width: 360,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SegmentedButton<String>(
-                      showSelectedIcon: false,
-                      segments: const [
-                        ButtonSegment(value: 'wallet', label: Text('Wallet')),
-                        ButtonSegment(value: 'paystack', label: Text('Paystack')),
-                      ],
-                      selected: {method},
-                      onSelectionChanged: (value) {
-                        setLocalState(() => method = value.first);
-                      },
-                    ),
-                    if (method == 'paystack') ...[
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: emailCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Paystack Email',
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: authCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Authorization Code',
-                        ),
-                      ),
-                    ],
-                  ],
+        return AlertDialog(
+          title: const Text('Enable AutoPay (Paystack)'),
+          content: SizedBox(
+            width: 360,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'A small authorization transaction will be made on Paystack to tokenize your card for daily repayments.',
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
-                ),
-                FxButton(
-                  label: 'Save',
-                  onPressed: () {
-                    if (method == 'paystack' &&
-                        (authCtrl.text.trim().isEmpty ||
-                            emailCtrl.text.trim().isEmpty)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Paystack email and authorization code are required.',
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-                    Navigator.of(context).pop((
-                      method,
-                      authCtrl.text.trim().isEmpty
-                          ? null
-                          : authCtrl.text.trim(),
-                      emailCtrl.text.trim().isEmpty
-                          ? null
-                          : emailCtrl.text.trim(),
-                    ));
-                  },
+                const SizedBox(height: 12),
+                TextField(
+                  controller: emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Paystack Email',
+                  ),
                 ),
               ],
-            );
-          },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            FxButton(
+              label: 'Continue',
+              onPressed: () => Navigator.of(context).pop(emailCtrl.text.trim()),
+            ),
+          ],
         );
       },
     );
 
-    authCtrl.dispose();
     emailCtrl.dispose();
     return result;
+  }
+
+  Future<bool> _setupPaystackAutopay() async {
+    final email = await _askAutopayEmail();
+    if (email == null || email.trim().isEmpty) {
+      return false;
+    }
+
+    try {
+      final checkout = await widget.api.initializeAutopayPaystack(email: email);
+      final authUrl = (checkout['authorization_url'] ?? '').toString();
+      final reference = (checkout['reference'] ?? '').toString();
+      final probe = (checkout['probe_amount'] ?? 0).toString();
+      if (authUrl.isEmpty || reference.isEmpty) {
+        throw Exception('Paystack AutoPay initialization is incomplete.');
+      }
+
+      final opened = await launchUrl(
+        Uri.parse(authUrl),
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened) {
+        throw Exception('Unable to open Paystack authorization URL.');
+      }
+
+      if (!mounted) return false;
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Confirm AutoPay Authorization'),
+          content: Text(
+            'Complete the small Paystack authorization transaction (about ZAR $probe), then tap Confirm.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FxButton(
+              label: 'Confirm',
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true) return false;
+      await widget.api.verifyAutopayPaystack(reference: reference);
+      setState(() {
+        hasToken = true;
+        ready = true;
+      });
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+      return false;
+    }
   }
 
   @override
@@ -1583,6 +1871,29 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                 ),
                 const SizedBox(width: 8),
                 Switch(value: enabled, onChanged: toggle),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Icon(
+                  ready ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                  color: ready ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    ready
+                        ? 'AutoPay is healthy and tokenized for future billing.'
+                        : 'AutoPay is not healthy yet. Re-authorize Paystack to continue applying for vouchers.',
+                    style: const TextStyle(color: AppTheme.slate),
+                  ),
+                ),
               ],
             ),
           ),
