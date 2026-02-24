@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FuelStation;
 use App\Models\FuelVoucher;
 use App\Models\Repayment;
+use App\Services\TapTokenService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,11 @@ use Illuminate\Validation\Rule;
 
 class MerchantDeveloperController extends Controller
 {
+    public function __construct(
+        private TapTokenService $tapTokenService,
+    ) {
+    }
+
     public function stations(Request $request): JsonResponse
     {
         if ($error = $this->enforceTokenAbility($request, 'stations.read')) {
@@ -380,14 +386,21 @@ class MerchantDeveloperController extends Controller
         $voucherCode = null;
         $voucherQr = null;
 
-        if (Str::startsWith($scanInput, '{') && Str::endsWith($scanInput, '}')) {
+        $tapPayload = $this->tapTokenService->verify($scanInput);
+        if (is_array($tapPayload)) {
+            $voucherId = isset($tapPayload['vid']) ? (int) $tapPayload['vid'] : null;
+            $voucherCode = isset($tapPayload['code']) ? (string) $tapPayload['code'] : null;
+            $voucherQr = $voucherCode;
+        }
+
+        if (!$tapPayload && Str::startsWith($scanInput, '{') && Str::endsWith($scanInput, '}')) {
             $decoded = json_decode($scanInput, true);
             if (is_array($decoded)) {
                 $voucherId = isset($decoded['voucher_id']) ? (int) $decoded['voucher_id'] : null;
                 $voucherCode = $decoded['code'] ?? null;
                 $voucherQr = $decoded['qr_code'] ?? null;
             }
-        } else {
+        } elseif (!$tapPayload) {
             $voucherCode = $scanInput;
             $voucherQr = $scanInput;
             if (ctype_digit($scanInput)) {
@@ -423,6 +436,11 @@ class MerchantDeveloperController extends Controller
             'fuel_type' => $voucher->fuel_type,
             'liters' => (float) $voucher->liters,
             'station_id' => $voucher->fuel_station_id,
+            'station' => [
+                'id' => $voucher->fuelStation?->id ?? $voucher->fuel_station_id,
+                'name' => $voucher->fuelStation?->name,
+                'city' => $voucher->fuelStation?->city,
+            ],
             'driver' => [
                 'id' => $voucher->user?->id,
                 'name' => $voucher->user?->name,

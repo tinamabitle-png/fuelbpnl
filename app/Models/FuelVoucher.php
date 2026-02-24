@@ -58,6 +58,16 @@ class FuelVoucher extends Model
                 $voucher->expires_at = now()->addHours(24);
             }
         });
+
+        static::updated(function (self $voucher) {
+            if (
+                $voucher->wasChanged('status') &&
+                $voucher->status === 'expired' &&
+                is_null($voucher->redeemed_at)
+            ) {
+                $voucher->softDeleteRepaymentsForExpiredVoucher();
+            }
+        });
     }
 
     // Relationships
@@ -182,6 +192,18 @@ class FuelVoucher extends Model
         }
 
         return $this;
+    }
+
+    public function softDeleteRepaymentsForExpiredVoucher(): void
+    {
+        if (empty($this->lease_id)) {
+            return;
+        }
+
+        Repayment::query()
+            ->where('lease_id', $this->lease_id)
+            ->whereNull('paid_at')
+            ->delete();
     }
 
     public function generateQRData()

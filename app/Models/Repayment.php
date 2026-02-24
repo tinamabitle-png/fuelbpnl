@@ -4,11 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Services\AuditTrailService;
 
 class Repayment extends Model
 {
     use HasFactory;
+    use SoftDeletes;
 
     protected $fillable = [
         'lease_id',
@@ -31,6 +33,7 @@ class Repayment extends Model
         'paid_at' => 'datetime',
         'autopay_last_attempt_at' => 'datetime',
         'autopay_next_attempt_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
     // Relationships

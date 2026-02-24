@@ -3,8 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/feedback_panel.dart';
+import '../../core/fx_button.dart';
+import '../../core/nfc_hce_bridge.dart';
+import '../../core/logo_mark.dart';
 import '../../core/theme.dart';
 import '../../data/api_client.dart';
 import '../../data/models.dart';
@@ -20,7 +24,6 @@ class DriverShell extends StatefulWidget {
 }
 
 class _DriverShellState extends State<DriverShell> {
-  static const String _driverLogoAsset = 'assets/images/driver_logo.png';
   int index = 0;
 
   @override
@@ -29,7 +32,7 @@ class _DriverShellState extends State<DriverShell> {
       DriverHomePage(
         api: widget.api,
         onOpenVouchers: () => setState(() => index = 1),
-        onOpenStations: () => setState(() => index = 4),
+        onOpenApply: () => setState(() => index = 4),
       ),
       DriverVouchersPage(
         api: widget.api,
@@ -43,9 +46,9 @@ class _DriverShellState extends State<DriverShell> {
     const titles = [
       'Dashboard',
       'Vouchers',
-      'Repayments',
+      'Repay',
       'Profile',
-      'Stations',
+      'Apply',
     ];
 
     return Scaffold(
@@ -58,8 +61,7 @@ class _DriverShellState extends State<DriverShell> {
               gradient: AppTheme.actionGradient,
               borderRadius: BorderRadius.circular(10),
             ),
-            padding: const EdgeInsets.all(4),
-            child: Image.asset(_driverLogoAsset, fit: BoxFit.contain),
+            child: const Center(child: LogoMark(size: 22)),
           ),
         ),
         title: Text(titles[index]),
@@ -101,15 +103,14 @@ class _DriverBottomNav extends StatelessWidget {
     final items = <_DriverNavItem>[
       const _DriverNavItem('Home', Icons.home_outlined),
       const _DriverNavItem('Vouchers', Icons.confirmation_number_outlined),
-      const _DriverNavItem('Repayments', Icons.receipt_long_outlined),
+      const _DriverNavItem('Repay', Icons.receipt_long_outlined),
       const _DriverNavItem('Profile', Icons.person_outline_rounded),
-      const _DriverNavItem('Stations', Icons.map_outlined),
     ];
 
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFFF6F7FB),
-        border: Border(top: BorderSide(color: Color(0xFFD8DEEB))),
+        color: Color(0xFF0B1220),
+        border: Border(top: BorderSide(color: Color(0xFF334155))),
       ),
       padding: const EdgeInsets.only(top: 4, bottom: 4),
       child: Row(
@@ -129,7 +130,7 @@ class _DriverBottomNav extends StatelessWidget {
                       size: 22,
                       color: active
                           ? AppTheme.primaryBlue
-                          : const Color(0xFF6B7280),
+                          : const Color(0xFF94A3B8),
                     ),
                     const SizedBox(height: 3),
                     Text(
@@ -139,7 +140,7 @@ class _DriverBottomNav extends StatelessWidget {
                         fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                         color: active
                             ? AppTheme.primaryBlue
-                            : const Color(0xFF6B7280),
+                            : const Color(0xFF94A3B8),
                       ),
                     ),
                   ],
@@ -164,12 +165,12 @@ class DriverHomePage extends StatefulWidget {
     super.key,
     required this.api,
     required this.onOpenVouchers,
-    required this.onOpenStations,
+    required this.onOpenApply,
   });
 
   final ApiClient api;
   final VoidCallback onOpenVouchers;
-  final VoidCallback onOpenStations;
+  final VoidCallback onOpenApply;
 
   @override
   State<DriverHomePage> createState() => _DriverHomePageState();
@@ -242,7 +243,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 ? 'No active voucher'
                 : 'ZAR ${latest.amount.toStringAsFixed(2)}',
             gradient: const LinearGradient(
-              colors: [Color(0xFFD8D4FB), Color(0xFFC8D3F5)],
+              colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
             ),
           ),
           const SizedBox(height: 12),
@@ -253,18 +254,18 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 ? 'No upcoming repayments'
                 : 'Due ${_fmtDate(nextRepayment.dueDate)} • ZAR ${nextRepayment.amount.toStringAsFixed(2)}',
             gradient: const LinearGradient(
-              colors: [Color(0xFFD4E6FF), Color(0xFFC9DAF4)],
+              colors: [Color(0xFF172554), Color(0xFF312E81)],
             ),
           ),
           const SizedBox(height: 12),
-          _stationToolsCard(widget.onOpenStations),
+          _quickApplyCard(widget.onOpenApply),
           const SizedBox(height: 12),
           _infoCard(
             icon: Icons.account_balance_wallet_outlined,
             title: 'Wallet Balance',
             value: 'ZAR 0.00',
             gradient: const LinearGradient(
-              colors: [Color(0xFFDCE8FA), Color(0xFFCFDDF2)],
+              colors: [Color(0xFF111827), Color(0xFF1F2937)],
             ),
           ),
           const SizedBox(height: 12),
@@ -296,11 +297,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
               shape: BoxShape.circle,
               color: Colors.white.withValues(alpha: 0.92),
             ),
-            padding: const EdgeInsets.all(8),
-            child: Image.asset(
-              _DriverShellState._driverLogoAsset,
-              fit: BoxFit.contain,
-            ),
+            child: const Center(child: LogoMark(size: 28)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -311,7 +308,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                   'Welcome back, ${name.split(' ').first}',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 26,
+                    fontSize: 20,
                     fontWeight: FontWeight.w700,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -319,7 +316,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 const SizedBox(height: 4),
                 const Text(
                   'Track fuel vouchers and repayments in one place.',
-                  style: TextStyle(color: Color(0xFFDCE8FF), fontSize: 14),
+                  style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 14),
                 ),
               ],
             ),
@@ -372,7 +369,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 Text(
                   title,
                   style: const TextStyle(
-                    color: Color(0xFF5A6582),
+                    color: Color(0xFF94A3B8),
                     fontSize: 14,
                   ),
                 ),
@@ -381,7 +378,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                   value,
                   style: const TextStyle(
                     color: AppTheme.slate,
-                    fontSize: 27,
+                    fontSize: 20,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -393,43 +390,36 @@ class _DriverHomePageState extends State<DriverHomePage> {
     );
   }
 
-  Widget _stationToolsCard(VoidCallback onOpenStations) {
+  Widget _quickApplyCard(VoidCallback onOpenApply) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F7FB),
+        color: const Color(0xFF0B1220),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDEE6F3)),
+        border: Border.all(color: const Color(0xFF334155)),
       ),
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Station Attendant Tools',
+            'Voucher Access',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF4D5C7A),
+              color: Color(0xFFE2E8F0),
             ),
           ),
           const SizedBox(height: 6),
           const Text(
-            'Scan voucher QR codes, record pump number, and approve returns.',
-            style: TextStyle(color: Color(0xFF667085)),
+            'Apply for new fuel access and manage issuance from one flow.',
+            style: TextStyle(color: Color(0xFF94A3B8)),
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: onOpenStations,
-              icon: const Icon(Icons.qr_code_scanner_rounded),
-              label: const Text('Open Station Attendant'),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.zero,
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-              ),
-            ),
+          FxButton(
+            label: 'Apply for Voucher',
+            icon: Icons.add_card_rounded,
+            fullWidth: true,
+            onPressed: onOpenApply,
           ),
         ],
       ),
@@ -440,9 +430,9 @@ class _DriverHomePageState extends State<DriverHomePage> {
     const brands = ['Engen', 'Shell SA', 'BP SA', 'Sasol', 'TotalEnergies'];
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FC),
+        color: const Color(0xFF0B1220),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDDE5F3)),
+        border: Border.all(color: const Color(0xFF334155)),
       ),
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -456,7 +446,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF4D5C7A),
+                    color: Color(0xFFE2E8F0),
                   ),
                 ),
               ),
@@ -470,7 +460,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
           const SizedBox(height: 4),
           const Text(
             'Fuel operators, oil corporations, and energy partners.',
-            style: TextStyle(color: Color(0xFF667085)),
+            style: TextStyle(color: Color(0xFF94A3B8)),
           ),
           const SizedBox(height: 10),
           SizedBox(
@@ -484,9 +474,9 @@ class _DriverHomePageState extends State<DriverHomePage> {
                   width: 120,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFD8E0F0)),
+                    border: Border.all(color: const Color(0xFF334155)),
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFF3F6FC), Color(0xFFE8EEF8)],
+                      colors: [Color(0xFF111827), Color(0xFF1F2937)],
                     ),
                   ),
                   child: Center(
@@ -568,9 +558,7 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
-              gradient: const LinearGradient(
-                colors: [Color(0xFF232C7A), Color(0xFF0208CC)],
-              ),
+              gradient: AppTheme.actionGradient,
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
@@ -579,26 +567,16 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                   child: Text(
                     'Vouchers',
                     style: TextStyle(
-                      color: Color(0xFF9FA9E8),
+                      color: Color(0xFFE2E8F0),
                       fontWeight: FontWeight.w800,
-                      fontSize: 34,
+                      fontSize: 22,
                     ),
                   ),
                 ),
-                FilledButton(
+                FxButton(
+                  label: 'Apply',
+                  height: 42,
                   onPressed: widget.onOpenApply,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFC8D1EF),
-                    foregroundColor: const Color(0xFF0208CC),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Apply'),
                 ),
               ],
             ),
@@ -617,8 +595,6 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
               child: _voucherTile(v),
             ),
           ),
-          const SizedBox(height: 12),
-          const FeedbackPanel(compact: true),
         ],
       ),
     );
@@ -632,9 +608,9 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF0B1220),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFDCE4F2)),
+        border: Border.all(color: const Color(0xFF334155)),
       ),
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -647,7 +623,7 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                   v.stationName ?? 'Station',
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
-                    fontSize: 28,
+                    fontSize: 20,
                     color: AppTheme.slate,
                   ),
                 ),
@@ -674,13 +650,13 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
           const SizedBox(height: 4),
           Text(
             'Issued ${DateTime.now().toIso8601String()} • ${v.id}',
-            style: const TextStyle(color: Color(0xFF64748B)),
+            style: const TextStyle(color: Color(0xFF94A3B8)),
           ),
           const SizedBox(height: 8),
           Text(
             'ZAR ${v.amount.toStringAsFixed(2)}',
             style: const TextStyle(
-              fontSize: 31,
+              fontSize: 24,
               fontWeight: FontWeight.w700,
               color: AppTheme.slate,
             ),
@@ -712,6 +688,7 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
 
   Future<void> _showVoucherSheet(VoucherItem v) async {
     var mode = 'qr';
+    final tapTokenFuture = widget.api.driverTapToken(v.id);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -725,14 +702,9 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
               'code': v.code,
               'qr_code': v.qrCode,
             });
-            final tapToken = widget.api.buildHmacTapToken(
-              voucherId: v.id,
-              voucherCode: v.code,
-            );
-
             return Container(
               decoration: const BoxDecoration(
-                color: Colors.white,
+                color: Color(0xFF0B1220),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -753,13 +725,14 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                     const Text(
                       'Voucher QR',
                       style: TextStyle(
-                        fontSize: 33,
+                        color: Color(0xFFE2E8F0),
+                        fontSize: 26,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
                       v.stationName ?? '',
-                      style: const TextStyle(color: Color(0xFF64748B)),
+                      style: const TextStyle(color: Color(0xFF94A3B8)),
                     ),
                     const SizedBox(height: 10),
                     SegmentedButton<String>(
@@ -785,20 +758,20 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFE),
+                          color: const Color(0xFF111827),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFDCE4F2)),
+                          border: Border.all(color: const Color(0xFF334155)),
                         ),
                         child: QrImageView(
                           data: qrPayload,
                           size: 220,
                           eyeStyle: const QrEyeStyle(
                             eyeShape: QrEyeShape.square,
-                            color: AppTheme.slate,
+                            color: Color(0xFF111827),
                           ),
                           dataModuleStyle: const QrDataModuleStyle(
                             dataModuleShape: QrDataModuleShape.square,
-                            color: AppTheme.slate,
+                            color: Color(0xFF111827),
                           ),
                           backgroundColor: Colors.white,
                         ),
@@ -808,40 +781,144 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFE),
+                          color: const Color(0xFF111827),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFDCE4F2)),
+                          border: Border.all(color: const Color(0xFF334155)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
                               'Tap token',
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 6),
-                            SelectableText(
-                              tapToken,
-                              style: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: 12,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFE2E8F0),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            OutlinedButton.icon(
-                              onPressed: () async {
-                                await Clipboard.setData(
-                                  ClipboardData(text: tapToken),
-                                );
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Tap token copied.'),
+                            const SizedBox(height: 6),
+                            FutureBuilder<String>(
+                              future: tapTokenFuture,
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState !=
+                                    ConnectionState.done) {
+                                  return const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 6),
+                                    child: SizedBox(
+                                      height: 18,
+                                      width: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  );
+                                }
+                                if (snapshot.hasError || !snapshot.hasData) {
+                                  return Text(
+                                    snapshot.error
+                                            ?.toString()
+                                            .replaceFirst('Exception: ', '') ??
+                                        'Failed to generate tap token.',
+                                    style: const TextStyle(
+                                      color: Color(0xFFFCA5A5),
+                                    ),
+                                  );
+                                }
+                                return SelectableText(
+                                  snapshot.data!,
+                                  style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 12,
                                   ),
                                 );
                               },
-                              icon: const Icon(Icons.copy_rounded),
-                              label: const Text('Copy token'),
+                            ),
+                            const SizedBox(height: 8),
+                            FxButton(
+                              label: 'Copy token',
+                              icon: Icons.copy_rounded,
+                              fullWidth: true,
+                              onPressed: () async {
+                                try {
+                                  final token = await tapTokenFuture;
+                                  await Clipboard.setData(
+                                    ClipboardData(text: token),
+                                  );
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Tap token copied.'),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        e
+                                            .toString()
+                                            .replaceFirst('Exception: ', ''),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            FxButton(
+                              label: 'Enable Phone Tap',
+                              icon: Icons.nfc_rounded,
+                              fullWidth: true,
+                              onPressed: () async {
+                                try {
+                                  final token = await tapTokenFuture;
+                                  final enabled = await NfcHceBridge.isAvailable();
+                                  if (!enabled) {
+                                    throw Exception('NFC/HCE is unavailable or disabled on this phone.');
+                                  }
+                                  await NfcHceBridge.setTapToken(token);
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Phone tap is armed. Hold phone to POS reader.'),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        e.toString().replaceFirst('Exception: ', ''),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            FxButton(
+                              label: 'Disable Phone Tap',
+                              icon: Icons.nfc_outlined,
+                              fullWidth: true,
+                              onPressed: () async {
+                                try {
+                                  await NfcHceBridge.clearTapToken();
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Phone tap disabled.'),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        e.toString().replaceFirst('Exception: ', ''),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
                             ),
                           ],
                         ),
@@ -851,20 +928,18 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                       v.code,
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF4B5563),
+                        color: Color(0xFFCBD5E1),
                       ),
                     ),
                     Text(
                       'ZAR ${v.amount.toStringAsFixed(2)} • ${v.status}',
-                      style: const TextStyle(color: Color(0xFF64748B)),
+                      style: const TextStyle(color: Color(0xFF94A3B8)),
                     ),
                     const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Close'),
-                      ),
+                    FxButton(
+                      label: 'Close',
+                      fullWidth: true,
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),
@@ -888,6 +963,7 @@ class DriverApplyVoucherPage extends StatefulWidget {
 class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
   bool loading = true;
   bool submitting = false;
+  bool autopayEnabled = false;
   String? error;
   final amountCtrl = TextEditingController(text: '500');
   final stationCtrl = TextEditingController();
@@ -914,8 +990,12 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
       error = null;
     });
     try {
+      final profile = await widget.api.profile();
       final st = await widget.api.stations();
-      setState(() => stations = st);
+      setState(() {
+        stations = st;
+        autopayEnabled = (profile['autopay_enabled'] ?? false) == true;
+      });
     } catch (e) {
       setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -924,6 +1004,15 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
   }
 
   Future<void> submit() async {
+    if (!autopayEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enable AutoPay in Profile before applying.'),
+        ),
+      );
+      return;
+    }
+
     if (stationId == null) {
       ScaffoldMessenger.of(
         context,
@@ -965,6 +1054,25 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
+                if (!autopayEnabled) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF3B82F6)),
+                    ),
+                    child: const Text(
+                      'AutoPay is required to apply for vouchers. Enable it in Profile.',
+                      style: TextStyle(
+                        color: Color(0xFFBFDBFE),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 TextField(
                   controller: stationCtrl,
                   readOnly: true,
@@ -1007,28 +1115,30 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                   decoration: const InputDecoration(labelText: 'Fuel Type'),
                 ),
                 const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: submitting ? null : submit,
-                    child: submitting
-                        ? const SizedBox(
+                submitting
+                    ? const SizedBox(
+                        height: 54,
+                        child: Center(
+                          child: SizedBox(
                             height: 22,
                             width: 22,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
                               color: Colors.white,
                             ),
-                          )
-                        : const Text('Apply for Voucher'),
-                  ),
-                ),
+                          ),
+                        ),
+                      )
+                    : FxButton(
+                        label: 'Apply for Voucher',
+                        icon: Icons.send_rounded,
+                        fullWidth: true,
+                        onPressed: autopayEnabled ? submit : null,
+                      ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        const FeedbackPanel(compact: true),
       ],
     );
   }
@@ -1079,6 +1189,66 @@ class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
           content: Text('Repayment for ${item.voucherCode} marked paid.'),
         ),
       );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+      setState(() => loading = false);
+    }
+  }
+
+  Future<void> payWithPaystack(RepaymentItem item) async {
+    setState(() => loading = true);
+    String? reference;
+    try {
+      final checkout = await widget.api.initializePaystackRepayment(item.id);
+      reference = (checkout['reference'] ?? '').toString();
+      final authUrl = (checkout['authorization_url'] ?? '').toString();
+      if (authUrl.isEmpty || reference.isEmpty) {
+        throw Exception('Paystack checkout response is incomplete.');
+      }
+
+      final uri = Uri.parse(authUrl);
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        throw Exception('Unable to open Paystack checkout URL.');
+      }
+
+      if (!mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Complete Payment'),
+          content: const Text(
+            'After finishing payment on Paystack, tap Confirm to verify and post repayment.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Later'),
+            ),
+            FxButton(
+              label: 'Confirm',
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        await widget.api.verifyPaystackRepayment(
+          repaymentId: item.id,
+          reference: reference,
+        );
+        await fetch();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Paystack payment verified for ${item.voucherCode}.')),
+        );
+      } else {
+        if (mounted) setState(() => loading = false);
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1153,30 +1323,43 @@ class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
                     const SizedBox(height: 6),
                     Text(
                       'Due ${_fmtDate(item.dueDate)}',
-                      style: const TextStyle(color: Color(0xFF64748B)),
+                      style: const TextStyle(color: Color(0xFF94A3B8)),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'ZAR ${item.amount.toStringAsFixed(2)}',
                       style: const TextStyle(
+                        color: AppTheme.slate,
                         fontWeight: FontWeight.w700,
                         fontSize: 18,
                       ),
                     ),
                     const SizedBox(height: 10),
                     if (!isPaid)
-                      OutlinedButton.icon(
-                        onPressed: () => payNow(item),
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: const Text('Pay now'),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FxButton(
+                              label: 'Pay now',
+                              icon: Icons.check_circle_outline,
+                              onPressed: () => payNow(item),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: FxButton(
+                              label: 'Paystack',
+                              icon: Icons.open_in_new_rounded,
+                              onPressed: () => payWithPaystack(item),
+                            ),
+                          ),
+                        ],
                       ),
                   ],
                 ),
               ),
             );
           }),
-          const SizedBox(height: 12),
-          const FeedbackPanel(compact: true),
         ],
       ),
     );
@@ -1201,6 +1384,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
   bool loading = true;
   bool enabled = false;
   String? error;
+  String paymentMethod = 'wallet';
 
   @override
   void initState() {
@@ -1215,7 +1399,10 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
     });
     try {
       final p = await widget.api.profile();
-      setState(() => enabled = (p['autopay_enabled'] ?? false) == true);
+      setState(() {
+        enabled = (p['autopay_enabled'] ?? false) == true;
+        paymentMethod = (p['autopay_gateway'] ?? 'wallet').toString();
+      });
     } catch (e) {
       setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -1224,10 +1411,30 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
   }
 
   Future<void> toggle(bool value) async {
+    String method = paymentMethod;
+    String? authCode;
+    String? paystackEmail;
+
+    if (value) {
+      final picked = await _showAutopaySetupDialog();
+      if (picked == null) return;
+      method = picked.$1;
+      authCode = picked.$2;
+      paystackEmail = picked.$3;
+    }
+
     setState(() => loading = true);
     try {
-      await widget.api.setAutopay(enabled: value);
-      setState(() => enabled = value);
+      await widget.api.setAutopay(
+        enabled: value,
+        method: method,
+        paystackAuthorizationCode: authCode,
+        paystackEmail: paystackEmail,
+      );
+      setState(() {
+        enabled = value;
+        paymentMethod = method;
+      });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(value ? 'AutoPay enabled' : 'AutoPay disabled')),
@@ -1240,6 +1447,96 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
     } finally {
       if (mounted) setState(() => loading = false);
     }
+  }
+
+  Future<(String, String?, String?)?> _showAutopaySetupDialog() async {
+    var method = paymentMethod == 'paystack' ? 'paystack' : 'wallet';
+    final authCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+
+    final result = await showDialog<(String, String?, String?)>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setLocalState) {
+            return AlertDialog(
+              title: const Text('AutoPay Setup'),
+              content: SizedBox(
+                width: 360,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SegmentedButton<String>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(value: 'wallet', label: Text('Wallet')),
+                        ButtonSegment(value: 'paystack', label: Text('Paystack')),
+                      ],
+                      selected: {method},
+                      onSelectionChanged: (value) {
+                        setLocalState(() => method = value.first);
+                      },
+                    ),
+                    if (method == 'paystack') ...[
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: emailCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Paystack Email',
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: authCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Authorization Code',
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FxButton(
+                  label: 'Save',
+                  onPressed: () {
+                    if (method == 'paystack' &&
+                        (authCtrl.text.trim().isEmpty ||
+                            emailCtrl.text.trim().isEmpty)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Paystack email and authorization code are required.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                    Navigator.of(context).pop((
+                      method,
+                      authCtrl.text.trim().isEmpty
+                          ? null
+                          : authCtrl.text.trim(),
+                      emailCtrl.text.trim().isEmpty
+                          ? null
+                          : emailCtrl.text.trim(),
+                    ));
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    authCtrl.dispose();
+    emailCtrl.dispose();
+    return result;
   }
 
   @override
@@ -1269,20 +1566,27 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                 const SizedBox(width: 10),
                 const Expanded(
                   child: Text(
-                    'Daily AutoPay',
+                    'AutoPay',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: AppTheme.slate,
                     ),
                   ),
                 ),
+                Text(
+                  paymentMethod.toUpperCase(),
+                  style: const TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Switch(value: enabled, onChanged: toggle),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        const FeedbackPanel(compact: true),
       ],
     );
   }

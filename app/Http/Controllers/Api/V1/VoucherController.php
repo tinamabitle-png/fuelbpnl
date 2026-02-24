@@ -7,6 +7,7 @@ use App\Models\FuelVoucher;
 use App\Models\FuelStation;
 use App\Models\Lease;
 use App\Services\Core\CreditService;
+use App\Services\TapTokenService;
 use App\Services\Core\VoucherService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -15,11 +16,17 @@ class VoucherController extends Controller
 {
     protected $creditService;
     protected $voucherService;
+    protected $tapTokenService;
 
-    public function __construct(CreditService $creditService, VoucherService $voucherService)
+    public function __construct(
+        CreditService $creditService,
+        VoucherService $voucherService,
+        TapTokenService $tapTokenService
+    )
     {
         $this->creditService = $creditService;
         $this->voucherService = $voucherService;
+        $this->tapTokenService = $tapTokenService;
     }
 
     public function requestVoucher(Request $request)
@@ -235,15 +242,26 @@ class VoucherController extends Controller
     public function redeem(Request $request)
     {
         $request->validate([
-            'code' => 'required_without:voucher_id|string',
-            'voucher_id' => 'required_without:code|integer',
+            'scan_input' => 'required_without_all:code,voucher_id|string',
+            'code' => 'required_without_all:scan_input,voucher_id|string',
+            'voucher_id' => 'required_without_all:scan_input,code|integer',
         ]);
 
+        $scanInput = (string) ($request->input('scan_input') ?? '');
+        $tapPayload = $scanInput !== '' ? $this->tapTokenService->verify($scanInput) : null;
+
         $voucherQuery = FuelVoucher::query();
-        if ($request->filled('voucher_id')) {
+        if (is_array($tapPayload)) {
+            $voucherQuery
+                ->where('id', (int) ($tapPayload['vid'] ?? 0))
+                ->where('code', (string) ($tapPayload['code'] ?? ''));
+        } elseif ($request->filled('voucher_id')) {
             $voucherQuery->where('id', $request->integer('voucher_id'));
         } else {
-            $voucherQuery->where('code', (string) $request->input('code'));
+            $code = (string) ($request->input('code') ?: $scanInput);
+            $voucherQuery->where(function ($q) use ($code) {
+                $q->where('code', $code)->orWhere('qr_code', $code);
+            });
         }
         $voucher = $voucherQuery->first();
 

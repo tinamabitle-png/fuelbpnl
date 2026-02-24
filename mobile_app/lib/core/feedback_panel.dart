@@ -22,18 +22,22 @@ class _FeedbackPanelState extends State<FeedbackPanel> {
   @override
   Widget build(BuildContext context) {
     final titleStyle = TextStyle(
-      color: Colors.blueGrey.shade300,
-      fontSize: widget.compact ? 18 : 20,
+      color: const Color(0xFFE2E8F0),
+      fontSize: widget.compact ? 16 : 18,
       fontWeight: FontWeight.w700,
     );
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.blueGrey.shade200),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0B1220), Color(0xFF111827)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF334155)),
       ),
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       child: Column(
         children: [
           Text('Send Feedback', style: titleStyle),
@@ -43,22 +47,20 @@ class _FeedbackPanelState extends State<FeedbackPanel> {
             maxLines: 5,
             decoration: InputDecoration(
               hintText: 'Your feedback...',
-              hintStyle: TextStyle(
-                color: Colors.blueGrey.shade500.withValues(alpha: 0.7),
-              ),
-              fillColor: Colors.blueGrey.shade100,
+              hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+              fillColor: const Color(0xFF020617),
               filled: true,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: Colors.blueGrey.shade200),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF334155)),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: Colors.blueGrey.shade200),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF334155)),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: Colors.blueGrey.shade600),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF7C3AED)),
               ),
             ),
           ),
@@ -92,16 +94,16 @@ class _FeedbackPanelState extends State<FeedbackPanel> {
                     setState(() => _mood = 0);
                   },
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.blueGrey.shade100,
-                    side: BorderSide(color: Colors.blueGrey.shade200),
+                    backgroundColor: const Color(0xFF0F172A),
+                    side: const BorderSide(color: Color(0xFF334155)),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     minimumSize: const Size.fromHeight(46),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.send_rounded,
-                    color: Colors.blueGrey.shade700,
+                    color: Color(0xFFE2E8F0),
                   ),
                 ),
               ),
@@ -122,18 +124,18 @@ class _FeedbackPanelState extends State<FeedbackPanel> {
           padding: const EdgeInsets.all(0),
           minimumSize: const Size(44, 44),
           backgroundColor: selected
-              ? Colors.blue.shade400
-              : Colors.blueGrey.shade100,
+              ? const Color(0xFF7C3AED)
+              : const Color(0xFF0F172A),
           side: BorderSide(
-            color: selected ? Colors.blue.shade400 : Colors.blueGrey.shade200,
+            color: selected ? const Color(0xFF7C3AED) : const Color(0xFF334155),
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
         child: Icon(
           icon,
-          color: selected ? Colors.blue.shade100 : Colors.blueGrey.shade600,
+          color: selected ? Colors.white : const Color(0xFF94A3B8),
         ),
       ),
     );

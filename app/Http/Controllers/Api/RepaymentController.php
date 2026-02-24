@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Lease;
 use App\Models\Repayment;
+use App\Services\PaystackService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +15,129 @@ use Carbon\Carbon;
 
 class RepaymentController extends Controller
 {
+    public function initializePaystack(Request $request, Repayment $repayment, PaystackService $paystack)
+    {
+        $user = $request->user();
+
+        if ((int) $repayment->user_id !== (int) $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized repayment access.',
+            ], 403);
+        }
+
+        if (!in_array((string) $repayment->status, ['pending', 'overdue'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Repayment is not payable.',
+            ], 422);
+        }
+
+        try {
+            $callback = (string) config('app.url');
+            if ($callback === '') {
+                $callback = 'http://localhost';
+            }
+            $callback = rtrim($callback, '/') . '/driver/repayments/paystack/callback';
+
+            $checkout = $paystack->initializeRepaymentCheckout(
+                $user,
+                $repayment,
+                'card',
+                $callback
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Paystack checkout initialized.',
+                'data' => [
+                    'reference' => (string) ($checkout['reference'] ?? ''),
+                    'authorization_url' => (string) ($checkout['authorization_url'] ?? ''),
+                    'access_code' => (string) ($checkout['access_code'] ?? ''),
+                    'repayment_id' => (int) $repayment->id,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to initialize Paystack: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function verifyPaystack(Request $request, PaystackService $paystack)
+    {
+        $validator = Validator::make($request->all(), [
+            'reference' => 'required|string|max:255',
+            'repayment_id' => 'required|integer|exists:repayments,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = $request->user();
+        $repayment = Repayment::query()->findOrFail((int) $request->input('repayment_id'));
+        if ((int) $repayment->user_id !== (int) $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized repayment access.',
+            ], 403);
+        }
+
+        if ((string) $repayment->status === 'paid') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Repayment already paid.',
+                'data' => [
+                    'repayment_id' => (int) $repayment->id,
+                    'reference' => (string) ($repayment->transaction_reference ?? ''),
+                ],
+            ]);
+        }
+
+        try {
+            $verified = $paystack->verifyTransaction((string) $request->input('reference'));
+            $metadata = (array) ($verified['metadata'] ?? []);
+            $metadataRepaymentId = (int) ($metadata['repayment_id'] ?? 0);
+            if ($metadataRepaymentId > 0 && $metadataRepaymentId !== (int) $repayment->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment reference does not match selected repayment.',
+                ], 422);
+            }
+
+            DB::transaction(function () use ($repayment, $verified) {
+                $locked = Repayment::whereKey($repayment->id)->lockForUpdate()->firstOrFail();
+                if ((string) $locked->status !== 'paid') {
+                    $locked->markAsPaid(
+                        'paystack_card',
+                        (string) ($verified['reference'] ?? $locked->transaction_reference ?? '')
+                    );
+                }
+            });
+
+            $paystack->storeAuthorizationFromTransaction($user, $verified);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Paystack payment verified.',
+                'data' => [
+                    'repayment_id' => (int) $repayment->id,
+                    'reference' => (string) ($verified['reference'] ?? ''),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Paystack verification failed: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
     /**
      * Get upcoming repayments
      */
@@ -177,7 +301,7 @@ class RepaymentController extends Controller
             'repayment_ids' => 'required_without:amount|array',
             'repayment_ids.*' => 'exists:repayments,id',
             'amount' => 'required_without:repayment_ids|numeric|min:100',
-            'payment_method' => 'required|in:wallet,mpesa,bank_transfer',
+            'payment_method' => 'required|in:wallet,mpesa,bank_transfer,paystack',
             'phone' => 'required_if:payment_method,mpesa|string',
             'pay_all_overdue' => 'boolean',
         ]);
@@ -322,8 +446,10 @@ class RepaymentController extends Controller
         
         $validator = Validator::make($request->all(), [
             'enabled' => 'required|boolean',
-            'payment_method' => 'required_if:enabled,true|in:wallet,mpesa',
+            'payment_method' => 'required_if:enabled,true|in:wallet,mpesa,paystack',
             'phone' => 'required_if:payment_method,mpesa|string',
+            'authorization_code' => 'required_if:payment_method,paystack|string|max:255',
+            'paystack_email' => 'required_if:payment_method,paystack|email|max:255',
             'threshold_days' => 'required_if:enabled,true|integer|min:1|max:7',
             'max_amount' => 'required_if:enabled,true|numeric|min:100|max:50000',
         ]);
@@ -341,6 +467,8 @@ class RepaymentController extends Controller
             'threshold_days' => $request->threshold_days,
             'max_amount' => $request->max_amount,
             'phone' => $request->phone,
+            'authorization_code' => $request->authorization_code,
+            'paystack_email' => $request->paystack_email,
             'updated_at' => now(),
         ];
 
@@ -353,6 +481,12 @@ class RepaymentController extends Controller
         $user->update([
             'autopay_enabled' => (bool) $request->enabled,
             'autopay_gateway' => (string) ($request->payment_method ?? $user->autopay_gateway ?? 'wallet'),
+            'autopay_token' => (bool) $request->enabled && (string) $request->payment_method === 'paystack'
+                ? (string) ($request->authorization_code ?? $user->autopay_token ?? '')
+                : $user->autopay_token,
+            'autopay_email' => (bool) $request->enabled && (string) $request->payment_method === 'paystack'
+                ? (string) ($request->paystack_email ?? $user->autopay_email ?? '')
+                : $user->autopay_email,
             'autopay_status' => (bool) $request->enabled ? 'active' : 'disabled',
             'autopay_details' => $settings,
             'autopay_last_attempt_at' => now(),
@@ -575,6 +709,7 @@ class RepaymentController extends Controller
         $prefixes = [
             'mpesa' => 'MPE',
             'bank_transfer' => 'BNK',
+            'paystack' => 'PST',
         ];
 
         return [

@@ -45,7 +45,7 @@ class SessionStore {
 
   Future<String> baseUrl() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_baseUrlKey) ?? 'http://10.0.2.2:8000/api/v1';
+    return prefs.getString(_baseUrlKey) ?? 'http://192.168.0.102:43162/api/v1';
   }
 
   Future<void> setBaseUrl(String value) async {

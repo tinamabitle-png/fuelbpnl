@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\FuelVoucher;
 use App\Models\Lease;
 use App\Models\FuelStation;
+use App\Services\TapTokenService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
@@ -35,6 +36,13 @@ class FuelVoucherController extends Controller
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors()
+            ], 422);
+        }
+
+        if (!$user->autopay_enabled) {
+            return response()->json([
+                'success' => false,
+                'message' => 'AutoPay must be enabled before requesting a voucher.'
             ], 422);
         }
 
@@ -270,6 +278,54 @@ class FuelVoucherController extends Controller
                 'message' => 'Failed to cancel voucher: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Generate a short-lived secure tap token for an approved voucher.
+     */
+    public function tapToken(Request $request, int $id, TapTokenService $tapTokens)
+    {
+        $user = $request->user();
+
+        $voucher = $user->vouchers()
+            ->where('id', $id)
+            ->with('fuelStation')
+            ->first();
+
+        if (!$voucher) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Voucher not found',
+            ], 404);
+        }
+
+        if ($voucher->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only approved vouchers can be used for tap redemption.',
+            ], 422);
+        }
+
+        if ($voucher->expires_at && now()->gt($voucher->expires_at)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Voucher is expired.',
+            ], 422);
+        }
+
+        $issued = $tapTokens->issue($voucher, $user);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tap token generated.',
+            'data' => [
+                'voucher_id' => $voucher->id,
+                'voucher_code' => $voucher->code,
+                'station_id' => $voucher->fuel_station_id,
+                'token' => $issued['token'],
+                'expires_at' => $issued['expires_at'],
+            ],
+        ]);
     }
 
     /**

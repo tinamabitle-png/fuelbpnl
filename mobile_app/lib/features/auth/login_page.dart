@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/fx_button.dart';
+import '../../core/logo_mark.dart';
+import '../../core/session_store.dart';
 import '../../core/theme.dart';
 import '../../data/api_client.dart';
 
@@ -14,19 +17,64 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  static const String _driverLogoAsset = 'assets/images/driver_logo.png';
   final phoneCtrl = TextEditingController();
   final passCtrl = TextEditingController();
+  final baseUrlCtrl = TextEditingController();
+  final SessionStore _store = SessionStore();
 
   String role = 'driver';
   bool submitting = false;
   String? error;
+  bool baseUrlLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBaseUrl();
+  }
 
   @override
   void dispose() {
     phoneCtrl.dispose();
     passCtrl.dispose();
+    baseUrlCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadBaseUrl() async {
+    final value = await _store.baseUrl();
+    if (!mounted) return;
+    setState(() {
+      baseUrlCtrl.text = value;
+      baseUrlLoaded = true;
+    });
+  }
+
+  String _normalizeBaseUrl(String value) {
+    var url = value.trim();
+    if (url.isEmpty) return '';
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'http://$url';
+    }
+    if (!url.contains('/api/v1')) {
+      url = '${url.replaceAll(RegExp(r'\/+$'), '')}/api/v1';
+    }
+    return url;
+  }
+
+  Future<void> _saveBaseUrl() async {
+    final normalized = _normalizeBaseUrl(baseUrlCtrl.text);
+    if (normalized.isEmpty) {
+      throw Exception('Base URL is required.');
+    }
+    final parsed = Uri.tryParse(normalized);
+    if (parsed == null || !(parsed.hasScheme && parsed.host.isNotEmpty)) {
+      throw Exception('Invalid Base URL.');
+    }
+    await _store.setBaseUrl(normalized);
+    if (mounted) {
+      setState(() => baseUrlCtrl.text = normalized);
+    }
   }
 
   Future<void> login() async {
@@ -36,6 +84,7 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
+      await _saveBaseUrl();
       await widget.api.login(
         phone: phoneCtrl.text.trim(),
         password: passCtrl.text,
@@ -43,6 +92,24 @@ class _LoginPageState extends State<LoginPage> {
       );
       if (!mounted) return;
       widget.onLoggedIn(role);
+    } catch (e) {
+      setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => submitting = false);
+    }
+  }
+
+  Future<void> quickLogin(String quickRole) async {
+    setState(() {
+      submitting = true;
+      error = null;
+    });
+
+    try {
+      await _saveBaseUrl();
+      await widget.api.quickLogin(role: quickRole);
+      if (!mounted) return;
+      widget.onLoggedIn(quickRole == 'merchant' ? 'station' : quickRole);
     } catch (e) {
       setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -64,9 +131,20 @@ class _LoginPageState extends State<LoginPage> {
                 width: 360,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFDCE4F4)),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF0B1220), Color(0xFF111827)],
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFF334155)),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x334F46E5),
+                      blurRadius: 24,
+                      offset: Offset(0, 12),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -80,10 +158,7 @@ class _LoginPageState extends State<LoginPage> {
                           gradient: AppTheme.actionGradient,
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: Image.asset(
-                          _driverLogoAsset,
-                          fit: BoxFit.contain,
-                        ),
+                        child: const Center(child: LogoMark(size: 34)),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -91,8 +166,8 @@ class _LoginPageState extends State<LoginPage> {
                       'Login',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: AppTheme.slate,
-                        fontSize: 26,
+                        color: Color(0xFFE2E8F0),
+                        fontSize: 24,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -106,18 +181,18 @@ class _LoginPageState extends State<LoginPage> {
                           if (states.contains(WidgetState.selected)) {
                             return Colors.white;
                           }
-                          return const Color(0xFF334155);
+                          return const Color(0xFFCBD5E1);
                         }),
                         backgroundColor: WidgetStateProperty.resolveWith((
                           states,
                         ) {
                           if (states.contains(WidgetState.selected)) {
-                            return AppTheme.green;
+                            return const Color(0xFF7C3AED);
                           }
-                          return const Color(0xFFF1F5F9);
+                          return const Color(0xFF0F172A);
                         }),
                         side: WidgetStateProperty.all(
-                          const BorderSide(color: Color(0xFFCBD5E1)),
+                          const BorderSide(color: Color(0xFF334155)),
                         ),
                       ),
                       segments: const [
@@ -129,25 +204,70 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 18),
                     const Text(
-                      'Username',
-                      style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                      'Base URL',
+                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                    ),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: baseUrlCtrl,
+                      enabled: baseUrlLoaded && !submitting,
+                      style: const TextStyle(color: Color(0xFFE2E8F0)),
+                      decoration: _inputDecoration().copyWith(
+                        hintText: 'http://192.168.0.102:43162/api/v1',
+                        hintStyle: const TextStyle(color: Color(0xFF64748B)),
+                        suffixIcon: IconButton(
+                          tooltip: 'Apply Base URL',
+                          onPressed: submitting
+                              ? null
+                              : () async {
+                                  final messenger = ScaffoldMessenger.of(
+                                    context,
+                                  );
+                                  setState(() => error = null);
+                                  try {
+                                    await _saveBaseUrl();
+                                    if (!mounted) return;
+                                    messenger.showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Base URL updated'),
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    if (!mounted) return;
+                                    setState(() => error = e
+                                        .toString()
+                                        .replaceFirst('Exception: ', ''));
+                                  }
+                                },
+                          icon: const Icon(
+                            Icons.check_circle_outline_rounded,
+                            color: Color(0xFF94A3B8),
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Phone Number',
+                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
                     ),
                     const SizedBox(height: 4),
                     TextField(
                       controller: phoneCtrl,
-                      style: const TextStyle(color: AppTheme.slate),
+                      style: const TextStyle(color: Color(0xFFE2E8F0)),
                       decoration: _inputDecoration(),
                     ),
                     const SizedBox(height: 12),
                     const Text(
                       'Password',
-                      style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
                     ),
                     const SizedBox(height: 4),
                     TextField(
                       controller: passCtrl,
                       obscureText: true,
-                      style: const TextStyle(color: AppTheme.slate),
+                      style: const TextStyle(color: Color(0xFFE2E8F0)),
                       decoration: _inputDecoration(),
                     ),
                     const SizedBox(height: 8),
@@ -158,7 +278,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: const Text(
                           'Forgot Password ?',
                           style: TextStyle(
-                            color: Color(0xFF64748B),
+                            color: Color(0xFF94A3B8),
                             fontSize: 12,
                           ),
                         ),
@@ -178,56 +298,61 @@ class _LoginPageState extends State<LoginPage> {
                           style: const TextStyle(color: Color(0xFFFCA5A5)),
                         ),
                       ),
-                    ElevatedButton(
-                      onPressed: submitting ? null : login,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.green,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size.fromHeight(48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: submitting
-                          ? const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                    submitting
+                        ? const SizedBox(
+                            height: 54,
+                            child: Center(
+                              child: SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               ),
-                            )
-                          : const Text(
-                              'Sign in',
-                              style: TextStyle(fontWeight: FontWeight.w700),
                             ),
-                    ),
-                    const SizedBox(height: 16),
+                          )
+                        : FxButton(
+                            label: 'Sign in',
+                            icon: Icons.login_rounded,
+                            fullWidth: true,
+                            onPressed: login,
+                          ),
+                    const SizedBox(height: 12),
                     Row(
                       children: const [
-                        Expanded(child: Divider(color: Color(0xFF374151))),
+                        Expanded(child: Divider(color: Color(0xFF334155))),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8),
                           child: Text(
-                            'Login with social accounts',
+                            'Quick Login',
                             style: TextStyle(
-                              color: Color(0xFF64748B),
+                              color: Color(0xFF94A3B8),
                               fontSize: 13,
                             ),
                           ),
                         ),
-                        Expanded(child: Divider(color: Color(0xFF374151))),
+                        Expanded(child: Divider(color: Color(0xFF334155))),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _socialIcon(Icons.g_mobiledata_rounded),
-                        const SizedBox(width: 8),
-                        _socialIcon(Icons.flutter_dash),
-                        const SizedBox(width: 8),
-                        _socialIcon(Icons.code),
+                        Expanded(
+                          child: FxButton(
+                            label: 'Driver',
+                            icon: Icons.directions_car_filled_rounded,
+                            onPressed: submitting ? null : () => quickLogin('driver'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: FxButton(
+                            label: 'Merchant',
+                            icon: Icons.storefront_rounded,
+                            onPressed: submitting ? null : () => quickLogin('merchant'),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 14),
@@ -237,14 +362,14 @@ class _LoginPageState extends State<LoginPage> {
                         Text(
                           "Don't have an account? ",
                           style: TextStyle(
-                            color: Color(0xFF64748B),
+                            color: Color(0xFF94A3B8),
                             fontSize: 12,
                           ),
                         ),
                         Text(
                           'Sign up',
                           style: TextStyle(
-                            color: AppTheme.greenDeep,
+                            color: Color(0xFFC4B5FD),
                             fontSize: 12,
                           ),
                         ),
@@ -264,33 +389,21 @@ class _LoginPageState extends State<LoginPage> {
     return InputDecoration(
       isDense: true,
       filled: true,
-      fillColor: const Color(0xFFF8FAFC),
+      fillColor: const Color(0xFF0F172A),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF334155)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppTheme.green),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF7C3AED)),
       ),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF334155)),
       ),
     );
   }
 
-  Widget _socialIcon(IconData icon) {
-    return Container(
-      height: 40,
-      width: 40,
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: const Color(0xFFCBD5E1)),
-      ),
-      child: Icon(icon, color: const Color(0xFF475569), size: 20),
-    );
-  }
 }

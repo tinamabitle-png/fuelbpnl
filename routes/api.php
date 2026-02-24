@@ -19,6 +19,7 @@ Route::prefix('v1')->group(function () {
     // Public routes
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/quick-login', [AuthController::class, 'quickLogin']);
     Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
     Route::post('/auth/login-with-otp', [AuthController::class, 'loginWithOtp']);
     Route::post('/auth/complete-otp-login', [AuthController::class, 'completeOtpLogin']);
@@ -62,9 +63,10 @@ Route::prefix('v1')->group(function () {
         // Vouchers
         Route::prefix('vouchers')->group(function () {
             Route::post('/request', [FuelVoucherController::class, 'requestVoucher']);
+            Route::get('/{id}/tap-token', [FuelVoucherController::class, 'tapToken'])->whereNumber('id');
             Route::get('/', [FuelVoucherController::class, 'myVouchers']);
-            Route::get('/{id}', [FuelVoucherController::class, 'show']);
-            Route::post('/{id}/cancel', [FuelVoucherController::class, 'cancel']);
+            Route::get('/{id}', [FuelVoucherController::class, 'show'])->whereNumber('id');
+            Route::post('/{id}/cancel', [FuelVoucherController::class, 'cancel'])->whereNumber('id');
         });
         
         // Leases (BNPL)
@@ -82,6 +84,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/overdue', [RepaymentController::class, 'overdue']);
             Route::get('/history', [RepaymentController::class, 'history']);
             Route::post('/make-payment', [RepaymentController::class, 'makePayment']);
+            Route::post('/{repayment}/paystack/initialize', [RepaymentController::class, 'initializePaystack'])->whereNumber('repayment');
+            Route::post('/paystack/verify', [RepaymentController::class, 'verifyPaystack']);
             Route::post('/setup-auto-payment', [RepaymentController::class, 'setupAutoPayment']);
             Route::get('/reminders', [RepaymentController::class, 'reminders']);
             Route::get('/statistics', [RepaymentController::class, 'statistics']);
