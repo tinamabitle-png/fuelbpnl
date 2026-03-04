@@ -45,15 +45,24 @@ class DashboardController extends Controller
             ->whereIn('status', ['approved', 'issued'])
             ->count();
 
-        $pendingRepayments = Repayment::where('user_id', $user->id)
+        $pendingRepayments = Repayment::visibleInSystem()->where('user_id', $user->id)
             ->whereIn('status', ['pending', 'overdue'])
             ->count();
 
-        $pendingRepaymentAmount = Repayment::where('user_id', $user->id)
+        $pendingRepaymentAmount = Repayment::visibleInSystem()->where('user_id', $user->id)
             ->whereIn('status', ['pending', 'overdue'])
             ->sum('amount');
 
         $activeStationCount = FuelStation::where('status', 'active')->count();
+
+        $redeemedVoucherCount = FuelVoucher::where('user_id', $user->id)
+            ->where('status', 'redeemed')
+            ->count();
+
+        $redeemedVoucherToday = FuelVoucher::where('user_id', $user->id)
+            ->where('status', 'redeemed')
+            ->whereDate('redeemed_at', now()->toDateString())
+            ->count();
 
         $latestApprovedVoucher = FuelVoucher::with('fuelStation')
             ->where('user_id', $user->id)
@@ -67,7 +76,7 @@ class DashboardController extends Controller
             ->limit(6)
             ->get();
 
-        $upcomingRepayments = Repayment::with(['lease.vouchers.fuelStation'])
+        $upcomingRepayments = Repayment::visibleInSystem()->with(['lease.vouchers.fuelStation'])
             ->where('user_id', $user->id)
             ->whereIn('status', ['pending', 'overdue'])
             ->orderBy('due_date')
@@ -86,6 +95,8 @@ class DashboardController extends Controller
             'pendingRepayments',
             'pendingRepaymentAmount',
             'activeStationCount',
+            'redeemedVoucherCount',
+            'redeemedVoucherToday',
             'latestApprovedVoucher',
             'recentVouchers',
             'upcomingRepayments',
@@ -100,18 +111,31 @@ class DashboardController extends Controller
         $this->authorizeDriverPortal($user);
 
         $stations = FuelStation::where('status', 'active')
+            ->orderBy('company')
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'company', 'city', 'address']);
+
+        $brands = $stations
+            ->pluck('company')
+            ->map(fn ($company) => trim((string) $company))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
 
         $vouchers = FuelVoucher::with('fuelStation')
             ->where('user_id', $user->id)
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')->toString()))
+            ->when($request->filled('brand'), function ($q) use ($request) {
+                $brand = trim((string) $request->string('brand')->toString());
+                $q->whereHas('fuelStation', fn ($stationQuery) => $stationQuery->where('company', $brand));
+            })
             ->when($request->filled('station_id'), fn ($q) => $q->where('fuel_station_id', $request->integer('station_id')))
             ->latest()
             ->paginate(20)
             ->withQueryString();
 
-        return view('driver.vouchers.index', compact('vouchers', 'stations'));
+        return view('driver.vouchers.index', compact('vouchers', 'stations', 'brands'));
     }
 
     public function createVoucher()
@@ -121,11 +145,22 @@ class DashboardController extends Controller
 
         $stationsPayload = Cache::remember('driver:voucher:stations-payload:v1', now()->addMinute(), function () {
             $stations = FuelStation::where('status', 'active')
+                ->orderBy('company')
                 ->orderBy('name')
-                ->get(['id', 'name', 'city', 'latitude', 'longitude']);
+                ->get(['id', 'name', 'company', 'city', 'address', 'latitude', 'longitude', 'wallet_balance']);
 
             $defaults = $this->fuelPriceService->defaultPrices();
             $priceRowsByStation = collect();
+            $openExposureByStation = collect();
+
+            if ($stations->isNotEmpty()) {
+                $openExposureByStation = FuelVoucher::query()
+                    ->whereIn('fuel_station_id', $stations->pluck('id')->all())
+                    ->whereIn('status', ['issued', 'approved'])
+                    ->selectRaw('fuel_station_id, COALESCE(SUM(amount), 0) as open_exposure')
+                    ->groupBy('fuel_station_id')
+                    ->pluck('open_exposure', 'fuel_station_id');
+            }
 
             if (Schema::hasTable('fuel_station_prices') && $stations->isNotEmpty()) {
                 $stationIds = $stations->pluck('id')->all();
@@ -149,7 +184,7 @@ class DashboardController extends Controller
                     ->groupBy('fuel_station_id');
             }
 
-            return $stations->map(function ($station) use ($defaults, $priceRowsByStation) {
+            return $stations->map(function ($station) use ($defaults, $priceRowsByStation, $openExposureByStation) {
                 $prices = $defaults;
                 foreach (($priceRowsByStation[$station->id] ?? collect()) as $row) {
                     $fuelType = (string) ($row->fuel_type ?? '');
@@ -159,13 +194,22 @@ class DashboardController extends Controller
                     $prices[$fuelType] = (float) $row->price_per_liter;
                 }
 
+                $walletBalance = (float) ($station->wallet_balance ?? 0);
+                $openExposure = (float) ($openExposureByStation[$station->id] ?? 0);
+                $availableCapacity = max(0, $walletBalance - $openExposure);
+
                 return [
                     'id' => $station->id,
                     'name' => $station->name,
+                    'brand' => $this->normalizePopularBrand((string) ($station->company ?? '')),
                     'city' => $station->city,
+                    'address' => trim((string) ($station->address ?? '')),
                     'latitude' => $station->latitude,
                     'longitude' => $station->longitude,
                     'prices' => $prices,
+                    'wallet_balance' => $walletBalance,
+                    'open_exposure' => $openExposure,
+                    'available_capacity' => $availableCapacity,
                 ];
             })->values();
         });
@@ -190,10 +234,11 @@ class DashboardController extends Controller
         });
 
         $underwriting = $this->driverUnderwritingService->resolveForUser($user);
+        $maxEligibleAmount = (float) ($underwriting['max_amount'] ?? DriverUnderwritingService::STARTER_MAX_VOUCHER_AMOUNT);
         // Keep policy hidden; only use effective rate for accurate projection math in UI.
         $leaseDefaults['rate'] = round((float) $leaseDefaults['rate'] + (float) ($underwriting['rate_penalty'] ?? 0), 2);
 
-        return view('driver.vouchers.create', compact('stationsPayload', 'leaseDefaults'));
+        return view('driver.vouchers.create', compact('stationsPayload', 'leaseDefaults', 'maxEligibleAmount'));
     }
 
     public function storeVoucher(Request $request)
@@ -205,6 +250,7 @@ class DashboardController extends Controller
             'fuel_station_id' => 'required|exists:fuel_stations,id',
             'amount' => 'required|numeric|min:100|max:100000',
             'fuel_type' => 'required|in:petrol,diesel,super',
+            'repayment_frequency' => 'nullable|in:daily,weekly',
             'liters' => 'nullable|numeric|min:0.1|max:5000',
             'repayment_days' => 'nullable|integer|min:7|max:60',
             'voucher_reference' => 'nullable|string|max:120',
@@ -233,6 +279,10 @@ class DashboardController extends Controller
         $baseTerm = max(7, min(60, $baseTerm));
         $termDays = (int) ($validated['repayment_days'] ?? $baseTerm);
         $termDays = max(7, min(60, $termDays));
+        $repaymentFrequency = strtolower((string) ($validated['repayment_frequency'] ?? 'daily'));
+        if (!in_array($repaymentFrequency, ['daily', 'weekly'], true)) {
+            $repaymentFrequency = 'daily';
+        }
         $principal = (float) $validated['amount'];
         $underwriting = $this->driverUnderwritingService->resolveForUser($user);
 
@@ -272,7 +322,7 @@ class DashboardController extends Controller
 
         $createdVoucher = null;
 
-        DB::transaction(function () use ($user, $validated, $liters, $principal, $rate, $interestAmount, $totalAmount, $termDays, $dailyRepayment, &$createdVoucher) {
+        DB::transaction(function () use ($user, $validated, $liters, $principal, $rate, $interestAmount, $totalAmount, $termDays, $dailyRepayment, $repaymentFrequency, &$createdVoucher) {
             $station = FuelStation::whereKey((int) $validated['fuel_station_id'])
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -312,6 +362,7 @@ class DashboardController extends Controller
                 'total_amount' => $totalAmount,
                 'term_days' => $termDays,
                 'daily_repayment' => $dailyRepayment,
+                'repayment_frequency' => $repaymentFrequency,
                 'status' => 'active',
                 'issued_at' => now(),
                 'due_date' => now()->addDays($termDays)->toDateString(),
@@ -377,16 +428,16 @@ class DashboardController extends Controller
         $user = Auth::user();
         $this->authorizeDriverPortal($user);
 
-        $repayments = Repayment::with(['lease.vouchers.fuelStation'])
+        $repayments = Repayment::visibleInSystem()->with(['lease.vouchers.fuelStation'])
             ->where('user_id', $user->id)
             ->orderByRaw("FIELD(status, 'overdue','pending','paid','defaulted')")
             ->orderBy('due_date')
             ->paginate(20);
 
         $summary = [
-            'pending_count' => Repayment::where('user_id', $user->id)->whereIn('status', ['pending', 'overdue'])->count(),
-            'pending_amount' => Repayment::where('user_id', $user->id)->whereIn('status', ['pending', 'overdue'])->sum('amount'),
-            'paid_this_month' => Repayment::where('user_id', $user->id)
+            'pending_count' => Repayment::visibleInSystem()->where('user_id', $user->id)->whereIn('status', ['pending', 'overdue'])->count(),
+            'pending_amount' => Repayment::visibleInSystem()->where('user_id', $user->id)->whereIn('status', ['pending', 'overdue'])->sum('amount'),
+            'paid_this_month' => Repayment::visibleInSystem()->where('user_id', $user->id)
                 ->where('status', 'paid')
                 ->whereMonth('paid_at', now()->month)
                 ->whereYear('paid_at', now()->year)
@@ -423,14 +474,14 @@ class DashboardController extends Controller
 
     public function profile()
     {
-        $user = Auth::user()->load(['wallet', 'creditLimit']);
+        $user = Auth::user()->load(['wallet', 'creditLimit', 'driverDocuments']);
         $this->authorizeDriverPortal($user);
 
         $summary = [
             'total_vouchers' => FuelVoucher::where('user_id', $user->id)->count(),
             'redeemed_vouchers' => FuelVoucher::where('user_id', $user->id)->where('status', 'redeemed')->count(),
             'active_leases' => Lease::where('user_id', $user->id)->where('status', 'active')->count(),
-            'paid_repayments' => Repayment::where('user_id', $user->id)->where('status', 'paid')->count(),
+            'paid_repayments' => Repayment::visibleInSystem()->where('user_id', $user->id)->where('status', 'paid')->count(),
         ];
 
         return view('driver.profile', compact('user', 'summary'));
@@ -441,7 +492,7 @@ class DashboardController extends Controller
         $user = Auth::user();
         $this->authorizeDriverPortal($user);
 
-        $repayments = Repayment::with(['lease.vouchers.fuelStation'])
+        $repayments = Repayment::visibleInSystem()->with(['lease.vouchers.fuelStation'])
             ->where('user_id', $user->id)
             ->whereIn('status', ['pending', 'overdue'])
             ->orderBy('due_date')
@@ -809,6 +860,37 @@ class DashboardController extends Controller
     private function authorizeDriverPortal($user): void
     {
         abort_unless($user && $user->hasAnyRole(['super_admin', 'admin', 'driver']), 403);
+    }
+
+    private function normalizePopularBrand(string $brand): string
+    {
+        $value = strtolower(trim($brand));
+        if ($value === '') {
+            return '';
+        }
+
+        $map = [
+            'shell' => 'Shell',
+            'shell sa' => 'Shell',
+            'shell south africa' => 'Shell',
+            'bp' => 'BP',
+            'bp southern africa' => 'BP',
+            'engen' => 'Engen',
+            'sasol' => 'Sasol',
+            'astron' => 'Astron Energy',
+            'astron energy' => 'Astron Energy',
+            'total' => 'TotalEnergies',
+            'total energies' => 'TotalEnergies',
+            'totalenergies' => 'TotalEnergies',
+        ];
+
+        foreach ($map as $needle => $normalized) {
+            if ($value === $needle || str_contains($value, $needle)) {
+                return $normalized;
+            }
+        }
+
+        return '';
     }
 
     private function calculateLeaseRate(float $baseRate, int $baseTermDays, int $selectedTermDays): float

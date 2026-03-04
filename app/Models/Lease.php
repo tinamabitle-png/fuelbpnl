@@ -18,6 +18,7 @@ class Lease extends Model
         'total_amount',
         'term_days',
         'daily_repayment',
+        'repayment_frequency',
         'status',
         'issued_at',
         'due_date',
@@ -205,14 +206,34 @@ public function getInvestorOwnershipPercentageAttribute()
         }
 
         $start = ($startDate ?? now())->copy()->startOfDay();
+        $frequency = strtolower((string) ($this->repayment_frequency ?? 'daily'));
 
-        for ($i = 1; $i <= $this->term_days; $i++) {
-            $this->repayments()->create([
-                'user_id' => $this->user_id,
-                'amount' => $this->daily_repayment,
-                'due_date' => $start->copy()->addDays($i)->toDateString(),
-                'status' => 'pending',
-            ]);
+        if ($frequency === 'weekly') {
+            $installmentCount = (int) ceil(max(1, (int) $this->term_days) / 7);
+            $remaining = round((float) $this->total_amount, 2);
+            $baseInstallment = round($remaining / max($installmentCount, 1), 2);
+
+            for ($i = 1; $i <= $installmentCount; $i++) {
+                $amount = $i === $installmentCount ? $remaining : min($remaining, $baseInstallment);
+                $remaining = round($remaining - $amount, 2);
+                $dayOffset = min($i * 7, (int) $this->term_days);
+
+                $this->repayments()->create([
+                    'user_id' => $this->user_id,
+                    'amount' => $amount,
+                    'due_date' => $start->copy()->addDays($dayOffset)->toDateString(),
+                    'status' => 'pending',
+                ]);
+            }
+        } else {
+            for ($i = 1; $i <= $this->term_days; $i++) {
+                $this->repayments()->create([
+                    'user_id' => $this->user_id,
+                    'amount' => $this->daily_repayment,
+                    'due_date' => $start->copy()->addDays($i)->toDateString(),
+                    'status' => 'pending',
+                ]);
+            }
         }
 
         $expectedDueDate = $start->copy()->addDays($this->term_days)->toDateString();
