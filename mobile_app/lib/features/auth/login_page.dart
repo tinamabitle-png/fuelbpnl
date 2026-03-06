@@ -213,7 +213,7 @@ class _LoginPageState extends State<LoginPage> {
                       enabled: baseUrlLoaded && !submitting,
                       style: const TextStyle(color: Color(0xFFE2E8F0)),
                       decoration: _inputDecoration().copyWith(
-                        hintText: 'http://192.168.0.102:43162/api/v1',
+                        hintText: 'http://192.168.0.101:8000/api/v1',
                         hintStyle: const TextStyle(color: Color(0xFF64748B)),
                         suffixIcon: IconButton(
                           tooltip: 'Apply Base URL',

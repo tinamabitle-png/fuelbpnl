@@ -127,7 +127,8 @@ class ApiClient {
       body: {
         'phone': phone,
         'password': password,
-        'device_id': 'flutter-${role.toLowerCase()}-${DateTime.now().millisecondsSinceEpoch}',
+        'device_id':
+            'flutter-${role.toLowerCase()}-${DateTime.now().millisecondsSinceEpoch}',
         'device_name': 'Bwiser Flutter',
         'device_type': 'android',
       },
@@ -137,10 +138,10 @@ class ApiClient {
     final data = _extractData(response.body);
     final token = (data['token'] ?? '').toString();
     final user = Map<String, dynamic>.from(
-      (data['user'] as Map?)?.cast<String, dynamic>() ??
-          <String, dynamic>{},
+      (data['user'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{},
     );
-    final roles = (data['roles'] as List?)?.map((e) => '$e').toList() ?? const [];
+    final roles =
+        (data['roles'] as List?)?.map((e) => '$e').toList() ?? const [];
 
     if (token.isEmpty || user.isEmpty) {
       throw Exception('Login response missing token or user payload.');
@@ -161,7 +162,11 @@ class ApiClient {
 
   Future<Map<String, dynamic>> quickLogin({required String role}) async {
     if (mockMode) {
-      return login(phone: '', password: '', role: role == 'merchant' ? 'station' : role);
+      return login(
+        phone: '',
+        password: '',
+        role: role == 'merchant' ? 'station' : role,
+      );
     }
 
     final quickRole = role == 'station' ? 'merchant' : role;
@@ -176,8 +181,7 @@ class ApiClient {
     final data = _extractData(response.body);
     final token = (data['token'] ?? '').toString();
     final user = Map<String, dynamic>.from(
-      (data['user'] as Map?)?.cast<String, dynamic>() ??
-          <String, dynamic>{},
+      (data['user'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{},
     );
 
     if (token.isEmpty || user.isEmpty) {
@@ -309,9 +313,13 @@ class ApiClient {
     }
 
     try {
-      final response = await _request(method: 'GET', path: '/vouchers?limit=50');
+      final response = await _request(
+        method: 'GET',
+        path: '/vouchers?limit=50',
+      );
       final data = _extractData(response.body);
-      final vouchersNode = (data['vouchers'] as Map?)?.cast<String, dynamic>() ??
+      final vouchersNode =
+          (data['vouchers'] as Map?)?.cast<String, dynamic>() ??
           <String, dynamic>{};
       final rows = _asList(vouchersNode['data'] ?? data['data'] ?? data);
       return rows.map(VoucherItem.fromDriverMap).toList();
@@ -319,7 +327,8 @@ class ApiClient {
       // Fallback if paginator/query variants differ.
       final response = await _request(method: 'GET', path: '/vouchers');
       final data = _extractData(response.body);
-      final vouchersNode = (data['vouchers'] as Map?)?.cast<String, dynamic>() ??
+      final vouchersNode =
+          (data['vouchers'] as Map?)?.cast<String, dynamic>() ??
           <String, dynamic>{};
       final rows = _asList(vouchersNode['data'] ?? data['data'] ?? data);
       return rows.map(VoucherItem.fromDriverMap).toList();
@@ -377,20 +386,24 @@ class ApiClient {
       final data = _extractData(response.body);
       final rows = _asList(data['stations'] ?? data['data'] ?? data);
       final mapped = rows
-          .map((e) => {
-                'id': _toInt(e['id']),
-                'name': (e['name'] ?? 'Station').toString(),
-                'city': (e['city'] ?? '').toString(),
-                'is_partner': e['is_partner'] ??
-                    e['partner'] ??
-                    e['is_active_partner'] ??
-                    e['partner_station'],
-                'wallet_balance': e['wallet_balance'] ??
-                    e['available_balance'] ??
-                    e['balance'] ??
-                    e['prefunded_balance'] ??
-                    e['funded_amount'],
-              })
+          .map(
+            (e) => {
+              'id': _toInt(e['id']),
+              'name': (e['name'] ?? 'Station').toString(),
+              'city': (e['city'] ?? '').toString(),
+              'is_partner':
+                  e['is_partner'] ??
+                  e['partner'] ??
+                  e['is_active_partner'] ??
+                  e['partner_station'],
+              'wallet_balance':
+                  e['wallet_balance'] ??
+                  e['available_balance'] ??
+                  e['balance'] ??
+                  e['prefunded_balance'] ??
+                  e['funded_amount'],
+            },
+          )
           .where((e) => (e['id'] as int) > 0)
           .toList();
       if (mapped.isNotEmpty) return mapped;
@@ -421,7 +434,8 @@ class ApiClient {
         path: '/vouchers?status=issued&limit=20',
       );
       final data = _extractData(response.body);
-      final vouchersNode = (data['vouchers'] as Map?)?.cast<String, dynamic>() ??
+      final vouchersNode =
+          (data['vouchers'] as Map?)?.cast<String, dynamic>() ??
           <String, dynamic>{};
       final rows = _asList(vouchersNode['data'] ?? data['data'] ?? data);
       return rows.map(VoucherItem.fromDriverMap).toList();
@@ -445,7 +459,9 @@ class ApiClient {
     return rows.map(VoucherItem.fromMerchantMap).toList();
   }
 
-  Future<Map<String, dynamic>> stationRedeem({required String scanInput}) async {
+  Future<Map<String, dynamic>> stationRedeem({
+    required String scanInput,
+  }) async {
     if (mockMode) {
       if (scanInput.isEmpty) {
         throw Exception('Provide a QR payload, code, or token.');
@@ -492,12 +508,8 @@ class ApiClient {
         'amount': existing.amount,
         'status': 'redeemed',
         'fuel_type': existing.fuelType,
-        'station': {
-          'name': existing.stationName ?? 'Station',
-        },
-        'driver': {
-          'name': 'Mock Driver',
-        },
+        'station': {'name': existing.stationName ?? 'Station'},
+        'driver': {'name': 'Mock Driver'},
         'redeemed_at': DateTime.now().toIso8601String(),
         'transaction_status': 'successful',
       };
@@ -574,7 +586,10 @@ class ApiClient {
     }
 
     try {
-      final overdueRes = await _request(method: 'GET', path: '/repayments/overdue');
+      final overdueRes = await _request(
+        method: 'GET',
+        path: '/repayments/overdue',
+      );
       final overdueData = _extractData(overdueRes.body);
       overdueRows = _asList(
         ((overdueData['repayments'] as Map?)?.cast<String, dynamic>() ??
@@ -603,12 +618,14 @@ class ApiClient {
         );
         upcomingRows = historyRows
             .where(
-              (row) => ((row['status'] ?? '').toString().toLowerCase() == 'pending'),
+              (row) =>
+                  ((row['status'] ?? '').toString().toLowerCase() == 'pending'),
             )
             .toList();
         overdueRows = historyRows
             .where(
-              (row) => ((row['status'] ?? '').toString().toLowerCase() == 'overdue'),
+              (row) =>
+                  ((row['status'] ?? '').toString().toLowerCase() == 'overdue'),
             )
             .toList();
       } catch (_) {
@@ -654,7 +671,9 @@ class ApiClient {
     );
   }
 
-  Future<Map<String, dynamic>> initializePaystackRepayment(int repaymentId) async {
+  Future<Map<String, dynamic>> initializePaystackRepayment(
+    int repaymentId,
+  ) async {
     final response = await _request(
       method: 'POST',
       path: '/repayments/$repaymentId/paystack/initialize',
@@ -670,10 +689,7 @@ class ApiClient {
     await _request(
       method: 'POST',
       path: '/repayments/paystack/verify',
-      body: {
-        'repayment_id': repaymentId,
-        'reference': reference,
-      },
+      body: {'repayment_id': repaymentId, 'reference': reference},
     );
   }
 
@@ -713,8 +729,8 @@ class ApiClient {
   }
 
   RepaymentItem _repaymentFromMap(Map<String, dynamic> row) {
-    final lease = (row['lease'] as Map?)?.cast<String, dynamic>() ??
-        <String, dynamic>{};
+    final lease =
+        (row['lease'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
     return RepaymentItem(
       id: _toInt(row['id']),
       voucherCode: (row['voucher_code'] ?? lease['id'] ?? 'Lease').toString(),
@@ -774,18 +790,45 @@ class ApiClient {
     }
 
     late http.Response response;
-    switch (method.toUpperCase()) {
-      case 'POST':
-        response = await http.post(uri, headers: headers, body: jsonEncode(body ?? {}));
-        break;
-      case 'PUT':
-        response = await http.put(uri, headers: headers, body: jsonEncode(body ?? {}));
-        break;
-      case 'DELETE':
-        response = await http.delete(uri, headers: headers, body: jsonEncode(body ?? {}));
-        break;
-      default:
-        response = await http.get(uri, headers: headers);
+    try {
+      switch (method.toUpperCase()) {
+        case 'POST':
+          response = await http.post(
+            uri,
+            headers: headers,
+            body: jsonEncode(body ?? {}),
+          );
+          break;
+        case 'PUT':
+          response = await http.put(
+            uri,
+            headers: headers,
+            body: jsonEncode(body ?? {}),
+          );
+          break;
+        case 'DELETE':
+          response = await http.delete(
+            uri,
+            headers: headers,
+            body: jsonEncode(body ?? {}),
+          );
+          break;
+        default:
+          response = await http.get(uri, headers: headers);
+      }
+    } catch (e) {
+      final message = e.toString().toLowerCase();
+      final isFetchFailure =
+          message.contains('failed to fetch') ||
+          message.contains('xmlhttprequest error') ||
+          message.contains('connection refused') ||
+          message.contains('connection closed');
+      if (isFetchFailure) {
+        throw Exception(
+          'Cannot reach API at $base. Ensure backend is running on :8000 and use Base URL http://192.168.0.101:8000/api/v1 (phone) or http://localhost:8000/api/v1 (same machine).',
+        );
+      }
+      rethrow;
     }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {

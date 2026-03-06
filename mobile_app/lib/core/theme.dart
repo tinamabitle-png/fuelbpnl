@@ -44,25 +44,22 @@ class AppTheme {
       scaffoldBackgroundColor: mist,
     );
 
-    final textTheme = GoogleFonts.orbitronTextTheme(
-      base.textTheme,
-    ).apply(
-      bodyColor: slate,
-      displayColor: slate,
-    ).copyWith(
-      headlineSmall: GoogleFonts.orbitron(
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.1,
-      ),
-      titleLarge: GoogleFonts.orbitron(
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.1,
-      ),
-      titleMedium: GoogleFonts.orbitron(fontWeight: FontWeight.w600),
-      bodyLarge: GoogleFonts.orbitron(fontWeight: FontWeight.w500),
-      bodyMedium: GoogleFonts.orbitron(fontWeight: FontWeight.w500),
-      labelLarge: GoogleFonts.orbitron(fontWeight: FontWeight.w700),
-    );
+    final textTheme = GoogleFonts.unboundedTextTheme(base.textTheme)
+        .apply(bodyColor: slate, displayColor: slate)
+        .copyWith(
+          headlineSmall: GoogleFonts.unbounded(
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.1,
+          ),
+          titleLarge: GoogleFonts.unbounded(
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.1,
+          ),
+          titleMedium: GoogleFonts.unbounded(fontWeight: FontWeight.w600),
+          bodyLarge: GoogleFonts.unbounded(fontWeight: FontWeight.w500),
+          bodyMedium: GoogleFonts.unbounded(fontWeight: FontWeight.w500),
+          labelLarge: GoogleFonts.unbounded(fontWeight: FontWeight.w700),
+        );
 
     return base.copyWith(
       textTheme: textTheme,

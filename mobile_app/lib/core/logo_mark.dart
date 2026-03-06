@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 
 class LogoMark extends StatelessWidget {
-  const LogoMark({
-    super.key,
-    this.size = 28,
-    this.color,
-  });
+  const LogoMark({super.key, this.size = 28, this.color});
 
   final double size;
   final Color? color;
@@ -29,4 +25,3 @@ class LogoMark extends StatelessWidget {
     return SizedBox(width: size, height: size, child: logo);
   }
 }
-

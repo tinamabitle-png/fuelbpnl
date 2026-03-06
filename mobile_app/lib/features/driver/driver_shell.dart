@@ -44,13 +44,7 @@ class _DriverShellState extends State<DriverShell> {
       DriverApplyVoucherPage(api: widget.api),
     ];
 
-    const titles = [
-      'Dashboard',
-      'Vouchers',
-      'Repay',
-      'Profile',
-      'Apply',
-    ];
+    const titles = ['Dashboard', 'Vouchers', 'Repay', 'Profile', 'Apply'];
 
     return Scaffold(
       appBar: AppBar(
@@ -197,9 +191,12 @@ class _DriverHomePageState extends State<DriverHomePage> {
       error = null;
     });
     final p = await widget.api.profile().catchError((_) => <String, dynamic>{});
-    final v = await widget.api.driverVouchers().catchError((_) => <VoucherItem>[]);
-    final r =
-        await widget.api.driverRepayments().catchError((_) => <RepaymentItem>[]);
+    final v = await widget.api.driverVouchers().catchError(
+      (_) => <VoucherItem>[],
+    );
+    final r = await widget.api.driverRepayments().catchError(
+      (_) => <RepaymentItem>[],
+    );
 
     if (!mounted) return;
     setState(() {
@@ -433,7 +430,16 @@ class _DriverHomePageState extends State<DriverHomePage> {
   }
 
   Widget _brandsCard() {
-    const brands = ['Engen', 'Shell SA', 'BP SA', 'Sasol', 'TotalEnergies'];
+    const brands = <Map<String, String>>[
+      {'name': 'Engen', 'logo': 'assets/images/brands/engen.png'},
+      {'name': 'Shell SA', 'logo': 'assets/images/brands/shell-sa.png'},
+      {'name': 'BP SA', 'logo': 'assets/images/brands/bp-southern-africa.png'},
+      {'name': 'Sasol', 'logo': 'assets/images/brands/sasol.png'},
+      {
+        'name': 'TotalEnergies',
+        'logo': 'assets/images/brands/totalenergies.png',
+      },
+    ];
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF0B1220),
@@ -476,12 +482,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
               itemCount: brands.length,
               separatorBuilder: (_, index) => const SizedBox(width: 8),
               itemBuilder: (context, i) {
-                final initials = brands[i]
-                    .split(' ')
-                    .where((part) => part.isNotEmpty)
-                    .take(2)
-                    .map((part) => part[0].toUpperCase())
-                    .join();
+                final brand = brands[i];
                 return Container(
                   width: 120,
                   decoration: BoxDecoration(
@@ -495,7 +496,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                     children: [
                       Center(
                         child: Text(
-                          brands[i],
+                          brand['name'] ?? 'Brand',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
@@ -507,20 +508,21 @@ class _DriverHomePageState extends State<DriverHomePage> {
                         left: 8,
                         bottom: 8,
                         child: Container(
-                          width: 24,
-                          height: 24,
+                          width: 26,
+                          height: 26,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white,
                             border: Border.all(color: const Color(0xFFE2E8F0)),
                           ),
-                          child: Center(
-                            child: Text(
-                              initials.isEmpty ? 'B' : initials,
-                              style: const TextStyle(
-                                color: Color(0xFF0F172A),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: ClipOval(
+                              child: Image.asset(
+                                brand['logo'] ?? '',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, _, error) =>
+                                    const SizedBox.shrink(),
                               ),
                             ),
                           ),
@@ -558,17 +560,37 @@ class _DriverHomePageState extends State<DriverHomePage> {
             ),
           ),
           const SizedBox(height: 8),
-          const Icon(
-            Icons.format_quote_rounded,
-            size: 42,
-            color: Color(0xFFDFF886),
+          RichText(
+            text: const TextSpan(
+              style: TextStyle(fontWeight: FontWeight.w800),
+              children: [
+                TextSpan(
+                  text: 'Be ',
+                  style: TextStyle(color: Color(0xFF465512), fontSize: 48),
+                ),
+                TextSpan(
+                  text: 'Wealthy',
+                  style: TextStyle(color: Color(0xFF7C3AED), fontSize: 48),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           const Text(
-            'Wisdom is the only gift you can never lose.',
+            '”',
             style: TextStyle(
-              fontSize: 24,
-              height: 1.1,
+              color: Color(0xFFDFF886),
+              fontSize: 44,
+              height: 0.9,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Wisdom is the only gift\nyou can never lose.',
+            style: TextStyle(
+              fontSize: 23,
+              height: 1.06,
               fontWeight: FontWeight.w900,
               color: Color(0xFF465512),
             ),
@@ -655,7 +677,7 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (loading) return const Center(child: CircularProgressIndicator());
+    if (loading) return const Center(child: _RepayLoadingIndicator());
     if (error != null) return Center(child: Text(error!));
 
     return RefreshIndicator(
@@ -827,228 +849,243 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                    Container(
-                      width: 42,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFCBD5E1),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    const Text(
-                      'Voucher QR',
-                      style: TextStyle(
-                        color: Color(0xFFE2E8F0),
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      v.stationName ?? '',
-                      style: const TextStyle(color: Color(0xFF94A3B8)),
-                    ),
-                    const SizedBox(height: 10),
-                    SegmentedButton<String>(
-                      showSelectedIcon: false,
-                      segments: const [
-                        ButtonSegment(
-                          value: 'qr',
-                          label: Text('QR-Scan'),
-                          icon: Icon(Icons.qr_code_2, size: 16),
-                        ),
-                        ButtonSegment(
-                          value: 'tap',
-                          label: Text('Tap'),
-                          icon: Icon(Icons.nfc, size: 16),
-                        ),
-                      ],
-                      selected: {mode},
-                      onSelectionChanged: (v) =>
-                          setSheetState(() => mode = v.first),
-                    ),
-                    const SizedBox(height: 14),
-                    if (mode == 'qr')
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        width: 42,
+                        height: 4,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF111827),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFF334155)),
+                          color: const Color(0xFFCBD5E1),
+                          borderRadius: BorderRadius.circular(999),
                         ),
-                        child: QrImageView(
-                          data: qrPayload,
-                          size: 220,
-                          eyeStyle: const QrEyeStyle(
-                            eyeShape: QrEyeShape.square,
-                            color: Color(0xFF111827),
+                      ),
+                      const SizedBox(height: 14),
+                      const Text(
+                        'Voucher QR',
+                        style: TextStyle(
+                          color: Color(0xFFE2E8F0),
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        v.stationName ?? '',
+                        style: const TextStyle(color: Color(0xFF94A3B8)),
+                      ),
+                      const SizedBox(height: 10),
+                      SegmentedButton<String>(
+                        showSelectedIcon: false,
+                        segments: const [
+                          ButtonSegment(
+                            value: 'qr',
+                            label: Text('QR-Scan'),
+                            icon: Icon(Icons.qr_code_2, size: 16),
                           ),
-                          dataModuleStyle: const QrDataModuleStyle(
-                            dataModuleShape: QrDataModuleShape.square,
-                            color: Color(0xFF111827),
+                          ButtonSegment(
+                            value: 'tap',
+                            label: Text('Tap'),
+                            icon: Icon(Icons.nfc, size: 16),
                           ),
-                          backgroundColor: Colors.white,
-                        ),
-                      )
-                    else
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF111827),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFF334155)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Tap token',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFFE2E8F0),
+                        ],
+                        selected: {mode},
+                        onSelectionChanged: (v) =>
+                            setSheetState(() => mode = v.first),
+                      ),
+                      const SizedBox(height: 14),
+                      if (mode == 'qr')
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF111827),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFF334155)),
+                          ),
+                          child: QrImageView(
+                            data: qrPayload,
+                            size: 220,
+                            eyeStyle: const QrEyeStyle(
+                              eyeShape: QrEyeShape.square,
+                              color: Color(0xFF111827),
+                            ),
+                            dataModuleStyle: const QrDataModuleStyle(
+                              dataModuleShape: QrDataModuleShape.square,
+                              color: Color(0xFF111827),
+                            ),
+                            backgroundColor: Colors.white,
+                          ),
+                        )
+                      else
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF111827),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFF334155)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Tap token',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFE2E8F0),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            FutureBuilder<String>(
-                              future: tapTokenFuture,
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState !=
-                                    ConnectionState.done) {
-                                  return const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 6),
-                                    child: SizedBox(
-                                      height: 18,
-                                      width: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
+                              const SizedBox(height: 6),
+                              FutureBuilder<String>(
+                                future: tapTokenFuture,
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState !=
+                                      ConnectionState.done) {
+                                    return const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 6,
                                       ),
-                                    ),
-                                  );
-                                }
-                                if (snapshot.hasError || !snapshot.hasData) {
-                                  return Text(
-                                    snapshot.error
-                                            ?.toString()
-                                            .replaceFirst('Exception: ', '') ??
-                                        'Failed to generate tap token.',
-                                    style: const TextStyle(
-                                      color: Color(0xFFFCA5A5),
-                                    ),
-                                  );
-                                }
-                                return SelectableText(
-                                  snapshot.data!,
-                                  style: const TextStyle(
-                                    fontFamily: 'monospace',
-                                    fontSize: 12,
-                                  ),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            FxButton(
-                              label: 'Copy token',
-                              icon: Icons.copy_rounded,
-                              fullWidth: true,
-                              onPressed: () async {
-                                try {
-                                  final token = await tapTokenFuture;
-                                  await Clipboard.setData(
-                                    ClipboardData(text: token),
-                                  );
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Tap token copied.'),
-                                    ),
-                                  );
-                                } catch (e) {
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        e
-                                            .toString()
-                                            .replaceFirst('Exception: ', ''),
+                                      child: SizedBox(
+                                        height: 18,
+                                        width: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            FxButton(
-                              label: 'Enable Phone Tap',
-                              icon: Icons.nfc_rounded,
-                              fullWidth: true,
-                              onPressed: () async {
-                                try {
-                                  final token = await tapTokenFuture;
-                                  final enabled = await NfcHceBridge.isAvailable();
-                                  if (!enabled) {
-                                    throw Exception('NFC/HCE is unavailable or disabled on this phone.');
+                                    );
                                   }
-                                  await NfcHceBridge.setTapToken(token);
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Phone tap is armed. Hold phone to POS reader.'),
-                                    ),
-                                  );
-                                } catch (e) {
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        e.toString().replaceFirst('Exception: ', ''),
+                                  if (snapshot.hasError || !snapshot.hasData) {
+                                    return Text(
+                                      snapshot.error?.toString().replaceFirst(
+                                            'Exception: ',
+                                            '',
+                                          ) ??
+                                          'Failed to generate tap token.',
+                                      style: const TextStyle(
+                                        color: Color(0xFFFCA5A5),
                                       ),
+                                    );
+                                  }
+                                  return SelectableText(
+                                    snapshot.data!,
+                                    style: const TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontSize: 12,
                                     ),
                                   );
-                                }
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            FxButton(
-                              label: 'Disable Phone Tap',
-                              icon: Icons.nfc_outlined,
-                              fullWidth: true,
-                              onPressed: () async {
-                                try {
-                                  await NfcHceBridge.clearTapToken();
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Phone tap disabled.'),
-                                    ),
-                                  );
-                                } catch (e) {
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        e.toString().replaceFirst('Exception: ', ''),
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              FxButton(
+                                label: 'Copy token',
+                                icon: Icons.copy_rounded,
+                                fullWidth: true,
+                                onPressed: () async {
+                                  try {
+                                    final token = await tapTokenFuture;
+                                    await Clipboard.setData(
+                                      ClipboardData(text: token),
+                                    );
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Tap token copied.'),
                                       ),
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-                          ],
+                                    );
+                                  } catch (e) {
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          e.toString().replaceFirst(
+                                            'Exception: ',
+                                            '',
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              FxButton(
+                                label: 'Enable Phone Tap',
+                                icon: Icons.nfc_rounded,
+                                fullWidth: true,
+                                onPressed: () async {
+                                  try {
+                                    final token = await tapTokenFuture;
+                                    final enabled =
+                                        await NfcHceBridge.isAvailable();
+                                    if (!enabled) {
+                                      throw Exception(
+                                        'NFC/HCE is unavailable or disabled on this phone.',
+                                      );
+                                    }
+                                    await NfcHceBridge.setTapToken(token);
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Phone tap is armed. Hold phone to POS reader.',
+                                        ),
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          e.toString().replaceFirst(
+                                            'Exception: ',
+                                            '',
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              FxButton(
+                                label: 'Disable Phone Tap',
+                                icon: Icons.nfc_outlined,
+                                fullWidth: true,
+                                onPressed: () async {
+                                  try {
+                                    await NfcHceBridge.clearTapToken();
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Phone tap disabled.'),
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          e.toString().replaceFirst(
+                                            'Exception: ',
+                                            '',
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 12),
+                      Text(
+                        v.code,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFCBD5E1),
                         ),
                       ),
-                    const SizedBox(height: 12),
-                    Text(
-                      v.code,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFCBD5E1),
+                      Text(
+                        'ZAR ${v.amount.toStringAsFixed(2)} • ${v.status}',
+                        style: const TextStyle(color: Color(0xFF94A3B8)),
                       ),
-                    ),
-                    Text(
-                      'ZAR ${v.amount.toStringAsFixed(2)} • ${v.status}',
-                      style: const TextStyle(color: Color(0xFF94A3B8)),
-                    ),
                       const SizedBox(height: 12),
                       FxButton(
                         label: 'Close',
@@ -1114,12 +1151,23 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
       final profile = await widget.api.profile();
       final st = await widget.api.stations();
       final vouchers = await widget.api.driverVouchers();
-      final gateway = (profile['autopay_gateway'] ?? '').toString().toLowerCase();
-      final hasToken = (profile['autopay_has_token'] ?? false) == true ||
+      final gateway = (profile['autopay_gateway'] ?? '')
+          .toString()
+          .toLowerCase();
+      final hasToken =
+          (profile['autopay_has_token'] ?? false) == true ||
           ((profile['autopay_token'] ?? '').toString().trim().isNotEmpty);
-      final status = (profile['autopay_status'] ?? 'inactive').toString().toLowerCase();
-      final blocked = {'disabled', 'failed', 'max_retries_exceeded', 'inactive'};
-      final ready = (profile['autopay_ready'] ?? false) == true ||
+      final status = (profile['autopay_status'] ?? 'inactive')
+          .toString()
+          .toLowerCase();
+      final blocked = {
+        'disabled',
+        'failed',
+        'max_retries_exceeded',
+        'inactive',
+      };
+      final ready =
+          (profile['autopay_ready'] ?? false) == true ||
           (((profile['autopay_enabled'] ?? false) == true) &&
               gateway == 'paystack' &&
               hasToken &&
@@ -1143,7 +1191,9 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
     if (!autopayReady) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('AutoPay is not ready. Complete Paystack AutoPay setup in Profile before applying.'),
+          content: Text(
+            'AutoPay is not ready. Complete Paystack AutoPay setup in Profile before applying.',
+          ),
         ),
       );
       return;
@@ -1156,7 +1206,8 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
       return;
     }
 
-    final station = selectedStation ??
+    final station =
+        selectedStation ??
         stations.firstWhere(
           (s) => (s['id'] ?? 0).toString() == stationId.toString(),
           orElse: () => <String, dynamic>{},
@@ -1206,7 +1257,8 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
   }
 
   bool _stationIsPartner(Map<String, dynamic> station) {
-    final dynamic raw = station['is_partner'] ??
+    final dynamic raw =
+        station['is_partner'] ??
         station['partner'] ??
         station['is_active_partner'] ??
         station['partner_station'];
@@ -1217,20 +1269,24 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
   }
 
   bool _stationHasFunds(Map<String, dynamic> station) {
-    final dynamic raw = station['wallet_balance'] ??
+    final dynamic raw =
+        station['wallet_balance'] ??
         station['available_balance'] ??
         station['balance'] ??
         station['prefunded_balance'] ??
         station['funded_amount'];
     if (raw == null) return true;
-    final amount = double.tryParse(raw.toString().replaceAll(',', '').trim()) ?? 0;
+    final amount =
+        double.tryParse(raw.toString().replaceAll(',', '').trim()) ?? 0;
     return amount > 0;
   }
 
   void _startApprovalPolling() {
     approvalPollTimer?.cancel();
     final startedAt = DateTime.now();
-    approvalPollTimer = Timer.periodic(const Duration(seconds: 12), (timer) async {
+    approvalPollTimer = Timer.periodic(const Duration(seconds: 12), (
+      timer,
+    ) async {
       if (!mounted) {
         timer.cancel();
         return;
@@ -1248,9 +1304,9 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
         final matchesStation = selectedStationName == null
             ? grew
             : approved.any(
-                (v) => (v.stationName ?? '')
-                    .toLowerCase()
-                    .contains(selectedStationName!.toLowerCase()),
+                (v) => (v.stationName ?? '').toLowerCase().contains(
+                  selectedStationName!.toLowerCase(),
+                ),
               );
         if (grew && matchesStation) {
           approvedBeforeSubmit = approved.length;
@@ -1258,7 +1314,9 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Voucher approved. You can now use it in Vouchers.'),
+              content: Text(
+                'Voucher approved. You can now use it in Vouchers.',
+              ),
             ),
           );
         }
@@ -1305,11 +1363,17 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                   optionsBuilder: (TextEditingValue value) {
                     final query = value.text.trim().toLowerCase();
                     if (query.isEmpty) return stations.take(8);
-                    return stations.where((s) {
-                      final name = (s['name'] ?? '').toString().toLowerCase();
-                      final city = (s['city'] ?? '').toString().toLowerCase();
-                      return name.contains(query) || city.contains(query);
-                    }).take(8);
+                    return stations
+                        .where((s) {
+                          final name = (s['name'] ?? '')
+                              .toString()
+                              .toLowerCase();
+                          final city = (s['city'] ?? '')
+                              .toString()
+                              .toLowerCase();
+                          return name.contains(query) || city.contains(query);
+                        })
+                        .take(8);
                   },
                   displayStringForOption: (option) =>
                       '${option['name'] ?? 'Station'}',
@@ -1323,25 +1387,25 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                   },
                   fieldViewBuilder:
                       (context, controller, focusNode, onFieldSubmitted) {
-                    return TextField(
-                      controller: controller,
-                      focusNode: focusNode,
-                      decoration: const InputDecoration(
-                        labelText: 'Station',
-                        hintText: 'Type station name',
-                        suffixIcon: Icon(Icons.search),
-                      ),
-                      onChanged: (_) {
-                        if (stationId != null) {
-                          setState(() {
-                            stationId = null;
-                            selectedStation = null;
-                            selectedStationName = null;
-                          });
-                        }
+                        return TextField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          decoration: const InputDecoration(
+                            labelText: 'Station',
+                            hintText: 'Type station name',
+                            suffixIcon: Icon(Icons.search),
+                          ),
+                          onChanged: (_) {
+                            if (stationId != null) {
+                              setState(() {
+                                stationId = null;
+                                selectedStation = null;
+                                selectedStationName = null;
+                              });
+                            }
+                          },
+                        );
                       },
-                    );
-                  },
                   optionsViewBuilder: (context, onSelected, options) {
                     return Align(
                       alignment: Alignment.topLeft,
@@ -1365,11 +1429,15 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                                 dense: true,
                                 title: Text(
                                   '${s['name']}',
-                                  style: const TextStyle(color: Color(0xFFE2E8F0)),
+                                  style: const TextStyle(
+                                    color: Color(0xFFE2E8F0),
+                                  ),
                                 ),
                                 subtitle: Text(
                                   '${s['city'] ?? '-'} • ${partner ? 'Partner' : 'Non-partner'} • ${funded ? 'Funded' : 'No funds'}',
-                                  style: const TextStyle(color: Color(0xFF94A3B8)),
+                                  style: const TextStyle(
+                                    color: Color(0xFF94A3B8),
+                                  ),
                                 ),
                                 onTap: () => onSelected(s),
                               );
@@ -1493,7 +1561,10 @@ class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
       }
 
       final uri = Uri.parse(authUrl);
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched) {
         throw Exception('Unable to open Paystack checkout URL.');
       }
@@ -1527,7 +1598,9 @@ class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
         await fetch();
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Paystack payment verified for ${item.voucherCode}.')),
+          SnackBar(
+            content: Text('Paystack payment verified for ${item.voucherCode}.'),
+          ),
         );
       } else {
         if (mounted) setState(() => loading = false);
@@ -1565,10 +1638,15 @@ class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
                 ? const Color(0xFF9A3412)
                 : const Color(0xFF1D4ED8);
 
-            return Card(
-              margin: const EdgeInsets.only(bottom: 10),
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF081326),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFF28486D)),
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1580,6 +1658,7 @@ class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               color: AppTheme.slate,
+                              fontSize: 22,
                             ),
                           ),
                         ),
@@ -1606,7 +1685,10 @@ class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
                     const SizedBox(height: 6),
                     Text(
                       'Due ${_fmtDate(item.dueDate)}',
-                      style: const TextStyle(color: Color(0xFF94A3B8)),
+                      style: const TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 16,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -1614,7 +1696,8 @@ class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
                       style: const TextStyle(
                         color: AppTheme.slate,
                         fontWeight: FontWeight.w700,
-                        fontSize: 18,
+                        fontSize: 40,
+                        height: 1,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -1676,12 +1759,24 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       setState(() {
         enabled = isEnabled;
         paymentMethod = (p['autopay_gateway'] ?? 'paystack').toString();
-        hasToken = (p['autopay_has_token'] ?? false) == true ||
+        hasToken =
+            (p['autopay_has_token'] ?? false) == true ||
             ((p['autopay_token'] ?? '').toString().trim().isNotEmpty);
-        final status = (p['autopay_status'] ?? 'inactive').toString().toLowerCase();
-        final blocked = {'disabled', 'failed', 'max_retries_exceeded', 'inactive'};
-        ready = (p['autopay_ready'] ?? false) == true ||
-            (isEnabled && paymentMethod.toLowerCase() == 'paystack' && hasToken && !blocked.contains(status));
+        final status = (p['autopay_status'] ?? 'inactive')
+            .toString()
+            .toLowerCase();
+        final blocked = {
+          'disabled',
+          'failed',
+          'max_retries_exceeded',
+          'inactive',
+        };
+        ready =
+            (p['autopay_ready'] ?? false) == true ||
+            (isEnabled &&
+                paymentMethod.toLowerCase() == 'paystack' &&
+                hasToken &&
+                !blocked.contains(status));
         autopayEmail = (p['autopay_email'] ?? p['email'] ?? '').toString();
       });
     } catch (e) {
@@ -1699,10 +1794,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
 
     setState(() => loading = true);
     try {
-      await widget.api.setAutopay(
-        enabled: value,
-        method: 'paystack',
-      );
+      await widget.api.setAutopay(enabled: value, method: 'paystack');
       setState(() {
         enabled = value;
         paymentMethod = 'paystack';
@@ -1710,7 +1802,11 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(value ? 'AutoPay enabled (Paystack)' : 'AutoPay disabled')),
+        SnackBar(
+          content: Text(
+            value ? 'AutoPay enabled (Paystack)' : 'AutoPay disabled',
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -1882,8 +1978,12 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
             child: Row(
               children: [
                 Icon(
-                  ready ? Icons.check_circle_rounded : Icons.error_outline_rounded,
-                  color: ready ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                  ready
+                      ? Icons.check_circle_rounded
+                      : Icons.error_outline_rounded,
+                  color: ready
+                      ? const Color(0xFF10B981)
+                      : const Color(0xFFF59E0B),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -1899,6 +1999,88 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _RepayLoadingIndicator extends StatefulWidget {
+  const _RepayLoadingIndicator();
+
+  @override
+  State<_RepayLoadingIndicator> createState() => _RepayLoadingIndicatorState();
+}
+
+class _RepayLoadingIndicatorState extends State<_RepayLoadingIndicator>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 160,
+      height: 160,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 96,
+            height: 96,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFF35526F)),
+                    color: const Color(0xFF0B1E33),
+                  ),
+                ),
+                RotationTransition(
+                  turns: _controller,
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: SweepGradient(
+                        colors: [
+                          Color(0x00020DFF),
+                          Color(0xFF7C3AED),
+                          Color(0xFF020DFF),
+                          Color(0x00020DFF),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFF334155)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Loading...',
+            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 20),
+          ),
+        ],
+      ),
     );
   }
 }

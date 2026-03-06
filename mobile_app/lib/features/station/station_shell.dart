@@ -1,22 +1,48 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
 
-import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/fx_button.dart';
 import '../../core/logo_mark.dart';
-import '../../core/pro545_printer_bridge.dart';
 import '../../core/theme.dart';
 import '../../data/api_client.dart';
 import '../../data/models.dart';
+
+class ReceiptTemplateSettings {
+  const ReceiptTemplateSettings({required this.fontKey, this.footerLogoAsset});
+
+  final String fontKey;
+  final String? footerLogoAsset;
+
+  static const ReceiptTemplateSettings defaults = ReceiptTemplateSettings(
+    fontKey: 'righteous',
+    footerLogoAsset: null,
+  );
+}
+
+const Map<String, String> _receiptFonts = {
+  'righteous': 'Righteous',
+  'goldman': 'Goldman',
+  'silkscreen': 'Silkscreen',
+  'days_one': 'Days One',
+};
+
+const Map<String, String> _receiptBrandLogos = {
+  'Shell': 'assets/images/brands/shell-sa.png',
+  'BP': 'assets/images/brands/bp-southern-africa.png',
+  'Engen': 'assets/images/brands/engen.png',
+  'Sasol': 'assets/images/brands/sasol.png',
+  'TotalEnergies': 'assets/images/brands/totalenergies.png',
+};
 
 class StationShell extends StatefulWidget {
   const StationShell({super.key, required this.api, required this.onLogout});
@@ -30,12 +56,57 @@ class StationShell extends StatefulWidget {
 
 class _StationShellState extends State<StationShell> {
   int index = 0;
+  ReceiptTemplateSettings receiptSettings = ReceiptTemplateSettings.defaults;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReceiptSettings();
+  }
+
+  Future<void> _loadReceiptSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final fontKey =
+        prefs.getString('station_receipt_font') ??
+        ReceiptTemplateSettings.defaults.fontKey;
+    final footerLogo = prefs.getString('station_receipt_footer_logo');
+    if (!mounted) return;
+    setState(() {
+      receiptSettings = ReceiptTemplateSettings(
+        fontKey: _receiptFonts.containsKey(fontKey)
+            ? fontKey
+            : ReceiptTemplateSettings.defaults.fontKey,
+        footerLogoAsset: footerLogo == null || footerLogo.isEmpty
+            ? null
+            : footerLogo,
+      );
+    });
+  }
+
+  Future<void> _saveReceiptSettings(ReceiptTemplateSettings next) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('station_receipt_font', next.fontKey);
+    if (next.footerLogoAsset == null || next.footerLogoAsset!.isEmpty) {
+      await prefs.remove('station_receipt_footer_logo');
+    } else {
+      await prefs.setString(
+        'station_receipt_footer_logo',
+        next.footerLogoAsset!,
+      );
+    }
+    if (!mounted) return;
+    setState(() => receiptSettings = next);
+  }
 
   @override
   Widget build(BuildContext context) {
     final pages = [
       StationHomePage(api: widget.api),
-      StationRedeemPage(api: widget.api),
+      StationRedeemPage(api: widget.api, receiptSettings: receiptSettings),
+      StationReceiptSettingsPage(
+        settings: receiptSettings,
+        onChanged: _saveReceiptSettings,
+      ),
     ];
 
     return Scaffold(
@@ -45,8 +116,9 @@ class _StationShellState extends State<StationShell> {
           padding: const EdgeInsets.only(left: 12, top: 8, bottom: 8),
           child: Container(
             decoration: BoxDecoration(
-              gradient: AppTheme.actionGradient,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: const Center(child: LogoMark(size: 22)),
           ),
@@ -77,17 +149,21 @@ class _StationMenuBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       decoration: BoxDecoration(
         color: const Color(0xFF0B1220),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF334155)),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(16),
+          topRight: Radius.circular(16),
+        ),
+        border: const Border(top: BorderSide(color: Color(0xFF334155))),
       ),
       child: Row(
         children: [
           _item(0, Icons.history_rounded, 'History'),
-          Container(width: 1, height: 44, color: const Color(0xFF334155)),
+          Container(width: 1, height: 48, color: const Color(0xFF334155)),
           _item(1, Icons.qr_code_scanner, 'Redeem'),
+          Container(width: 1, height: 48, color: const Color(0xFF334155)),
+          _item(2, Icons.receipt_long_rounded, 'Receipt'),
         ],
       ),
     );
@@ -128,6 +204,7 @@ class StationHomePage extends StatefulWidget {
 class _StationHomePageState extends State<StationHomePage> {
   bool loading = true;
   String? error;
+  List<VoucherItem> active = [];
   List<VoucherItem> items = [];
 
   @override
@@ -143,8 +220,12 @@ class _StationHomePageState extends State<StationHomePage> {
     });
 
     try {
+      final approved = await widget.api.stationApprovedVouchers();
       final list = await widget.api.stationVoucherHistory(limit: 10);
-      setState(() => items = list);
+      setState(() {
+        active = approved;
+        items = list;
+      });
     } catch (e) {
       setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -159,77 +240,305 @@ class _StationHomePageState extends State<StationHomePage> {
 
     return RefreshIndicator(
       onRefresh: fetch,
-      child: ListView.builder(
+      child: ListView(
         padding: const EdgeInsets.all(16),
-        itemCount: items.length,
-        itemBuilder: (context, i) {
-          final v = items[i];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            v.code,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.slate,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1E293B),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            v.status.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFFE2E8F0),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'R ${v.amount.toStringAsFixed(2)} • ${v.fuelType.toUpperCase()}',
-                      style: const TextStyle(color: AppTheme.slate),
-                    ),
-                    if (v.stationName != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 3),
-                        child: Text(
-                          v.stationName!,
-                          style: const TextStyle(color: Color(0xFF94A3B8)),
-                        ),
-                      ),
-                  ],
-                ),
+        children: [
+          const Text(
+            'Currently Active Vouchers',
+            style: TextStyle(
+              color: Color(0xFFE2E8F0),
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...active.map(
+            (v) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _voucherCard(v),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Latest Voucher History',
+            style: TextStyle(
+              color: Color(0xFFE2E8F0),
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...items.map(
+            (v) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _voucherCard(v),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _voucherCard(VoucherItem v) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2C2F36), Color(0xFF24262D)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        decoration: BoxDecoration(
+          color: const Color(0x332D5CFF),
+          borderRadius: BorderRadius.circular(14),
+          border: Border(left: BorderSide(color: AppTheme.softBlue, width: 3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${v.stationName ?? 'Station'} · ${v.fuelType.toUpperCase()}',
+              style: const TextStyle(
+                color: Color(0xFF36A4FF),
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
               ),
             ),
-          );
-        },
+            const SizedBox(height: 4),
+            Text(
+              'Voucher ${v.code} · R ${v.amount.toStringAsFixed(2)} · ${v.status.toUpperCase()}',
+              style: const TextStyle(
+                color: Color(0xFFCBD5E1),
+                fontSize: 14,
+                height: 1.2,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '#${v.id}',
+              style: const TextStyle(
+                color: Color(0xFFE2E8F0),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class StationReceiptSettingsPage extends StatefulWidget {
+  const StationReceiptSettingsPage({
+    super.key,
+    required this.settings,
+    required this.onChanged,
+  });
+
+  final ReceiptTemplateSettings settings;
+  final Future<void> Function(ReceiptTemplateSettings) onChanged;
+
+  @override
+  State<StationReceiptSettingsPage> createState() =>
+      _StationReceiptSettingsPageState();
+}
+
+class _StationReceiptSettingsPageState
+    extends State<StationReceiptSettingsPage> {
+  bool saving = false;
+
+  Future<void> _save({
+    required String fontKey,
+    required String? footerLogoAsset,
+  }) async {
+    setState(() => saving = true);
+    try {
+      await widget.onChanged(
+        ReceiptTemplateSettings(
+          fontKey: fontKey,
+          footerLogoAsset: footerLogoAsset,
+        ),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Receipt settings saved.')));
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentFont = widget.settings.fontKey;
+    final currentLogo = widget.settings.footerLogoAsset;
+
+    return DefaultTabController(
+      length: 2,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF0B1220),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFF334155)),
+            ),
+            child: const TabBar(
+              tabs: [
+                Tab(text: 'Font'),
+                Tab(text: 'Footer Logo'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 420,
+            child: TabBarView(
+              children: [
+                ListView(
+                  children: _receiptFonts.entries.map((entry) {
+                    final selected = entry.key == currentFont;
+                    final style = _fontPreviewStyle(entry.key);
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0B1220),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: selected
+                              ? AppTheme.primaryBlue
+                              : const Color(0xFF334155),
+                        ),
+                      ),
+                      child: ListTile(
+                        title: Text(entry.value, style: style),
+                        subtitle: Text(
+                          'BWISER POS RECEIPT',
+                          style: style.copyWith(
+                            fontSize: 12,
+                            color: const Color(0xFF94A3B8),
+                          ),
+                        ),
+                        trailing: selected
+                            ? const Icon(
+                                Icons.check_circle_rounded,
+                                color: AppTheme.primaryBlue,
+                              )
+                            : null,
+                        onTap: saving
+                            ? null
+                            : () => _save(
+                                fontKey: entry.key,
+                                footerLogoAsset: currentLogo,
+                              ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                ListView(
+                  children: [
+                    _logoOption(
+                      label: 'No footer logo',
+                      assetPath: null,
+                      selected: currentLogo == null,
+                      onTap: saving
+                          ? null
+                          : () => _save(
+                              fontKey: currentFont,
+                              footerLogoAsset: null,
+                            ),
+                    ),
+                    ..._receiptBrandLogos.entries.map(
+                      (entry) => _logoOption(
+                        label: entry.key,
+                        assetPath: entry.value,
+                        selected: currentLogo == entry.value,
+                        onTap: saving
+                            ? null
+                            : () => _save(
+                                fontKey: currentFont,
+                                footerLogoAsset: entry.value,
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  TextStyle _fontPreviewStyle(String key) {
+    switch (key) {
+      case 'goldman':
+        return GoogleFonts.goldman(color: const Color(0xFFE2E8F0));
+      case 'silkscreen':
+        return GoogleFonts.silkscreen(color: const Color(0xFFE2E8F0));
+      case 'days_one':
+        return GoogleFonts.daysOne(color: const Color(0xFFE2E8F0));
+      case 'righteous':
+      default:
+        return GoogleFonts.righteous(color: const Color(0xFFE2E8F0));
+    }
+  }
+
+  Widget _logoOption({
+    required String label,
+    required String? assetPath,
+    required bool selected,
+    required VoidCallback? onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1220),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: selected ? AppTheme.primaryBlue : const Color(0xFF334155),
+        ),
+      ),
+      child: ListTile(
+        title: Text(label),
+        leading: assetPath == null
+            ? const Icon(Icons.block, color: Color(0xFF94A3B8))
+            : Container(
+                width: 34,
+                height: 34,
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Image.asset(assetPath, fit: BoxFit.contain),
+              ),
+        trailing: selected
+            ? const Icon(
+                Icons.check_circle_rounded,
+                color: AppTheme.primaryBlue,
+              )
+            : null,
+        onTap: onTap,
       ),
     );
   }
 }
 
 class StationRedeemPage extends StatefulWidget {
-  const StationRedeemPage({super.key, required this.api});
+  const StationRedeemPage({
+    super.key,
+    required this.api,
+    required this.receiptSettings,
+  });
   final ApiClient api;
+  final ReceiptTemplateSettings receiptSettings;
 
   @override
   State<StationRedeemPage> createState() => _StationRedeemPageState();
@@ -242,14 +551,16 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
   bool submitting = false;
   bool nfcListening = false;
   bool scanMode = false;
+  bool ussdListening = false;
+  bool stationLoading = true;
+  List<Map<String, dynamic>> stations = [];
+  int? selectedStationId;
   Printer? selectedPrinter;
-  String printerMode = 'android';
-  final networkIpCtrl = TextEditingController();
-  final networkPortCtrl = TextEditingController(text: '9100');
 
   @override
   void initState() {
     super.initState();
+    _loadStations();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         scannerFocusNode.requestFocus();
@@ -261,8 +572,6 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
   void dispose() {
     _scanDebounce?.cancel();
     scannerFocusNode.dispose();
-    networkIpCtrl.dispose();
-    networkPortCtrl.dispose();
     inputCtrl.dispose();
     super.dispose();
   }
@@ -287,6 +596,52 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
       if (!mounted) return;
       _submitScannerInput();
     });
+  }
+
+  Future<void> _loadStations() async {
+    setState(() => stationLoading = true);
+    try {
+      final list = await widget.api.stations();
+      if (!mounted) return;
+      setState(() {
+        stations = list;
+        if (selectedStationId == null && stations.isNotEmpty) {
+          selectedStationId = int.tryParse('${stations.first['id']}');
+        }
+      });
+    } catch (_) {
+      // Keep UI usable without hard failing.
+    } finally {
+      if (mounted) setState(() => stationLoading = false);
+    }
+  }
+
+  Future<void> _toggleUssdListener() async {
+    if (selectedStationId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Select a station before listening for USSD.'),
+        ),
+      );
+      return;
+    }
+    setState(() => ussdListening = !ussdListening);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ussdListening ? 'USSD listener enabled.' : 'USSD listener is off.',
+        ),
+      ),
+    );
+  }
+
+  String _selectedStationLabel() {
+    final station = stations.firstWhere(
+      (s) => '${s['id']}' == '$selectedStationId',
+      orElse: () => <String, dynamic>{},
+    );
+    final name = (station['name'] ?? 'Station').toString();
+    return '$name (Wallet)';
   }
 
   Future<void> redeem(String value) async {
@@ -346,52 +701,149 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
     return normalized;
   }
 
+  Future<pw.Font> _loadReceiptFont(String fontKey) async {
+    switch (fontKey) {
+      case 'goldman':
+        return PdfGoogleFonts.goldmanRegular();
+      case 'silkscreen':
+        return PdfGoogleFonts.silkscreenRegular();
+      case 'days_one':
+        return PdfGoogleFonts.daysOneRegular();
+      case 'righteous':
+      default:
+        return PdfGoogleFonts.righteousRegular();
+    }
+  }
+
+  Future<pw.MemoryImage?> _tryLoadAssetImage(String assetPath) async {
+    try {
+      final data = await rootBundle.load(assetPath);
+      return pw.MemoryImage(data.buffer.asUint8List());
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<Uint8List> _buildReceiptPdf(Map<String, dynamic> receipt) async {
     final doc = pw.Document();
     final stationName =
         (receipt['station'] is Map
                 ? (receipt['station']['name'] ?? receipt['station']['city'])
-                : receipt['station_name'])?.toString() ??
-            'Station';
+                : receipt['station_name'])
+            ?.toString() ??
+        'Station';
     final driverName =
         (receipt['driver'] is Map ? receipt['driver']['name'] : null)
             ?.toString() ??
         'Unknown';
     final voucherId = (receipt['voucher_id'] ?? '-').toString();
-    final voucherCode =
-        (receipt['voucher_code'] ?? receipt['code'] ?? '-').toString();
+    final voucherCode = (receipt['voucher_code'] ?? receipt['code'] ?? '-')
+        .toString();
     final amount = double.tryParse('${receipt['amount'] ?? 0}') ?? 0;
     final voucherStatus = (receipt['status'] ?? 'unknown').toString();
-    final txStatus =
-        (receipt['transaction_status'] ?? 'unknown').toString().toUpperCase();
-    final when = (receipt['redeemed_at'] ??
-            receipt['issued_at'] ??
-            DateTime.now().toIso8601String())
-        .toString();
+    final txStatus = (receipt['transaction_status'] ?? 'unknown')
+        .toString()
+        .toUpperCase();
+    final when =
+        (receipt['redeemed_at'] ??
+                receipt['issued_at'] ??
+                DateTime.now().toIso8601String())
+            .toString();
     final qrData = (receipt['qr_code'] ?? voucherCode).toString();
+    final receiptFont = await _loadReceiptFont(widget.receiptSettings.fontKey);
+    final bwiserLogo = await _tryLoadAssetImage('assets/images/app_logo.png');
+    final footerLogo = widget.receiptSettings.footerLogoAsset == null
+        ? null
+        : await _tryLoadAssetImage(widget.receiptSettings.footerLogoAsset!);
 
     doc.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.roll80,
+        margin: const pw.EdgeInsets.fromLTRB(14, 14, 14, 18),
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text('BWISER POS RECEIPT',
-                style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 14,
-                )),
-            pw.SizedBox(height: 8),
-            pw.Text('Station: $stationName'),
-            pw.Text('Driver: $driverName'),
-            pw.Divider(),
-            pw.Text('Voucher ID: $voucherId'),
-            pw.Text('Voucher Code: $voucherCode'),
-            pw.Text('Amount: R ${amount.toStringAsFixed(2)}'),
-            pw.Text('Voucher Status: ${voucherStatus.toUpperCase()}'),
-            pw.Text('Transaction: $txStatus'),
-            pw.Text('When: $when'),
+            if (bwiserLogo != null)
+              pw.Center(
+                child: pw.Image(
+                  bwiserLogo,
+                  width: 56,
+                  height: 56,
+                  fit: pw.BoxFit.contain,
+                ),
+              ),
+            pw.SizedBox(height: 6),
+            pw.Center(
+              child: pw.Text(
+                'BWISER POS RECEIPT',
+                style: pw.TextStyle(font: receiptFont, fontSize: 15),
+              ),
+            ),
             pw.SizedBox(height: 10),
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(8),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey400, width: 0.6),
+                borderRadius: pw.BorderRadius.circular(4),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'Station: $stationName',
+                    style: pw.TextStyle(font: receiptFont, fontSize: 10.5),
+                  ),
+                  pw.SizedBox(height: 4),
+                  pw.Text(
+                    'Driver: $driverName',
+                    style: pw.TextStyle(font: receiptFont, fontSize: 10.5),
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 10),
+            pw.Text(
+              'Voucher Details',
+              style: pw.TextStyle(font: receiptFont, fontSize: 11.5),
+            ),
+            pw.SizedBox(height: 6),
+            _receiptLine(receiptFont, 'Voucher ID', voucherId),
+            _receiptLine(receiptFont, 'Voucher Code', voucherCode),
+            pw.Text(
+              'Amount: R ${amount.toStringAsFixed(2)}',
+              style: pw.TextStyle(font: receiptFont, fontSize: 11),
+            ),
+            pw.SizedBox(height: 4),
+            _receiptLine(
+              receiptFont,
+              'Voucher Status',
+              voucherStatus.toUpperCase(),
+            ),
+            _receiptLine(receiptFont, 'Transaction', txStatus),
+            pw.Text(
+              'When: $when',
+              style: pw.TextStyle(font: receiptFont, fontSize: 10.3),
+            ),
+            pw.SizedBox(height: 12),
+            if (footerLogo != null) ...[
+              pw.Center(
+                child: pw.Text(
+                  'Franchise',
+                  style: pw.TextStyle(font: receiptFont, fontSize: 9.5),
+                ),
+              ),
+              pw.SizedBox(height: 4),
+              pw.Center(
+                child: pw.Image(
+                  footerLogo,
+                  width: 110,
+                  height: 40,
+                  fit: pw.BoxFit.contain,
+                ),
+              ),
+              pw.SizedBox(height: 12),
+            ],
             pw.Center(
               child: pw.BarcodeWidget(
                 barcode: pw.Barcode.qrCode(),
@@ -400,6 +852,14 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
                 height: 130,
               ),
             ),
+            pw.SizedBox(height: 8),
+            pw.Center(
+              child: pw.Text(
+                'Scan to verify voucher',
+                style: pw.TextStyle(font: receiptFont, fontSize: 9.5),
+              ),
+            ),
+            pw.SizedBox(height: 6),
           ],
         ),
       ),
@@ -408,103 +868,31 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
     return doc.save();
   }
 
-  Future<Uint8List> _buildEscPosBytes(
-    Map<String, dynamic> receipt, {
-    required bool is58mm,
-  }) async {
-    final stationName =
-        (receipt['station'] is Map
-                ? (receipt['station']['name'] ?? receipt['station']['city'])
-                : receipt['station_name'])?.toString() ??
-            'Station';
-    final driverName =
-        (receipt['driver'] is Map ? receipt['driver']['name'] : null)
-            ?.toString() ??
-        'Unknown';
-    final voucherId = (receipt['voucher_id'] ?? '-').toString();
-    final voucherCode =
-        (receipt['voucher_code'] ?? receipt['code'] ?? '-').toString();
-    final amount = double.tryParse('${receipt['amount'] ?? 0}') ?? 0;
-    final voucherStatus = (receipt['status'] ?? 'unknown').toString();
-    final txStatus =
-        (receipt['transaction_status'] ?? 'unknown').toString().toUpperCase();
-    final when = (receipt['redeemed_at'] ??
-            receipt['issued_at'] ??
-            DateTime.now().toIso8601String())
-        .toString();
-    final qrData = (receipt['qr_code'] ?? voucherCode).toString();
-
-    final profile = await CapabilityProfile.load();
-    final generator = Generator(
-      is58mm ? PaperSize.mm58 : PaperSize.mm80,
-      profile,
-    );
-
-    final bytes = <int>[];
-    bytes.addAll(generator.reset());
-    bytes.addAll(
-      generator.text(
-        'BWISER POS RECEIPT',
-        styles: const PosStyles(
-          align: PosAlign.center,
-          bold: true,
-          height: PosTextSize.size2,
-          width: PosTextSize.size2,
-        ),
+  pw.Widget _receiptLine(pw.Font font, String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 4),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(
+            width: 76,
+            child: pw.Text(
+              '$label:',
+              style: pw.TextStyle(font: font, fontSize: 10.2),
+            ),
+          ),
+          pw.Expanded(
+            child: pw.Text(
+              value,
+              style: pw.TextStyle(font: font, fontSize: 10.2),
+            ),
+          ),
+        ],
       ),
     );
-    bytes.addAll(generator.hr());
-    bytes.addAll(generator.text('Station: $stationName'));
-    bytes.addAll(generator.text('Driver: $driverName'));
-    bytes.addAll(generator.text('Voucher ID: $voucherId'));
-    bytes.addAll(generator.text('Voucher Code: $voucherCode'));
-    bytes.addAll(generator.text('Amount: R ${amount.toStringAsFixed(2)}'));
-    bytes.addAll(generator.text('Status: ${voucherStatus.toUpperCase()}'));
-    bytes.addAll(generator.text('Transaction: $txStatus'));
-    bytes.addAll(generator.text('When: $when'));
-    bytes.addAll(generator.hr());
-    bytes.addAll(generator.qrcode(qrData, size: QRSize.size6));
-    bytes.addAll(generator.feed(2));
-    bytes.addAll(generator.cut());
-    return Uint8List.fromList(bytes);
-  }
-
-  Future<void> _printEscPosNetwork(Map<String, dynamic> receipt) async {
-    final host = networkIpCtrl.text.trim();
-    final port = int.tryParse(networkPortCtrl.text.trim()) ?? 9100;
-    if (host.isEmpty) {
-      throw Exception('Enter POS printer IP address for ESC/POS mode.');
-    }
-
-    final bytes = await _buildEscPosBytes(
-      receipt,
-      is58mm: printerMode == 'escpos58',
-    );
-    final socket = await Socket.connect(
-      host,
-      port,
-      timeout: const Duration(seconds: 5),
-    );
-    socket.add(bytes);
-    await socket.flush();
-    await socket.close();
   }
 
   Future<void> _printReceipt(Map<String, dynamic> receipt) async {
-    if (printerMode == 'pro545') {
-      final available = await Pro545PrinterBridge.isAvailable();
-      if (!available) {
-        throw Exception('PRO545 PrinterService not available.');
-      }
-      await Pro545PrinterBridge.printReceipt(receipt);
-      return;
-    }
-
-    if (printerMode == 'escpos58' || printerMode == 'escpos80') {
-      await _printEscPosNetwork(receipt);
-      return;
-    }
-
     final bytes = await _buildReceiptPdf(receipt);
     if (!mounted) return;
     try {
@@ -550,8 +938,8 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
     final txStatus = (receipt['transaction_status'] ?? 'unknown')
         .toString()
         .toUpperCase();
-    final voucherCode =
-        (receipt['voucher_code'] ?? receipt['code'] ?? '-').toString();
+    final voucherCode = (receipt['voucher_code'] ?? receipt['code'] ?? '-')
+        .toString();
 
     await showModalBottomSheet<void>(
       context: context,
@@ -588,69 +976,25 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
                 ),
               ),
               const SizedBox(height: 12),
-              SegmentedButton<String>(
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(
-                    value: 'android',
-                    icon: Icon(Icons.print_rounded, size: 16),
-                    label: Text('Android'),
-                  ),
-                  ButtonSegment(
-                    value: 'escpos58',
-                    icon: Icon(Icons.receipt_long_rounded, size: 16),
-                    label: Text('ESC/POS 58'),
-                  ),
-                  ButtonSegment(
-                    value: 'escpos80',
-                    icon: Icon(Icons.receipt_rounded, size: 16),
-                    label: Text('ESC/POS 80'),
-                  ),
-                  ButtonSegment(
-                    value: 'pro545',
-                    icon: Icon(Icons.point_of_sale_rounded, size: 16),
-                    label: Text('PRO545 SDK'),
-                  ),
-                ],
-                selected: {printerMode},
-                onSelectionChanged: (v) => setState(() => printerMode = v.first),
+              Text(
+                'Template: ${_receiptFonts[widget.receiptSettings.fontKey] ?? 'Righteous'}',
+                style: const TextStyle(color: Color(0xFF94A3B8)),
               ),
               const SizedBox(height: 10),
-              if (printerMode == 'escpos58' || printerMode == 'escpos80') ...[
-                TextField(
-                  controller: networkIpCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Printer IP',
-                    hintText: '192.168.0.120',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: networkPortCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Printer Port',
-                    hintText: '9100',
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
               FxButton(
                 label: selectedPrinter == null
-                    ? 'Select POS Printer'
+                    ? 'Select Android Printer'
                     : 'Printer: ${selectedPrinter!.name}',
                 icon: Icons.print_rounded,
                 fullWidth: true,
-                onPressed: printerMode == 'android'
-                    ? () async {
-                        final navigator = Navigator.of(context);
-                        final printer = await Printing.pickPrinter(context: context);
-                        if (printer == null || !mounted) return;
-                        setState(() => selectedPrinter = printer);
-                        navigator.pop();
-                        await _showPrintReceiptDialog(receipt);
-                      }
-                    : null,
+                onPressed: () async {
+                  final navigator = Navigator.of(context);
+                  final printer = await Printing.pickPrinter(context: context);
+                  if (printer == null || !mounted) return;
+                  setState(() => selectedPrinter = printer);
+                  navigator.pop();
+                  await _showPrintReceiptDialog(receipt);
+                },
               ),
               const SizedBox(height: 8),
               FxButton(
@@ -739,9 +1083,7 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(
-                  e.toString().replaceFirst('Exception: ', ''),
-                ),
+                content: Text(e.toString().replaceFirst('Exception: ', '')),
               ),
             );
           } finally {
@@ -792,6 +1134,47 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
               padding: const EdgeInsets.all(14),
               child: Column(
                 children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<int>(
+                          initialValue:
+                              stations.any(
+                                (s) => '${s['id']}' == '$selectedStationId',
+                              )
+                              ? selectedStationId
+                              : null,
+                          decoration: const InputDecoration(
+                            labelText: 'Station (Wallet)',
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                          ),
+                          items: stations
+                              .map(
+                                (s) => DropdownMenuItem<int>(
+                                  value: int.tryParse('${s['id']}'),
+                                  child: Text(
+                                    (s['name'] ?? 'Station').toString(),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: stationLoading
+                              ? null
+                              : (value) =>
+                                    setState(() => selectedStationId = value),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      IconButton(
+                        icon: const Icon(Icons.refresh_rounded),
+                        onPressed: stationLoading ? null : _loadStations,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
                   FxButton(
                     label: scanMode ? 'Close Scanner' : 'Open Scanner',
                     icon: Icons.qr_code_scanner,
@@ -800,12 +1183,32 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
                   ),
                   const SizedBox(height: 8),
                   FxButton(
-                    label: nfcListening ? 'Waiting for NFC...' : 'Scan NFC Token',
+                    label: nfcListening
+                        ? 'Waiting for NFC...'
+                        : 'Scan NFC Token',
                     icon: Icons.nfc_rounded,
                     fullWidth: true,
                     onPressed: (submitting || nfcListening)
                         ? null
                         : scanNfcAndRedeem,
+                  ),
+                  const SizedBox(height: 8),
+                  FxButton(
+                    label: ussdListening
+                        ? 'Stop USSD Listener'
+                        : 'Listen for USSD',
+                    icon: Icons.podcasts_rounded,
+                    fullWidth: true,
+                    onPressed: _toggleUssdListener,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    selectedStationId == null
+                        ? 'Select a station before listening for USSD.'
+                        : (ussdListening
+                              ? 'USSD listener is active on ${_selectedStationLabel()}.'
+                              : 'USSD listener is off.'),
+                    style: const TextStyle(color: Color(0xFF94A3B8)),
                   ),
                   const SizedBox(height: 12),
                   if (scanMode)

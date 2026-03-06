@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SessionStore {
@@ -45,7 +46,16 @@ class SessionStore {
 
   Future<String> baseUrl() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_baseUrlKey) ?? 'http://192.168.0.102:43162/api/v1';
+    final saved = prefs.getString(_baseUrlKey);
+    if (saved != null && saved.isNotEmpty) return saved;
+    if (kIsWeb) {
+      final host = Uri.base.host;
+      if (host.isNotEmpty && host != 'localhost' && host != '127.0.0.1') {
+        return 'http://$host:8000/api/v1';
+      }
+      return 'http://localhost:8000/api/v1';
+    }
+    return 'http://192.168.0.101:8000/api/v1';
   }
 
   Future<void> setBaseUrl(String value) async {
