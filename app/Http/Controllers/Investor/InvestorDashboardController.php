@@ -20,14 +20,14 @@ class InvestorDashboardController extends Controller
     {
         // Check if user has investor role
         if (!Auth::user()->hasRole('investor')) {
-            return redirect()->route('login')
+            return redirect('/')
                 ->with('error', 'You are not authorized to access the investor dashboard.');
         }
         
         $investor = Auth::user()->investor;
         
         if (!$investor) {
-            return redirect()->route('login')
+            return redirect('/')
                 ->with('error', 'You are not registered as an investor. Please contact support.');
         }
 
@@ -87,7 +87,7 @@ class InvestorDashboardController extends Controller
         $investor = Auth::user()->investor;
         
         if (!$investor) {
-            return redirect()->route('login')
+            return redirect('/')
                 ->with('error', 'You are not registered as an investor.');
         }
         
@@ -143,7 +143,7 @@ class InvestorDashboardController extends Controller
         $investor = Auth::user()->investor;
         
         if (!$investor) {
-            return redirect()->route('login')
+            return redirect('/')
                 ->with('error', 'You are not registered as an investor.');
         }
         
@@ -203,7 +203,7 @@ class InvestorDashboardController extends Controller
         $investor = Auth::user()->investor;
         
         if (!$investor) {
-            return redirect()->route('login')
+            return redirect('/')
                 ->with('error', 'You are not registered as an investor.');
         }
         
@@ -257,7 +257,7 @@ class InvestorDashboardController extends Controller
         $investor = Auth::user()->investor;
         
         if (!$investor) {
-            return redirect()->route('login')
+            return redirect('/')
                 ->with('error', 'You are not registered as an investor.');
         }
         
@@ -274,7 +274,7 @@ class InvestorDashboardController extends Controller
         $investor = Auth::user()->investor;
         
         if (!$investor) {
-            return redirect()->route('login')
+            return redirect('/')
                 ->with('error', 'You are not registered as an investor.');
         }
         
@@ -301,7 +301,7 @@ class InvestorDashboardController extends Controller
         $investor = Auth::user()->investor;
         
         if (!$investor) {
-            return redirect()->route('login')
+            return redirect('/')
                 ->with('error', 'You are not registered as an investor.');
         }
         

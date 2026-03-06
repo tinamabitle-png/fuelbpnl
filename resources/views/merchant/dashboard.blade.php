@@ -5,10 +5,26 @@
 @section('content')
 <section class="max-w-6xl mx-auto px-6 pt-16 pb-20">
     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-        <div>
+        <div class="flex items-start gap-4">
+            <div class="merchant-brand-mark" aria-label="Merchant branding">
+                @if(($branding['mode'] ?? 'brand') === 'upload' && !empty($branding['upload_logo_url']))
+                    <img src="{{ $branding['upload_logo_url'] }}" alt="Merchant dashboard logo" class="merchant-brand-mark-img" loading="lazy">
+                @elseif(!empty($branding['brand_logo_url']))
+                    <img src="{{ $branding['brand_logo_url'] }}" alt="{{ $branding['brand_name'] ?: 'Fuel brand' }} logo" class="merchant-brand-mark-img" loading="lazy">
+                @elseif(!empty($branding['brand_name']))
+                    <span class="merchant-brand-mark-text">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($branding['brand_name'], 0, 2)) }}</span>
+                @else
+                    <i class="fa-solid fa-gas-pump text-slate-500"></i>
+                @endif
+            </div>
+            <div>
             <p class="text-sm uppercase tracking-[0.2em] text-blue-600">Merchant Station Console</p>
             <h1 class="brand-font text-3xl md:text-4xl font-semibold text-slate-900 mt-2">Merchant Dashboard</h1>
+            @if(!empty($branding['brand_name']))
+                <p class="text-xs uppercase tracking-[0.16em] text-slate-500 mt-1">Brand Theme: {{ $branding['brand_name'] }}</p>
+            @endif
             <p class="text-slate-600 mt-3">Live voucher visibility, manual redemption control, and direct bank deposit ready totals.</p>
+            </div>
         </div>
         <div class="flex flex-wrap gap-3">
             @if(Route::has('merchant.vouchers.index'))
@@ -102,19 +118,19 @@
             </div>
             <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="glass rounded-2xl p-5">
-                    <p class="text-sm text-slate-500">Issued</p>
-                    <p id="issuedCount" class="mt-2 text-2xl font-semibold text-slate-900">{{ $summary['issued'] }}</p>
-                    <p class="text-xs text-slate-500 mt-1">R {{ number_format((float) ($summary['issued_amount'] ?? 0), 2) }}</p>
+                    <p class="text-base text-slate-500">Issued</p>
+                    <p id="issuedCount" class="mt-2 text-4xl font-semibold text-slate-900">{{ $summary['issued'] }}</p>
+                    <p class="text-sm text-slate-500 mt-1">R {{ number_format((float) ($summary['issued_amount'] ?? 0), 2) }}</p>
                 </div>
                 <div class="glass rounded-2xl p-5">
-                    <p class="text-sm text-slate-500">Approved</p>
-                    <p id="approvedCount" class="mt-2 text-2xl font-semibold text-slate-900">{{ $summary['approved'] }}</p>
-                    <p class="text-xs text-slate-500 mt-1">R {{ number_format((float) ($summary['approved_amount'] ?? 0), 2) }}</p>
+                    <p class="text-base text-slate-500">Approved</p>
+                    <p id="approvedCount" class="mt-2 text-4xl font-semibold text-slate-900">{{ $summary['approved'] }}</p>
+                    <p class="text-sm text-slate-500 mt-1">R {{ number_format((float) ($summary['approved_amount'] ?? 0), 2) }}</p>
                 </div>
-                <div class="glass rounded-2xl p-5 redeemed-pattern-card">
-                    <p class="text-sm text-slate-500">Redeemed</p>
-                    <p id="redeemedCount" class="mt-2 text-2xl font-semibold text-slate-900">{{ $summary['redeemed'] }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ $summary['today_redeemed'] }} today • R {{ number_format((float) ($summary['redeemed_amount'] ?? 0), 2) }}</p>
+                <div class="glass rounded-2xl p-5">
+                    <p class="text-base text-slate-500">Redeemed</p>
+                    <p id="redeemedCount" class="mt-2 text-4xl font-semibold text-slate-900">{{ $summary['redeemed'] }}</p>
+                    <p class="text-sm text-slate-500 mt-1">{{ $summary['today_redeemed'] }} today • R {{ number_format((float) ($summary['redeemed_amount'] ?? 0), 2) }}</p>
                 </div>
             </div>
         </div>
@@ -273,6 +289,33 @@
 </section>
 
 <style>
+    .merchant-brand-mark {
+        width: 68px;
+        height: 68px;
+        flex: 0 0 68px;
+        border-radius: 16px;
+        border: 1px solid #dbe4ef;
+        background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    .merchant-brand-mark-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 8px;
+    }
+
+    .merchant-brand-mark-text {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #1e293b;
+        letter-spacing: 0.12em;
+    }
+
     .bw-error-alert {
         position: relative;
         width: 100%;
@@ -837,13 +880,15 @@
 
     function renderFeed() {
         feedBody.innerHTML = feed.map(v => {
-            const action = v.status === 'approved'
-                ? `<form method="POST" action="${redeemUrl}" class="inline-flex">\
-                        <input type="hidden" name="_token" value="${document.querySelector('meta[name=csrf-token]')?.content || ''}">\
-                        <input type="hidden" name="scan_input" value="${v.voucher_code}">\
-                        <button class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700">Mark Redeemed</button>\
-                   </form>`
-                : '<span class="text-xs text-slate-400">-</span>';
+            const isApproved = String(v.status || '').toLowerCase() === 'approved';
+            const actionTitle = isApproved
+                ? 'Redeem voucher'
+                : `Redeem unavailable: status is ${String(v.status || 'unknown')}`;
+            const action = `<form method="POST" action="${redeemUrl}" class="inline-flex">\
+                    <input type="hidden" name="_token" value="${document.querySelector('meta[name=csrf-token]')?.content || ''}">\
+                    <input type="hidden" name="scan_input" value="${v.voucher_code}">\
+                    <button ${isApproved ? '' : 'disabled'} title="${actionTitle}" class="px-3 py-1.5 rounded-lg text-xs font-semibold ${isApproved ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-slate-200 text-slate-500 cursor-not-allowed'}">Redeem</button>\
+               </form>`;
 
             return `
                 <tr>

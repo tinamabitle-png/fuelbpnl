@@ -17,6 +17,19 @@
     <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="glass rounded-2xl p-6 lg:col-span-2">
             <h2 class="brand-font text-xl text-slate-900">Account Information</h2>
+            <div class="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <div class="flex items-center justify-between gap-3 flex-wrap">
+                    <div>
+                        <p class="text-xs text-slate-500">Identity Verification</p>
+                        <p class="text-sm font-semibold mt-1 {{ ($user->id_verification_status ?? 'unverified') === 'verified' ? 'text-emerald-700' : 'text-amber-700' }}">
+                            {{ strtoupper((string) ($user->id_verification_status ?? 'unverified')) }}
+                        </p>
+                    </div>
+                    @if(($user->id_verification_status ?? 'unverified') !== 'verified')
+                        <a href="{{ route('registration.complete', ['role' => 'driver']) }}" class="btn-ghost px-3 py-2 rounded-xl text-xs font-semibold">Upload / Update Documents</a>
+                    @endif
+                </div>
+            </div>
             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
                     <p class="text-xs text-slate-500">Full Name</p>

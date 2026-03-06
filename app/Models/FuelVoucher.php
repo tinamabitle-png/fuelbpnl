@@ -19,6 +19,8 @@ class FuelVoucher extends Model
         'fuel_station_id',
         'lease_id',
         'amount',
+        'redeemed_fuel_amount',
+        'redeemed_airtime_amount',
         'liters',
         'fuel_type',
         'status',
@@ -28,11 +30,16 @@ class FuelVoucher extends Model
         'settlement_id',
         'settled_at',
         'transaction_reference',
+        'airtime_phone',
+        'airtime_reference',
+        'airtime_status',
         'pump_number',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'redeemed_fuel_amount' => 'decimal:2',
+        'redeemed_airtime_amount' => 'decimal:2',
         'liters' => 'decimal:3',
         'issued_at' => 'datetime',
         'redeemed_at' => 'datetime',
@@ -130,14 +137,19 @@ class FuelVoucher extends Model
 
     public function getIsExpiredAttribute()
     {
-        return $this->status === 'expired' || ($this->status === 'issued' && $this->expires_at < now());
+        return $this->status === 'expired'
+            || (in_array($this->status, ['issued', 'approved'], true)
+                && $this->expires_at
+                && $this->expires_at->lt(now()));
     }
 
     public function getIsRedeemableAttribute()
     {
-        return $this->status === 'approved' && 
-               $this->expires_at > now() && 
-               $this->issued_at <= now();
+        return $this->status === 'approved'
+            && $this->expires_at
+            && $this->expires_at->gt(now())
+            && $this->issued_at
+            && $this->issued_at->lte(now());
     }
 
     // Business logic methods
@@ -145,6 +157,14 @@ class FuelVoucher extends Model
     {
         return DB::transaction(function () {
             $voucher = self::whereKey($this->id)->lockForUpdate()->firstOrFail();
+
+            if ($voucher->expires_at && $voucher->expires_at->lte(now())) {
+                if ($voucher->status !== 'expired') {
+                    $voucher->update(['status' => 'expired']);
+                }
+                throw new \Exception('Voucher expired and cannot be redeemed');
+            }
+
             if (!$voucher->is_redeemable) {
                 throw new \Exception('Voucher cannot be redeemed');
             }
@@ -158,6 +178,9 @@ class FuelVoucher extends Model
             $voucher->update([
                 'status' => 'redeemed',
                 'redeemed_at' => now(),
+                'redeemed_fuel_amount' => (float) $voucher->amount,
+                'redeemed_airtime_amount' => 0,
+                'airtime_status' => 'not_requested',
             ]);
 
             return $voucher->fresh();

@@ -13,18 +13,24 @@ use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\VoucherController;
 use App\Http\Controllers\Api\V1\StationController;
 use App\Http\Controllers\Api\V1\MerchantDeveloperController;
+use App\Http\Controllers\Api\UssdController;
+
+Route::match(['GET', 'POST'], '/ussd/africas-talking', [UssdController::class, 'africasTalking'])
+    ->middleware('throttle:ussd');
 
 Route::prefix('v1')->group(function () {
     
     // Public routes
-    Route::post('/auth/register', [AuthController::class, 'register']);
-    Route::post('/auth/login', [AuthController::class, 'login']);
-    Route::post('/auth/quick-login', [AuthController::class, 'quickLogin']);
-    Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
-    Route::post('/auth/login-with-otp', [AuthController::class, 'loginWithOtp']);
-    Route::post('/auth/complete-otp-login', [AuthController::class, 'completeOtpLogin']);
-    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+    Route::middleware('throttle:auth')->group(function () {
+        Route::post('/auth/register', [AuthController::class, 'register']);
+        Route::post('/auth/login', [AuthController::class, 'login']);
+        Route::post('/auth/quick-login', [AuthController::class, 'quickLogin']);
+        Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
+        Route::post('/auth/login-with-otp', [AuthController::class, 'loginWithOtp']);
+        Route::post('/auth/complete-otp-login', [AuthController::class, 'completeOtpLogin']);
+        Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+        Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+    });
     
     // Protected routes
     Route::middleware(['auth:sanctum'])->group(function () {
@@ -126,7 +132,9 @@ Route::prefix('v1')->group(function () {
                 Route::get('/summary', [MerchantDeveloperController::class, 'summary']);
                 Route::get('/vouchers', [MerchantDeveloperController::class, 'vouchers']);
                 Route::get('/vouchers/latest', [MerchantDeveloperController::class, 'latestVouchers']);
+                Route::get('/ussd/events', [MerchantDeveloperController::class, 'ussdEvents']);
                 Route::post('/vouchers/redeem', [MerchantDeveloperController::class, 'redeem']);
+                Route::post('/vouchers/offline-sync', [MerchantDeveloperController::class, 'offlineSync']);
                 Route::get('/repayments', [MerchantDeveloperController::class, 'repayments']);
 
                 Route::prefix('sandbox')->group(function () {

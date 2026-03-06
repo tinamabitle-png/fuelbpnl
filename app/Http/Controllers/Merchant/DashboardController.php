@@ -58,6 +58,7 @@ class DashboardController extends Controller
                 'initialVouchers' => [],
                 'wsConfig' => $this->websocketConfig(),
                 'stationPrices' => [],
+                'branding' => $this->merchantHeaderBranding(),
             ]);
         }
 
@@ -117,6 +118,7 @@ class DashboardController extends Controller
             'initialVouchers' => $initialVouchers,
             'wsConfig' => $this->websocketConfig(),
             'stationPrices' => $stationPrices,
+            'branding' => $this->merchantHeaderBranding($station),
         ]);
     }
 
@@ -129,10 +131,22 @@ class DashboardController extends Controller
         abort_unless($station, 404, 'No station linked to this account.');
 
         $stationPrices = $fuelPriceService->resolveStationPrices((int) $station->id, true);
+        $franchiseBrands = collect($this->merchantBrandCatalog())
+            ->map(function ($name, $slug) {
+                return [
+                    'slug' => $slug,
+                    'name' => $name,
+                    'logo_url' => is_file(public_path('images/brands/' . $slug . '.png'))
+                        ? asset('images/brands/' . $slug . '.png')
+                        : null,
+                ];
+            })
+            ->values();
 
         return view('merchant.settings', [
             'station' => $station,
             'stationPrices' => $stationPrices,
+            'franchiseBrands' => $franchiseBrands,
         ]);
     }
 
@@ -145,6 +159,7 @@ class DashboardController extends Controller
         abort_unless($station, 404, 'No station linked to this account.');
 
         $validated = $request->validate([
+            'company' => 'nullable|string|max:255',
             'contact_person' => 'nullable|string|max:255',
             'contact_phone' => 'nullable|string|max:50',
             'contact_email' => 'nullable|email|max:255',
@@ -183,25 +198,48 @@ class DashboardController extends Controller
         abort_unless($station, 404, 'No station linked to this account.');
 
         $validated = $request->validate([
-            'prices' => 'required|array',
+            'fuel_type' => ['nullable', Rule::in($fuelPriceService->supportedFuelTypes())],
+            'rand' => 'nullable|integer|min:10|max:99',
+            'cents' => 'nullable|integer|min:0|max:99',
+            'effective_at' => 'nullable|date',
+            'prices' => 'nullable|array',
             'prices.petrol' => 'nullable|numeric|min:0|max:999.99',
             'prices.diesel' => 'nullable|numeric|min:0|max:999.99',
             'prices.super' => 'nullable|numeric|min:0|max:999.99',
         ]);
 
         $saved = 0;
-        foreach ($fuelPriceService->supportedFuelTypes() as $fuelType) {
-            $raw = data_get($validated, 'prices.' . $fuelType);
-            if ($raw === null || $raw === '') {
-                continue;
-            }
-            $price = (float) $raw;
-            if ($price <= 0) {
-                continue;
-            }
+        $effectiveAt = !empty($validated['effective_at']) ? $validated['effective_at'] : null;
 
-            $fuelPriceService->setMerchantCustomPrice((int) $station->id, $fuelType, $price, (int) $user->id);
-            $saved++;
+        if (!empty($validated['fuel_type']) && isset($validated['rand']) && isset($validated['cents'])) {
+            $rand = (int) $validated['rand'];
+            $cents = (int) $validated['cents'];
+            $price = (float) ($rand + ($cents / 100));
+
+            if ($price > 0) {
+                $fuelPriceService->setMerchantCustomPrice(
+                    (int) $station->id,
+                    (string) $validated['fuel_type'],
+                    $price,
+                    (int) $user->id,
+                    $effectiveAt
+                );
+                $saved++;
+            }
+        } else {
+            foreach ($fuelPriceService->supportedFuelTypes() as $fuelType) {
+                $raw = data_get($validated, 'prices.' . $fuelType);
+                if ($raw === null || $raw === '') {
+                    continue;
+                }
+                $price = (float) $raw;
+                if ($price <= 0) {
+                    continue;
+                }
+
+                $fuelPriceService->setMerchantCustomPrice((int) $station->id, $fuelType, $price, (int) $user->id, $effectiveAt);
+                $saved++;
+            }
         }
 
         if ($saved === 0) {
@@ -429,6 +467,11 @@ class DashboardController extends Controller
                     throw new \Exception("Voucher must be APPROVED before redemption. Current: {$lockedVoucher->status}");
                 }
 
+                if ($lockedVoucher->expires_at && now()->gte($lockedVoucher->expires_at)) {
+                    $lockedVoucher->update(['status' => 'expired']);
+                    throw new \Exception('Voucher expired and cannot be redeemed.');
+                }
+
                 $lockedStation->deductFromWallet(
                     (float) $lockedVoucher->amount,
                     'Voucher redemption: ' . $lockedVoucher->code
@@ -461,6 +504,104 @@ class DashboardController extends Controller
     protected function authorizeMerchantPortal($user): void
     {
         abort_unless($user && $user->hasAnyRole(['super_admin', 'admin', 'merchant']), 403);
+    }
+
+    private function merchantHeaderBranding(?FuelStation $station = null): array
+    {
+        $brandCatalog = $this->merchantBrandCatalog();
+
+        $stationBrandName = trim((string) ($station?->company ?? ''));
+        $stationName = trim((string) ($station?->name ?? ''));
+        [$brandSlug, $brandName] = $this->resolveBrandFromStation($stationBrandName, $stationName, $brandCatalog);
+
+        $brandLogoUrl = null;
+        if ($brandSlug !== '') {
+            $local = public_path('images/brands/' . $brandSlug . '.png');
+            if (is_file($local)) {
+                $brandLogoUrl = asset('images/brands/' . $brandSlug . '.png');
+            }
+        }
+
+        return [
+            'mode' => 'brand',
+            'brand_name' => $brandName !== '' ? $brandName : ($stationBrandName !== '' ? $stationBrandName : $stationName),
+            'brand_slug' => $brandSlug,
+            'brand_logo_url' => $brandLogoUrl,
+            'upload_logo_url' => null,
+        ];
+    }
+
+    private function merchantBrandCatalog(): array
+    {
+        return [
+            'astron-energy' => 'Astron Energy',
+            'bp-southern-africa' => 'BP Southern Africa',
+            'central-energy-fund' => 'Central Energy Fund',
+            'engen' => 'Engen',
+            'eskom' => 'Eskom',
+            'mulilo' => 'Mulilo',
+            'petrosa' => 'PetroSA',
+            'puma-energy' => 'Puma Energy',
+            'sasol' => 'Sasol',
+            'shell-sa' => 'Shell SA',
+            'totalenergies' => 'TotalEnergies',
+            'vivo-energy' => 'Vivo Energy',
+        ];
+    }
+
+    private function resolveBrandFromFranchiseName(string $franchiseName, array $catalog): array
+    {
+        if ($franchiseName === '') {
+            return ['', ''];
+        }
+
+        $slug = Str::slug($franchiseName);
+        if ($slug !== '' && array_key_exists($slug, $catalog)) {
+            return [$slug, (string) $catalog[$slug]];
+        }
+
+        $normalized = strtolower(preg_replace('/[^a-z0-9]+/', ' ', $franchiseName));
+        $normalized = trim((string) $normalized);
+        $aliases = [
+            'shell' => 'shell-sa',
+            'bp' => 'bp-southern-africa',
+            'total' => 'totalenergies',
+            'totalenergies' => 'totalenergies',
+            'engen' => 'engen',
+            'sasol' => 'sasol',
+            'astron' => 'astron-energy',
+            'petrosa' => 'petrosa',
+            'petro sa' => 'petrosa',
+            'puma' => 'puma-energy',
+            'vivo' => 'vivo-energy',
+            'eskom' => 'eskom',
+            'cef' => 'central-energy-fund',
+            'central energy fund' => 'central-energy-fund',
+            'mulilo' => 'mulilo',
+        ];
+
+        foreach ($aliases as $needle => $aliasSlug) {
+            if ($normalized !== '' && str_contains($normalized, $needle) && array_key_exists($aliasSlug, $catalog)) {
+                return [$aliasSlug, (string) $catalog[$aliasSlug]];
+            }
+        }
+
+        return ['', trim($franchiseName)];
+    }
+
+    private function resolveBrandFromStation(string $franchiseName, string $stationName, array $catalog): array
+    {
+        [$slug, $name] = $this->resolveBrandFromFranchiseName($franchiseName, $catalog);
+        if ($slug !== '') {
+            return [$slug, $name];
+        }
+
+        [$slug, $name] = $this->resolveBrandFromFranchiseName($stationName, $catalog);
+        if ($slug !== '') {
+            return [$slug, $name];
+        }
+
+        return ['', ''];
     }
 
     protected function resolveMerchantStation($user, Request $request): ?FuelStation

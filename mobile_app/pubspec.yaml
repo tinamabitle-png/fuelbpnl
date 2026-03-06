@@ -42,6 +42,7 @@ dependencies:
   pdf: ^3.11.1
   printing: ^5.13.4
   esc_pos_utils_plus: ^2.0.4
+  geolocator: ^13.0.2
 
 dev_dependencies:
   flutter_test:

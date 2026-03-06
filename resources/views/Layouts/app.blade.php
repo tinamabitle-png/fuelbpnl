@@ -71,6 +71,13 @@
             background: #eff6ff;
         }
 
+        .hero-gradient-text {
+            background: linear-gradient(95deg, var(--primary-dark) 0%, var(--primary) 52%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
         .bw-morph-switch {
             --default: #d1d6ee;
             --hover: #cacfe6;

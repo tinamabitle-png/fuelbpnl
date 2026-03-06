@@ -245,6 +245,8 @@ class VoucherController extends Controller
             'scan_input' => 'required_without_all:code,voucher_id|string',
             'code' => 'required_without_all:scan_input,voucher_id|string',
             'voucher_id' => 'required_without_all:scan_input,code|integer',
+            'device_latitude' => 'nullable|numeric|between:-90,90',
+            'device_longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
         $scanInput = (string) ($request->input('scan_input') ?? '');
@@ -273,6 +275,12 @@ class VoucherController extends Controller
             return response()->json(['success' => false, 'message' => 'Voucher cannot be redeemed'], 422);
         }
 
+        $deviceLatitude = $request->filled('device_latitude') ? (float) $request->input('device_latitude') : null;
+        $deviceLongitude = $request->filled('device_longitude') ? (float) $request->input('device_longitude') : null;
+        if ($geofenceError = $this->ensureWithinGeofence($voucher, $deviceLatitude, $deviceLongitude)) {
+            return $geofenceError;
+        }
+
         $voucher->redeem();
 
         return response()->json([
@@ -280,5 +288,61 @@ class VoucherController extends Controller
             'message' => 'Voucher redeemed successfully',
             'data' => $voucher->fresh(),
         ]);
+    }
+
+    private function ensureWithinGeofence(FuelVoucher $voucher, ?float $deviceLatitude, ?float $deviceLongitude)
+    {
+        $enabled = (bool) config('services.redemption_geofence.enabled', false);
+        if (!$enabled) {
+            return null;
+        }
+
+        if ($deviceLatitude === null || $deviceLongitude === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Device location is required for voucher redemption.',
+            ], 422);
+        }
+
+        $station = $voucher->fuelStation;
+        if (!$station || $station->latitude === null || $station->longitude === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Station geofence is not configured.',
+            ], 422);
+        }
+
+        $distanceMeters = $this->distanceMeters(
+            $deviceLatitude,
+            $deviceLongitude,
+            (float) $station->latitude,
+            (float) $station->longitude
+        );
+
+        $radiusMeters = (float) config('services.redemption_geofence.radius_meters', 150);
+        if ($distanceMeters > $radiusMeters) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Redemption denied: device is outside station geofence.',
+                'data' => [
+                    'distance_meters' => round($distanceMeters, 2),
+                    'radius_meters' => $radiusMeters,
+                ],
+            ], 422);
+        }
+
+        return null;
+    }
+
+    private function distanceMeters(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $earthRadius = 6371000.0;
+        $latDelta = deg2rad($lat2 - $lat1);
+        $lonDelta = deg2rad($lon2 - $lon1);
+        $a = sin($latDelta / 2) ** 2
+            + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($lonDelta / 2) ** 2;
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
     }
 }

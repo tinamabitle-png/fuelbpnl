@@ -140,6 +140,11 @@
                     class="px-5 py-3 font-medium rounded-t-lg border-b-2 border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50">
                 <i class="fas fa-ticket-alt mr-2"></i> Vouchers
             </button>
+            <button onclick="showTab('merchantBranding')" 
+                    id="merchantBrandingTab"
+                    class="px-5 py-3 font-medium rounded-t-lg border-b-2 border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50">
+                <i class="fas fa-store mr-2"></i> Merchant Branding
+            </button>
             <button onclick="showTab('system')" 
                     id="systemTab"
                     class="px-5 py-3 font-medium rounded-t-lg border-b-2 border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50">
@@ -646,6 +651,104 @@
         </div>
     </div>
 
+    <!-- Merchant Branding Settings -->
+    <div id="merchantBrandingTabContent" class="tab-content hidden">
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Merchant Dashboard Branding</h3>
+                    <p class="text-gray-600 text-sm mt-1">Set header branding for the merchant dashboard using brand selection or custom logo upload.</p>
+                </div>
+                <div class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">
+                    <i class="fas fa-palette mr-1"></i> Branding
+                </div>
+            </div>
+
+            <form action="{{ route('admin.settings.update-merchant-dashboard') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="rounded-xl border border-gray-200 p-4">
+                        <p class="text-sm font-semibold text-gray-800 mb-3">Branding Source</p>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="radio" name="branding_mode" value="brand" {{ ($settings['merchant_dashboard']['branding_mode'] ?? 'brand') === 'brand' ? 'checked' : '' }}>
+                                Use a fuel brand from the system
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="radio" name="branding_mode" value="upload" {{ ($settings['merchant_dashboard']['branding_mode'] ?? 'brand') === 'upload' ? 'checked' : '' }}>
+                                Upload custom logo
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-200 p-4">
+                        <p class="text-sm font-semibold text-gray-800 mb-3">Current</p>
+                        @php $currentLogo = (string) ($settings['merchant_dashboard']['logo_path'] ?? ''); @endphp
+                        @if($currentLogo !== '')
+                            <img src="{{ asset('storage/' . ltrim($currentLogo, '/')) }}" alt="Current merchant dashboard logo" class="h-20 w-20 object-contain rounded-lg border border-gray-200 p-2 bg-gray-50">
+                        @else
+                            <p class="text-sm text-gray-500">No custom logo uploaded.</p>
+                        @endif
+                        <label class="mt-3 inline-flex items-center gap-2 text-sm text-gray-700">
+                            <input type="checkbox" name="remove_logo" value="1">
+                            Remove existing custom logo
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Choose Popular Fuel Brand</label>
+                    <select name="selected_brand" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">Select a brand</option>
+                        @foreach(($popularBrands ?? collect()) as $brand)
+                            <option value="{{ $brand['slug'] }}" {{ ($settings['merchant_dashboard']['selected_brand'] ?? '') === $brand['slug'] ? 'selected' : '' }}>
+                                {{ $brand['name'] }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="mt-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Popular Brands</p>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        @foreach(($popularBrands ?? collect()) as $brand)
+                            <label class="cursor-pointer">
+                                <input type="radio" name="selected_brand" value="{{ $brand['slug'] }}" class="sr-only" {{ ($settings['merchant_dashboard']['selected_brand'] ?? '') === $brand['slug'] ? 'checked' : '' }}>
+                                <span class="merchant-brand-choice block rounded-xl border border-gray-200 bg-white p-3 text-center hover:border-indigo-400">
+                                    @if(!empty($brand['logo_url']))
+                                        <img src="{{ $brand['logo_url'] }}" alt="{{ $brand['name'] }} logo" class="h-8 w-full object-contain mx-auto">
+                                    @else
+                                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-200 text-slate-700 text-xs font-bold">
+                                            {{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($brand['name'], 0, 2)) }}
+                                        </span>
+                                    @endif
+                                    <span class="mt-2 block text-xs font-medium text-slate-700">{{ $brand['name'] }}</span>
+                                </span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Upload Custom Logo</label>
+                    <div id="merchantLogoDropZone" class="rounded-xl border-2 border-dashed border-indigo-300 bg-indigo-50/30 p-6 text-center transition-colors">
+                        <input id="merchantLogoFile" type="file" name="logo_file" accept=".jpg,.jpeg,.png,.webp,.svg" class="hidden">
+                        <p class="text-sm text-gray-700 font-medium">Drag and drop logo here, or</p>
+                        <button type="button" id="merchantLogoPickBtn" class="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">Choose File</button>
+                        <p class="text-xs text-gray-500 mt-3">JPG, PNG, WEBP, SVG up to 5MB</p>
+                        <p id="merchantLogoFileName" class="text-xs text-indigo-700 mt-2"></p>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-end">
+                    <button type="submit" class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-indigo-800 shadow-md hover:shadow-lg transition-all duration-300">
+                        <i class="fas fa-save mr-2"></i> Save Merchant Branding
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- System Settings -->
     <div id="systemTabContent" class="tab-content hidden">
         <div class="bg-white rounded-xl border border-gray-200 p-6">
@@ -839,7 +942,69 @@
     
     // Initialize with general tab active
     document.addEventListener('DOMContentLoaded', function() {
-        showTab('general');
+        const requestedTab = new URLSearchParams(window.location.search).get('tab');
+        if (requestedTab && document.getElementById(requestedTab + 'Tab')) {
+            showTab(requestedTab);
+        } else {
+            showTab('general');
+        }
+
+        const dropZone = document.getElementById('merchantLogoDropZone');
+        const fileInput = document.getElementById('merchantLogoFile');
+        const pickBtn = document.getElementById('merchantLogoPickBtn');
+        const fileName = document.getElementById('merchantLogoFileName');
+
+        if (dropZone && fileInput && pickBtn && fileName) {
+            const setFileName = () => {
+                fileName.textContent = fileInput.files && fileInput.files.length
+                    ? `Selected: ${fileInput.files[0].name}`
+                    : '';
+            };
+
+            pickBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', setFileName);
+
+            ['dragenter', 'dragover'].forEach((eventName) => {
+                dropZone.addEventListener(eventName, (event) => {
+                    event.preventDefault();
+                    dropZone.classList.add('border-indigo-500', 'bg-indigo-100');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach((eventName) => {
+                dropZone.addEventListener(eventName, (event) => {
+                    event.preventDefault();
+                    dropZone.classList.remove('border-indigo-500', 'bg-indigo-100');
+                });
+            });
+
+            dropZone.addEventListener('drop', (event) => {
+                const files = event.dataTransfer?.files;
+                if (!files || files.length === 0) {
+                    return;
+                }
+                fileInput.files = files;
+                setFileName();
+            });
+        }
+
+        const brandCards = document.querySelectorAll('.merchant-brand-choice');
+        document.querySelectorAll('input[name="selected_brand"]').forEach((radio) => {
+            radio.addEventListener('change', () => {
+                brandCards.forEach((card) => {
+                    card.classList.remove('ring-2', 'ring-indigo-500', 'border-indigo-500', 'bg-indigo-50');
+                });
+                if (radio.checked) {
+                    const card = radio.closest('label')?.querySelector('.merchant-brand-choice');
+                    if (card) {
+                        card.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500', 'bg-indigo-50');
+                    }
+                }
+            });
+            if (radio.checked) {
+                radio.dispatchEvent(new Event('change'));
+            }
+        });
     });
     
     // Test email modal

@@ -34,9 +34,9 @@
     @endif
 
     <div class="mt-8 grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div class="glass rounded-2xl p-6">
+        <div class="glass rounded-2xl p-6 merchant-card merchant-card--profile">
             <h2 class="brand-font text-xl text-slate-900">Station & Payout Settings</h2>
-            <p class="text-sm text-slate-600 mt-1">Profile and direct bank deposit details for settlement topups.</p>
+            <p class="text-sm text-slate-600 mt-1">Profile, franchise branding, and direct bank deposit details for settlement topups.</p>
 
             <form method="POST" action="{{ route('merchant.settings.update') }}" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
                 @csrf
@@ -59,6 +59,34 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Payout Email</label>
                     <input type="email" name="payout_email" value="{{ old('payout_email', $station->payout_email) }}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Franchise Brand</label>
+                    <select name="company" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <option value="">Select franchise</option>
+                        @foreach(($franchiseBrands ?? collect()) as $brand)
+                            <option value="{{ $brand['name'] }}" {{ old('company', $station->company) === $brand['name'] ? 'selected' : '' }}>
+                                {{ $brand['name'] }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-slate-500 mt-1">This selection controls the logo shown on your merchant dashboard.</p>
+                </div>
+                <div class="md:col-span-2">
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        @foreach(($franchiseBrands ?? collect()) as $brand)
+                            @php $active = old('company', $station->company) === $brand['name']; @endphp
+                            <label class="franchise-choice {{ $active ? 'is-active' : '' }}">
+                                <input type="radio" name="company" value="{{ $brand['name'] }}" class="sr-only" {{ $active ? 'checked' : '' }}>
+                                @if(!empty($brand['logo_url']))
+                                    <img src="{{ $brand['logo_url'] }}" alt="{{ $brand['name'] }} logo" class="h-7 w-full object-contain">
+                                @else
+                                    <span class="text-xs font-bold text-slate-700">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($brand['name'], 0, 2)) }}</span>
+                                @endif
+                                <span class="mt-1 block text-[11px] font-medium text-slate-700">{{ $brand['name'] }}</span>
+                            </label>
+                        @endforeach
+                    </div>
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Address</label>
@@ -112,247 +140,381 @@
             </form>
         </div>
 
-        <div class="glass rounded-2xl p-6">
-            <h2 class="brand-font text-xl text-slate-900">Fuel Price Selector</h2>
-            <p class="text-sm text-slate-600 mt-1">Pick a fuel type from the board, then set the station price.</p>
+        @php
+            $initialFuel = old('fuel_type', 'petrol');
+            $initialPrice = (float) (($stationPrices[$initialFuel]['price'] ?? 24.50));
+            $initialRand = (int) floor($initialPrice);
+            $initialCents = (int) round(($initialPrice - $initialRand) * 100);
+        @endphp
+        <div class="glass rounded-2xl p-6 merchant-card merchant-card--fuel">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                    <h2 class="brand-font text-xl text-slate-900">Fuel Price Controls</h2>
+                    <p class="text-sm text-slate-600 mt-1">Set fuel price per liter using wheel controls and publish instantly.</p>
+                </div>
+                <span class="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-sm font-semibold">{{ $station->name }}</span>
+            </div>
+
+            <div class="mt-4 rounded-2xl border border-slate-200 bg-white p-4 benchmark-shell">
+                <div class="flex items-center justify-between gap-3 flex-wrap">
+                    <p class="text-sm font-semibold text-slate-800">Live Benchmark Feed</p>
+                    <p class="text-xs text-slate-500">Source: {{ $stationPrices['petrol']['source_label'] ?? 'Fallback' }} · {{ $stationPrices['petrol']['effective_at'] ?? now()->format('Y-m-d H:i:s') }}</p>
+                </div>
+                <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    @foreach(['petrol' => 'Petrol', 'super' => 'Super', 'diesel' => 'Diesel'] as $fuelKey => $fuelLabel)
+                        @php $price = (float) ($stationPrices[$fuelKey]['price'] ?? 0); @endphp
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 benchmark-card">
+                            <p class="text-sm text-slate-500">{{ $fuelLabel }}</p>
+                            <p class="text-2xl font-semibold text-slate-900 mt-1">ZAR {{ number_format($price, 2) }}/L</p>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
 
             <form method="POST" action="{{ route('merchant.settings.fuel-prices.update') }}" class="mt-4 space-y-4">
                 @csrf
                 @if(request()->filled('station_id'))
                     <input type="hidden" name="station_id" value="{{ (int) request('station_id') }}">
                 @endif
+                <input type="hidden" name="fuel_type" id="fuelTypeInput" value="{{ $initialFuel }}">
+                <input type="hidden" name="rand" id="fuelRandInput" value="{{ $initialRand }}">
+                <input type="hidden" name="cents" id="fuelCentsInput" value="{{ $initialCents }}">
 
-                <div class="fuel-board" id="fuelBoard">
-                    @foreach(['petrol' => 'Petrol', 'diesel' => 'Diesel', 'super' => 'Super'] as $fuelKey => $fuelLabel)
-                        @php
-                            $priceRow = (array) ($stationPrices[$fuelKey] ?? []);
-                            $priceValue = old("prices.$fuelKey", isset($priceRow['price']) ? number_format((float) $priceRow['price'], 2, '.', '') : '');
-                        @endphp
-                        <button type="button" class="fuel-selector-chip {{ $loop->first ? 'is-active' : '' }}" data-fuel-chip="{{ $fuelKey }}">
-                            <span class="fuel-selector-chip-title">{{ $fuelLabel }}</span>
-                            <span class="fuel-selector-chip-sub">{{ $priceRow['source_label'] ?? 'System Default' }}</span>
-                        </button>
-
-                        <div class="fuel-price-panel {{ $loop->first ? 'is-active' : '' }}" data-fuel-panel="{{ $fuelKey }}">
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">{{ $fuelLabel }} Price (R/L)</label>
-                            <div class="fuel-range-wrap">
-                                <input
-                                    type="range"
-                                    min="15"
-                                    max="35"
-                                    step="0.01"
-                                    value="{{ $priceValue !== '' ? $priceValue : '24.50' }}"
-                                    class="fuel-range-input"
-                                    data-fuel-range="{{ $fuelKey }}"
-                                    list="fuelTickerMarks"
-                                >
-                            </div>
-                            <div class="flex items-center gap-2 mt-2">
-                                <span class="inline-flex items-center rounded-lg bg-slate-100 px-2 py-2 text-sm text-slate-600">R/L</span>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="15"
-                                    max="35"
-                                    name="prices[{{ $fuelKey }}]"
-                                    value="{{ $priceValue }}"
-                                    class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
-                                    placeholder="0.00"
-                                    data-fuel-number="{{ $fuelKey }}"
-                                >
-                            </div>
-                            <p class="text-xs text-slate-500 mt-2">Current source: {{ $priceRow['source_label'] ?? 'System Default' }}</p>
+                <div class="fuel-wheel-shell">
+                    <div class="fuel-wheel-grid">
+                        <div class="fuel-wheel-col">
+                            <p class="fuel-wheel-kicker">RAND</p>
+                            <div class="fuel-wheel-list" id="randWheel"></div>
                         </div>
-                    @endforeach
+                        <div class="fuel-wheel-col">
+                            <p class="fuel-wheel-kicker">CENTS</p>
+                            <div class="fuel-wheel-list" id="centsWheel"></div>
+                        </div>
+                        <div class="fuel-wheel-col">
+                            <p class="fuel-wheel-kicker">FUEL</p>
+                            <div class="fuel-wheel-list" id="fuelWheel"></div>
+                        </div>
+                    </div>
+                    <div class="fuel-wheel-highlight" aria-hidden="true"></div>
                 </div>
 
-                <button class="btn-primary w-full rounded-xl py-2.5 text-sm font-semibold">Save Fuel Prices</button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end price-preview-wrap">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Preview</p>
+                        <p id="fuelPreviewValue" class="text-5xl font-black text-slate-900 mt-1">ZAR 0.00/L</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-600 mb-1">Effective At (optional)</label>
+                        <input type="datetime-local" name="effective_at" value="{{ old('effective_at') }}" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 flex-wrap">
+                    <button class="btn-primary rounded-xl px-5 py-2.5 text-sm font-semibold">Save Fuel Price</button>
+                    <p class="text-sm text-slate-500">Scroll each wheel to pick values.</p>
+                </div>
             </form>
         </div>
     </div>
 </section>
 
-<datalist id="fuelTickerMarks">
-    <option value="16"></option>
-    <option value="18"></option>
-    <option value="20"></option>
-    <option value="22"></option>
-    <option value="24"></option>
-    <option value="26"></option>
-    <option value="28"></option>
-    <option value="30"></option>
-    <option value="32"></option>
-    <option value="34"></option>
-</datalist>
-
 <style>
-    .fuel-board {
-        display: grid;
-        gap: 0.75rem;
+    .merchant-card {
+        position: relative;
+        border: 1px solid #dbe4ef;
+        background: #ffffff;
+        box-shadow:
+            0 18px 40px rgba(15, 23, 42, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
     }
 
-    .fuel-selector-chip {
+    .merchant-card:hover {
+        transform: translateY(-2px);
+        border-color: #bfdbfe;
+        box-shadow:
+            0 24px 50px rgba(30, 64, 175, 0.16),
+            inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    }
+
+    .benchmark-shell {
+        background: #ffffff;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .benchmark-card {
+        background: #f8fafc;
+        box-shadow:
+            0 10px 20px rgba(15, 23, 42, 0.06),
+            inset 0 1px 0 rgba(255, 255, 255, 0.85);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .benchmark-card:hover {
+        transform: translateY(-2px);
+        border-color: #bfdbfe;
+        box-shadow:
+            0 15px 30px rgba(37, 99, 235, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    }
+
+    .price-preview-wrap {
+        border: 1px solid #dbe4ef;
+        border-radius: 1rem;
+        padding: 1rem;
+        background: #f8fafc;
+    }
+
+    #fuelPreviewValue {
+        letter-spacing: -0.03em;
+        text-shadow: 0 2px 12px rgba(30, 64, 175, 0.18);
+    }
+
+    .franchise-choice {
         border: 1px solid #cbd5e1;
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        border-radius: 0.9rem;
-        padding: 0.8rem 0.9rem;
-        text-align: left;
-        transition: all 0.25s ease;
+        background: #fff;
+        border-radius: 0.8rem;
+        padding: 0.55rem 0.6rem;
+        display: block;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .franchise-choice:hover {
+        border-color: #818cf8;
+        box-shadow: 0 14px 28px rgba(79, 70, 229, 0.2);
+        transform: translateY(-1px);
+    }
+
+    .franchise-choice.is-active {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px #c7d2fe, 0 14px 30px rgba(79, 70, 229, 0.24);
+        background: #eef2ff;
+    }
+
+    .fuel-wheel-shell {
         position: relative;
+        border-radius: 1.2rem;
+        border: 1px solid #1e3a5f;
+        background: #0f172a;
+        padding: 1rem;
         overflow: hidden;
     }
 
-    .fuel-selector-chip::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: repeating-linear-gradient(
-            90deg,
-            rgba(15, 23, 42, 0.08) 0 8px,
-            rgba(255, 255, 255, 0.06) 8px 16px
-        );
-        transform: translateX(-35%);
-        opacity: 0;
-        transition: opacity 0.2s ease;
+    .fuel-wheel-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.75rem;
     }
 
-    .fuel-selector-chip:hover::before,
-    .fuel-selector-chip.is-active::before {
-        opacity: 1;
-        animation: fuelBoardScroll 4s linear infinite;
+    .fuel-wheel-col {
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        border-radius: 1rem;
+        background: rgba(15, 23, 42, 0.52);
+        padding: 0.7rem;
     }
 
-    .fuel-selector-chip:hover,
-    .fuel-selector-chip.is-active {
-        border-color: #1d4ed8;
-        box-shadow: 0 10px 25px rgba(29, 78, 216, 0.12);
-    }
-
-    .fuel-selector-chip-title,
-    .fuel-selector-chip-sub {
-        position: relative;
-        z-index: 1;
-        display: block;
-    }
-
-    .fuel-selector-chip-title {
-        font-size: 0.95rem;
+    .fuel-wheel-kicker {
+        text-align: center;
+        font-size: 0.78rem;
+        letter-spacing: 0.14em;
+        color: #cbd5e1;
         font-weight: 700;
-        color: #0f172a;
+        margin-bottom: 0.4rem;
     }
 
-    .fuel-selector-chip-sub {
-        margin-top: 0.15rem;
-        font-size: 0.75rem;
-        color: #475569;
+    .fuel-wheel-list {
+        height: 180px;
+        overflow-y: auto;
+        scroll-snap-type: y mandatory;
+        border-radius: 0.8rem;
+        padding: 68px 0;
+        position: relative;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
     }
 
-    .fuel-price-panel {
+    .fuel-wheel-list::-webkit-scrollbar {
         display: none;
-        border: 1px solid #e2e8f0;
-        border-radius: 0.9rem;
-        background: #ffffff;
-        padding: 0.9rem;
     }
 
-    .fuel-price-panel.is-active {
-        display: block;
+    .fuel-wheel-item {
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(226, 232, 240, 0.48);
+        font-weight: 800;
+        font-size: 1.2rem;
+        scroll-snap-align: center;
+        transition: color 0.2s ease, transform 0.2s ease;
     }
 
-    .fuel-range-wrap {
-        width: 100%;
-        padding: 0.25rem 0;
+    .fuel-wheel-item.active {
+        color: #ffffff;
+        transform: scale(1.06);
     }
 
-    .fuel-range-input {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 100%;
-        height: 12px;
-        border-radius: 999px;
-        background: linear-gradient(90deg, #16a34a 0%, #84cc16 45%, #f59e0b 78%, #dc2626 100%);
-        outline: none;
-        border: 1px solid #cbd5e1;
+    .fuel-wheel-highlight {
+        position: absolute;
+        left: 1rem;
+        right: 1rem;
+        top: calc(50% - 22px);
+        height: 44px;
+        border-radius: 0.7rem;
+        border: 1px solid rgba(96, 165, 250, 0.45);
+        background: rgba(37, 99, 235, 0.16);
+        pointer-events: none;
+        z-index: 3;
     }
 
-    .fuel-range-input::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 22px;
-        height: 22px;
-        border-radius: 999px;
-        border: 2px solid #ffffff;
-        background: #0f172a;
-        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.25);
-        cursor: pointer;
-    }
-
-    .fuel-range-wrap::after {
-        content: "R15   R20   R25   R30   R35";
-        display: block;
-        margin-top: 0.35rem;
-        font-size: 0.68rem;
-        letter-spacing: 0.08em;
-        color: #64748b;
-        text-align: justify;
-        text-justify: inter-character;
-    }
-
-    .fuel-range-input::-moz-range-thumb {
-        width: 22px;
-        height: 22px;
-        border-radius: 999px;
-        border: 2px solid #ffffff;
-        background: #0f172a;
-        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.25);
-        cursor: pointer;
-    }
-
-    @keyframes fuelBoardScroll {
-        from { transform: translateX(-35%); }
-        to { transform: translateX(35%); }
+    @media (max-width: 760px) {
+        .fuel-wheel-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
 <script>
 (() => {
-    const chips = Array.from(document.querySelectorAll('[data-fuel-chip]'));
-    const panels = Array.from(document.querySelectorAll('[data-fuel-panel]'));
-    if (!chips.length || !panels.length) return;
+    const franchiseInputs = Array.from(document.querySelectorAll('input[name="company"][type="radio"]'));
+    const refreshFranchiseCards = () => {
+        document.querySelectorAll('.franchise-choice').forEach((card) => card.classList.remove('is-active'));
+        franchiseInputs.forEach((input) => {
+            if (input.checked) {
+                const card = input.closest('.franchise-choice');
+                if (card) {
+                    card.classList.add('is-active');
+                }
+            }
+        });
+    };
+    franchiseInputs.forEach((input) => input.addEventListener('change', refreshFranchiseCards));
+    refreshFranchiseCards();
 
-    const activate = (fuel) => {
-        chips.forEach((chip) => chip.classList.toggle('is-active', chip.dataset.fuelChip === fuel));
-        panels.forEach((panel) => panel.classList.toggle('is-active', panel.dataset.fuelPanel === fuel));
+    const randWheel = document.getElementById('randWheel');
+    const centsWheel = document.getElementById('centsWheel');
+    const fuelWheel = document.getElementById('fuelWheel');
+    const randInput = document.getElementById('fuelRandInput');
+    const centsInput = document.getElementById('fuelCentsInput');
+    const fuelTypeInput = document.getElementById('fuelTypeInput');
+    const preview = document.getElementById('fuelPreviewValue');
+
+    if (!randWheel || !centsWheel || !fuelWheel || !randInput || !centsInput || !fuelTypeInput || !preview) {
+        return;
+    }
+
+    const fuels = ['petrol', 'super', 'diesel'];
+    const prettyFuel = {
+        petrol: 'PETROL',
+        super: 'SUPER',
+        diesel: 'DIESEL',
     };
 
-    chips.forEach((chip) => {
-        chip.addEventListener('click', () => activate(chip.dataset.fuelChip));
-    });
-
-    const ranges = Array.from(document.querySelectorAll('[data-fuel-range]'));
-    const numbers = Array.from(document.querySelectorAll('[data-fuel-number]'));
-
-    const getNumberByFuel = (fuel) => numbers.find((node) => node.dataset.fuelNumber === fuel);
-    const getRangeByFuel = (fuel) => ranges.find((node) => node.dataset.fuelRange === fuel);
-
-    ranges.forEach((range) => {
-        range.addEventListener('input', () => {
-            const fuel = range.dataset.fuelRange;
-            const number = getNumberByFuel(fuel);
-            if (!number) return;
-            number.value = Number.parseFloat(range.value || '0').toFixed(2);
+    const buildWheel = (container, values) => {
+        container.innerHTML = '';
+        values.forEach((value) => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'fuel-wheel-item';
+            item.dataset.value = String(value);
+            item.textContent = typeof value === 'number'
+                ? String(value).padStart(2, '0')
+                : String(value).toUpperCase();
+            container.appendChild(item);
         });
+    };
+
+    buildWheel(randWheel, Array.from({ length: 90 }, (_, i) => i + 10));
+    buildWheel(centsWheel, Array.from({ length: 100 }, (_, i) => i));
+    buildWheel(fuelWheel, fuels);
+
+    const getClosestItem = (container) => {
+        const items = Array.from(container.querySelectorAll('.fuel-wheel-item'));
+        const middle = container.getBoundingClientRect().top + (container.clientHeight / 2);
+        let selected = items[0] || null;
+        let min = Number.POSITIVE_INFINITY;
+        items.forEach((item) => {
+            const rect = item.getBoundingClientRect();
+            const center = rect.top + (rect.height / 2);
+            const dist = Math.abs(center - middle);
+            if (dist < min) {
+                min = dist;
+                selected = item;
+            }
+        });
+        return selected;
+    };
+
+    const setActive = (container, value) => {
+        container.querySelectorAll('.fuel-wheel-item').forEach((item) => {
+            item.classList.toggle('active', item.dataset.value === String(value));
+        });
+    };
+
+    const syncPreview = () => {
+        const rand = parseInt(randInput.value || '0', 10);
+        const cents = parseInt(centsInput.value || '0', 10);
+        const fuel = fuelTypeInput.value || 'petrol';
+        const price = rand + (cents / 100);
+        preview.textContent = `ZAR ${price.toFixed(2)}/L`;
+        preview.dataset.fuel = prettyFuel[fuel] || fuel.toUpperCase();
+    };
+
+    const snapToValue = (container, value) => {
+        const item = container.querySelector(`.fuel-wheel-item[data-value="${String(value)}"]`);
+        if (!item) {
+            return;
+        }
+        const top = item.offsetTop - ((container.clientHeight - item.clientHeight) / 2);
+        container.scrollTo({ top, behavior: 'auto' });
+        setActive(container, value);
+    };
+
+    const bindWheel = (container, onChange) => {
+        let timer = null;
+        const commit = () => {
+            const closest = getClosestItem(container);
+            if (!closest) {
+                return;
+            }
+            const value = closest.dataset.value;
+            snapToValue(container, value);
+            onChange(value);
+            syncPreview();
+        };
+
+        container.addEventListener('scroll', () => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+            timer = setTimeout(commit, 80);
+        });
+
+        container.querySelectorAll('.fuel-wheel-item').forEach((item) => {
+            item.addEventListener('click', () => {
+                snapToValue(container, item.dataset.value);
+                onChange(item.dataset.value);
+                syncPreview();
+            });
+        });
+    };
+
+    bindWheel(randWheel, (value) => {
+        randInput.value = String(parseInt(value || '0', 10));
+    });
+    bindWheel(centsWheel, (value) => {
+        centsInput.value = String(parseInt(value || '0', 10));
+    });
+    bindWheel(fuelWheel, (value) => {
+        fuelTypeInput.value = String(value || 'petrol');
     });
 
-    numbers.forEach((number) => {
-        number.addEventListener('input', () => {
-            const fuel = number.dataset.fuelNumber;
-            const range = getRangeByFuel(fuel);
-            if (!range) return;
-            const value = Math.min(35, Math.max(15, Number(number.value || 0)));
-            range.value = Number.isFinite(value) ? value.toString() : '15';
-        });
-    });
+    snapToValue(randWheel, randInput.value || '24');
+    snapToValue(centsWheel, centsInput.value || '50');
+    snapToValue(fuelWheel, fuelTypeInput.value || 'petrol');
+    syncPreview();
 })();
 </script>
 @endsection

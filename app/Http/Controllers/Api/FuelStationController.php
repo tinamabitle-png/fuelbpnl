@@ -19,6 +19,7 @@ class FuelStationController extends Controller
             'longitude' => 'required|numeric|between:-180,180',
             'radius' => 'nullable|numeric|min:1|max:50', // in kilometers
             'fuel_type' => 'nullable|in:petrol,diesel,super',
+            'brand' => 'nullable|string|max:255',
             'limit' => 'nullable|integer|min:1|max:50',
         ]);
 
@@ -33,10 +34,12 @@ class FuelStationController extends Controller
         $longitude = $request->longitude;
         $radius = $request->radius ?? 10; // default 10km radius
         $fuelType = $request->fuel_type;
+        $brand = trim((string) ($request->brand ?? ''));
         $limit = $request->limit ?? 20;
 
         // Get nearby stations
         $stations = FuelStation::active()
+            ->when($brand !== '', fn ($query) => $query->where('company', $brand))
             ->nearby($latitude, $longitude, $radius)
             ->take($limit)
             ->get()
@@ -65,8 +68,17 @@ class FuelStationController extends Controller
                     'longitude' => $longitude,
                     'radius' => $radius,
                     'fuel_type' => $fuelType,
+                    'brand' => $brand,
                     'count' => $stations->count(),
                 ],
+                'grouped_by_brand' => $stations
+                    ->groupBy(fn ($station) => trim((string) ($station['company'] ?? '')) ?: 'Other')
+                    ->map(fn ($items, $brandName) => [
+                        'brand' => $brandName,
+                        'count' => $items->count(),
+                        'stations' => $items->values(),
+                    ])
+                    ->values(),
                 'price_summary' => $this->getPriceSummary($stations, $fuelType),
             ]
         ]);
@@ -138,6 +150,7 @@ class FuelStationController extends Controller
         $validator = Validator::make($request->all(), [
             'query' => 'required|string|min:2',
             'city' => 'nullable|string',
+            'brand' => 'nullable|string|max:255',
             'fuel_type' => 'nullable|in:petrol,diesel,super',
             'has_services' => 'nullable|array',
             'is_open_now' => 'nullable|boolean',
@@ -165,6 +178,10 @@ class FuelStationController extends Controller
             $query->where('city', 'like', "%{$request->city}%");
         }
 
+        if ($request->filled('brand')) {
+            $query->where('company', trim((string) $request->brand));
+        }
+
         if ($request->filled('is_open_now') && $request->is_open_now) {
             $query->whereIn('id', $this->getOpenStationIds());
         }
@@ -175,6 +192,14 @@ class FuelStationController extends Controller
             'success' => true,
             'data' => [
                 'stations' => $stations,
+                'grouped_by_brand' => $stations
+                    ->groupBy(fn ($station) => trim((string) ($station->company ?? '')) ?: 'Other')
+                    ->map(fn ($items, $brandName) => [
+                        'brand' => $brandName,
+                        'count' => $items->count(),
+                        'stations' => $items->values(),
+                    ])
+                    ->values(),
                 'search_params' => $request->all(),
                 'suggestions' => $this->getSearchSuggestions($request->query),
             ]

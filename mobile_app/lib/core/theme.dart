@@ -63,6 +63,11 @@ class AppTheme {
 
     return base.copyWith(
       textTheme: textTheme,
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: Color(0xFFE2E8F0),
+        selectionColor: Color(0x664F46E5),
+        selectionHandleColor: Color(0xFFE2E8F0),
+      ),
       appBarTheme: const AppBarTheme(
         centerTitle: false,
         elevation: 0,
@@ -116,7 +121,14 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: const Color(0xFF0F172A),
+        labelStyle: const TextStyle(color: Color(0xFFCBD5E1)),
+        floatingLabelStyle: const TextStyle(color: Color(0xFFE2E8F0)),
         hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+        prefixStyle: const TextStyle(color: Color(0xFFE2E8F0)),
+        suffixStyle: const TextStyle(color: Color(0xFFE2E8F0)),
+        iconColor: const Color(0xFFCBD5E1),
+        prefixIconColor: const Color(0xFFCBD5E1),
+        suffixIconColor: const Color(0xFFCBD5E1),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,

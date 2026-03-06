@@ -313,6 +313,61 @@
                 </div>
             @endif
 
+            @if($user->hasRole('driver'))
+                @php
+                    $docsByType = $user->driverDocuments->keyBy('document_type');
+                @endphp
+                <div class="bg-white rounded-2xl shadow-sm border border-indigo-200 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-id-card text-indigo-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">Driver Documents</h3>
+                                <p class="text-gray-600 text-sm">Schema-restored compliance verification workflow</p>
+                            </div>
+                        </div>
+                        <span class="text-xs px-3 py-1 rounded-full font-medium {{ ($user->id_verification_status ?? 'unverified') === 'verified' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                            {{ strtoupper((string) ($user->id_verification_status ?? 'unverified')) }}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @foreach(['sa_id' => 'SA ID', 'driver_license' => 'Driver License'] as $docType => $docLabel)
+                            @php $doc = $docsByType->get($docType); @endphp
+                            <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                <p class="text-xs uppercase tracking-wider text-gray-500">{{ $docLabel }}</p>
+                                @if($doc)
+                                    <p class="mt-2 text-sm text-gray-800">
+                                        Status:
+                                        <span class="font-semibold {{ $doc->verified ? 'text-emerald-700' : 'text-amber-700' }}">
+                                            {{ $doc->verified ? 'Verified' : 'Pending' }}
+                                        </span>
+                                    </p>
+                                    <a href="{{ asset('storage/' . $doc->document_path) }}" target="_blank" rel="noopener" class="inline-flex mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                        <i class="fas fa-file-alt mr-2 mt-1"></i> Open Document
+                                    </a>
+                                    <form action="{{ route('admin.users.driver-documents.verify', [$user, $docType]) }}" method="POST" class="mt-3 flex flex-wrap gap-2">
+                                        @csrf
+                                        <input type="hidden" name="action" value="verify">
+                                        <button type="submit" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Verify</button>
+                                    </form>
+                                    <form action="{{ route('admin.users.driver-documents.verify', [$user, $docType]) }}" method="POST" class="mt-2">
+                                        @csrf
+                                        <input type="hidden" name="action" value="reject">
+                                        <input type="text" name="notes" class="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" placeholder="Reason for re-submission (optional)">
+                                        <button type="submit" class="mt-2 px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-600 text-white hover:bg-amber-700">Mark For Re-Upload</button>
+                                    </form>
+                                @else
+                                    <p class="mt-2 text-sm text-gray-500">No document uploaded.</p>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <!-- Financial Overview -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
                 <div class="flex items-center justify-between mb-6">

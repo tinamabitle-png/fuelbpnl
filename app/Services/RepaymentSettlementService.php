@@ -34,7 +34,13 @@ class RepaymentSettlementService
             }
 
             $lease = Lease::whereKey($locked->lease_id)->lockForUpdate()->first();
-            if ($lease && $lease->remaining_balance <= 0 && (string) $lease->status === 'active') {
+            $openRepayments = $lease
+                ? Repayment::where('lease_id', $lease->id)
+                    ->whereIn('status', ['pending', 'overdue'])
+                    ->count()
+                : 0;
+
+            if ($lease && $openRepayments === 0 && (string) $lease->status === 'active') {
                 $lease->update([
                     'status' => 'completed',
                     'completed_at' => now(),
@@ -58,4 +64,3 @@ class RepaymentSettlementService
         });
     }
 }
-

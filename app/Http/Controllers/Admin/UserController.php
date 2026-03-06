@@ -95,7 +95,7 @@ class UserController extends Controller
 
     public function show(User $user, DriverUnderwritingService $driverUnderwritingService)
     {
-        $user->load(['wallet', 'creditLimit', 'vouchers', 'leases.repayments', 'roles']);
+        $user->load(['wallet', 'creditLimit', 'vouchers', 'leases.repayments', 'roles', 'driverDocuments.verifier']);
 
         $underwritingSummary = null;
         if ($user->hasRole('driver')) {
@@ -103,6 +103,45 @@ class UserController extends Controller
         }
 
         return view('admin.users.show', compact('user', 'underwritingSummary'));
+    }
+
+    public function verifyDriverDocument(Request $request, User $user, string $documentType)
+    {
+        $request->validate([
+            'action' => 'required|in:verify,reject',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        if (!in_array($documentType, ['driver_license', 'sa_id'], true)) {
+            abort(404);
+        }
+
+        $document = $user->driverDocuments()->where('document_type', $documentType)->first();
+        if (!$document) {
+            return back()->with('error', 'Driver document not found.');
+        }
+
+        $isVerify = $request->string('action')->toString() === 'verify';
+        $document->update([
+            'verified' => $isVerify,
+            'verified_by' => auth()->id(),
+            'verified_at' => $isVerify ? now() : null,
+            'notes' => $request->input('notes'),
+        ]);
+
+        $requiredTypes = ['driver_license', 'sa_id'];
+        $verifiedRequiredCount = $user->driverDocuments()
+            ->whereIn('document_type', $requiredTypes)
+            ->where('verified', true)
+            ->count();
+
+        $user->update([
+            'id_verification_status' => $verifiedRequiredCount === 2 ? 'verified' : 'pending_review',
+            'id_verified_at' => $verifiedRequiredCount === 2 ? now() : null,
+            'id_verification_provider' => 'manual',
+        ]);
+
+        return back()->with('success', $isVerify ? 'Document verified successfully.' : 'Document marked for re-submission.');
     }
 
     public function edit(User $user)

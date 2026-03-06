@@ -48,6 +48,7 @@ class RunDailyRepaymentAutopay extends Command
         ];
 
         $dueRepaymentIds = Repayment::query()
+            ->visibleInSystem()
             ->whereIn('status', ['pending', 'overdue'])
             ->whereDate('due_date', '<=', now()->toDateString())
             ->where(function ($q) {
@@ -60,7 +61,7 @@ class RunDailyRepaymentAutopay extends Command
 
         foreach ($dueRepaymentIds as $id) {
             /** @var Repayment|null $repayment */
-            $repayment = Repayment::with('user')->find($id);
+            $repayment = Repayment::query()->visibleInSystem()->with('user')->find($id);
             if (!$repayment) {
                 $skipped++;
                 $skipReasons['repayment_not_found']++;

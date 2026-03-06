@@ -44,4 +44,26 @@ return [
         'timeout' => env('PAYSTACK_TIMEOUT', 15),
     ],
 
+    'africastalking' => [
+        'username' => env('AFRICASTALKING_USERNAME'),
+        'api_key' => env('AFRICASTALKING_API_KEY'),
+        'ussd_token' => env('AFRICASTALKING_USSD_TOKEN'),
+        'airtime_split_enabled' => env('AFRICASTALKING_AIRTIME_SPLIT_ENABLED', false),
+        'airtime_split_percent' => env('AFRICASTALKING_AIRTIME_SPLIT_PERCENT', 20),
+        'airtime_split_min_amount' => env('AFRICASTALKING_AIRTIME_SPLIT_MIN_AMOUNT', 5),
+        'airtime_base_url' => env('AFRICASTALKING_AIRTIME_BASE_URL', 'https://api.africastalking.com/version1/airtime'),
+        'airtime_currency' => env('AFRICASTALKING_AIRTIME_CURRENCY', 'ZAR'),
+        'airtime_timeout_seconds' => env('AFRICASTALKING_AIRTIME_TIMEOUT_SECONDS', 12),
+        'airtime_dry_run' => env('AFRICASTALKING_AIRTIME_DRY_RUN', true),
+    ],
+
+    'google_maps' => [
+        'key' => env('GOOGLE_MAPS_API_KEY'),
+    ],
+
+    'redemption_geofence' => [
+        'enabled' => env('REDEMPTION_GEOFENCE_ENABLED', false),
+        'radius_meters' => env('REDEMPTION_GEOFENCE_RADIUS_METERS', 150),
+    ],
+
 ];

@@ -12,6 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+
         // SPATIE v6.24.0 middleware paths
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,

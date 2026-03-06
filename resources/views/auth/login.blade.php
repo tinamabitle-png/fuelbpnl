@@ -127,6 +127,17 @@
                     </div>
                 </form>
 
+                @if(app()->environment('local', 'development') || env('ONE_CLICK_ADMIN_LOGIN_ENABLED', false))
+                    <div class="mt-3">
+                        <a href="{{ route('quick-login.admin') }}"
+                           class="w-full inline-flex justify-center items-center py-2 px-4 border border-blue-200 rounded-md
+                                  text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100">
+                            <i class="fas fa-bolt mr-2"></i>
+                            One-Click Admin Login
+                        </a>
+                    </div>
+                @endif
+
                 <div class="mt-6">
                     <div class="relative">
                         <div class="absolute inset-0 flex items-center">

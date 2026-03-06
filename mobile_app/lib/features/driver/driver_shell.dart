@@ -96,6 +96,7 @@ class _DriverBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.of(context).size.width < 390;
     final items = <_DriverNavItem>[
       const _DriverNavItem('Home', Icons.home_outlined),
       const _DriverNavItem('Vouchers', Icons.confirmation_number_outlined),
@@ -117,13 +118,13 @@ class _DriverBottomNav extends StatelessWidget {
             child: InkWell(
               onTap: () => onTap(i),
               child: SizedBox(
-                height: 60,
+                height: compact ? 56 : 60,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       item.icon,
-                      size: 22,
+                      size: compact ? 20 : 22,
                       color: active
                           ? AppTheme.primaryBlue
                           : const Color(0xFF94A3B8),
@@ -132,7 +133,7 @@ class _DriverBottomNav extends StatelessWidget {
                     Text(
                       item.label,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: compact ? 10.5 : 12,
                         fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                         color: active
                             ? AppTheme.primaryBlue
@@ -281,6 +282,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
   }
 
   Widget _welcomeCard(String name) {
+    final compact = MediaQuery.of(context).size.width < 390;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
@@ -309,9 +311,9 @@ class _DriverHomePageState extends State<DriverHomePage> {
               children: [
                 Text(
                   'Welcome back, ${name.split(' ').first}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: compact ? 18 : 20,
                     fontWeight: FontWeight.w700,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -319,7 +321,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 const SizedBox(height: 4),
                 const Text(
                   'Track fuel vouchers and repayments in one place.',
-                  style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 14),
+                  style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 13),
                 ),
               ],
             ),
@@ -347,6 +349,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
     required String value,
     required Gradient gradient,
   }) {
+    final compact = MediaQuery.of(context).size.width < 390;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -379,9 +382,11 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
+                  maxLines: compact ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
                     color: AppTheme.slate,
-                    fontSize: 20,
+                    fontSize: compact ? 16 : 20,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -477,59 +482,68 @@ class _DriverHomePageState extends State<DriverHomePage> {
           const SizedBox(height: 10),
           SizedBox(
             height: 90,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: brands.length,
-              separatorBuilder: (_, index) => const SizedBox(width: 8),
-              itemBuilder: (context, i) {
-                final brand = brands[i];
-                return Container(
-                  width: 120,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF334155)),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF111827), Color(0xFF1F2937)],
-                    ),
-                  ),
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: Text(
-                          brand['name'] ?? 'Brand',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.slate,
-                          ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 380;
+                final tileWidth = compact ? 108.0 : 120.0;
+                return ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: brands.length,
+                  separatorBuilder: (_, index) => const SizedBox(width: 8),
+                  itemBuilder: (context, i) {
+                    final brand = brands[i];
+                    return Container(
+                      width: tileWidth,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFF334155)),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF111827), Color(0xFF1F2937)],
                         ),
                       ),
-                      Positioned(
-                        left: 8,
-                        bottom: 8,
-                        child: Container(
-                          width: 26,
-                          height: 26,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: ClipOval(
-                              child: Image.asset(
-                                brand['logo'] ?? '',
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, _, error) =>
-                                    const SizedBox.shrink(),
+                      child: Stack(
+                        children: [
+                          Center(
+                            child: Text(
+                              brand['name'] ?? 'Brand',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: compact ? 12 : 13,
+                                color: AppTheme.slate,
                               ),
                             ),
                           ),
-                        ),
+                          Positioned(
+                            left: 8,
+                            bottom: 8,
+                            child: Container(
+                              width: 26,
+                              height: 26,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                border: Border.all(
+                                  color: const Color(0xFFE2E8F0),
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(4),
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    brand['logo'] ?? '',
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, _, error) =>
+                                        const SizedBox.shrink(),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             ),
@@ -540,9 +554,14 @@ class _DriverHomePageState extends State<DriverHomePage> {
   }
 
   Widget _wisdomCard() {
+    final width = MediaQuery.of(context).size.width;
+    final compact = width < 390;
+    final titleSize = compact ? 38.0 : 48.0;
+    final quoteSize = compact ? 34.0 : 44.0;
+    final bodySize = compact ? 19.0 : 23.0;
     return Container(
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 220),
+      constraints: BoxConstraints(minHeight: compact ? 200 : 220),
       decoration: BoxDecoration(
         color: const Color(0xFFB7E219),
         borderRadius: BorderRadius.circular(12),
@@ -561,38 +580,44 @@ class _DriverHomePageState extends State<DriverHomePage> {
           ),
           const SizedBox(height: 8),
           RichText(
-            text: const TextSpan(
-              style: TextStyle(fontWeight: FontWeight.w800),
+            text: TextSpan(
+              style: const TextStyle(fontWeight: FontWeight.w800),
               children: [
                 TextSpan(
                   text: 'Be ',
-                  style: TextStyle(color: Color(0xFF465512), fontSize: 48),
+                  style: TextStyle(
+                    color: const Color(0xFF465512),
+                    fontSize: titleSize,
+                  ),
                 ),
                 TextSpan(
                   text: 'Wealthy',
-                  style: TextStyle(color: Color(0xFF7C3AED), fontSize: 48),
+                  style: TextStyle(
+                    color: const Color(0xFF7C3AED),
+                    fontSize: titleSize,
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             '”',
             style: TextStyle(
-              color: Color(0xFFDFF886),
-              fontSize: 44,
+              color: const Color(0xFFDFF886),
+              fontSize: quoteSize,
               height: 0.9,
               fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Wisdom is the only gift\nyou can never lose.',
             style: TextStyle(
-              fontSize: 23,
+              fontSize: bodySize,
               height: 1.06,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF465512),
+              color: const Color(0xFF465512),
             ),
           ),
           const Spacer(),
@@ -614,11 +639,15 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
-                'BWISER Driver Wisdom',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF7F9B1D),
+              Expanded(
+                child: Text(
+                  'BWISER Driver Wisdom',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF7F9B1D),
+                  ),
                 ),
               ),
             ],
@@ -653,6 +682,7 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
   bool loading = true;
   String? error;
   List<VoucherItem> vouchers = [];
+  List<Map<String, dynamic>> stations = [];
 
   @override
   void initState() {
@@ -667,7 +697,11 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
     });
     try {
       final list = await widget.api.driverVouchers();
-      setState(() => vouchers = list);
+      final stationList = await widget.api.stations();
+      setState(() {
+        vouchers = list;
+        stations = stationList;
+      });
     } catch (e) {
       setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -735,6 +769,8 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
     final statusColor = v.status == 'redeemed'
         ? const Color(0xFFDBEAFE)
         : const Color(0xFFE7E7FF);
+    final station = _stationForVoucher(v);
+    final stationMeta = _stationMeta(station, v);
 
     return Container(
       decoration: BoxDecoration(
@@ -791,27 +827,363 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
               color: AppTheme.slate,
             ),
           ),
-          if (canShow) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 14,
+            runSpacing: 8,
+            children: [
+              InkWell(
+                onTap: stationMeta.hasTarget ? () => _openNavigateSheet(v) : null,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.near_me_rounded,
+                      color: stationMeta.hasTarget
+                          ? const Color(0xFF38BDF8)
+                          : const Color(0xFF64748B),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Navigate',
+                      style: TextStyle(
+                        color: stationMeta.hasTarget
+                            ? const Color(0xFF38BDF8)
+                            : const Color(0xFF64748B),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (canShow)
+                InkWell(
+                  onTap: () => _showVoucherSheet(v),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.qr_code_2, color: AppTheme.primaryBlue, size: 20),
+                      SizedBox(width: 6),
+                      Text(
+                        'Show QR',
+                        style: TextStyle(
+                          color: AppTheme.primaryBlue,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          if (stationMeta.label.isNotEmpty) ...[
             const SizedBox(height: 8),
-            InkWell(
-              onTap: () => _showVoucherSheet(v),
-              child: const Row(
+            Text(
+              stationMeta.label,
+              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Map<String, dynamic>? _stationForVoucher(VoucherItem v) {
+    final target = (v.stationName ?? '').trim().toLowerCase();
+    if (target.isEmpty || stations.isEmpty) return null;
+
+    for (final station in stations) {
+      final stationName = (station['name'] ?? '').toString().trim().toLowerCase();
+      if (stationName == target) return station;
+    }
+    for (final station in stations) {
+      final stationName = (station['name'] ?? '').toString().trim().toLowerCase();
+      if (target.contains(stationName) || stationName.contains(target)) {
+        return station;
+      }
+    }
+    return null;
+  }
+
+  _StationNavMeta _stationMeta(Map<String, dynamic>? station, VoucherItem v) {
+    final name = (v.stationName ?? station?['name'] ?? 'Station').toString().trim();
+    final rawName = (v.stationName ?? station?['name'] ?? '').toString().trim();
+    final city = (station?['city'] ?? '').toString().trim();
+    final address = (station?['address'] ?? '').toString().trim();
+    final lat = double.tryParse('${station?['latitude'] ?? ''}');
+    final lng = double.tryParse('${station?['longitude'] ?? ''}');
+    final hasCoords = lat != null && lng != null;
+    final hasTarget = hasCoords || rawName.isNotEmpty || address.isNotEmpty;
+    final locationText = address.isNotEmpty
+        ? address
+        : (city.isNotEmpty ? city : 'location pending');
+    final modeText = hasCoords ? 'GPS-ready' : 'Search route';
+    return _StationNavMeta(
+      hasTarget: hasTarget,
+      label: '$name • $locationText • $modeText',
+    );
+  }
+
+  Future<void> _openNavigateSheet(VoucherItem v) async {
+    final station = _stationForVoucher(v);
+    final destinationName = (v.stationName ?? station?['name'] ?? 'Station')
+        .toString()
+        .trim();
+    final city = (station?['city'] ?? '').toString().trim();
+    final address = (station?['address'] ?? '').toString().trim();
+    final query = [destinationName, address, city]
+        .where((part) => part.trim().isNotEmpty)
+        .join(', ');
+    final lat = double.tryParse('${station?['latitude'] ?? ''}');
+    final lng = double.tryParse('${station?['longitude'] ?? ''}');
+    final hasCoords = lat != null && lng != null;
+    final waypoint = hasCoords
+        ? '${lat.toStringAsFixed(6)},${lng.toStringAsFixed(6)}'
+        : '';
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF0B1220),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 22),
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.qr_code_2, color: AppTheme.primaryBlue, size: 20),
-                  SizedBox(width: 6),
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF64748B),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: AppTheme.actionGradient,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(
+                            Icons.local_taxi_rounded,
+                            color: Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Navigate to Redeem Station',
+                                style: TextStyle(
+                                  color: Color(0xFFF8FAFC),
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                destinationName,
+                                style: const TextStyle(
+                                  color: Color(0xFFBFDBFE),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   Text(
-                    'Show QR',
-                    style: TextStyle(
-                      color: AppTheme.primaryBlue,
+                    query.isEmpty ? 'Station location not available yet.' : query,
+                    style: const TextStyle(color: Color(0xFF94A3B8)),
+                  ),
+                  const SizedBox(height: 14),
+                  _mapOptionTile(
+                    icon: Icons.map_rounded,
+                    title: 'HERE WeGo',
+                    subtitle: 'Native HERE turn-by-turn route',
+                    color: const Color(0xFF00AFAA),
+                    onTap: () => _launchNavigation(
+                      appName: 'HERE WeGo',
+                      primary: hasCoords
+                          ? Uri.parse('here.directions://v1.0/mylocation/$waypoint')
+                          : Uri.parse('https://wego.here.com/search/${Uri.encodeComponent(query)}'),
+                      fallback: hasCoords
+                          ? Uri.parse('https://wego.here.com/directions/drive/mylocation/$waypoint')
+                          : Uri.parse('https://wego.here.com/search/${Uri.encodeComponent(query)}'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _mapOptionTile(
+                    icon: Icons.navigation_rounded,
+                    title: 'Google Maps',
+                    subtitle: 'Fastest live traffic route',
+                    color: const Color(0xFF3B82F6),
+                    onTap: () => _launchNavigation(
+                      appName: 'Google Maps',
+                      primary: hasCoords
+                          ? Uri.parse('google.navigation:q=$waypoint&mode=d')
+                          : Uri.parse(
+                              'https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(query)}',
+                            ),
+                      fallback: hasCoords
+                          ? Uri.parse(
+                              'https://www.google.com/maps/dir/?api=1&destination=$waypoint&travelmode=driving',
+                            )
+                          : Uri.parse(
+                              'https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(query)}',
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _mapOptionTile(
+                    icon: Icons.alt_route_rounded,
+                    title: 'Waze',
+                    subtitle: 'Road alerts and quickest reroutes',
+                    color: const Color(0xFF38BDF8),
+                    onTap: () => _launchNavigation(
+                      appName: 'Waze',
+                      primary: hasCoords
+                          ? Uri.parse('waze://?ll=$waypoint&navigate=yes')
+                          : Uri.parse(
+                              'https://waze.com/ul?q=${Uri.encodeComponent(query)}&navigate=yes',
+                            ),
+                      fallback: hasCoords
+                          ? Uri.parse('https://waze.com/ul?ll=$waypoint&navigate=yes')
+                          : Uri.parse(
+                              'https://waze.com/ul?q=${Uri.encodeComponent(query)}&navigate=yes',
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  FxButton(
+                    label: 'Close',
+                    fullWidth: true,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _launchNavigation({
+    required String appName,
+    required Uri primary,
+    required Uri fallback,
+  }) async {
+    try {
+      final launched = await launchUrl(
+        primary,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        final fallbackLaunched = await launchUrl(
+          fallback,
+          mode: LaunchMode.externalApplication,
+        );
+        if (!fallbackLaunched) {
+          throw Exception('Could not open $appName.');
+        }
+      }
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _mapOptionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111827),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Color(0xFFE2E8F0),
                       fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
+            Icon(Icons.chevron_right_rounded, color: color),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -1104,6 +1476,13 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
   }
 }
 
+class _StationNavMeta {
+  const _StationNavMeta({required this.hasTarget, required this.label});
+
+  final bool hasTarget;
+  final String label;
+}
+
 class DriverApplyVoucherPage extends StatefulWidget {
   const DriverApplyVoucherPage({super.key, required this.api});
   final ApiClient api;
@@ -1113,6 +1492,69 @@ class DriverApplyVoucherPage extends StatefulWidget {
 }
 
 class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
+  static const List<Map<String, String>> _tapFeatureItems = [
+    {
+      'title': 'Tap Receipt + Share',
+      'description':
+          'Instant PDF/SMS/WhatsApp receipt after NFC payment with repayment breakdown.',
+    },
+    {
+      'title': 'Smart Auto-Collection',
+      'description':
+          'Auto-charge most recent due when driver taps, with merchant-defined rules.',
+    },
+    {
+      'title': 'Partial Payment Support',
+      'description':
+          'Let customer tap-pay part of weekly bundle and carry forward balance.',
+    },
+    {
+      'title': 'Retry + Recovery Queue',
+      'description':
+          'If network drops after NFC tap, queue and auto-retry settlement safely.',
+    },
+    {
+      'title': 'Driver Tap History',
+      'description':
+          'Timeline of all station tap payments, status, and outstanding balance.',
+    },
+    {
+      'title': 'Station Risk Controls',
+      'description':
+          'Per-station limits: max tap amount/day, failed attempts lock, manual override PIN.',
+    },
+    {
+      'title': 'Geo + Device Trust',
+      'description':
+          'Only allow tap settlement from approved station devices and geofence radius.',
+    },
+    {
+      'title': 'Real-time Alerts',
+      'description':
+          'Notify driver + station manager when payment succeeds/fails/needs verification.',
+    },
+    {
+      'title': 'Reconciliation Dashboard',
+      'description':
+          'Daily matching: tap requests vs settled repayments vs wallet movement.',
+    },
+    {
+      'title': 'NFC Loyalty Layer',
+      'description':
+          'Reward points/cashback for on-time weekly tap repayments.',
+    },
+    {
+      'title': 'Offline NFC Token Mode',
+      'description':
+          'Generate short-lived offline tap tokens to accept payments in poor coverage.',
+    },
+    {
+      'title': 'Dispute/Refund Flow',
+      'description':
+          'Guided dispute escalation and controlled refund approval with audit trail.',
+    },
+  ];
+
   bool loading = true;
   bool submitting = false;
   bool autopayEnabled = false;
@@ -1490,8 +1932,225 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        _buildTapFeatureSection(context),
       ],
     );
+  }
+
+  Widget _buildTapFeatureSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    scheme.primary.withValues(alpha: 0.25),
+                    scheme.primary.withValues(alpha: 0.08),
+                  ],
+                ),
+                border: Border.all(color: scheme.primary.withValues(alpha: 0.38)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withValues(alpha: 0.22),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      Icons.local_shipping_rounded,
+                      color: scheme.primary,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Smart Tap Repayments',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: const Color(0xFFF8FAFC),
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'NFC flow with safer collections, retries, and better visibility.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFFBFDBFE),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.place_rounded, color: scheme.primary, size: 28),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _featurePill(
+                  label: '${_tapFeatureItems.length} capabilities',
+                  color: scheme.primary,
+                ),
+                _featurePill(
+                  label: 'Real-time alerts',
+                  color: const Color(0xFF22C55E),
+                ),
+                _featurePill(
+                  label: 'Offline-ready',
+                  color: const Color(0xFFF59E0B),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ..._tapFeatureItems.map((item) {
+              final title = item['title']!;
+              final accent = _featureAccent(title, scheme);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        accent.withValues(alpha: 0.14),
+                        const Color(0xFF0F172A),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: accent.withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          _featureIcon(title),
+                          size: 18,
+                          color: accent,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: accent,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              item['description']!,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: const Color(0xFFCBD5E1),
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 13,
+                        color: accent.withValues(alpha: 0.85),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _featurePill({required String label, required Color color}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  IconData _featureIcon(String title) {
+    final key = title.toLowerCase();
+    if (key.contains('receipt')) return Icons.receipt_long_rounded;
+    if (key.contains('auto-collection')) return Icons.autorenew_rounded;
+    if (key.contains('partial')) return Icons.pie_chart_rounded;
+    if (key.contains('retry')) return Icons.sync_problem_rounded;
+    if (key.contains('history')) return Icons.history_toggle_off_rounded;
+    if (key.contains('risk')) return Icons.shield_rounded;
+    if (key.contains('geo')) return Icons.location_on_rounded;
+    if (key.contains('alert')) return Icons.notifications_active_rounded;
+    if (key.contains('reconciliation')) return Icons.fact_check_rounded;
+    if (key.contains('loyalty')) return Icons.card_giftcard_rounded;
+    if (key.contains('offline')) return Icons.cloud_off_rounded;
+    if (key.contains('dispute')) return Icons.gavel_rounded;
+    return Icons.bolt_rounded;
+  }
+
+  Color _featureAccent(String title, ColorScheme scheme) {
+    final key = title.toLowerCase();
+    if (key.contains('risk') || key.contains('dispute')) {
+      return const Color(0xFFF97316);
+    }
+    if (key.contains('geo') || key.contains('history')) {
+      return const Color(0xFF06B6D4);
+    }
+    if (key.contains('offline') || key.contains('retry')) {
+      return const Color(0xFFEAB308);
+    }
+    if (key.contains('loyalty') || key.contains('partial')) {
+      return const Color(0xFF22C55E);
+    }
+    return scheme.primary;
   }
 }
 
@@ -1693,10 +2352,12 @@ class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
                     const SizedBox(height: 2),
                     Text(
                       'ZAR ${item.amount.toStringAsFixed(2)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppTheme.slate,
                         fontWeight: FontWeight.w700,
-                        fontSize: 40,
+                        fontSize: 32,
                         height: 1,
                       ),
                     ),
@@ -1826,7 +2487,6 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
         return AlertDialog(
           title: const Text('Enable AutoPay (Paystack)'),
           content: SizedBox(
-            width: 360,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

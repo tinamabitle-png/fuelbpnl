@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class SettingsController extends Controller
 {
@@ -54,9 +56,25 @@ class SettingsController extends Controller
                 'debug_mode' => config('app.debug'),
                 'maintenance_mode' => app()->isDownForMaintenance(),
             ],
+            'merchant_dashboard' => [
+                'branding_mode' => $this->getDbSetting('merchant_dashboard_branding_mode', 'brand'),
+                'selected_brand' => $this->getDbSetting('merchant_dashboard_selected_brand', ''),
+                'logo_path' => $this->getDbSetting('merchant_dashboard_logo_path', ''),
+            ],
         ];
 
-        return view('admin.settings.index', compact('settings'));
+        $popularBrands = collect($this->merchantBrandCatalog())
+            ->map(function ($label, $slug) {
+                $logoPath = public_path('images/brands/' . $slug . '.png');
+                return [
+                    'slug' => $slug,
+                    'name' => $label,
+                    'logo_url' => is_file($logoPath) ? asset('images/brands/' . $slug . '.png') : null,
+                ];
+            })
+            ->values();
+
+        return view('admin.settings.index', compact('settings', 'popularBrands'));
     }
 
     /**
@@ -214,6 +232,47 @@ class SettingsController extends Controller
         return back()->with('success', 'System settings updated successfully!');
     }
 
+    public function updateMerchantDashboard(Request $request)
+    {
+        $validated = $request->validate([
+            'branding_mode' => 'required|in:brand,upload',
+            'selected_brand' => ['nullable', 'string', Rule::in(array_keys($this->merchantBrandCatalog()))],
+            'logo_file' => 'nullable|file|mimes:jpg,jpeg,png,webp,svg|max:5120',
+            'remove_logo' => 'nullable|boolean',
+        ]);
+
+        $brandingMode = (string) $validated['branding_mode'];
+        $selectedBrand = trim((string) ($validated['selected_brand'] ?? ''));
+        $currentLogoPath = (string) $this->getDbSetting('merchant_dashboard_logo_path', '');
+        $logoPath = $currentLogoPath;
+
+        if ($request->boolean('remove_logo') && $currentLogoPath !== '') {
+            Storage::disk('public')->delete($currentLogoPath);
+            $logoPath = '';
+        }
+
+        if ($request->hasFile('logo_file')) {
+            if ($currentLogoPath !== '') {
+                Storage::disk('public')->delete($currentLogoPath);
+            }
+            $logoPath = $request->file('logo_file')->store('merchant_branding', 'public');
+        }
+
+        if ($brandingMode === 'upload' && $logoPath === '') {
+            return back()->with('error', 'Upload a logo file or switch to brand mode.');
+        }
+
+        if ($brandingMode === 'brand' && $selectedBrand === '') {
+            return back()->with('error', 'Select a fuel brand for brand mode.');
+        }
+
+        $this->upsertDbSetting('merchant_dashboard_branding_mode', $brandingMode, 'merchant_dashboard');
+        $this->upsertDbSetting('merchant_dashboard_selected_brand', $selectedBrand, 'merchant_dashboard');
+        $this->upsertDbSetting('merchant_dashboard_logo_path', $logoPath, 'merchant_dashboard');
+
+        return back()->with('success', 'Merchant dashboard branding updated successfully.');
+    }
+
     /**
      * Clear application cache
      */
@@ -333,5 +392,37 @@ class SettingsController extends Controller
         }
         
         file_put_contents($envFile, $env);
+    }
+
+    private function getDbSetting(string $key, string $default = ''): string
+    {
+        $value = DB::table('settings')->where('key', $key)->value('value');
+        return $value === null ? $default : (string) $value;
+    }
+
+    private function upsertDbSetting(string $key, string $value, string $category = 'system'): void
+    {
+        DB::table('settings')->updateOrInsert(
+            ['key' => $key],
+            ['value' => $value, 'category' => $category]
+        );
+    }
+
+    private function merchantBrandCatalog(): array
+    {
+        return [
+            'astron-energy' => 'Astron Energy',
+            'bp-southern-africa' => 'BP Southern Africa',
+            'central-energy-fund' => 'Central Energy Fund',
+            'engen' => 'Engen',
+            'eskom' => 'Eskom',
+            'mulilo' => 'Mulilo',
+            'petrosa' => 'PetroSA',
+            'puma-energy' => 'Puma Energy',
+            'sasol' => 'Sasol',
+            'shell-sa' => 'Shell SA',
+            'totalenergies' => 'TotalEnergies',
+            'vivo-energy' => 'Vivo Energy',
+        ];
     }
 }

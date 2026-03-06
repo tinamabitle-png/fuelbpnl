@@ -109,6 +109,7 @@ class ReportController extends Controller
             ->pluck('amount', 'day');
 
         $repayments = Repayment::query()
+            ->visibleInSystem()
             ->selectRaw('DATE(paid_at) as day, COALESCE(SUM(amount),0) as amount')
             ->where('status', 'paid')
             ->whereNotNull('paid_at')
@@ -124,8 +125,8 @@ class ReportController extends Controller
         ];
 
         $summary = [
-            'paid_repayments' => (float) Repayment::where('status', 'paid')->whereBetween('paid_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])->sum('amount'),
-            'overdue_amount' => (float) Repayment::whereIn('status', ['pending', 'overdue'])->whereDate('due_date', '<', now()->toDateString())->sum('amount'),
+            'paid_repayments' => (float) Repayment::visibleInSystem()->where('status', 'paid')->whereBetween('paid_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])->sum('amount'),
+            'overdue_amount' => (float) Repayment::visibleInSystem()->whereIn('status', ['pending', 'overdue'])->whereDate('due_date', '<', now()->toDateString())->sum('amount'),
             'lease_exposure' => (float) Lease::sum('total_amount'),
             'active_lease_exposure' => (float) Lease::where('status', 'active')->sum('total_amount'),
         ];
@@ -157,7 +158,7 @@ class ReportController extends Controller
             'completed' => Lease::where('status', 'completed')->count(),
         ];
 
-        $overdueRepayments = Repayment::with('user')
+        $overdueRepayments = Repayment::visibleInSystem()->with('user')
             ->whereIn('status', ['pending', 'overdue'])
             ->whereDate('due_date', '<', now()->toDateString())
             ->orderBy('due_date')
@@ -212,8 +213,8 @@ class ReportController extends Controller
 
         if ($type === 'financial') {
             $rows[] = ['metric', 'value'];
-            $rows[] = ['paid_repayments', (string) Repayment::where('status', 'paid')->whereBetween('paid_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])->sum('amount')];
-            $rows[] = ['overdue_amount', (string) Repayment::whereIn('status', ['pending', 'overdue'])->whereDate('due_date', '<', now()->toDateString())->sum('amount')];
+            $rows[] = ['paid_repayments', (string) Repayment::visibleInSystem()->where('status', 'paid')->whereBetween('paid_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])->sum('amount')];
+            $rows[] = ['overdue_amount', (string) Repayment::visibleInSystem()->whereIn('status', ['pending', 'overdue'])->whereDate('due_date', '<', now()->toDateString())->sum('amount')];
             $rows[] = ['lease_exposure', (string) Lease::sum('total_amount')];
             $rows[] = ['active_lease_exposure', (string) Lease::where('status', 'active')->sum('total_amount')];
         } elseif ($type === 'risk') {
@@ -221,7 +222,7 @@ class ReportController extends Controller
             $rows[] = ['flagged_users', (string) User::where('status', 'flagged')->count()];
             $rows[] = ['blocked_users', (string) User::where('status', 'blocked')->count()];
             $rows[] = ['defaulted_leases', (string) Lease::where('status', 'defaulted')->count()];
-            $rows[] = ['overdue_repayments', (string) Repayment::whereIn('status', ['pending', 'overdue'])->whereDate('due_date', '<', now()->toDateString())->count()];
+            $rows[] = ['overdue_repayments', (string) Repayment::visibleInSystem()->whereIn('status', ['pending', 'overdue'])->whereDate('due_date', '<', now()->toDateString())->count()];
         } else {
             $rows[] = ['metric', 'value'];
             $rows[] = ['voucher_total', (string) FuelVoucher::whereBetween('created_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])->count()];

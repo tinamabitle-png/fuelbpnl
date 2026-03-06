@@ -143,8 +143,6 @@
                         @php
                             $stationName = optional(optional($repayment->lease)->vouchers->first())->fuelStation->name ?? 'N/A';
                             $voucherCode = optional(optional($repayment->lease)->vouchers->sortByDesc('id')->first())->code;
-                            $isActivated = collect(optional($repayment->lease)->vouchers)
-                                ->contains(fn ($voucher) => $voucher->status === 'redeemed');
                         @endphp
                         <tr>
                             <td class="px-4 py-3 text-slate-700">{{ \Illuminate\Support\Carbon::parse($repayment->due_date)->format('d M Y') }}</td>
@@ -152,15 +150,11 @@
                             <td class="px-4 py-3 text-slate-700">#{{ $repayment->lease_id }}</td>
                             <td class="px-4 py-3 text-slate-700">{{ $stationName }}</td>
                             <td class="px-4 py-3">
-                                @if($isActivated)
-                                    <span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 uppercase">{{ $repayment->status }}</span>
-                                @else
-                                    <span class="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">Awaiting voucher redemption</span>
-                                @endif
+                                <span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 uppercase">{{ $repayment->status }}</span>
                                 <p class="text-[11px] text-slate-500 mt-1">Voucher: {{ $voucherCode ?: 'N/A' }}</p>
                             </td>
                             <td class="px-4 py-3">
-                                @if(in_array($repayment->status, ['pending', 'overdue'], true) && $isActivated)
+                                @if(in_array($repayment->status, ['pending', 'overdue'], true))
                                     @php
                                         $requestUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
                                             'driver.repayments.request.show',
@@ -178,7 +172,7 @@
                                     <form method="POST" action="{{ route('payments.paystack.repayment', $repayment) }}" class="flex flex-wrap gap-2">
                                         @csrf
                                         <input type="hidden" name="payment_intent" value="force_now">
-                                        <button name="payment_method" value="card" class="btn-primary px-3 py-2 rounded-lg text-xs font-semibold">Force Card Pay</button>
+                                        <button name="payment_method" value="card" class="btn-primary pay-now-btn px-3 py-2 rounded-lg text-xs font-semibold">Pay Now</button>
                                         <button type="button" class="px-3 py-2 rounded-lg text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 cursor-not-allowed" title="Ethereum repayments coming soon" disabled>
                                             <i class="fab fa-ethereum mr-1"></i> ETH (Soon)
                                         </button>
@@ -192,8 +186,6 @@
                                     <p class="text-[11px] text-slate-500 mt-2">Voucher {{ $voucherCode ?: 'N/A' }} • Manual buttons perform a one-time override only. Auto-pay remains enabled for upcoming repayments.</p>
                                 @elseif(!in_array($repayment->status, ['pending', 'overdue'], true))
                                     <span class="text-xs text-emerald-600 font-medium">Paid</span>
-                                @else
-                                    <span class="text-xs text-amber-700 font-medium">Locked</span>
                                 @endif
                             </td>
                         </tr>
@@ -342,6 +334,12 @@
         opacity: 0.92;
         line-height: 1;
         letter-spacing: 0.04em;
+    }
+
+    .pay-now-btn,
+    .pay-now-btn:hover,
+    .pay-now-btn:focus {
+        box-shadow: none !important;
     }
 
     @keyframes ethpayAnim {

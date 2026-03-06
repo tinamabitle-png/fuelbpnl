@@ -6,8 +6,8 @@
     <div class="max-w-4xl mx-auto">
         <!-- Header -->
         <div class="text-center mb-10">
-            <h2 class="text-3xl font-extrabold text-gray-900">Investor Registration</h2>
-            <p class="mt-3 text-gray-600">Join our platform as an investor and start funding fuel purchases</p>
+            <h2 class="text-3xl font-extrabold text-gray-900">Driver Registration</h2>
+            <p class="mt-3 text-gray-600">Join our platform as an Driver and start funding fuel purchases</p>
             <div class="mt-4">
                 <a href="{{ route('investor.auth.login') }}" class="text-blue-600 hover:text-blue-800 font-medium">
                     Already have an account? Sign in

@@ -21,3 +21,10 @@ Schedule::command('repayments:run-daily-autopay --limit=250')
     ->withoutOverlapping()
     ->onOneServer()
     ->name('repayments-daily-autopay');
+
+Schedule::command('repayments:apply-default-charges --limit=500')
+    ->dailyAt('00:20')
+    ->timezone('Africa/Johannesburg')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->name('repayments-default-charges');

@@ -20,17 +20,29 @@
     @endif
 
     <div class="glass rounded-2xl p-6 mt-6">
-        <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <select name="status" class="px-4 py-2.5 border border-slate-300 rounded-xl">
                 <option value="">All statuses</option>
                 @foreach(['issued', 'approved', 'redeemed', 'expired', 'cancelled'] as $status)
                     <option value="{{ $status }}" @selected(request('status') === $status)>{{ ucfirst($status) }}</option>
                 @endforeach
             </select>
+            <select name="brand" class="px-4 py-2.5 border border-slate-300 rounded-xl">
+                <option value="">All brands</option>
+                @foreach(($brands ?? collect()) as $brand)
+                    <option value="{{ $brand }}" @selected(request('brand') === $brand)>{{ $brand }}</option>
+                @endforeach
+            </select>
             <select name="station_id" class="px-4 py-2.5 border border-slate-300 rounded-xl">
                 <option value="">All stations</option>
-                @foreach($stations as $station)
-                    <option value="{{ $station->id }}" @selected((int) request('station_id') === $station->id)>{{ $station->name }}</option>
+                @foreach($stations->groupBy(fn ($station) => trim((string) ($station->company ?? '')) ?: 'Other') as $brandName => $brandStations)
+                    <optgroup label="{{ $brandName }}">
+                        @foreach($brandStations as $station)
+                            <option value="{{ $station->id }}" @selected((int) request('station_id') === $station->id)>
+                                {{ $station->name }}{{ $station->city ? ' - ' . $station->city : '' }}{{ $station->address ? ' • ' . \Illuminate\Support\Str::limit($station->address, 36) : '' }}
+                            </option>
+                        @endforeach
+                    </optgroup>
                 @endforeach
             </select>
             <button class="btn-ghost px-4 py-2.5 rounded-xl text-sm font-semibold">Filter</button>

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\QueryException;
 
 class FuelPriceService
 {
@@ -90,14 +91,20 @@ class FuelPriceService
         ];
     }
 
-    public function setMerchantCustomPrice(int $stationId, string $fuelType, float $pricePerLiter, ?int $actorUserId = null): void
+    public function setMerchantCustomPrice(
+        int $stationId,
+        string $fuelType,
+        float $pricePerLiter,
+        ?int $actorUserId = null,
+        $effectiveAt = null
+    ): void
     {
         $this->insertPriceRow(
             $stationId,
             strtolower($fuelType),
             $pricePerLiter,
             'merchant_custom',
-            now(),
+            $effectiveAt ?? now(),
             $actorUserId
         );
     }
@@ -245,7 +252,22 @@ class FuelPriceService
             $payload['updated_at'] = now();
         }
 
-        DB::table('fuel_station_prices')->insert($payload);
+        try {
+            DB::table('fuel_station_prices')->insert($payload);
+        } catch (QueryException $e) {
+            // Some schemas enforce UNIQUE(fuel_station_id, fuel_type); update in-place on duplicate.
+            if ($this->isDuplicateKeyError($e)) {
+                $updatePayload = $payload;
+                unset($updatePayload['created_at']);
+
+                DB::table('fuel_station_prices')
+                    ->where('fuel_station_id', $stationId)
+                    ->where('fuel_type', $fuelType)
+                    ->update($updatePayload);
+            } else {
+                throw $e;
+            }
+        }
     }
 
     private function formatResolvedRow(string $fuelType, object $row, string $source, string $sourceLabel): array
@@ -278,5 +300,14 @@ class FuelPriceService
     private function hasColumn(string $column): bool
     {
         return $this->hasPricingTable() && Schema::hasColumn('fuel_station_prices', $column);
+    }
+
+    private function isDuplicateKeyError(QueryException $e): bool
+    {
+        $errorInfo = $e->errorInfo ?? [];
+        $sqlState = isset($errorInfo[0]) ? (string) $errorInfo[0] : '';
+        $driverCode = isset($errorInfo[1]) ? (int) $errorInfo[1] : 0;
+
+        return $sqlState === '23000' && $driverCode === 1062;
     }
 }

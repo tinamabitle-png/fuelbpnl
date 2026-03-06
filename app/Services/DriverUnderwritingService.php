@@ -20,6 +20,7 @@ class DriverUnderwritingService
         $isStarterWindow = $accountAgeDays < self::STARTER_CAP_DAYS;
 
         $hasLateRepayment = Repayment::query()
+            ->visibleInSystem()
             ->where('user_id', (int) $user->id)
             ->where(function ($q) {
                 $q->whereIn('status', ['overdue', 'defaulted'])
@@ -49,4 +50,3 @@ class DriverUnderwritingService
         ];
     }
 }
-

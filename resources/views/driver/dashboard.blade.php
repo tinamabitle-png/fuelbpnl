@@ -22,16 +22,7 @@
             </div>
         </div>
         <div class="driver-header-actions flex flex-col items-start md:items-end gap-3">
-            <article class="driver-wisdom-card driver-wisdom-card--header">
-                <p class="driver-wisdom-title">Quote of the day</p>
-                <div class="driver-wisdom-quote" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 307" height="36" width="36">
-                        <path fill="currentColor" d="M302.258 176.221C320.678 176.221 329.889 185.432 329.889 203.853V278.764C329.889 297.185 320.678 306.395 302.258 306.395H231.031C212.61 306.395 203.399 297.185 203.399 278.764V203.853C203.399 160.871 207.902 123.415 216.908 91.4858C226.323 59.1472 244.539 30.902 271.556 6.75027C280.562 -1.02739 288.135 -2.05076 294.275 3.68014L321.906 29.4692C328.047 35.2001 326.614 42.1591 317.608 50.3461C303.69 62.6266 292.228 80.4334 283.223 103.766C274.626 126.69 270.328 150.842 270.328 176.221H302.258ZM99.629 176.221C118.05 176.221 127.26 185.432 127.26 203.853V278.764C127.26 297.185 118.05 306.395 99.629 306.395H28.402C9.98126 306.395 0.770874 297.185 0.770874 278.764V203.853C0.770874 160.871 5.27373 123.415 14.2794 91.4858C23.6945 59.1472 41.9106 30.902 68.9277 6.75027C77.9335 -1.02739 85.5064 -2.05076 91.6467 3.68014L119.278 29.4692C125.418 35.2001 123.985 42.1591 114.98 50.3461C101.062 62.6266 89.6 80.4334 80.5942 103.766C71.9979 126.69 67.6997 150.842 67.6997 176.221H99.629Z"></path>
-                    </svg>
-                </div>
-                <p class="driver-wisdom-body">Wisdom is the only gift you can never lose.</p>
-                <p class="driver-wisdom-author">Bwiser Driver Wisdom</p>
-            </article>
+           
             <div class="driver-header-cta flex flex-wrap gap-3 md:justify-end">
                 <a href="{{ route('driver.vouchers.create') }}" class="btn-primary px-4 py-2.5 rounded-xl text-sm font-semibold">Apply for Voucher</a>
                 <a href="{{ route('driver.repayments.index') }}" class="btn-ghost px-4 py-2.5 rounded-xl text-sm font-semibold">View Repayments</a>
@@ -41,7 +32,7 @@
     </div>
     @include('driver.partials.nav')
 
-    <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div class="driver-active-voucher-card-wrap">
             <article class="driver-active-voucher-card">
                 <div class="main-content">
@@ -65,23 +56,25 @@
             <p class="text-sm text-slate-500">Active Stations</p>
             <p class="mt-2 text-2xl font-semibold text-slate-900">{{ $activeStationCount }}</p>
         </div>
+        <div class="glass rounded-2xl p-5">
+            <p class="text-sm text-slate-500">Redeemed Vouchers</p>
+            <p class="mt-2 text-2xl font-semibold text-slate-900">{{ $redeemedVoucherCount }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ $redeemedVoucherToday }} today</p>
+        </div>
     </div>
 
     @php
         $saBrands = [
-            ['name' => 'Sasol', 'slug' => 'sasol'],
+            ['name' => 'Shell', 'slug' => 'shell-sa'],
+            ['name' => 'BP', 'slug' => 'bp-southern-africa'],
             ['name' => 'Engen', 'slug' => 'engen'],
-            ['name' => 'Shell SA', 'slug' => 'shell-sa'],
-            ['name' => 'bp Southern Africa', 'slug' => 'bp-southern-africa'],
+            ['name' => 'Sasol', 'slug' => 'sasol'],
             ['name' => 'TotalEnergies', 'slug' => 'totalenergies'],
             ['name' => 'Astron Energy', 'slug' => 'astron-energy'],
-            ['name' => 'PetroSA', 'slug' => 'petrosa'],
-            ['name' => 'Central Energy Fund', 'slug' => 'central-energy-fund'],
-            ['name' => 'Mulilo', 'slug' => 'mulilo'],
-            ['name' => 'Eskom', 'slug' => 'eskom'],
-            ['name' => 'Puma Energy', 'slug' => 'puma-energy'],
-            ['name' => 'Vivo Energy', 'slug' => 'vivo-energy'],
         ];
+        $saBrands = collect($saBrands)->filter(function ($brand) {
+            return file_exists(public_path('images/brands/' . $brand['slug'] . '.png'));
+        })->values();
     @endphp
 
     <div class="glass rounded-2xl p-6 mt-8 overflow-hidden">
@@ -97,27 +90,22 @@
             <div class="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white/95 to-transparent z-10 pointer-events-none"></div>
             <div class="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white/95 to-transparent z-10 pointer-events-none"></div>
             <div class="driver-brand-ticker-track">
-                @for ($i = 0; $i < 2; $i++)
-                    @foreach ($saBrands as $brand)
-                        @php
-                            $localLogoPath = public_path('images/brands/' . $brand['slug'] . '.png');
-                            $localLogo = file_exists($localLogoPath) ? asset('images/brands/' . $brand['slug'] . '.png') : null;
-                        @endphp
-                        <div class="driver-brand-chip">
-                            @if($localLogo)
+                @if($saBrands->count())
+                    @for ($i = 0; $i < 2; $i++)
+                        @foreach ($saBrands as $brand)
+                            <div class="driver-brand-chip">
                                 <img
-                                    src="{{ $localLogo }}"
+                                    src="{{ asset('images/brands/' . $brand['slug'] . '.png') }}"
                                     alt="{{ $brand['name'] }} logo"
                                     loading="lazy"
                                 >
-                                <span class="driver-brand-fallback" style="display:none;">{{ strtoupper(substr($brand['name'], 0, 2)) }}</span>
-                            @else
-                                <span class="driver-brand-fallback" style="display:grid;">{{ strtoupper(substr($brand['name'], 0, 2)) }}</span>
-                            @endif
-                            <span class="text-sm font-medium text-slate-700 whitespace-nowrap">{{ $brand['name'] }}</span>
-                        </div>
-                    @endforeach
-                @endfor
+                                <span class="text-sm font-medium text-slate-700 whitespace-nowrap">{{ $brand['name'] }}</span>
+                            </div>
+                        @endforeach
+                    @endfor
+                @else
+                    <p class="text-sm text-slate-500 px-2">No popular brand logos configured.</p>
+                @endif
             </div>
         </div>
     </div>
@@ -269,8 +257,6 @@
                         $dueDate = $repayment->due_date ? \Illuminate\Support\Carbon::parse($repayment->due_date) : null;
                         $isDueToday = $dueDate?->isToday() ?? false;
                         $isOverdue = ($repayment->status === 'overdue') || (($dueDate?->isPast() ?? false) && !$isDueToday && $repayment->status !== 'paid');
-                        $isActivated = collect(optional($repayment->lease)->vouchers)
-                            ->contains(fn ($voucher) => $voucher->status === 'redeemed');
                     @endphp
                     <div class="rounded-xl border px-4 py-3 {{ $isOverdue ? 'border-red-200 bg-red-50/70' : ($isDueToday ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200 bg-white') }}">
                         <div class="flex items-center justify-between">
@@ -280,17 +266,15 @@
                         <p class="text-xs mt-1 uppercase {{ $isOverdue ? 'text-red-700 font-semibold' : ($isDueToday ? 'text-amber-700 font-semibold' : 'text-slate-500') }}">
                             {{ $isOverdue ? 'OVERDUE' : ($isDueToday ? 'DUE TODAY' : $repayment->status) }}
                         </p>
-                        @if(in_array($repayment->status, ['pending', 'overdue'], true) && $isActivated)
+                        @if(in_array($repayment->status, ['pending', 'overdue'], true))
                             <form method="POST" action="{{ route('payments.paystack.repayment', $repayment) }}" class="mt-3 flex flex-wrap gap-2">
                                 @csrf
                                 <input type="hidden" name="payment_intent" value="force_now">
-                                <button name="payment_method" value="card" class="btn-primary px-3 py-1.5 rounded-lg text-xs font-semibold">
-                                    Force Card Pay
+                                <button name="payment_method" value="card" class="btn-primary pay-now-btn px-3 py-1.5 rounded-lg text-xs font-semibold">
+                                    Pay Now
                                 </button>
                             </form>
                             <p class="text-[11px] text-slate-500 mt-2">One-time override. Auto-pay still runs on future due repayments.</p>
-                        @elseif(!$isActivated)
-                            <p class="text-xs text-amber-700 font-medium mt-2">Awaiting voucher redemption before payment.</p>
                         @endif
                     </div>
                 @empty
@@ -367,6 +351,34 @@
     .driver-header-cta > a {
         flex: 1 1 160px;
         text-align: center;
+    }
+
+    .redeemed-pattern-card {
+        position: relative;
+        overflow: hidden;
+        isolation: isolate;
+    }
+
+    .redeemed-pattern-card > * {
+        position: relative;
+        z-index: 2;
+    }
+
+    .redeemed-pattern-card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        opacity: 0.24;
+        pointer-events: none;
+        --s: 60px;
+        --c1: #180a22;
+        --c2: #5b42f3;
+        --_g: radial-gradient(25% 25% at 25% 25%, var(--c1) 99%, rgba(0, 0, 0, 0) 101%);
+        background: var(--_g) var(--s) var(--s) / calc(2 * var(--s)) calc(2 * var(--s)),
+            var(--_g) 0 0 / calc(2 * var(--s)) calc(2 * var(--s)),
+            radial-gradient(50% 50%, var(--c2) 98%, rgba(0, 0, 0, 0)) 0 0 / var(--s) var(--s),
+            repeating-conic-gradient(var(--c2) 0 50%, var(--c1) 0 100%) calc(0.5 * var(--s)) 0 / calc(2 * var(--s)) var(--s);
     }
 
     .driver-active-voucher-card-wrap {
@@ -526,8 +538,7 @@
         box-shadow: 0 8px 24px -20px rgba(15, 23, 42, 0.5);
     }
 
-    .driver-brand-chip img,
-    .driver-brand-fallback {
+    .driver-brand-chip img {
         width: 2rem;
         height: 2rem;
         border-radius: 0.5rem;
@@ -539,13 +550,6 @@
         object-fit: contain;
         padding: 0.15rem;
         background: #fff;
-    }
-
-    .driver-brand-fallback {
-        place-items: center;
-        font-size: 0.65rem;
-        font-weight: 700;
-        color: #334155;
     }
 
     @keyframes driverBrandTickerScroll {
@@ -938,6 +942,12 @@
         .next-repayment-clock .clock-col::after {
             display: none;
         }
+    }
+
+    .pay-now-btn,
+    .pay-now-btn:hover,
+    .pay-now-btn:focus {
+        box-shadow: none !important;
     }
 </style>
 <script>

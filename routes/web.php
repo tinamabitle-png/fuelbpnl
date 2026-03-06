@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegistrationDocumentsController;
 use App\Http\Controllers\Admin\FuelStationController;
 use App\Http\Controllers\Admin\SettlementController;
 use App\Http\Controllers\Admin\VoucherController;
@@ -36,53 +37,82 @@ Route::post('/repayments/request/{repayment}/pay', [DriverDashboardController::c
 Route::get('/repayments/request/paystack/callback', [DriverDashboardController::class, 'publicRepaymentRequestCallback'])
     ->name('driver.repayments.request.callback');
 
-// ========== SETUP & FIX ROUTES ==========
-Route::get('/setup-roles', function() {
-    $roles = ['super_admin', 'admin', 'employee', 'investor', 'merchant', 'driver'];
-    foreach ($roles as $role) {
-        \Spatie\Permission\Models\Role::firstOrCreate(['name' => $role]);
-    }
-    
-    $user = \App\Models\User::first();
-    if ($user) {
-        $user->assignRole('super_admin');
-    }
-    
-    return "✅ Roles created! First user is super_admin.<br>
-           <a href='/test-roles'>Test roles</a>";
-});
+// ========== SETUP & FIX ROUTES (LOCAL ONLY) ==========
+if (app()->environment(['local', 'development', 'testing'])) {
+    Route::get('/setup-roles', function() {
+        $roles = ['super_admin', 'admin', 'employee', 'investor', 'merchant', 'driver'];
+        foreach ($roles as $role) {
+            \Spatie\Permission\Models\Role::firstOrCreate(['name' => $role]);
+        }
 
-Route::get('/test-roles', function() {
-    $user = auth()->user();
-    
-    if (!$user) {
-        return "Not logged in. <a href='/login'>Login</a>";
-    }
-    
-    return [
-        'email' => $user->email,
-        'roles' => $user->getRoleNames()->toArray(),
-        'can_access_investor' => $user->hasAnyRole(['super_admin', 'admin', 'investor'])
-    ];
-});
+        $user = \App\Models\User::first();
+        if ($user) {
+            $user->assignRole('super_admin');
+        }
 
-Route::get('/add-investor-role', function() {
-    $user = auth()->user();
-    
-    if (!$user) {
-        return redirect('/login');
-    }
-    
-    \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'investor']);
-    $user->assignRole('investor');
-    
-    return redirect('/test-roles')->with('success', 'Added investor role');
-})->middleware('auth');
+        return "✅ Roles created! First user is super_admin.<br>
+            <a href='/test-roles'>Test roles</a>";
+    });
+
+    Route::get('/test-roles', function() {
+        $user = auth()->user();
+
+        if (!$user) {
+            return "Not logged in. <a href='/login'>Login</a>";
+        }
+
+        return [
+            'email' => $user->email,
+            'roles' => $user->getRoleNames()->toArray(),
+            'can_access_investor' => $user->hasAnyRole(['super_admin', 'admin', 'investor'])
+        ];
+    });
+
+    Route::get('/add-investor-role', function() {
+        $user = auth()->user();
+
+        if (!$user) {
+            return redirect('/login');
+        }
+
+        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'investor']);
+        $user->assignRole('investor');
+
+        return redirect('/test-roles')->with('success', 'Added investor role');
+    })->middleware('auth');
+}
 
 // ========== AUTH ROUTES ==========
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [LoginController::class, 'login']);
+Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login');
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
+
+Route::get('/quick-login/admin', function () {
+    $enabled = app()->environment('local', 'development') || (bool) env('ONE_CLICK_ADMIN_LOGIN_ENABLED', false);
+    if (!$enabled) {
+        abort(403, 'One-click admin login is disabled.');
+    }
+
+    $user = \App\Models\User::role('super_admin')->orderByDesc('id')->first()
+        ?? \App\Models\User::role('admin')->orderByDesc('id')->first();
+
+    if (!$user) {
+        return redirect()->route('login')->withErrors([
+            'email' => 'No admin account found for one-click login.',
+        ]);
+    }
+
+    auth()->login($user);
+
+    return redirect()->route('admin.dashboard');
+})->name('quick-login.admin');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/registration/complete/{role?}', [RegistrationDocumentsController::class, 'show'])
+        ->name('registration.complete');
+    Route::post('/registration/documents', [RegistrationDocumentsController::class, 'store'])
+        ->name('registration.documents.store');
+});
 
 // ========== HELPER FUNCTION FOR ACCESS CONTROL ==========
 function checkUserAccess($requiredRoles = [])
@@ -161,6 +191,10 @@ Route::middleware(['auth'])->group(function () {
             checkUserAccess(['super_admin', 'admin', 'employee']);
             return app(AdminRepaymentOpsController::class)->runNow();
         })->name('repayments.ops.run-now');
+        Route::post('/repayments/ops/default-charges/run-now', function() {
+            checkUserAccess(['super_admin', 'admin', 'employee']);
+            return app(AdminRepaymentOpsController::class)->runDefaultChargesNow();
+        })->name('repayments.ops.default-charges.run-now');
         
         // ========== USERS ROUTES ==========
         Route::get('/users', function() {
@@ -175,6 +209,8 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
         Route::patch('/users/{user}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('users.toggle-status');
+        Route::post('/users/{user}/driver-documents/{documentType}/verify', [AdminUserController::class, 'verifyDriverDocument'])
+            ->name('users.driver-documents.verify');
         
         // ========== SETTINGS ROUTES ==========
         Route::prefix('settings')->name('settings.')->group(function () {
@@ -207,6 +243,11 @@ Route::middleware(['auth'])->group(function () {
                 checkUserAccess(['super_admin', 'admin', 'employee']);
                 return app(SettingsController::class)->updateSystem(request());
             })->name('update-system');
+
+            Route::post('/merchant-dashboard', function() {
+                checkUserAccess(['super_admin', 'admin', 'employee']);
+                return app(SettingsController::class)->updateMerchantDashboard(request());
+            })->name('update-merchant-dashboard');
             
             Route::post('/clear-cache', function() {
                 checkUserAccess(['super_admin', 'admin', 'employee']);

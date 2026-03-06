@@ -16,11 +16,15 @@ class Repayment extends Model
         'lease_id',
         'user_id',
         'amount',
+        'repayment_type',
+        'base_repayment_id',
         'due_date',
+        'charged_for_date',
         'paid_at',
         'status',
         'payment_method',
         'transaction_reference',
+        'metadata',
         'autopay_attempts',
         'autopay_last_attempt_at',
         'autopay_next_attempt_at',
@@ -30,7 +34,9 @@ class Repayment extends Model
     protected $casts = [
         'amount' => 'decimal:2',
         'due_date' => 'date',
+        'charged_for_date' => 'date',
         'paid_at' => 'datetime',
+        'metadata' => 'array',
         'autopay_last_attempt_at' => 'datetime',
         'autopay_next_attempt_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -45,6 +51,11 @@ class Repayment extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function baseRepayment()
+    {
+        return $this->belongsTo(self::class, 'base_repayment_id');
     }
 
     // Scopes
@@ -65,6 +76,16 @@ class Repayment extends Model
     public function scopePaid($query)
     {
         return $query->where('status', 'paid');
+    }
+
+    public function scopeVisibleInSystem($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNotIn('status', ['pending', 'overdue'])
+                ->orWhereHas('lease.vouchers', function ($voucherQuery) {
+                    $voucherQuery->where('status', 'redeemed');
+                });
+        });
     }
 
     // Accessors

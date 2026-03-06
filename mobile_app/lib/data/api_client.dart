@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 
 import '../core/session_store.dart';
@@ -49,6 +50,9 @@ class ApiClient {
       'id': 1,
       'name': 'Shell Sandton',
       'city': 'Johannesburg',
+      'address': 'Rivonia Rd, Sandton, Johannesburg',
+      'latitude': -26.1076,
+      'longitude': 28.0567,
       'is_partner': true,
       'wallet_balance': 25000,
     },
@@ -56,6 +60,9 @@ class ApiClient {
       'id': 2,
       'name': 'BP Midrand',
       'city': 'Midrand',
+      'address': 'Old Pretoria Rd, Midrand',
+      'latitude': -25.9978,
+      'longitude': 28.1266,
       'is_partner': true,
       'wallet_balance': 14000,
     },
@@ -63,6 +70,9 @@ class ApiClient {
       'id': 3,
       'name': 'Engen Rosebank',
       'city': 'Johannesburg',
+      'address': 'Jan Smuts Ave, Rosebank, Johannesburg',
+      'latitude': -26.1458,
+      'longitude': 28.0417,
       'is_partner': false,
       'wallet_balance': 12000,
     },
@@ -70,6 +80,9 @@ class ApiClient {
       'id': 4,
       'name': 'Sasol Pretoria East',
       'city': 'Pretoria',
+      'address': 'Atterbury Rd, Pretoria East',
+      'latitude': -25.7892,
+      'longitude': 28.3146,
       'is_partner': true,
       'wallet_balance': 0,
     },
@@ -381,6 +394,51 @@ class ApiClient {
     try {
       final response = await _request(
         method: 'GET',
+        path: '/merchant/developer/stations',
+      );
+      final data = _extractData(response.body);
+      final rows = _asList(data['data'] ?? data['stations'] ?? data);
+      final mapped = rows
+          .map(
+            (e) => {
+              'id': _toInt(e['id']),
+              'name': (e['name'] ?? 'Station').toString(),
+              'city': (e['city'] ?? '').toString(),
+              'address':
+                  (e['address'] ?? e['street_address'] ?? e['location'] ?? '')
+                      .toString(),
+              'latitude':
+                  e['latitude'] ??
+                  e['lat'] ??
+                  e['station_latitude'] ??
+                  e['device_latitude'],
+              'longitude':
+                  e['longitude'] ??
+                  e['lng'] ??
+                  e['lon'] ??
+                  e['station_longitude'] ??
+                  e['device_longitude'],
+              'status': (e['status'] ?? '').toString(),
+              'wallet_balance':
+                  e['wallet_balance'] ??
+                  e['available_balance'] ??
+                  e['balance'] ??
+                  e['prefunded_balance'] ??
+                  e['funded_amount'] ??
+                  0,
+              'total_settlements': e['total_settlements'] ?? 0,
+            },
+          )
+          .where((e) => (e['id'] as int) > 0)
+          .toList();
+      if (mapped.isNotEmpty) return mapped;
+    } catch (_) {
+      // Fallback below.
+    }
+
+    try {
+      final response = await _request(
+        method: 'GET',
         path: '/stations/search?query=station',
       );
       final data = _extractData(response.body);
@@ -391,17 +449,29 @@ class ApiClient {
               'id': _toInt(e['id']),
               'name': (e['name'] ?? 'Station').toString(),
               'city': (e['city'] ?? '').toString(),
-              'is_partner':
-                  e['is_partner'] ??
-                  e['partner'] ??
-                  e['is_active_partner'] ??
-                  e['partner_station'],
+              'address':
+                  (e['address'] ?? e['street_address'] ?? e['location'] ?? '')
+                      .toString(),
+              'latitude':
+                  e['latitude'] ??
+                  e['lat'] ??
+                  e['station_latitude'] ??
+                  e['device_latitude'],
+              'longitude':
+                  e['longitude'] ??
+                  e['lng'] ??
+                  e['lon'] ??
+                  e['station_longitude'] ??
+                  e['device_longitude'],
+              'status': (e['status'] ?? '').toString(),
               'wallet_balance':
                   e['wallet_balance'] ??
                   e['available_balance'] ??
                   e['balance'] ??
                   e['prefunded_balance'] ??
-                  e['funded_amount'],
+                  e['funded_amount'] ??
+                  0,
+              'total_settlements': e['total_settlements'] ?? 0,
             },
           )
           .where((e) => (e['id'] as int) > 0)
@@ -457,6 +527,22 @@ class ApiClient {
     final data = _extractData(response.body);
     final rows = _asList(data['data'] ?? data);
     return rows.map(VoucherItem.fromMerchantMap).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> stationUssdEvents({
+    int perPage = 20,
+  }) async {
+    if (mockMode) {
+      return const [];
+    }
+
+    final safePerPage = perPage.clamp(1, 100);
+    final response = await _request(
+      method: 'GET',
+      path: '/merchant/developer/ussd/events?per_page=$safePerPage',
+    );
+    final data = _extractData(response.body);
+    return _asList(data['data'] ?? data);
   }
 
   Future<Map<String, dynamic>> stationRedeem({
@@ -516,16 +602,19 @@ class ApiClient {
     }
 
     final parsedCode = _extractVoucherCode(scanInput);
+    final location = await _currentDeviceLocation();
+    final redemptionBody = <String, dynamic>{
+      'scan_input': scanInput,
+      'voucher_code': parsedCode,
+      'code': parsedCode,
+      if (location != null) ...location,
+    };
 
     try {
       final response = await _request(
         method: 'POST',
         path: '/merchant/developer/vouchers/redeem',
-        body: {
-          'scan_input': scanInput,
-          'voucher_code': parsedCode,
-          'code': parsedCode,
-        },
+        body: redemptionBody,
       );
       final data = _extractData(response.body);
       final payload = Map<String, dynamic>.from(
@@ -543,11 +632,7 @@ class ApiClient {
       final response = await _request(
         method: 'POST',
         path: '/merchant/redeem-voucher',
-        body: {
-          'scan_input': scanInput,
-          'voucher_code': parsedCode,
-          'code': parsedCode,
-        },
+        body: redemptionBody,
       );
       final data = _extractData(response.body);
       final payload = Map<String, dynamic>.from(
@@ -889,4 +974,34 @@ class ApiClient {
   int _toInt(dynamic value) => int.tryParse('$value') ?? 0;
 
   double _toDouble(dynamic value) => double.tryParse('$value') ?? 0;
+
+  Future<Map<String, double>?> _currentDeviceLocation() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return null;
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return null;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      return {
+        'device_latitude': position.latitude,
+        'device_longitude': position.longitude,
+      };
+    } catch (_) {
+      return null;
+    }
+  }
 }

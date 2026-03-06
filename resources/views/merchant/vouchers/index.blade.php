@@ -50,10 +50,7 @@
             </div>
             <div class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
                 @forelse($latestFour as $voucher)
-                    <div @class([
-                        'rounded-xl border border-slate-200 bg-white px-4 py-3',
-                        'voucher-ledger-pattern-card' => $loop->first,
-                    ])>
+                    <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
                         <div class="flex items-center justify-between gap-2">
                             <p class="text-sm font-semibold text-slate-900">{{ $voucher->code }}</p>
                             <span class="text-[11px] px-2 py-1 rounded-full uppercase font-semibold {{ $voucher->status === 'approved' ? 'bg-blue-100 text-blue-700' : ($voucher->status === 'redeemed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700') }}">{{ $voucher->status }}</span>
@@ -138,55 +135,4 @@
     @endif
 </section>
 
-<style>
-    .voucher-ledger-pattern-card {
-        position: relative;
-        overflow: hidden;
-        isolation: isolate;
-    }
-
-    .voucher-ledger-pattern-card > * {
-        position: relative;
-        z-index: 2;
-    }
-
-    .voucher-ledger-pattern-card::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        z-index: 0;
-        opacity: 0.2;
-        --s: 100px;
-        --c1: #ff8afc;
-        --c2: #1b1b3a;
-        --_g: var(--c2) 6% 14%, var(--c1) 16% 24%, var(--c2) 26% 34%,
-            var(--c1) 36% 44%, var(--c2) 46% 54%, var(--c1) 56% 64%, var(--c2) 66% 74%,
-            var(--c1) 76% 84%, var(--c2) 86% 94%;
-        background: radial-gradient(
-                100% 100% at 100% 0,
-                var(--c1) 4%,
-                var(--_g),
-                #0008 96%,
-                #0000
-            ),
-            radial-gradient(
-                    100% 100% at 0 100%,
-                    #0000,
-                    #0008 4%,
-                    var(--_g),
-                    var(--c1) 96%
-                )
-                var(--c1);
-        background-size: var(--s) var(--s);
-    }
-
-    .voucher-ledger-pattern-card::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        z-index: 1;
-        background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.16));
-        pointer-events: none;
-    }
-</style>
 @endsection

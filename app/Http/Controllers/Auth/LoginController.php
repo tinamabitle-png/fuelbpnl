@@ -49,6 +49,11 @@ class LoginController extends Controller
                 return redirect()->route('investor.dashboard');
             }
                 else {
+                if ($this->needsRegistrationDocuments($user)) {
+                    return redirect()
+                        ->route('registration.complete', ['role' => 'driver'])
+                        ->with('error', 'Please complete your profile and upload verification documents.');
+                }
                 return redirect()->route('driver.dashboard');
             }
         }
@@ -65,6 +70,13 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
         $request->session()->regenerate();
         
-        return redirect()->route('login')->with('success', 'You have been logged out successfully.');
+        return redirect('/')->with('success', 'You have been logged out successfully.');
+    }
+
+    private function needsRegistrationDocuments(User $user): bool
+    {
+        return empty($user->id_number)
+            || empty($user->id_document_path)
+            || empty($user->driver_license_path);
     }
 }

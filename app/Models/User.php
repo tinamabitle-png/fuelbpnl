@@ -17,6 +17,17 @@ class User extends Authenticatable
         'email',
         'phone',
         'id_number',
+        'id_document_path',
+        'driver_license_path',
+        'bank_statement_path',
+        'payment_method_preference',
+        'payment_account_name',
+        'payment_account_number',
+        'payment_bank_name',
+        'payment_branch_code',
+        'id_verification_status',
+        'id_verified_at',
+        'id_verification_provider',
         'password',
         'device_fingerprint',
         'credit_score',
@@ -81,7 +92,7 @@ class User extends Authenticatable
 
     public function repayments()
     {
-        return $this->hasMany(Repayment::class);
+        return $this->hasMany(Repayment::class)->visibleInSystem();
     }
 
     public function walletTransactions()
@@ -102,6 +113,11 @@ class User extends Authenticatable
     public function auditLogs()
     {
         return $this->hasMany(AuditLog::class);
+    }
+
+    public function driverDocuments()
+    {
+        return $this->hasMany(DriverDocument::class);
     }
 
     // Accessors

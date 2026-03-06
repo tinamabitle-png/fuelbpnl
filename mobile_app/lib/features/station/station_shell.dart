@@ -471,6 +471,11 @@ class _StationReceiptSettingsPageState
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          _receiptTemplatePreview(
+            fontKey: currentFont,
+            footerLogoAsset: currentLogo,
+          ),
         ],
       ),
     );
@@ -529,6 +534,126 @@ class _StationReceiptSettingsPageState
       ),
     );
   }
+
+  Widget _receiptTemplatePreview({
+    required String fontKey,
+    required String? footerLogoAsset,
+  }) {
+    final sampleFont = _fontPreviewStyle(fontKey);
+    final previewTitle = sampleFont.copyWith(color: const Color(0xFF0F172A));
+    final previewBody = sampleFont.copyWith(
+      fontSize: 10.5,
+      color: const Color(0xFF1E293B),
+    );
+    final previewMuted = sampleFont.copyWith(
+      fontSize: 10.3,
+      color: const Color(0xFF475569),
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1220),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF334155)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Receipt Template Preview',
+            style: TextStyle(
+              color: Color(0xFFE2E8F0),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 54,
+                    height: 54,
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Image.asset(
+                      'assets/images/app_logo.png',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: Text(
+                    'BWISER POS RECEIPT',
+                    style: previewTitle.copyWith(fontSize: 15),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text('Station: Sample Station', style: previewBody),
+                Text('Driver: Sample Driver', style: previewBody),
+                const SizedBox(height: 10),
+                Text('Voucher Code: BWV-1234', style: previewBody),
+                Text('Amount: R 1200.00', style: previewBody),
+                Text('Fuel: R 960.00', style: previewBody),
+                Text('Airtime: R 240.00', style: previewBody),
+                const SizedBox(height: 8),
+                Text('Kiosk Split', style: previewTitle.copyWith(fontSize: 11)),
+                Text('Fuel   R 900.00', style: previewMuted),
+                Text('Snack  R 60.00', style: previewMuted),
+                const SizedBox(height: 8),
+                Text('Repayment', style: previewTitle.copyWith(fontSize: 11)),
+                Text('Daily: R 42.00 · Due: 2026-03-31', style: previewMuted),
+                Text('Remaining: R 840.00', style: previewMuted),
+                const SizedBox(height: 12),
+                if (footerLogoAsset != null)
+                  Center(
+                    child: Container(
+                      width: 110,
+                      height: 40,
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Image.asset(footerLogoAsset, fit: BoxFit.contain),
+                    ),
+                  ),
+                if (footerLogoAsset != null) const SizedBox(height: 8),
+                Center(
+                  child: Container(
+                    width: 96,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.qr_code_2_rounded,
+                      size: 72,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class StationRedeemPage extends StatefulWidget {
@@ -548,14 +673,17 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
   final inputCtrl = TextEditingController();
   final FocusNode scannerFocusNode = FocusNode();
   Timer? _scanDebounce;
+  Timer? _ussdPollTimer;
   bool submitting = false;
   bool nfcListening = false;
+  bool ussdPolling = false;
   bool scanMode = false;
   bool ussdListening = false;
   bool stationLoading = true;
   List<Map<String, dynamic>> stations = [];
   int? selectedStationId;
   Printer? selectedPrinter;
+  final Set<int> seenUssdEventIds = <int>{};
 
   @override
   void initState() {
@@ -571,6 +699,7 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
   @override
   void dispose() {
     _scanDebounce?.cancel();
+    _ussdPollTimer?.cancel();
     scannerFocusNode.dispose();
     inputCtrl.dispose();
     super.dispose();
@@ -625,7 +754,15 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
       );
       return;
     }
-    setState(() => ussdListening = !ussdListening);
+    final nextListening = !ussdListening;
+    setState(() => ussdListening = nextListening);
+    if (nextListening) {
+      await _primeUssdListener();
+      _startUssdPolling();
+    } else {
+      _stopUssdPolling();
+    }
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -633,6 +770,89 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
         ),
       ),
     );
+  }
+
+  void _startUssdPolling() {
+    _ussdPollTimer?.cancel();
+    _ussdPollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _pollUssdEvents();
+    });
+    _pollUssdEvents();
+  }
+
+  void _stopUssdPolling() {
+    _ussdPollTimer?.cancel();
+    _ussdPollTimer = null;
+  }
+
+  Future<void> _primeUssdListener() async {
+    try {
+      final events = await widget.api.stationUssdEvents(perPage: 50);
+      for (final event in events) {
+        final id = int.tryParse('${event['id'] ?? ''}');
+        if (id != null && id > 0) {
+          seenUssdEventIds.add(id);
+        }
+      }
+    } catch (_) {
+      // Keep listener on even if initial sync fails.
+    }
+  }
+
+  Future<void> _pollUssdEvents() async {
+    if (!ussdListening || ussdPolling || selectedStationId == null) {
+      return;
+    }
+
+    ussdPolling = true;
+    try {
+      final events = await widget.api.stationUssdEvents(perPage: 25);
+      if (!mounted || !ussdListening) return;
+
+      for (final event in events.reversed) {
+        final id = int.tryParse('${event['id'] ?? ''}');
+        if (id == null || id <= 0 || seenUssdEventIds.contains(id)) {
+          continue;
+        }
+        seenUssdEventIds.add(id);
+
+        final stationId = int.tryParse('${event['fuel_station_id'] ?? ''}');
+        if (stationId == null || stationId != selectedStationId) {
+          continue;
+        }
+
+        final status = (event['status'] ?? '').toString().toLowerCase();
+        if (status != 'success') {
+          continue;
+        }
+
+        final receipt = Map<String, dynamic>.from(
+          (event['receipt_payload'] as Map?)?.cast<String, dynamic>() ??
+              <String, dynamic>{},
+        );
+        if (receipt.isEmpty) {
+          continue;
+        }
+
+        receipt['transaction_status'] =
+            (receipt['transaction_status'] ?? 'successful').toString();
+        final printable = await _prepareReceiptForPrint(receipt);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'USSD redemption received: ${(receipt['voucher_code'] ?? receipt['code'] ?? 'voucher').toString()}',
+            ),
+          ),
+        );
+        await _showPrintReceiptDialog(printable);
+      }
+    } catch (_) {
+      // Keep listener running despite transient API failures.
+    } finally {
+      ussdPolling = false;
+    }
   }
 
   String _selectedStationLabel() {
@@ -657,10 +877,11 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
         const SnackBar(content: Text('Voucher redeemed successfully.')),
       );
       inputCtrl.clear();
-      await _showPrintReceiptDialog({
+      final printable = await _prepareReceiptForPrint({
         ...receiptData,
         'transaction_status': 'successful',
       });
+      await _showPrintReceiptDialog(printable);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -726,6 +947,12 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
 
   Future<Uint8List> _buildReceiptPdf(Map<String, dynamic> receipt) async {
     final doc = pw.Document();
+    final stationAddress =
+        (receipt['station'] is Map
+                ? receipt['station']['address']
+                : receipt['station_address'])
+            ?.toString() ??
+        '';
     final stationName =
         (receipt['station'] is Map
                 ? (receipt['station']['name'] ?? receipt['station']['city'])
@@ -739,7 +966,18 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
     final voucherId = (receipt['voucher_id'] ?? '-').toString();
     final voucherCode = (receipt['voucher_code'] ?? receipt['code'] ?? '-')
         .toString();
+    final voucherQrCode = (receipt['qr_code'] ?? voucherCode).toString();
     final amount = double.tryParse('${receipt['amount'] ?? 0}') ?? 0;
+    final fuelAmount =
+        double.tryParse('${receipt['redeemed_fuel_amount'] ?? ''}') ?? amount;
+    final airtimeAmount =
+        double.tryParse('${receipt['redeemed_airtime_amount'] ?? ''}') ?? 0;
+    final airtimeStatus = (receipt['airtime_status'] ?? '').toString();
+    final kioskItems = _parseKioskItems(receipt['kiosk_items']);
+    final lease = Map<String, dynamic>.from(
+      (receipt['lease'] as Map?)?.cast<String, dynamic>() ??
+          <String, dynamic>{},
+    );
     final voucherStatus = (receipt['status'] ?? 'unknown').toString();
     final txStatus = (receipt['transaction_status'] ?? 'unknown')
         .toString()
@@ -749,7 +987,8 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
                 receipt['issued_at'] ??
                 DateTime.now().toIso8601String())
             .toString();
-    final qrData = (receipt['qr_code'] ?? voucherCode).toString();
+    final qrData = voucherQrCode;
+    final upcomingRepayments = _parseRepayments(receipt['upcoming_repayments']);
     final receiptFont = await _loadReceiptFont(widget.receiptSettings.fontKey);
     final bwiserLogo = await _tryLoadAssetImage('assets/images/app_logo.png');
     final footerLogo = widget.receiptSettings.footerLogoAsset == null
@@ -794,6 +1033,13 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
                     'Station: $stationName',
                     style: pw.TextStyle(font: receiptFont, fontSize: 10.5),
                   ),
+                  if (stationAddress.isNotEmpty) ...[
+                    pw.SizedBox(height: 2),
+                    pw.Text(
+                      'Address: $stationAddress',
+                      style: pw.TextStyle(font: receiptFont, fontSize: 9.7),
+                    ),
+                  ],
                   pw.SizedBox(height: 4),
                   pw.Text(
                     'Driver: $driverName',
@@ -808,12 +1054,46 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
               style: pw.TextStyle(font: receiptFont, fontSize: 11.5),
             ),
             pw.SizedBox(height: 6),
-            _receiptLine(receiptFont, 'Voucher ID', voucherId),
+            _receiptLine(receiptFont, 'Voucher Number', voucherId),
             _receiptLine(receiptFont, 'Voucher Code', voucherCode),
+            _receiptLine(receiptFont, 'Voucher QR Code', voucherQrCode),
             pw.Text(
               'Amount: R ${amount.toStringAsFixed(2)}',
               style: pw.TextStyle(font: receiptFont, fontSize: 11),
             ),
+            pw.SizedBox(height: 4),
+            if (fuelAmount > 0) ...[
+              pw.SizedBox(height: 2),
+              pw.Text(
+                'Fuel: R ${fuelAmount.toStringAsFixed(2)}',
+                style: pw.TextStyle(font: receiptFont, fontSize: 10.3),
+              ),
+            ],
+            if (airtimeAmount > 0 || airtimeStatus == 'sent') ...[
+              pw.SizedBox(height: 2),
+              pw.Text(
+                'Airtime: R ${airtimeAmount.toStringAsFixed(2)}',
+                style: pw.TextStyle(font: receiptFont, fontSize: 10.3),
+              ),
+            ],
+            if (kioskItems.isNotEmpty) ...[
+              pw.SizedBox(height: 8),
+              pw.Text(
+                'Kiosk Split',
+                style: pw.TextStyle(font: receiptFont, fontSize: 11),
+              ),
+              pw.SizedBox(height: 4),
+              ...kioskItems.map((item) {
+                final itemName = (item['name'] ?? 'Item').toString();
+                final itemAmount =
+                    double.tryParse('${item['amount'] ?? 0}') ?? 0;
+                return _receiptLine(
+                  receiptFont,
+                  itemName,
+                  'R ${itemAmount.toStringAsFixed(2)}',
+                );
+              }),
+            ],
             pw.SizedBox(height: 4),
             _receiptLine(
               receiptFont,
@@ -821,6 +1101,121 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
               voucherStatus.toUpperCase(),
             ),
             _receiptLine(receiptFont, 'Transaction', txStatus),
+            if (lease.isNotEmpty) ...[
+              pw.SizedBox(height: 6),
+              pw.Text(
+                'Repayment',
+                style: pw.TextStyle(font: receiptFont, fontSize: 11),
+              ),
+              pw.SizedBox(height: 4),
+              _receiptLine(
+                receiptFont,
+                'Lease',
+                (lease['id'] ?? '-').toString(),
+              ),
+              _receiptLine(
+                receiptFont,
+                'Frequency',
+                (lease['repayment_frequency'] ?? 'daily').toString(),
+              ),
+              _receiptLine(
+                receiptFont,
+                'Daily',
+                'R ${(double.tryParse('${lease['daily_repayment'] ?? 0}') ?? 0).toStringAsFixed(2)}',
+              ),
+              _receiptLine(
+                receiptFont,
+                'Remaining',
+                'R ${(double.tryParse('${lease['remaining_balance'] ?? 0}') ?? 0).toStringAsFixed(2)}',
+              ),
+              _receiptLine(
+                receiptFont,
+                'Due Date',
+                (lease['due_date'] ?? '-').toString(),
+              ),
+              if (upcomingRepayments.isNotEmpty) ...[
+                pw.SizedBox(height: 8),
+                pw.Text(
+                  'Upcoming Repayments',
+                  style: pw.TextStyle(font: receiptFont, fontSize: 10.8),
+                ),
+                pw.SizedBox(height: 4),
+                ...upcomingRepayments.map((repayment) {
+                  final repaymentId = (repayment['id'] ?? '-').toString();
+                  final dueDate = (repayment['due_date'] ?? '-').toString();
+                  final amountDue =
+                      double.tryParse('${repayment['amount'] ?? 0}') ?? 0;
+                  final payUrl = (repayment['pay_url'] ?? '').toString();
+
+                  return pw.Padding(
+                    padding: const pw.EdgeInsets.only(bottom: 8),
+                    child: pw.Container(
+                      width: double.infinity,
+                      padding: const pw.EdgeInsets.all(6),
+                      decoration: pw.BoxDecoration(
+                        border: pw.Border.all(
+                          color: PdfColors.grey400,
+                          width: 0.5,
+                        ),
+                        borderRadius: pw.BorderRadius.circular(4),
+                      ),
+                      child: pw.Row(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Expanded(
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text(
+                                  "Repayment #$repaymentId",
+                                  style: pw.TextStyle(
+                                    font: receiptFont,
+                                    fontSize: 9.8,
+                                  ),
+                                ),
+                                pw.Text(
+                                  "Due: $dueDate",
+                                  style: pw.TextStyle(
+                                    font: receiptFont,
+                                    fontSize: 9.2,
+                                  ),
+                                ),
+                                pw.Text(
+                                  "Amount: R ${amountDue.toStringAsFixed(2)}",
+                                  style: pw.TextStyle(
+                                    font: receiptFont,
+                                    fontSize: 9.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (payUrl.isNotEmpty)
+                            pw.Column(
+                              children: [
+                                pw.BarcodeWidget(
+                                  barcode: pw.Barcode.qrCode(),
+                                  data: payUrl,
+                                  width: 52,
+                                  height: 52,
+                                ),
+                                pw.SizedBox(height: 2),
+                                pw.Text(
+                                  'Pay URL',
+                                  style: pw.TextStyle(
+                                    font: receiptFont,
+                                    fontSize: 7.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ],
             pw.Text(
               'When: $when',
               style: pw.TextStyle(font: receiptFont, fontSize: 10.3),
@@ -866,6 +1261,219 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
     );
 
     return doc.save();
+  }
+
+  List<Map<String, dynamic>> _parseRepayments(dynamic raw) {
+    if (raw is! List) {
+      return const [];
+    }
+
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e.cast<String, dynamic>()))
+        .toList();
+  }
+
+  List<Map<String, dynamic>> _parseKioskItems(dynamic raw) {
+    if (raw is! List) {
+      return const [];
+    }
+
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e.cast<String, dynamic>()))
+        .where((item) {
+          final amount = double.tryParse('${item['amount'] ?? 0}') ?? 0;
+          return amount > 0;
+        })
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> _prepareReceiptForPrint(
+    Map<String, dynamic> receipt,
+  ) async {
+    final prepared = Map<String, dynamic>.from(receipt);
+    final existingKiosk = _parseKioskItems(prepared['kiosk_items']);
+    if (existingKiosk.isNotEmpty) {
+      return prepared;
+    }
+
+    final fuelAmount =
+        double.tryParse(
+          '${prepared['redeemed_fuel_amount'] ?? prepared['amount'] ?? 0}',
+        ) ??
+        0;
+    if (fuelAmount <= 0 || !mounted) {
+      return prepared;
+    }
+
+    final kioskItems = await _captureKioskSplitItems(fuelAmount);
+    if (kioskItems == null || kioskItems.isEmpty) {
+      return prepared;
+    }
+
+    prepared['kiosk_items'] = kioskItems;
+    return prepared;
+  }
+
+  Future<List<Map<String, dynamic>>?> _captureKioskSplitItems(
+    double fuelAmount,
+  ) async {
+    final rows = <Map<String, TextEditingController>>[
+      {
+        'name': TextEditingController(text: 'Fuel'),
+        'amount': TextEditingController(text: fuelAmount.toStringAsFixed(2)),
+      },
+    ];
+
+    final result = await showDialog<List<Map<String, dynamic>>>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            double sum = 0;
+            for (final row in rows) {
+              sum += double.tryParse(row['amount']!.text.trim()) ?? 0;
+            }
+            final remaining = fuelAmount - sum;
+
+            return AlertDialog(
+              backgroundColor: const Color(0xFF0B1220),
+              title: const Text(
+                'Split Kiosk Items',
+                style: TextStyle(color: Color(0xFFE2E8F0)),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Fuel allocation: R ${fuelAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(color: Color(0xFF94A3B8)),
+                    ),
+                    const SizedBox(height: 10),
+                    ...rows.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final row = entry.value;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: row['name'],
+                                decoration: const InputDecoration(
+                                  labelText: 'Item',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 110,
+                              child: TextField(
+                                controller: row['amount'],
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                decoration: const InputDecoration(
+                                  labelText: 'Amount',
+                                ),
+                                onChanged: (_) => setDialogState(() {}),
+                              ),
+                            ),
+                            if (rows.length > 1)
+                              IconButton(
+                                icon: const Icon(Icons.close_rounded),
+                                onPressed: () {
+                                  setDialogState(() {
+                                    rows.removeAt(index);
+                                  });
+                                },
+                              ),
+                          ],
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () {
+                          setDialogState(() {
+                            rows.add({
+                              'name': TextEditingController(),
+                              'amount': TextEditingController(),
+                            });
+                          });
+                        },
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Item'),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Remaining: R ${remaining.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: remaining.abs() < 0.01
+                            ? const Color(0xFF22C55E)
+                            : const Color(0xFFF97316),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(null),
+                  child: const Text('Skip'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final items = <Map<String, dynamic>>[];
+                    double total = 0;
+                    for (final row in rows) {
+                      final name = row['name']!.text.trim();
+                      final amount =
+                          double.tryParse(row['amount']!.text.trim()) ?? 0;
+                      if (name.isEmpty || amount <= 0) {
+                        continue;
+                      }
+                      total += amount;
+                      items.add({
+                        'name': name,
+                        'amount': double.parse(amount.toStringAsFixed(2)),
+                      });
+                    }
+
+                    if (items.isEmpty || (total - fuelAmount).abs() > 0.05) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Split must match fuel amount before saving.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
+                    Navigator.of(dialogContext).pop(items);
+                  },
+                  child: const Text('Save Split'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    for (final row in rows) {
+      row['name']?.dispose();
+      row['amount']?.dispose();
+    }
+
+    return result;
   }
 
   pw.Widget _receiptLine(pw.Font font, String label, String value) {
@@ -1138,14 +1746,24 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<int>(
+                          isExpanded: true,
                           initialValue:
                               stations.any(
                                 (s) => '${s['id']}' == '$selectedStationId',
                               )
                               ? selectedStationId
                               : null,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                          iconEnabledColor: Colors.white,
                           decoration: const InputDecoration(
                             labelText: 'Station (Wallet)',
+                            labelStyle: TextStyle(
+                              color: Color(0xFFE2E8F0),
+                              fontSize: 12,
+                            ),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 10,
@@ -1157,6 +1775,12 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
                                   value: int.tryParse('${s['id']}'),
                                   child: Text(
                                     (s['name'] ?? 'Station').toString(),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
                               )
