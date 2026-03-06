@@ -33,18 +33,19 @@ class _DriverShellState extends State<DriverShell> {
       DriverHomePage(
         api: widget.api,
         onOpenVouchers: () => setState(() => index = 1),
-        onOpenApply: () => setState(() => index = 4),
+        onOpenApply: () => setState(() => index = 5),
       ),
       DriverVouchersPage(
         api: widget.api,
-        onOpenApply: () => setState(() => index = 4),
+        onOpenApply: () => setState(() => index = 5),
       ),
+      DriverNavigatePage(api: widget.api),
       DriverRepaymentsPage(api: widget.api),
       DriverProfilePage(api: widget.api),
       DriverApplyVoucherPage(api: widget.api),
     ];
 
-    const titles = ['Dashboard', 'Vouchers', 'Repay', 'Profile', 'Apply'];
+    const titles = ['Dashboard', 'Vouchers', 'Navigate', 'Repay', 'Profile', 'Apply'];
 
     return Scaffold(
       appBar: AppBar(
@@ -100,6 +101,7 @@ class _DriverBottomNav extends StatelessWidget {
     final items = <_DriverNavItem>[
       const _DriverNavItem('Home', Icons.home_outlined),
       const _DriverNavItem('Vouchers', Icons.confirmation_number_outlined),
+      const _DriverNavItem('Navigate', Icons.map_outlined),
       const _DriverNavItem('Repay', Icons.receipt_long_outlined),
       const _DriverNavItem('Profile', Icons.person_outline_rounded),
     ];
@@ -176,6 +178,7 @@ class DriverHomePage extends StatefulWidget {
 class _DriverHomePageState extends State<DriverHomePage> {
   bool loading = true;
   String? error;
+  String? warning;
   Map<String, dynamic> profile = {};
   List<VoucherItem> vouchers = [];
   List<RepaymentItem> repayments = [];
@@ -190,23 +193,38 @@ class _DriverHomePageState extends State<DriverHomePage> {
     setState(() {
       loading = true;
       error = null;
+      warning = null;
     });
-    final p = await widget.api.profile().catchError((_) => <String, dynamic>{});
-    final v = await widget.api.driverVouchers().catchError(
-      (_) => <VoucherItem>[],
-    );
-    final r = await widget.api.driverRepayments().catchError(
-      (_) => <RepaymentItem>[],
-    );
+
+    Map<String, dynamic> p = <String, dynamic>{};
+    List<VoucherItem> v = <VoucherItem>[];
+    List<RepaymentItem> r = <RepaymentItem>[];
+    var hadFailure = false;
+
+    try {
+      p = await widget.api.profile();
+    } catch (_) {
+      hadFailure = true;
+    }
+    try {
+      v = await widget.api.driverVouchers();
+    } catch (_) {
+      hadFailure = true;
+    }
+    try {
+      r = await widget.api.driverRepayments();
+    } catch (_) {
+      hadFailure = true;
+    }
 
     if (!mounted) return;
     setState(() {
       profile = p;
       vouchers = v;
       repayments = r;
-      // Show hard error only when all dynamic endpoints failed.
-      error = (p.isEmpty && v.isEmpty && r.isEmpty)
-          ? 'Failed to load live data. Check API base URL and token.'
+      error = null;
+      warning = hadFailure
+          ? 'Some live data could not load. Showing available data.'
           : null;
       loading = false;
     });
@@ -235,6 +253,25 @@ class _DriverHomePageState extends State<DriverHomePage> {
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
         children: [
           _welcomeCard(profile['name']?.toString() ?? 'Driver'),
+          if (warning != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFF59E0B)),
+              ),
+              child: Text(
+                warning!,
+                style: const TextStyle(
+                  color: Color(0xFFFDE68A),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           _infoCard(
             icon: Icons.local_gas_station_rounded,
@@ -681,6 +718,7 @@ class DriverVouchersPage extends StatefulWidget {
 class _DriverVouchersPageState extends State<DriverVouchersPage> {
   bool loading = true;
   String? error;
+  String? warning;
   List<VoucherItem> vouchers = [];
   List<Map<String, dynamic>> stations = [];
 
@@ -694,16 +732,22 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
     setState(() {
       loading = true;
       error = null;
+      warning = null;
     });
     try {
       final list = await widget.api.driverVouchers();
-      final stationList = await widget.api.stations();
       setState(() {
         vouchers = list;
-        stations = stationList;
+        stations = _inferStationsFromVouchers(list);
       });
     } catch (e) {
-      setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+      setState(() {
+        vouchers = const [];
+        stations = const [];
+        error = null;
+        warning =
+            'Could not load vouchers from server right now. Pull to refresh.';
+      });
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -746,6 +790,26 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
             ),
           ),
           const SizedBox(height: 12),
+          if (warning != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFF59E0B)),
+                ),
+                child: Text(
+                  warning!,
+                  style: const TextStyle(
+                    color: Color(0xFFFDE68A),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
           if (vouchers.isEmpty)
             const Card(
               child: Padding(
@@ -906,6 +970,27 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
     return null;
   }
 
+  List<Map<String, dynamic>> _inferStationsFromVouchers(List<VoucherItem> list) {
+    final unique = <String>{};
+    final result = <Map<String, dynamic>>[];
+    var nextId = 1;
+    for (final voucher in list) {
+      final name = (voucher.stationName ?? '').trim();
+      if (name.isEmpty) continue;
+      final key = name.toLowerCase();
+      if (!unique.add(key)) continue;
+      result.add({
+        'id': nextId++,
+        'name': name,
+        'city': '',
+        'address': '',
+        'latitude': null,
+        'longitude': null,
+      });
+    }
+    return result;
+  }
+
   _StationNavMeta _stationMeta(Map<String, dynamic>? station, VoucherItem v) {
     final name = (v.stationName ?? station?['name'] ?? 'Station').toString().trim();
     final rawName = (v.stationName ?? station?['name'] ?? '').toString().trim();
@@ -941,25 +1026,39 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
     final waypoint = hasCoords
         ? '${lat.toStringAsFixed(6)},${lng.toStringAsFixed(6)}'
         : '';
+    if (!hasCoords && query.trim().isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Station location data is not available.')),
+      );
+      return;
+    }
 
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0B1220),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 22),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth.isFinite
+                ? constraints.maxWidth
+                : MediaQuery.of(context).size.width;
+            return SizedBox(
+              width: width,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0B1220),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 22),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                   Center(
                     child: Container(
                       width: 44,
@@ -1088,10 +1187,13 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                     fullWidth: true,
                     onPressed: () => Navigator.of(context).pop(),
                   ),
-                ],
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -1141,7 +1243,6 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
       child: Container(
-        width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: const Color(0xFF111827),
@@ -1483,6 +1584,285 @@ class _StationNavMeta {
   final String label;
 }
 
+class DriverNavigatePage extends StatefulWidget {
+  const DriverNavigatePage({super.key, required this.api});
+  final ApiClient api;
+
+  @override
+  State<DriverNavigatePage> createState() => _DriverNavigatePageState();
+}
+
+class _DriverNavigatePageState extends State<DriverNavigatePage> {
+  bool loading = true;
+  String? warning;
+  List<String> stations = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetch();
+  }
+
+  Future<void> fetch() async {
+    setState(() {
+      loading = true;
+      warning = null;
+    });
+    try {
+      final vouchers = await widget.api.driverVouchers();
+      final unique = <String>{};
+      for (final voucher in vouchers) {
+        final name = (voucher.stationName ?? '').trim();
+        if (name.isNotEmpty) unique.add(name);
+      }
+      if (!mounted) return;
+      setState(() {
+        stations = unique.toList()..sort();
+        if (stations.isEmpty) {
+          warning = 'No station route targets yet. Apply for a voucher first.';
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        stations = const [];
+        warning = 'Could not load station routes right now. Pull to refresh.';
+      });
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) return const Center(child: _RepayLoadingIndicator());
+
+    return RefreshIndicator(
+      onRefresh: fetch,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              gradient: AppTheme.actionGradient,
+            ),
+            padding: const EdgeInsets.all(16),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Map Navigation',
+                  style: TextStyle(
+                    color: Color(0xFFE2E8F0),
+                    fontWeight: FontWeight.w800,
+                    fontSize: 22,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Open turn-by-turn directions to voucher stations.',
+                  style: TextStyle(color: Color(0xFFBFDBFE)),
+                ),
+              ],
+            ),
+          ),
+          if (warning != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFF59E0B)),
+              ),
+              child: Text(
+                warning!,
+                style: const TextStyle(
+                  color: Color(0xFFFDE68A),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          if (stations.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(14),
+                child: Text('No station destinations available.'),
+              ),
+            ),
+          ...stations.map((station) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0B1220),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF334155)),
+                ),
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xFF1E293B),
+                      ),
+                      child: const Icon(
+                        Icons.local_gas_station_rounded,
+                        color: Color(0xFF38BDF8),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        station,
+                        style: const TextStyle(
+                          color: Color(0xFFE2E8F0),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    FxButton(
+                      label: 'Navigate',
+                      height: 40,
+                      onPressed: () => _openNavigationOptions(station),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openNavigationOptions(String stationName) async {
+    final query = Uri.encodeComponent(stationName);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF0B1220),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 22),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF64748B),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    stationName,
+                    style: const TextStyle(
+                      color: Color(0xFFE2E8F0),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _navOption(
+                    title: 'HERE WeGo',
+                    icon: Icons.map_rounded,
+                    onTap: () => _launchMap(
+                      Uri.parse('https://wego.here.com/search/$query'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _navOption(
+                    title: 'Google Maps',
+                    icon: Icons.navigation_rounded,
+                    onTap: () => _launchMap(
+                      Uri.parse(
+                        'https://www.google.com/maps/dir/?api=1&destination=$query',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _navOption(
+                    title: 'Waze',
+                    icon: Icons.alt_route_rounded,
+                    onTap: () => _launchMap(
+                      Uri.parse('https://waze.com/ul?q=$query&navigate=yes'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _launchMap(Uri uri) async {
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!mounted) return;
+    if (opened) {
+      Navigator.of(context).pop();
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Unable to open map app.')));
+  }
+
+  Widget _navOption({
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111827),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF334155)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: const Color(0xFF38BDF8)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Color(0xFFE2E8F0),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFF38BDF8)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class DriverApplyVoucherPage extends StatefulWidget {
   const DriverApplyVoucherPage({super.key, required this.api});
   final ApiClient api;
@@ -1743,12 +2123,12 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
             .where((v) => v.status.toLowerCase() == 'approved')
             .toList();
         final grew = approved.length > approvedBeforeSubmit;
-        final matchesStation = selectedStationName == null
+        final selectedName = (selectedStationName ?? '').toLowerCase().trim();
+        final matchesStation = selectedName.isEmpty
             ? grew
             : approved.any(
-                (v) => (v.stationName ?? '').toLowerCase().contains(
-                  selectedStationName!.toLowerCase(),
-                ),
+                (v) =>
+                    (v.stationName ?? '').toLowerCase().contains(selectedName),
               );
         if (grew && matchesStation) {
           approvedBeforeSubmit = approved.length;
@@ -2025,7 +2405,11 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
             ),
             const SizedBox(height: 12),
             ..._tapFeatureItems.map((item) {
-              final title = item['title']!;
+              final title = (item['title'] ?? '').trim();
+              final description = (item['description'] ?? '').trim();
+              if (title.isEmpty || description.isEmpty) {
+                return const SizedBox.shrink();
+              }
               final accent = _featureAccent(title, scheme);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -2074,7 +2458,7 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              item['description']!,
+                              description,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: const Color(0xFFCBD5E1),
                                 height: 1.3,

@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Events\Auth\UserLoggedIn;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use App\Models\User;
+use App\Services\AuditTrailService;
 
 class LoginController extends Controller
 {
@@ -34,11 +37,25 @@ class LoginController extends Controller
             
             // Check user status
             if ($user->status !== 'active') {
+                $pendingApproval = Schema::hasTable('account_approvals')
+                    ? $user->latestAccountApproval()->where('status', 'pending')->exists()
+                    : false;
                 Auth::logout();
                 return back()->withErrors([
-                    'email' => 'Your account is ' . $user->status . '. Please contact support.',
+                    'email' => $pendingApproval
+                        ? 'Your account is pending admin approval.'
+                        : 'Your account is ' . $user->status . '. Please contact support.',
                 ]);
             }
+
+            if (!$user->hasAnyRole(['driver', 'merchant', 'admin', 'super_admin', 'employee'])) {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'This account role is not enabled for this production login channel.',
+                ]);
+            }
+
+            event(new UserLoggedIn($user, 'web', $request->ip()));
             
             // Redirect based on role
             if ($user->hasRole('super_admin') || $user->hasRole('admin') || $user->hasRole('employee')) {
@@ -57,6 +74,14 @@ class LoginController extends Controller
                 return redirect()->route('driver.dashboard');
             }
         }
+
+        AuditTrailService::record(
+            'auth_login_failed',
+            null,
+            [],
+            ['email' => (string) $request->input('email')],
+            'Login failed'
+        );
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',

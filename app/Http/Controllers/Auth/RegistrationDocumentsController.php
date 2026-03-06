@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\BankStatementUpload;
 use App\Models\DriverDocument;
+use App\Services\BankStatementCreditAssessmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +19,7 @@ class RegistrationDocumentsController extends Controller
         abort_unless($user, 403);
 
         $role = $role ?: ($user->getRoleNames()->first() ?: 'driver');
-        $allowedRoles = ['driver', 'merchant', 'investor'];
+        $allowedRoles = ['driver', 'merchant'];
         if (!in_array($role, $allowedRoles, true)) {
             $role = 'driver';
         }
@@ -25,17 +27,17 @@ class RegistrationDocumentsController extends Controller
         return view('auth.complete-registration', compact('role'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, BankStatementCreditAssessmentService $assessmentService)
     {
         $user = Auth::user();
         abort_unless($user, 403);
 
         $validated = $request->validate([
-            'role' => ['nullable', Rule::in(['driver', 'merchant', 'investor'])],
+            'role' => ['nullable', Rule::in(['driver', 'merchant'])],
             'id_number' => ['required', 'digits:13', Rule::unique('users', 'id_number')->ignore($user->id)],
             'id_document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'driver_license_document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'bank_statement_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'bank_statement_document' => 'nullable|file|mimetypes:application/pdf|max:8192',
             'payment_method_preference' => 'nullable|in:bank_transfer,card,mobile_money',
             'payment_account_name' => 'nullable|string|max:255',
             'payment_account_number' => 'nullable|string|max:255',
@@ -45,7 +47,7 @@ class RegistrationDocumentsController extends Controller
 
         $role = $validated['role'] ?? ($user->getRoleNames()->first() ?: 'driver');
 
-        DB::transaction(function () use ($request, $user, $validated): void {
+        $upload = DB::transaction(function () use ($request, $user, $validated): ?BankStatementUpload {
             $idPath = $request->file('id_document')->store('driver_documents/id', 'public');
             $licensePath = $request->file('driver_license_document')->store('driver_documents/license', 'public');
             $bankPath = $request->hasFile('bank_statement_document')
@@ -91,7 +93,37 @@ class RegistrationDocumentsController extends Controller
                     'notes' => null,
                 ]
             );
+
+            if (!$request->hasFile('bank_statement_document')) {
+                return null;
+            }
+
+            $bankFile = $request->file('bank_statement_document');
+
+            return BankStatementUpload::create([
+                'user_id' => $user->id,
+                'source' => 'web',
+                'source_reference' => 'registration-complete',
+                'original_filename' => $bankFile->getClientOriginalName(),
+                'mime_type' => $bankFile->getMimeType(),
+                'file_size' => (int) $bankFile->getSize(),
+                'temporary_path' => $bankPath,
+                'status' => 'processing',
+                'ocr_provider' => 'document_ai',
+            ]);
         });
+
+        if ($upload) {
+            try {
+                $assessmentService->assessAndStore($user, $upload);
+            } catch (\Throwable $e) {
+                $upload->forceFill([
+                    'status' => 'failed',
+                    'error_message' => $e->getMessage(),
+                    'processed_at' => now(),
+                ])->save();
+            }
+        }
 
         return redirect()
             ->route($this->postRegistrationRoute($role))
@@ -102,9 +134,6 @@ class RegistrationDocumentsController extends Controller
     {
         if ($role === 'merchant') {
             return 'merchant.dashboard';
-        }
-        if ($role === 'investor') {
-            return 'investor.dashboard';
         }
 
         return 'driver.dashboard';

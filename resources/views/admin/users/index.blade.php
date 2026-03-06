@@ -105,6 +105,10 @@
             <p class="text-gray-600 mt-1">Manage all registered users and their BNPL accounts</p>
         </div>
         <div class="flex space-x-3 mt-4 md:mt-0">
+            <a href="{{ route('admin.users.account-approvals') }}" 
+               class="px-5 py-3 bg-white border border-blue-200 text-blue-700 rounded-xl font-semibold hover:bg-blue-50 shadow-sm hover:shadow transition-all duration-300 flex items-center">
+                <i class="fas fa-user-check mr-2"></i> Account Approvals
+            </a>
             <a href="{{ route('admin.users.create') }}" 
                class="px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 shadow-md hover:shadow-lg transition-all duration-300 flex items-center group">
                 <i class="fas fa-user-plus mr-2 group-hover:rotate-90 transition-transform"></i> Add New User

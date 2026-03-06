@@ -4,7 +4,9 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\RegistrationDocumentsController;
+use App\Http\Controllers\HereMapsController;
 use App\Http\Controllers\Admin\FuelStationController;
 use App\Http\Controllers\Admin\SettlementController;
 use App\Http\Controllers\Admin\VoucherController;
@@ -19,6 +21,7 @@ use App\Http\Controllers\Employee\DashboardController as EmployeeDashboardContro
 use App\Http\Controllers\Employee\ApprovalController as EmployeeApprovalController;
 use App\Http\Controllers\Merchant\DashboardController as MerchantDashboardController;
 use App\Http\Controllers\Driver\DashboardController as DriverDashboardController;
+use App\Http\Controllers\Driver\BankStatementController as DriverBankStatementController;
 use App\Http\Controllers\Investor\InvestorDashboardController;
 use App\Http\Controllers\Admin\InvestorController as AdminInvestorController;
 use App\Http\Controllers\FeedbackController;
@@ -86,6 +89,17 @@ if (app()->environment(['local', 'development', 'testing'])) {
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login');
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
+Route::get('/register', fn () => redirect()->route('register.driver'))->name('register');
+Route::get('/register/driver', [RegisterController::class, 'showDriver'])->name('register.driver');
+Route::post('/register/driver', [RegisterController::class, 'storeDriver'])->name('register.driver.store');
+Route::get('/register/merchant', [RegisterController::class, 'showMerchant'])->name('register.merchant');
+Route::post('/register/merchant', [RegisterController::class, 'storeMerchant'])->name('register.merchant.store');
+Route::get('/geo/here/geocode', [HereMapsController::class, 'geocode'])
+    ->middleware('throttle:120,1')
+    ->name('here.geocode');
+Route::get('/geo/here/reverse', [HereMapsController::class, 'reverse'])
+    ->middleware('throttle:120,1')
+    ->name('here.reverse');
 
 Route::get('/quick-login/admin', function () {
     $enabled = app()->environment('local', 'development') || (bool) env('ONE_CLICK_ADMIN_LOGIN_ENABLED', false);
@@ -202,15 +216,35 @@ Route::middleware(['auth'])->group(function () {
             return app(AdminUserController::class)->index(request());
         })->name('users.index');
         
-        Route::get('/users/create', [AdminUserController::class, 'create'])->name('users.create');
-        Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
-        Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
-        Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
-        Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
-        Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
-        Route::patch('/users/{user}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('users.toggle-status');
+        Route::get('/users/create', [AdminUserController::class, 'create'])->middleware('role:super_admin|admin')->name('users.create');
+        Route::post('/users', [AdminUserController::class, 'store'])->middleware('role:super_admin|admin')->name('users.store');
+        Route::get('/users/{user}', [AdminUserController::class, 'show'])->middleware('role:super_admin|admin')->whereNumber('user')->name('users.show');
+        Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->middleware('role:super_admin|admin')->whereNumber('user')->name('users.edit');
+        Route::put('/users/{user}', [AdminUserController::class, 'update'])->middleware('role:super_admin|admin')->whereNumber('user')->name('users.update');
+        Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->middleware('role:super_admin|admin')->whereNumber('user')->name('users.destroy');
+        Route::patch('/users/{user}/toggle-status', [AdminUserController::class, 'toggleStatus'])->middleware('role:super_admin|admin')->whereNumber('user')->name('users.toggle-status');
+        Route::get('/users/account-approvals', [AdminUserController::class, 'accountApprovals'])
+            ->middleware('role:super_admin|admin')
+            ->name('users.account-approvals');
+        Route::post('/users/account-approvals/{approval}/approve', [AdminUserController::class, 'approveAccount'])
+            ->middleware('role:super_admin|admin')
+            ->whereNumber('approval')
+            ->name('users.account-approvals.approve');
+        Route::post('/users/account-approvals/{approval}/reject', [AdminUserController::class, 'rejectAccount'])
+            ->middleware('role:super_admin|admin')
+            ->whereNumber('approval')
+            ->name('users.account-approvals.reject');
         Route::post('/users/{user}/driver-documents/{documentType}/verify', [AdminUserController::class, 'verifyDriverDocument'])
+            ->middleware('role:super_admin|admin')
+            ->whereNumber('user')
             ->name('users.driver-documents.verify');
+        Route::get('/users/registration-documents', [AdminUserController::class, 'registrationDocuments'])
+            ->middleware('role:super_admin|admin')
+            ->name('users.registration-documents');
+        Route::post('/users/{user}/bank-statement/review', [AdminUserController::class, 'reviewBankStatement'])
+            ->middleware('role:super_admin|admin')
+            ->whereNumber('user')
+            ->name('users.bank-statement.review');
         
         // ========== SETTINGS ROUTES ==========
         Route::prefix('settings')->name('settings.')->group(function () {
@@ -578,10 +612,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/repayments', [DriverDashboardController::class, 'repayments'])->name('repayments.index');
         Route::get('/repayments/upcoming/export-pdf', [DriverDashboardController::class, 'exportUpcomingRepaymentsPdf'])->name('repayments.upcoming.export-pdf');
         Route::get('/profile', [DriverDashboardController::class, 'profile'])->name('profile');
+        Route::get('/bank-statements/upload', [DriverBankStatementController::class, 'create'])->name('bank-statements.create');
+        Route::post('/bank-statements', [DriverBankStatementController::class, 'store'])->name('bank-statements.store');
     });
 
     Route::post('/payments/paystack/repayments/{repayment}', [DriverDashboardController::class, 'payRepayment'])
         ->name('payments.paystack.repayment');
+    Route::get('/driver/repayments/{repayment}/pay-now', [DriverDashboardController::class, 'payRepaymentNow'])
+        ->name('driver.repayments.pay-now');
     Route::get('/driver/repayments/paystack/callback', [DriverDashboardController::class, 'payRepaymentCallback'])
         ->name('driver.repayments.paystack.callback');
     Route::post('/driver/repayments/autopay/toggle', [DriverDashboardController::class, 'toggleAutopayDaily'])

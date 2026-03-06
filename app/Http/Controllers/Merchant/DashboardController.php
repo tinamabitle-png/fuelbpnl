@@ -6,6 +6,7 @@ use App\Events\VoucherStatusChanged;
 use App\Http\Controllers\Controller;
 use App\Models\FuelStation;
 use App\Models\FuelVoucher;
+use App\Models\MerchantFranchise;
 use App\Models\Settlement;
 use App\Services\FuelPriceService;
 use Illuminate\Http\Request;
@@ -533,6 +534,18 @@ class DashboardController extends Controller
 
     private function merchantBrandCatalog(): array
     {
+        $fromTable = MerchantFranchise::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['slug', 'name'])
+            ->mapWithKeys(fn (MerchantFranchise $item) => [$item->slug => $item->name])
+            ->all();
+
+        if (!empty($fromTable)) {
+            return $fromTable;
+        }
+
         return [
             'astron-energy' => 'Astron Energy',
             'bp-southern-africa' => 'BP Southern Africa',

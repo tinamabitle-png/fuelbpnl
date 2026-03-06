@@ -333,7 +333,7 @@
                         </span>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         @foreach(['sa_id' => 'SA ID', 'driver_license' => 'Driver License'] as $docType => $docLabel)
                             @php $doc = $docsByType->get($docType); @endphp
                             <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
@@ -364,6 +364,60 @@
                                 @endif
                             </div>
                         @endforeach
+
+                        @php
+                            $latestUpload = $user->bankStatementUploads->sortByDesc('id')->first();
+                            $latestDecision = $latestUpload?->creditDecisions?->sortByDesc('decided_at')->first();
+                            $recommendedLimit = (float) data_get($latestDecision?->explanation_json, 'agent_recommendation.recommendation.recommended_limit', 0);
+                            $decisionLabel = strtoupper((string) ($latestDecision?->decision ?? 'pending'));
+                        @endphp
+                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                            <p class="text-xs uppercase tracking-wider text-gray-500">Bank Statement</p>
+                            @if($user->bank_statement_path)
+                                <a href="{{ asset('storage/' . $user->bank_statement_path) }}" target="_blank" rel="noopener" class="inline-flex mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                    <i class="fas fa-file-pdf mr-2 mt-1"></i> Open Statement
+                                </a>
+                                <p class="mt-2 text-sm text-gray-700">
+                                    Upload status:
+                                    <span class="font-semibold">{{ strtoupper((string) ($latestUpload->status ?? 'pending')) }}</span>
+                                </p>
+                                <p class="mt-1 text-sm text-gray-700">
+                                    AI decision:
+                                    <span class="font-semibold">{{ $decisionLabel }}</span>
+                                    @if($latestDecision)
+                                        (score {{ (int) $latestDecision->score }})
+                                    @endif
+                                </p>
+                                @if($recommendedLimit > 0)
+                                    <p class="mt-1 text-sm text-gray-700">
+                                        Recommended limit:
+                                        <span class="font-semibold">ZAR {{ number_format($recommendedLimit, 2) }}</span>
+                                    </p>
+                                @endif
+                                <form action="{{ route('admin.users.bank-statement.review', $user) }}" method="POST" class="mt-3 space-y-2">
+                                    @csrf
+                                    <input type="hidden" name="upload_id" value="{{ $latestUpload?->id }}">
+                                    <div class="flex flex-wrap gap-2">
+                                        <button type="submit" name="action" value="approve" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">
+                                            Approve
+                                        </button>
+                                        <button type="submit" name="action" value="reassess" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+                                            Reassess
+                                        </button>
+                                        <button type="submit" name="action" value="reject" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-600 text-white hover:bg-amber-700">
+                                            Mark Review Needed
+                                        </button>
+                                    </div>
+                                    <label class="inline-flex items-center text-xs text-gray-700">
+                                        <input type="checkbox" name="apply_recommended_limit" value="1" class="rounded border-gray-300 mr-2">
+                                        Apply recommended credit limit (capped by system threshold)
+                                    </label>
+                                    <input type="text" name="notes" class="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" placeholder="Notes (optional)">
+                                </form>
+                            @else
+                                <p class="mt-2 text-sm text-gray-500">No bank statement uploaded.</p>
+                            @endif
+                        </div>
                     </div>
                 </div>
             @endif

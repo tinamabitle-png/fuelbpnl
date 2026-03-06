@@ -14,10 +14,11 @@
                 @elseif(!empty($branding['brand_name']))
                     <span class="merchant-brand-mark-text">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($branding['brand_name'], 0, 2)) }}</span>
                 @else
-                    <i class="fa-solid fa-gas-pump text-slate-500"></i>
+                    <x-fuel-station-icon size="42" />
                 @endif
             </div>
             <div>
+           
             <p class="text-sm uppercase tracking-[0.2em] text-blue-600">Merchant Station Console</p>
             <h1 class="brand-font text-3xl md:text-4xl font-semibold text-slate-900 mt-2">Merchant Dashboard</h1>
             @if(!empty($branding['brand_name']))
@@ -113,7 +114,7 @@
                             @endif
                         </div>
                     </div>
-                    <i class="fa-solid fa-gas-pump bwiser-station-icon"></i>
+                   
                 </article>
             </div>
             <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -268,7 +269,7 @@
                     <table class="min-w-full text-sm">
                         <thead class="bg-slate-50 text-slate-600">
                             <tr>
-                                <th class="px-4 py-3 text-left">Voucher</th>
+                                <th class="px-4 py-3 text-left">Voucher </th>
                                 <th class="px-4 py-3 text-left">Driver</th>
                                 <th class="px-4 py-3 text-left">Amount</th>
                                 <th class="px-4 py-3 text-left">Status</th>
@@ -530,17 +531,19 @@
 
     .bwiser-station-icon {
         bottom: 0;
-        color: rgba(219, 234, 254, 0.55);
-        font-size: 2rem;
-        left: 0;
-        margin: 1.35rem;
+        right: 0;
+        margin: 1rem;
         position: absolute;
-        transition: color 220ms ease;
+        opacity: 0.78;
+        transform: translateY(0);
+        transition: opacity 220ms ease, transform 220ms ease;
         z-index: 2;
+        pointer-events: none;
     }
 
     .bwiser-station-card:hover > .bwiser-station-icon {
-        color: #fff;
+        opacity: 1;
+        transform: translateY(-3px);
     }
 
     .bwiser-approved-grid {

@@ -1,302 +1,490 @@
 @extends('layouts.guest')
 
-@section('title', 'Investor Registration - Fuel BNPL')
+@section('title', 'Driver Registration')
+
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-4xl mx-auto">
-        <!-- Header -->
-        <div class="text-center mb-10">
-            <h2 class="text-3xl font-extrabold text-gray-900">Driver Registration</h2>
-            <p class="mt-3 text-gray-600">Join our platform as an Driver and start funding fuel purchases</p>
-            <div class="mt-4">
-                <a href="{{ route('investor.auth.login') }}" class="text-blue-600 hover:text-blue-800 font-medium">
-                    Already have an account? Sign in
-                </a>
+<section class="min-h-screen bg-slate-100 py-10 px-4">
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-7 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <h1 class="text-2xl font-semibold text-slate-900">Register as Driver</h1>
+            <p class="text-sm text-slate-600 mt-1">Create your driver account to apply for vouchers.</p>
+
+            <form method="POST" action="{{ route('register.driver.store') }}" enctype="multipart/form-data" class="mt-6 space-y-4">
+                @csrf
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Full Name</label>
+                    <input name="name" type="text" value="{{ old('name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                    @error('name')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Phone (South Africa)</label>
+                    <input name="phone" type="text" value="{{ old('phone') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="+27XXXXXXXXX or 0XXXXXXXXX">
+                    <p class="text-xs text-slate-500 mt-1">Accepted formats: `+27XXXXXXXXX`, `27XXXXXXXXX`, or `0XXXXXXXXX`.</p>
+                    @error('phone')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Email</label>
+                    <input name="email" type="email" value="{{ old('email') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                    @error('email')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">City</label>
+                        <input id="driver_city" name="city" type="text" value="{{ old('city') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="Johannesburg">
+                        @error('city')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Country</label>
+                        <input id="driver_country" name="country" type="text" value="{{ old('country', 'South Africa') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="South Africa">
+                        @error('country')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Home Address</label>
+                    <input id="driver_home_address" name="home_address" type="text" value="{{ old('home_address') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="Street address, suburb">
+                    <div id="driverAddressSuggestions" class="mt-2 hidden rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"></div>
+                    <p class="text-xs text-slate-500 mt-1">Address suggestions and reverse geocode update while typing.</p>
+                    @error('home_address')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+                <input type="hidden" id="driver_latitude" name="latitude" value="{{ old('latitude') }}">
+                <input type="hidden" id="driver_longitude" name="longitude" value="{{ old('longitude') }}">
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Delivery Platform</label>
+                    <select id="driver_platform" name="driver_platform" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                        <option value="">Select platform</option>
+                        <option value="checkers_sixty60" @selected(old('driver_platform') === 'checkers_sixty60')>Checkers Sixty60</option>
+                        <option value="mr_d" @selected(old('driver_platform') === 'mr_d')>Mr D</option>
+                        <option value="takealot" @selected(old('driver_platform') === 'takealot')>Takealot</option>
+                        <option value="indrive" @selected(old('driver_platform') === 'indrive')>inDrive</option>
+                        <option value="uber" @selected(old('driver_platform') === 'uber')>Uber</option>
+                        <option value="bolt" @selected(old('driver_platform') === 'bolt')>Bolt</option>
+                        <option value="other" @selected(old('driver_platform') === 'other')>Other</option>
+                    </select>
+                    @error('driver_platform')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div id="driver_platform_other_wrap" class="{{ old('driver_platform') === 'other' ? '' : 'hidden' }}">
+                    <label class="block text-sm font-medium text-slate-700">Other Platform Name</label>
+                    <input name="driver_platform_other" type="text" value="{{ old('driver_platform_other') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="Enter platform name">
+                    @error('driver_platform_other')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Password</label>
+                    <input name="password" type="password" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                    @error('password')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Confirm Password</label>
+                    <input name="password_confirmation" type="password" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">South African ID Number</label>
+                    <input name="id_number" type="text" value="{{ old('id_number') }}" required maxlength="13" pattern="[0-9]{13}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="13 digits">
+                    @error('id_number')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                    <p class="text-xs uppercase tracking-wide text-slate-600 font-semibold">Required documents</p>
+                    <div class="grid grid-cols-1 gap-3">
+                        <div class="file-drop rounded-xl border-2 border-dashed border-blue-300 bg-white p-4 text-center cursor-pointer" data-target="id_document">
+                            <p class="text-sm font-semibold text-slate-800">ID Document (PDF/JPG/PNG)</p>
+                            <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload (max 8MB)</p>
+                            <p class="text-xs text-blue-700 mt-2 file-name" data-name-for="id_document">No file selected</p>
+                            <input type="file" name="id_document" id="id_document" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
+                        </div>
+                        @error('id_document')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
+
+                        <div class="file-drop rounded-xl border-2 border-dashed border-blue-300 bg-white p-4 text-center cursor-pointer" data-target="driver_license_document">
+                            <p class="text-sm font-semibold text-slate-800">Driver License (PDF/JPG/PNG)</p>
+                            <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload (max 8MB)</p>
+                            <p class="text-xs text-blue-700 mt-2 file-name" data-name-for="driver_license_document">No file selected</p>
+                            <input type="file" name="driver_license_document" id="driver_license_document" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
+                        </div>
+                        @error('driver_license_document')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
+
+                        <div class="file-drop rounded-xl border-2 border-dashed border-blue-300 bg-white p-4 text-center cursor-pointer" data-target="vehicle_license_document">
+                            <p class="text-sm font-semibold text-slate-800">Vehicle License (PDF/JPG/PNG)</p>
+                            <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload (max 8MB)</p>
+                            <p class="text-xs text-blue-700 mt-2 file-name" data-name-for="vehicle_license_document">No file selected</p>
+                            <input type="file" name="vehicle_license_document" id="vehicle_license_document" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
+                        </div>
+                        @error('vehicle_license_document')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full rounded-xl bg-blue-600 text-white py-2.5 font-semibold hover:bg-blue-700">Create Driver Account</button>
+            </form>
+
+            <div class="mt-5 text-sm text-slate-600">
+                Already have an account?
+                <a href="{{ route('login') }}" class="text-blue-600 font-medium">Sign in</a>
+            </div>
+            <div class="mt-2 text-sm text-slate-600">
+                Registering a station?
+                <a href="{{ route('register.merchant') }}" class="text-blue-600 font-medium">Merchant registration</a>
             </div>
         </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column - Benefits -->
-            <div class="lg:col-span-1">
-                <div class="bg-white rounded-xl shadow-sm p-6 border border-blue-100">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Why Invest With Us?</h3>
-                    <ul class="space-y-4">
-                        <li class="flex items-start">
-                            <div class="flex-shrink-0 h-6 w-6 rounded-full bg-green-100 flex items-center justify-center">
-                                <i class="fas fa-chart-line text-green-600 text-xs"></i>
-                            </div>
-                            <span class="ml-3 text-sm text-gray-700">Attractive returns on investment</span>
-                        </li>
-                        <li class="flex items-start">
-                            <div class="flex-shrink-0 h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center">
-                                <i class="fas fa-shield-alt text-blue-600 text-xs"></i>
-                            </div>
-                            <span class="ml-3 text-sm text-gray-700">Secure and insured investments</span>
-                        </li>
-                        <li class="flex items-start">
-                            <div class="flex-shrink-0 h-6 w-6 rounded-full bg-purple-100 flex items-center justify-center">
-                                <i class="fas fa-hand-holding-usd text-purple-600 text-xs"></i>
-                            </div>
-                            <span class="ml-3 text-sm text-gray-700">Regular monthly payouts</span>
-                        </li>
-                        <li class="flex items-start">
-                            <div class="flex-shrink-0 h-6 w-6 rounded-full bg-yellow-100 flex items-center justify-center">
-                                <i class="fas fa-cogs text-yellow-600 text-xs"></i>
-                            </div>
-                            <span class="ml-3 text-sm text-gray-700">Flexible investment options</span>
-                        </li>
-                    </ul>
-                    
-                    <div class="mt-8 p-4 bg-blue-50 rounded-lg">
-                        <p class="text-sm text-blue-800">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            Your account will be activated after KYC verification (1-2 business days)
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Column - Form -->
-            <div class="lg:col-span-2">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
-                        <h3 class="text-lg font-semibold text-gray-900">Account Information</h3>
-                        <p class="text-sm text-gray-600">All fields marked with * are required</p>
-                    </div>
-                    
-                    <form action="{{ route('investor.auth.register') }}" method="POST" class="p-6" enctype="multipart/form-data">
-                        @csrf
-                        
-                        <!-- Contact Information -->
-                        <div class="mb-8">
-                            <h4 class="text-md font-semibold text-gray-900 mb-4">Contact Information</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
-                                    <input type="text" name="company_name" required
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="Enter company name" value="{{ old('company_name') }}">
-                                    @error('company_name')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Contact Person *</label>
-                                    <input type="text" name="contact_person" required
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="Full name" value="{{ old('contact_person') }}">
-                                    @error('contact_person')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                                    <input type="email" name="email" required
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="contact@company.com" value="{{ old('email') }}">
-                                    @error('email')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-                                    <input type="text" name="phone" required
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="+254 700 000 000" value="{{ old('phone') }}">
-                                    @error('phone')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Login Credentials -->
-                        <div class="mb-8">
-                            <h4 class="text-md font-semibold text-gray-900 mb-4">Login Credentials</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Password *</label>
-                                    <input type="password" name="password" required
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="Minimum 8 characters">
-                                    @error('password')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password *</label>
-                                    <input type="password" name="password_confirmation" required
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="Re-enter your password">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Business Information -->
-                        <div class="mb-8">
-                            <h4 class="text-md font-semibold text-gray-900 mb-4">Business Information</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Tax ID / PIN</label>
-                                    <input type="text" name="tax_id"
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="Tax identification number" value="{{ old('tax_id') }}">
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Business Type</label>
-                                    <select name="business_type"
-                                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                        <option value="">Select business type</option>
-                                        <option value="individual" {{ old('business_type') == 'individual' ? 'selected' : '' }}>Individual</option>
-                                        <option value="llc" {{ old('business_type') == 'llc' ? 'selected' : '' }}>LLC</option>
-                                        <option value="corporation" {{ old('business_type') == 'corporation' ? 'selected' : '' }}>Corporation</option>
-                                        <option value="partnership" {{ old('business_type') == 'partnership' ? 'selected' : '' }}>Partnership</option>
-                                    </select>
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Registration Number</label>
-                                    <input type="text" name="registration_number"
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="Business registration number" value="{{ old('registration_number') }}">
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Year Established</label>
-                                    <input type="number" name="year_established" min="1900" max="{{ date('Y') }}"
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="YYYY" value="{{ old('year_established') }}">
-                                </div>
-                            </div>
-                            
-                            <div class="mt-6">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                                <textarea name="address" rows="2"
-                                          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                          placeholder="Physical business address">{{ old('address') }}</textarea>
-                            </div>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">City</label>
-                                    <input type="text" name="city"
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="City" value="{{ old('city') }}">
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                                    <input type="text" name="country" value="Kenya" readonly
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Investment Preferences -->
-                        <div class="mb-8">
-                            <h4 class="text-md font-semibold text-gray-900 mb-4">Investment Preferences</h4>
-                            <div class="space-y-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Risk Profile</label>
-                                    <div class="flex space-x-4">
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="risk_profile" value="conservative" {{ old('risk_profile') == 'conservative' ? 'checked' : '' }}
-                                                   class="form-radio h-4 w-4 text-blue-600">
-                                            <span class="ml-2 text-sm text-gray-700">Conservative</span>
-                                        </label>
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="risk_profile" value="moderate" {{ old('risk_profile') == 'moderate' ? 'checked' : '' }}
-                                                   class="form-radio h-4 w-4 text-blue-600" checked>
-                                            <span class="ml-2 text-sm text-gray-700">Moderate</span>
-                                        </label>
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="risk_profile" value="aggressive" {{ old('risk_profile') == 'aggressive' ? 'checked' : '' }}
-                                                   class="form-radio h-4 w-4 text-blue-600">
-                                            <span class="ml-2 text-sm text-gray-700">Aggressive</span>
-                                        </label>
-                                    </div>
-                                </div>
-                                
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Investment Amount (KES)</label>
-                                        <input type="number" name="minimum_investment_amount" min="1000" step="1000"
-                                               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                               placeholder="1000" value="{{ old('minimum_investment_amount', 1000) }}">
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Maximum Investment Amount (KES)</label>
-                                        <input type="number" name="maximum_investment_amount" min="1000" step="1000"
-                                               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                               placeholder="100000" value="{{ old('maximum_investment_amount', 100000) }}">
-                                    </div>
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Investment Preferences / Notes</label>
-                                    <textarea name="investment_preferences" rows="3"
-                                              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                              placeholder="Any specific investment preferences or requirements">{{ old('investment_preferences') }}</textarea>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- KYC Documents -->
-                        <div class="mb-8">
-                            <h4 class="text-md font-semibold text-gray-900 mb-4">KYC Documents</h4>
-                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                                <p class="text-sm text-yellow-800">
-                                    <i class="fas fa-info-circle mr-2"></i>
-                                    Please upload the following documents for verification:
-                                </p>
-                                <ul class="text-sm text-yellow-700 mt-2 ml-6 list-disc">
-                                    <li>Business registration certificate</li>
-                                    <li>Tax compliance certificate</li>
-                                    <li>ID/Passport of authorized signatory</li>
-                                </ul>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Upload Documents</label>
-                                <input type="file" name="kyc_documents[]" multiple
-                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                       accept=".pdf,.jpg,.jpeg,.png">
-                                <p class="mt-1 text-xs text-gray-500">PDF, JPG, PNG files only. Max 5MB per file.</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Terms and Conditions -->
-                        <div class="mb-8">
-                            <div class="flex items-start">
-                                <input type="checkbox" name="terms" id="terms" required
-                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1">
-                                <label for="terms" class="ml-2 block text-sm text-gray-900">
-                                    I agree to the <a href="#" class="text-blue-600 hover:text-blue-800">Terms and Conditions</a> and 
-                                    <a href="#" class="text-blue-600 hover:text-blue-800">Privacy Policy</a>. I confirm that all information provided is accurate.
-                                </label>
-                            </div>
-                            @error('terms')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        
-                        <!-- Submit Button -->
-                        <div>
-                            <button type="submit"
-                                    class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-300">
-                                <i class="fas fa-user-plus mr-2"></i> Register as Investor
-                            </button>
-                        </div>
-                    </form>
-                </div>
+        <div class="lg:col-span-5">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 lg:sticky lg:top-6">
+                <h2 class="text-base font-semibold text-slate-900">Home Location Preview</h2>
+                <p class="text-xs text-slate-600 mt-1">Type address or use current location to pin your home base.</p>
+                <button
+                    type="button"
+                    id="useDriverCurrentLocationBtn"
+                    class="mt-3 inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                >
+                    Use current location
+                </button>
+                <div id="driverRegisterMap" class="mt-3 h-[420px] rounded-xl border border-slate-200 overflow-hidden"></div>
+                <p id="driverMapStatus" class="text-xs text-slate-500 mt-2">Start entering an address to locate your home base.</p>
             </div>
         </div>
     </div>
-</div>
+</section>
 @endsection
+
+@push('scripts')
+@if(config('services.google_maps.key'))
+<script src="https://maps.googleapis.com/maps/api/js?key={{ urlencode((string) config('services.google_maps.key')) }}&libraries=places"></script>
+@endif
+<script>
+document.querySelectorAll('.file-drop').forEach((dropZone) => {
+    const inputId = dropZone.getAttribute('data-target');
+    const input = document.getElementById(inputId);
+    const nameEl = document.querySelector(`[data-name-for="${inputId}"]`);
+    if (!input || !nameEl) return;
+
+    const updateName = (files) => {
+        nameEl.textContent = files && files.length ? files[0].name : 'No file selected';
+    };
+
+    dropZone.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => updateName(input.files));
+
+    ['dragenter', 'dragover'].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            dropZone.classList.add('border-blue-500', 'bg-blue-50');
+        });
+    });
+
+    ['dragleave', 'drop'].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+        });
+    });
+
+    dropZone.addEventListener('drop', (event) => {
+        const files = event.dataTransfer?.files;
+        if (!files || !files.length) return;
+        input.files = files;
+        updateName(files);
+    });
+});
+
+const platformSelect = document.getElementById('driver_platform');
+const platformOtherWrap = document.getElementById('driver_platform_other_wrap');
+const togglePlatformOther = () => {
+    if (!platformSelect || !platformOtherWrap) return;
+    platformOtherWrap.classList.toggle('hidden', platformSelect.value !== 'other');
+};
+if (platformSelect) {
+    platformSelect.addEventListener('change', togglePlatformOther);
+    togglePlatformOther();
+}
+
+const driverAddressInput = document.getElementById('driver_home_address');
+const driverCityInput = document.getElementById('driver_city');
+const driverCountryInput = document.getElementById('driver_country');
+const driverLatitudeInput = document.getElementById('driver_latitude');
+const driverLongitudeInput = document.getElementById('driver_longitude');
+const driverMapStatus = document.getElementById('driverMapStatus');
+const driverMapNode = document.getElementById('driverRegisterMap');
+const useDriverCurrentLocationBtn = document.getElementById('useDriverCurrentLocationBtn');
+const driverAddressSuggestions = document.getElementById('driverAddressSuggestions');
+
+const fallbackCenter = [-26.2041, 28.0473];
+let driverMap = null;
+let driverMarker = null;
+let driverGeocodeTimer = null;
+let driverGeocoder = null;
+let driverAutocompleteService = null;
+
+const updateDriverMapStatus = (message, isError = false) => {
+    if (!driverMapStatus) return;
+    driverMapStatus.textContent = message;
+    driverMapStatus.classList.toggle('text-rose-600', isError);
+    driverMapStatus.classList.toggle('text-slate-500', !isError);
+};
+
+const hideDriverSuggestions = () => {
+    if (!driverAddressSuggestions) return;
+    driverAddressSuggestions.innerHTML = '';
+    driverAddressSuggestions.classList.add('hidden');
+};
+
+const driverComponentValue = (components, types) => {
+    const wanted = new Set(types);
+    const match = (components || []).find((entry) => (entry.types || []).some((t) => wanted.has(t)));
+    return match ? (match.long_name || '') : '';
+};
+
+const fillDriverAddressFields = (components, fallbackAddress = '') => {
+    const streetNumber = driverComponentValue(components, ['street_number']);
+    const route = driverComponentValue(components, ['route']);
+    const suburb = driverComponentValue(components, ['sublocality', 'sublocality_level_1', 'neighborhood']);
+    const city = driverComponentValue(components, ['locality', 'administrative_area_level_2', 'administrative_area_level_1']);
+    const country = driverComponentValue(components, ['country']);
+    const line1 = [streetNumber, route].filter(Boolean).join(' ').trim();
+    const composedAddress = [line1, suburb].filter(Boolean).join(', ').trim();
+
+    if (driverAddressInput) {
+        driverAddressInput.value = composedAddress || fallbackAddress || driverAddressInput.value;
+    }
+    if (driverCityInput && city) driverCityInput.value = city;
+    if (driverCountryInput && country) driverCountryInput.value = country;
+
+    return { composedAddress: composedAddress || fallbackAddress || '', city, country };
+};
+
+const driverGeocodeByPlaceId = (placeId) => new Promise((resolve, reject) => {
+    if (!driverGeocoder) return reject(new Error('Geocoder not available'));
+    driverGeocoder.geocode({ placeId }, (results, status) => {
+        if (status === 'OK' && results && results.length) {
+            resolve(results[0]);
+            return;
+        }
+        reject(new Error('Place geocode failed: ' + status));
+    });
+});
+
+const driverGeocodeByAddress = (address) => new Promise((resolve, reject) => {
+    if (!driverGeocoder) return reject(new Error('Geocoder not available'));
+    driverGeocoder.geocode({ address }, (results, status) => {
+        if (status === 'OK' && results && results.length) {
+            resolve(results[0]);
+            return;
+        }
+        reject(new Error('Address geocode failed: ' + status));
+    });
+});
+
+const driverReverseGeocode = (lat, lng) => new Promise((resolve, reject) => {
+    if (!driverGeocoder) return reject(new Error('Geocoder not available'));
+    driverGeocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status === 'OK' && results && results.length) {
+            resolve(fillDriverAddressFields(results[0].address_components || [], results[0].formatted_address || ''));
+            return;
+        }
+        reject(new Error('Reverse geocode failed: ' + status));
+    });
+});
+
+const applyDriverLocationToMap = (lat, lng) => {
+    if (driverLatitudeInput) driverLatitudeInput.value = String(lat);
+    if (driverLongitudeInput) driverLongitudeInput.value = String(lng);
+
+    if (driverMap) {
+        if (!driverMarker) {
+            driverMarker = new google.maps.Marker({
+                position: { lat, lng },
+                map: driverMap,
+            });
+        } else {
+            driverMarker.setPosition({ lat, lng });
+        }
+        driverMap.setCenter({ lat, lng });
+        driverMap.setZoom(15);
+    }
+};
+
+const pickDriverSuggestion = async (prediction) => {
+    try {
+        const result = await driverGeocodeByPlaceId(prediction.place_id);
+        const location = result.geometry?.location;
+        if (!location) throw new Error('Missing geometry');
+        const lat = location.lat();
+        const lng = location.lng();
+        fillDriverAddressFields(result.address_components || [], result.formatted_address || prediction.description || '');
+        applyDriverLocationToMap(lat, lng);
+        updateDriverMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+    } catch (error) {
+        updateDriverMapStatus('Could not load selected suggestion details.', true);
+    }
+    hideDriverSuggestions();
+};
+
+const renderDriverSuggestions = (items) => {
+    if (!driverAddressSuggestions) return;
+    if (!Array.isArray(items) || !items.length) {
+        hideDriverSuggestions();
+        return;
+    }
+
+    driverAddressSuggestions.innerHTML = '';
+    items.forEach((item) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'w-full px-3 py-2 text-left hover:bg-slate-50 border-b last:border-b-0 border-slate-100';
+        button.innerHTML = `<span class="block text-xs text-slate-700 truncate">${item?.description || 'Suggested location'}</span>`;
+        button.addEventListener('click', () => pickDriverSuggestion(item));
+        driverAddressSuggestions.appendChild(button);
+    });
+
+    driverAddressSuggestions.classList.remove('hidden');
+};
+
+if (driverMapNode && window.google?.maps && @json(config('services.google_maps.key'))) {
+    driverMap = new google.maps.Map(driverMapNode, {
+        center: { lat: fallbackCenter[0], lng: fallbackCenter[1] },
+        zoom: 11,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+    });
+    driverGeocoder = new google.maps.Geocoder();
+    driverAutocompleteService = new google.maps.places.AutocompleteService();
+
+    const existingLat = parseFloat(driverLatitudeInput?.value || '');
+    const existingLng = parseFloat(driverLongitudeInput?.value || '');
+    if (Number.isFinite(existingLat) && Number.isFinite(existingLng)) {
+        driverMarker = new google.maps.Marker({
+            position: { lat: existingLat, lng: existingLng },
+            map: driverMap,
+        });
+        driverMap.setCenter({ lat: existingLat, lng: existingLng });
+        driverMap.setZoom(15);
+        updateDriverMapStatus(`Pinned at ${existingLat.toFixed(6)}, ${existingLng.toFixed(6)}`);
+    }
+} else {
+    updateDriverMapStatus('Google map preview unavailable (GOOGLE_MAPS_API_KEY not set).');
+}
+
+const scheduleDriverGeocode = () => {
+    if (!driverGeocoder || !driverAutocompleteService) return;
+    if (driverGeocodeTimer) window.clearTimeout(driverGeocodeTimer);
+
+    driverGeocodeTimer = window.setTimeout(async () => {
+        const parts = [
+            driverAddressInput?.value?.trim() || '',
+            driverCityInput?.value?.trim() || '',
+            driverCountryInput?.value?.trim() || ''
+        ].filter(Boolean);
+
+        if (!parts.length) {
+            if (driverLatitudeInput) driverLatitudeInput.value = '';
+            if (driverLongitudeInput) driverLongitudeInput.value = '';
+            updateDriverMapStatus('Start entering an address to locate your home base.');
+            return;
+        }
+
+        if ((driverAddressInput?.value || '').trim().length < 3 && !driverCityInput?.value?.trim()) {
+            hideDriverSuggestions();
+            updateDriverMapStatus('Type at least 3 address characters for suggestions.');
+            return;
+        }
+
+        const query = parts.join(', ');
+        updateDriverMapStatus('Locating address...');
+
+        driverAutocompleteService.getPlacePredictions({ input: query }, async (predictions, status) => {
+            const validPredictions = Array.isArray(predictions) ? predictions : [];
+            if (status === google.maps.places.PlacesServiceStatus.OK && validPredictions.length) {
+                renderDriverSuggestions(validPredictions);
+            } else {
+                hideDriverSuggestions();
+            }
+
+            try {
+                const result = await driverGeocodeByAddress(query);
+                const location = result.geometry?.location;
+                if (!location) throw new Error('Missing geometry');
+                const lat = location.lat();
+                const lng = location.lng();
+                applyDriverLocationToMap(lat, lng);
+                updateDriverMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+            } catch (error) {
+                if (!validPredictions.length) {
+                    if (driverLatitudeInput) driverLatitudeInput.value = '';
+                    if (driverLongitudeInput) driverLongitudeInput.value = '';
+                    updateDriverMapStatus('Address not found yet. Keep typing more detail.', true);
+                }
+            }
+        });
+    }, 550);
+};
+
+[driverAddressInput, driverCityInput, driverCountryInput].forEach((field) => {
+    if (!field) return;
+    field.addEventListener('input', scheduleDriverGeocode);
+    field.addEventListener('change', scheduleDriverGeocode);
+});
+
+if ((driverAddressInput?.value || driverCityInput?.value || driverCountryInput?.value) && driverGeocoder) {
+    scheduleDriverGeocode();
+}
+
+if (driverAddressInput) {
+    driverAddressInput.addEventListener('blur', () => {
+        window.setTimeout(() => hideDriverSuggestions(), 200);
+    });
+    driverAddressInput.addEventListener('focus', () => {
+        if (driverAddressSuggestions && driverAddressSuggestions.children.length > 0) {
+            driverAddressSuggestions.classList.remove('hidden');
+        }
+    });
+}
+
+if (useDriverCurrentLocationBtn) {
+    useDriverCurrentLocationBtn.addEventListener('click', () => {
+        if (!driverGeocoder) {
+            updateDriverMapStatus('Google geocoder unavailable. Set GOOGLE_MAPS_API_KEY.', true);
+            return;
+        }
+        if (!navigator.geolocation) {
+            updateDriverMapStatus('Geolocation is not supported in this browser.', true);
+            return;
+        }
+
+        useDriverCurrentLocationBtn.disabled = true;
+        useDriverCurrentLocationBtn.classList.add('opacity-60', 'cursor-not-allowed');
+        updateDriverMapStatus('Fetching your current location...');
+
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            try {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                applyDriverLocationToMap(lat, lng);
+                updateDriverMapStatus('Location found. Resolving address...');
+                const resolved = await driverReverseGeocode(lat, lng);
+                const hasText = resolved.composedAddress || resolved.city || resolved.country;
+                updateDriverMapStatus(
+                    hasText
+                        ? 'Current location applied and form auto-filled.'
+                        : `Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`
+                );
+            } catch (error) {
+                updateDriverMapStatus('Location pinned. Could not auto-fill address, please select a suggestion or type manually.', true);
+            } finally {
+                useDriverCurrentLocationBtn.disabled = false;
+                useDriverCurrentLocationBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+            }
+        }, (error) => {
+            let message = 'Unable to access current location.';
+            if (error?.code === 1) message = 'Location permission denied. Allow location access and try again.';
+            if (error?.code === 2) message = 'Location unavailable. Check GPS/network and try again.';
+            if (error?.code === 3) message = 'Location request timed out. Try again.';
+            updateDriverMapStatus(message, true);
+            useDriverCurrentLocationBtn.disabled = false;
+            useDriverCurrentLocationBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+        }, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+        });
+    });
+}
+</script>
+@endpush

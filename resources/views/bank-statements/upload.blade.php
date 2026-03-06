@@ -22,11 +22,12 @@
             </div>
         @endif
 
-        <form class="mt-8 space-y-6" action="{{ route('bank-statements.store') }}" method="POST" enctype="multipart/form-data">
+        <form class="mt-8 space-y-6" action="{{ route('driver.bank-statements.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">Statement PDF</label>
                 <input type="file" name="statement" accept="application/pdf" class="w-full rounded-xl border border-slate-200 px-4 py-2 bg-white" required>
+                <p class="mt-2 text-xs text-slate-500">PDF only, max file size 8MB.</p>
             </div>
             <button type="submit" class="btn-primary px-5 py-2 rounded-xl">Upload & Process</button>
         </form>

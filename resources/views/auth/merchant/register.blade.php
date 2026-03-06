@@ -1,302 +1,508 @@
 @extends('layouts.guest')
 
-@section('title', 'Investor Registration - Fuel BNPL')
+@section('title', 'Merchant Registration')
+
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-4xl mx-auto">
-        <!-- Header -->
-        <div class="text-center mb-10">
-            <h2 class="text-3xl font-extrabold text-gray-900">Investor Registration</h2>
-            <p class="mt-3 text-gray-600">Join our platform as an investor and start funding fuel purchases</p>
-            <div class="mt-4">
-                <a href="{{ route('investor.auth.login') }}" class="text-blue-600 hover:text-blue-800 font-medium">
-                    Already have an account? Sign in
-                </a>
+<section class="min-h-screen bg-slate-100 py-10 px-4">
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-7 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <h1 class="text-2xl font-semibold text-slate-900">Register as Merchant</h1>
+            <p class="text-sm text-slate-600 mt-1">Create your merchant account to redeem vouchers at station level.</p>
+
+            <form method="POST" action="{{ route('register.merchant.store') }}" enctype="multipart/form-data" class="mt-6 space-y-4">
+                @csrf
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Business / Contact Name</label>
+                    <input name="name" type="text" value="{{ old('name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                    @error('name')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Phone</label>
+                    <input name="phone" type="text" value="{{ old('phone') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                    @error('phone')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Email</label>
+                    <input name="email" type="email" value="{{ old('email') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                    @error('email')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">City</label>
+                        <input id="merchant_city" name="city" type="text" value="{{ old('city') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="Johannesburg">
+                        @error('city')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Country</label>
+                        <input id="merchant_country" name="country" type="text" value="{{ old('country', 'South Africa') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="South Africa">
+                        @error('country')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Business Address</label>
+                    <input id="merchant_address" name="business_address" type="text" value="{{ old('business_address') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="Street address, suburb">
+                    <div id="merchantAddressSuggestions" class="mt-2 hidden rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"></div>
+                    <p class="text-xs text-slate-500 mt-1">Map updates automatically while you type.</p>
+                    @error('business_address')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+                <input type="hidden" id="merchant_latitude" name="latitude" value="{{ old('latitude') }}">
+                <input type="hidden" id="merchant_longitude" name="longitude" value="{{ old('longitude') }}">
+                @error('latitude')<p class="text-xs text-rose-600 -mt-2">{{ $message }}</p>@enderror
+                @error('longitude')<p class="text-xs text-rose-600 -mt-2">{{ $message }}</p>@enderror
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Password</label>
+                    <input name="password" type="password" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                    @error('password')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Confirm Password</label>
+                    <input name="password_confirmation" type="password" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                </div>
+                @php $selectedFranchise = (string) old('franchise_id', ''); @endphp
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                    <p class="text-xs uppercase tracking-wide text-slate-600 font-semibold">Select franchise</p>
+                    <input type="hidden" name="franchise_id" id="franchise_id" value="{{ $selectedFranchise }}">
+                    <div class="grid grid-cols-2 gap-2" id="franchiseGrid">
+                        @forelse(($franchises ?? collect()) as $franchise)
+                            <button
+                                type="button"
+                                class="franchise-chip rounded-xl border border-slate-300 bg-white p-3 text-left {{ $selectedFranchise === (string) $franchise['id'] ? 'ring-2 ring-blue-500 border-blue-500' : '' }}"
+                                data-id="{{ $franchise['id'] }}"
+                            >
+                                <div class="h-8 flex items-center justify-center">
+                                    @if(!empty($franchise['logo_url']))
+                                        <img src="{{ $franchise['logo_url'] }}" alt="{{ $franchise['name'] }} logo" class="h-7 w-full object-contain">
+                                    @else
+                                        <span class="text-xs font-bold text-slate-700">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($franchise['name'], 0, 2)) }}</span>
+                                    @endif
+                                </div>
+                                <p class="mt-2 text-xs font-medium text-slate-700 truncate">{{ $franchise['name'] }}</p>
+                            </button>
+                        @empty
+                            <p class="text-xs text-amber-700 col-span-2">No franchise catalog configured yet. Ask admin to add merchant franchises.</p>
+                        @endforelse
+                    </div>
+                    @error('franchise_id')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                    <p class="text-xs uppercase tracking-wide text-slate-600 font-semibold">Required business documents</p>
+                    <div class="grid grid-cols-1 gap-3">
+                        <div class="file-drop rounded-xl border-2 border-dashed border-blue-300 bg-white p-4 text-center cursor-pointer" data-target="ck_document">
+                            <p class="text-sm font-semibold text-slate-800">CK Document (PDF/JPG/PNG)</p>
+                            <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload (max 8MB)</p>
+                            <p class="text-xs text-blue-700 mt-2 file-name" data-name-for="ck_document">No file selected</p>
+                            <input type="file" name="ck_document" id="ck_document" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
+                        </div>
+                        @error('ck_document')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
+
+                        <div class="file-drop rounded-xl border-2 border-dashed border-blue-300 bg-white p-4 text-center cursor-pointer" data-target="bbbee_document">
+                            <p class="text-sm font-semibold text-slate-800">B-BBEE Document (PDF/JPG/PNG)</p>
+                            <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload (max 8MB)</p>
+                            <p class="text-xs text-blue-700 mt-2 file-name" data-name-for="bbbee_document">No file selected</p>
+                            <input type="file" name="bbbee_document" id="bbbee_document" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
+                        </div>
+                        @error('bbbee_document')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full rounded-xl bg-blue-600 text-white py-2.5 font-semibold hover:bg-blue-700">Create Merchant Account</button>
+            </form>
+
+            <div class="mt-5 text-sm text-slate-600">
+                Already have an account?
+                <a href="{{ route('login') }}" class="text-blue-600 font-medium">Sign in</a>
+            </div>
+            <div class="mt-2 text-sm text-slate-600">
+                Driving instead?
+                <a href="{{ route('register.driver') }}" class="text-blue-600 font-medium">Driver registration</a>
             </div>
         </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column - Benefits -->
-            <div class="lg:col-span-1">
-                <div class="bg-white rounded-xl shadow-sm p-6 border border-blue-100">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Why Invest With Us?</h3>
-                    <ul class="space-y-4">
-                        <li class="flex items-start">
-                            <div class="flex-shrink-0 h-6 w-6 rounded-full bg-green-100 flex items-center justify-center">
-                                <i class="fas fa-chart-line text-green-600 text-xs"></i>
-                            </div>
-                            <span class="ml-3 text-sm text-gray-700">Attractive returns on investment</span>
-                        </li>
-                        <li class="flex items-start">
-                            <div class="flex-shrink-0 h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center">
-                                <i class="fas fa-shield-alt text-blue-600 text-xs"></i>
-                            </div>
-                            <span class="ml-3 text-sm text-gray-700">Secure and insured investments</span>
-                        </li>
-                        <li class="flex items-start">
-                            <div class="flex-shrink-0 h-6 w-6 rounded-full bg-purple-100 flex items-center justify-center">
-                                <i class="fas fa-hand-holding-usd text-purple-600 text-xs"></i>
-                            </div>
-                            <span class="ml-3 text-sm text-gray-700">Regular monthly payouts</span>
-                        </li>
-                        <li class="flex items-start">
-                            <div class="flex-shrink-0 h-6 w-6 rounded-full bg-yellow-100 flex items-center justify-center">
-                                <i class="fas fa-cogs text-yellow-600 text-xs"></i>
-                            </div>
-                            <span class="ml-3 text-sm text-gray-700">Flexible investment options</span>
-                        </li>
-                    </ul>
-                    
-                    <div class="mt-8 p-4 bg-blue-50 rounded-lg">
-                        <p class="text-sm text-blue-800">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            Your account will be activated after KYC verification (1-2 business days)
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Column - Form -->
-            <div class="lg:col-span-2">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
-                        <h3 class="text-lg font-semibold text-gray-900">Account Information</h3>
-                        <p class="text-sm text-gray-600">All fields marked with * are required</p>
-                    </div>
-                    
-                    <form action="{{ route('investor.auth.register') }}" method="POST" class="p-6" enctype="multipart/form-data">
-                        @csrf
-                        
-                        <!-- Contact Information -->
-                        <div class="mb-8">
-                            <h4 class="text-md font-semibold text-gray-900 mb-4">Contact Information</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
-                                    <input type="text" name="company_name" required
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="Enter company name" value="{{ old('company_name') }}">
-                                    @error('company_name')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Contact Person *</label>
-                                    <input type="text" name="contact_person" required
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="Full name" value="{{ old('contact_person') }}">
-                                    @error('contact_person')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                                    <input type="email" name="email" required
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="contact@company.com" value="{{ old('email') }}">
-                                    @error('email')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-                                    <input type="text" name="phone" required
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="+254 700 000 000" value="{{ old('phone') }}">
-                                    @error('phone')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Login Credentials -->
-                        <div class="mb-8">
-                            <h4 class="text-md font-semibold text-gray-900 mb-4">Login Credentials</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Password *</label>
-                                    <input type="password" name="password" required
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="Minimum 8 characters">
-                                    @error('password')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password *</label>
-                                    <input type="password" name="password_confirmation" required
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="Re-enter your password">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Business Information -->
-                        <div class="mb-8">
-                            <h4 class="text-md font-semibold text-gray-900 mb-4">Business Information</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Tax ID / PIN</label>
-                                    <input type="text" name="tax_id"
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="Tax identification number" value="{{ old('tax_id') }}">
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Business Type</label>
-                                    <select name="business_type"
-                                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                        <option value="">Select business type</option>
-                                        <option value="individual" {{ old('business_type') == 'individual' ? 'selected' : '' }}>Individual</option>
-                                        <option value="llc" {{ old('business_type') == 'llc' ? 'selected' : '' }}>LLC</option>
-                                        <option value="corporation" {{ old('business_type') == 'corporation' ? 'selected' : '' }}>Corporation</option>
-                                        <option value="partnership" {{ old('business_type') == 'partnership' ? 'selected' : '' }}>Partnership</option>
-                                    </select>
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Registration Number</label>
-                                    <input type="text" name="registration_number"
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="Business registration number" value="{{ old('registration_number') }}">
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Year Established</label>
-                                    <input type="number" name="year_established" min="1900" max="{{ date('Y') }}"
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="YYYY" value="{{ old('year_established') }}">
-                                </div>
-                            </div>
-                            
-                            <div class="mt-6">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                                <textarea name="address" rows="2"
-                                          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                          placeholder="Physical business address">{{ old('address') }}</textarea>
-                            </div>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">City</label>
-                                    <input type="text" name="city"
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="City" value="{{ old('city') }}">
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                                    <input type="text" name="country" value="Kenya" readonly
-                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Investment Preferences -->
-                        <div class="mb-8">
-                            <h4 class="text-md font-semibold text-gray-900 mb-4">Investment Preferences</h4>
-                            <div class="space-y-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Risk Profile</label>
-                                    <div class="flex space-x-4">
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="risk_profile" value="conservative" {{ old('risk_profile') == 'conservative' ? 'checked' : '' }}
-                                                   class="form-radio h-4 w-4 text-blue-600">
-                                            <span class="ml-2 text-sm text-gray-700">Conservative</span>
-                                        </label>
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="risk_profile" value="moderate" {{ old('risk_profile') == 'moderate' ? 'checked' : '' }}
-                                                   class="form-radio h-4 w-4 text-blue-600" checked>
-                                            <span class="ml-2 text-sm text-gray-700">Moderate</span>
-                                        </label>
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="risk_profile" value="aggressive" {{ old('risk_profile') == 'aggressive' ? 'checked' : '' }}
-                                                   class="form-radio h-4 w-4 text-blue-600">
-                                            <span class="ml-2 text-sm text-gray-700">Aggressive</span>
-                                        </label>
-                                    </div>
-                                </div>
-                                
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Investment Amount (KES)</label>
-                                        <input type="number" name="minimum_investment_amount" min="1000" step="1000"
-                                               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                               placeholder="1000" value="{{ old('minimum_investment_amount', 1000) }}">
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Maximum Investment Amount (KES)</label>
-                                        <input type="number" name="maximum_investment_amount" min="1000" step="1000"
-                                               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                               placeholder="100000" value="{{ old('maximum_investment_amount', 100000) }}">
-                                    </div>
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Investment Preferences / Notes</label>
-                                    <textarea name="investment_preferences" rows="3"
-                                              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                              placeholder="Any specific investment preferences or requirements">{{ old('investment_preferences') }}</textarea>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- KYC Documents -->
-                        <div class="mb-8">
-                            <h4 class="text-md font-semibold text-gray-900 mb-4">KYC Documents</h4>
-                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                                <p class="text-sm text-yellow-800">
-                                    <i class="fas fa-info-circle mr-2"></i>
-                                    Please upload the following documents for verification:
-                                </p>
-                                <ul class="text-sm text-yellow-700 mt-2 ml-6 list-disc">
-                                    <li>Business registration certificate</li>
-                                    <li>Tax compliance certificate</li>
-                                    <li>ID/Passport of authorized signatory</li>
-                                </ul>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Upload Documents</label>
-                                <input type="file" name="kyc_documents[]" multiple
-                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                       accept=".pdf,.jpg,.jpeg,.png">
-                                <p class="mt-1 text-xs text-gray-500">PDF, JPG, PNG files only. Max 5MB per file.</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Terms and Conditions -->
-                        <div class="mb-8">
-                            <div class="flex items-start">
-                                <input type="checkbox" name="terms" id="terms" required
-                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1">
-                                <label for="terms" class="ml-2 block text-sm text-gray-900">
-                                    I agree to the <a href="#" class="text-blue-600 hover:text-blue-800">Terms and Conditions</a> and 
-                                    <a href="#" class="text-blue-600 hover:text-blue-800">Privacy Policy</a>. I confirm that all information provided is accurate.
-                                </label>
-                            </div>
-                            @error('terms')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        
-                        <!-- Submit Button -->
-                        <div>
-                            <button type="submit"
-                                    class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-300">
-                                <i class="fas fa-user-plus mr-2"></i> Register as Investor
-                            </button>
-                        </div>
-                    </form>
-                </div>
+        <div class="lg:col-span-5">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 lg:sticky lg:top-6">
+                <h2 class="text-base font-semibold text-slate-900">Station Location Preview</h2>
+                <p class="text-xs text-slate-600 mt-1">Type address details to geocode and drop the marker.</p>
+                <button
+                    type="button"
+                    id="useCurrentLocationBtn"
+                    class="mt-3 inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                >
+                    Use current location
+                </button>
+                <div id="merchantRegisterMap" class="mt-3 h-[420px] rounded-xl border border-slate-200 overflow-hidden"></div>
+                <p id="merchantMapStatus" class="text-xs text-slate-500 mt-2">Start entering an address to locate the station.</p>
             </div>
         </div>
     </div>
-</div>
+</section>
 @endsection
+
+@push('scripts')
+@if(config('services.google_maps.key'))
+<script src="https://maps.googleapis.com/maps/api/js?key={{ urlencode((string) config('services.google_maps.key')) }}&libraries=places"></script>
+@endif
+<script>
+const googleMapsApiKey = @json(config('services.google_maps.key'));
+document.querySelectorAll('.file-drop').forEach((dropZone) => {
+    const inputId = dropZone.getAttribute('data-target');
+    const input = document.getElementById(inputId);
+    const nameEl = document.querySelector(`[data-name-for="${inputId}"]`);
+    if (!input || !nameEl) return;
+
+    const updateName = (files) => {
+        nameEl.textContent = files && files.length ? files[0].name : 'No file selected';
+    };
+
+    dropZone.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => updateName(input.files));
+
+    ['dragenter', 'dragover'].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            dropZone.classList.add('border-blue-500', 'bg-blue-50');
+        });
+    });
+
+    ['dragleave', 'drop'].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+        });
+    });
+
+    dropZone.addEventListener('drop', (event) => {
+        const files = event.dataTransfer?.files;
+        if (!files || !files.length) return;
+        input.files = files;
+        updateName(files);
+    });
+});
+
+const franchiseInput = document.getElementById('franchise_id');
+const franchiseChips = Array.from(document.querySelectorAll('.franchise-chip'));
+const refreshFranchiseChips = () => {
+    const activeId = franchiseInput ? String(franchiseInput.value || '') : '';
+    franchiseChips.forEach((chip) => {
+        const isActive = String(chip.dataset.id || '') === activeId;
+        chip.classList.toggle('ring-2', isActive);
+        chip.classList.toggle('ring-blue-500', isActive);
+        chip.classList.toggle('border-blue-500', isActive);
+    });
+};
+franchiseChips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+        if (!franchiseInput) return;
+        franchiseInput.value = String(chip.dataset.id || '');
+        refreshFranchiseChips();
+    });
+});
+refreshFranchiseChips();
+
+const addressInput = document.getElementById('merchant_address');
+const cityInput = document.getElementById('merchant_city');
+const countryInput = document.getElementById('merchant_country');
+const latitudeInput = document.getElementById('merchant_latitude');
+const longitudeInput = document.getElementById('merchant_longitude');
+const mapStatus = document.getElementById('merchantMapStatus');
+const mapNode = document.getElementById('merchantRegisterMap');
+const useCurrentLocationBtn = document.getElementById('useCurrentLocationBtn');
+const addressSuggestions = document.getElementById('merchantAddressSuggestions');
+
+const fallbackCenter = [-26.2041, 28.0473];
+let map = null;
+let marker = null;
+let geocodeTimer = null;
+let geocoder = null;
+let autocompleteService = null;
+
+const updateMapStatus = (message, isError = false) => {
+    if (!mapStatus) return;
+    mapStatus.textContent = message;
+    mapStatus.classList.toggle('text-rose-600', isError);
+    mapStatus.classList.toggle('text-slate-500', !isError);
+};
+
+const hideSuggestions = () => {
+    if (!addressSuggestions) return;
+    addressSuggestions.innerHTML = '';
+    addressSuggestions.classList.add('hidden');
+};
+
+const componentValue = (components, types) => {
+    const wanted = new Set(types);
+    const match = (components || []).find((entry) => (entry.types || []).some((t) => wanted.has(t)));
+    return match ? (match.long_name || '') : '';
+};
+
+const fillAddressFields = (components, fallbackAddress = '') => {
+    const streetNumber = componentValue(components, ['street_number']);
+    const route = componentValue(components, ['route']);
+    const suburb = componentValue(components, ['sublocality', 'sublocality_level_1', 'neighborhood']);
+    const city = componentValue(components, ['locality', 'administrative_area_level_2', 'administrative_area_level_1']);
+    const country = componentValue(components, ['country']);
+
+    const line1 = [streetNumber, route].filter(Boolean).join(' ').trim();
+    const composedAddress = [line1, suburb].filter(Boolean).join(', ').trim();
+
+    if (addressInput) {
+        addressInput.value = composedAddress || fallbackAddress || addressInput.value;
+    }
+    if (cityInput && city) cityInput.value = city;
+    if (countryInput && country) countryInput.value = country;
+
+    return {
+        composedAddress: composedAddress || fallbackAddress || '',
+        city,
+        country,
+    };
+};
+
+const geocodeByPlaceId = (placeId) => new Promise((resolve, reject) => {
+    if (!geocoder) return reject(new Error('Geocoder not available'));
+    geocoder.geocode({ placeId }, (results, status) => {
+        if (status === 'OK' && results && results.length) {
+            resolve(results[0]);
+            return;
+        }
+        reject(new Error('Place geocode failed: ' + status));
+    });
+});
+
+const geocodeByAddress = (address) => new Promise((resolve, reject) => {
+    if (!geocoder) return reject(new Error('Geocoder not available'));
+    geocoder.geocode({ address }, (results, status) => {
+        if (status === 'OK' && results && results.length) {
+            resolve(results[0]);
+            return;
+        }
+        reject(new Error('Address geocode failed: ' + status));
+    });
+});
+
+const reverseGeocode = (lat, lng) => new Promise((resolve, reject) => {
+    if (!geocoder) return reject(new Error('Geocoder not available'));
+    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status === 'OK' && results && results.length) {
+            const best = results[0];
+            const normalized = fillAddressFields(best.address_components || [], best.formatted_address || '');
+            resolve(normalized);
+            return;
+        }
+        reject(new Error('Reverse geocode failed: ' + status));
+    });
+});
+
+const pickSuggestion = async (prediction) => {
+    try {
+        const result = await geocodeByPlaceId(prediction.place_id);
+        const location = result.geometry?.location;
+        if (!location) throw new Error('Missing geometry');
+        const lat = location.lat();
+        const lng = location.lng();
+        fillAddressFields(result.address_components || [], result.formatted_address || prediction.description || '');
+        applyLocationToMap(lat, lng);
+        updateMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+    } catch (error) {
+        updateMapStatus('Could not load selected suggestion details.', true);
+    }
+    hideSuggestions();
+};
+
+const renderSuggestions = (items) => {
+    if (!addressSuggestions) return;
+    if (!Array.isArray(items) || !items.length) {
+        hideSuggestions();
+        return;
+    }
+
+    addressSuggestions.innerHTML = '';
+    items.forEach((item) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'w-full px-3 py-2 text-left hover:bg-slate-50 border-b last:border-b-0 border-slate-100';
+        const title = item?.description || 'Suggested location';
+        button.innerHTML = `<span class="block text-xs text-slate-700 truncate">${title}</span>`;
+        button.addEventListener('click', () => pickSuggestion(item));
+        addressSuggestions.appendChild(button);
+    });
+
+    addressSuggestions.classList.remove('hidden');
+};
+
+if (mapNode && window.google?.maps && googleMapsApiKey) {
+    map = new google.maps.Map(mapNode, {
+        center: { lat: fallbackCenter[0], lng: fallbackCenter[1] },
+        zoom: 11,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+    });
+    geocoder = new google.maps.Geocoder();
+    autocompleteService = new google.maps.places.AutocompleteService();
+
+    const existingLat = parseFloat(latitudeInput?.value || '');
+    const existingLng = parseFloat(longitudeInput?.value || '');
+    if (Number.isFinite(existingLat) && Number.isFinite(existingLng)) {
+        marker = new google.maps.Marker({
+            position: { lat: existingLat, lng: existingLng },
+            map,
+        });
+        map.setCenter({ lat: existingLat, lng: existingLng });
+        map.setZoom(15);
+        updateMapStatus(`Pinned at ${existingLat.toFixed(6)}, ${existingLng.toFixed(6)}`);
+    }
+} else {
+    updateMapStatus('Google map preview unavailable (GOOGLE_MAPS_API_KEY not set).');
+}
+
+const scheduleGeocode = () => {
+    if (!geocoder || !autocompleteService) return;
+    if (geocodeTimer) window.clearTimeout(geocodeTimer);
+
+    geocodeTimer = window.setTimeout(async () => {
+        const parts = [
+            addressInput?.value?.trim() || '',
+            cityInput?.value?.trim() || '',
+            countryInput?.value?.trim() || ''
+        ].filter(Boolean);
+
+        if (!parts.length) {
+            if (latitudeInput) latitudeInput.value = '';
+            if (longitudeInput) longitudeInput.value = '';
+            updateMapStatus('Start entering an address to locate the station.');
+            return;
+        }
+
+        if ((addressInput?.value || '').trim().length < 3 && !cityInput?.value?.trim()) {
+            hideSuggestions();
+            updateMapStatus('Type at least 3 address characters for suggestions.');
+            return;
+        }
+
+        const query = parts.join(', ');
+        updateMapStatus('Locating address...');
+
+        try {
+            autocompleteService.getPlacePredictions({ input: query }, async (predictions, status) => {
+                const validPredictions = Array.isArray(predictions) ? predictions : [];
+                if (status === google.maps.places.PlacesServiceStatus.OK && validPredictions.length) {
+                    renderSuggestions(validPredictions);
+                } else {
+                    hideSuggestions();
+                }
+
+                try {
+                    const primary = await geocodeByAddress(query);
+                    const location = primary.geometry?.location;
+                    if (!location) throw new Error('Missing geometry');
+                    const lat = location.lat();
+                    const lng = location.lng();
+                    applyLocationToMap(lat, lng);
+                    updateMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+                } catch (innerError) {
+                    if (!validPredictions.length) {
+                        if (latitudeInput) latitudeInput.value = '';
+                        if (longitudeInput) longitudeInput.value = '';
+                        updateMapStatus('Address not found yet. Keep typing more detail.', true);
+                    }
+                }
+            });
+        } catch (error) {
+            if (latitudeInput) latitudeInput.value = '';
+            if (longitudeInput) longitudeInput.value = '';
+            hideSuggestions();
+            updateMapStatus('Unable to geocode right now. Check internet or try again.', true);
+        }
+    }, 550);
+};
+
+[addressInput, cityInput, countryInput].forEach((field) => {
+    if (!field) return;
+    field.addEventListener('input', scheduleGeocode);
+    field.addEventListener('change', scheduleGeocode);
+});
+
+if ((addressInput?.value || cityInput?.value || countryInput?.value) && geocoder) {
+    scheduleGeocode();
+}
+
+if (addressInput) {
+    addressInput.addEventListener('blur', () => {
+        window.setTimeout(() => hideSuggestions(), 200);
+    });
+    addressInput.addEventListener('focus', () => {
+        if (addressSuggestions && addressSuggestions.children.length > 0) {
+            addressSuggestions.classList.remove('hidden');
+        }
+    });
+}
+
+const applyLocationToMap = (lat, lng) => {
+    if (latitudeInput) latitudeInput.value = String(lat);
+    if (longitudeInput) longitudeInput.value = String(lng);
+
+    if (map) {
+        if (!marker) {
+            marker = new google.maps.Marker({
+                position: { lat, lng },
+                map,
+            });
+        } else {
+            marker.setPosition({ lat, lng });
+        }
+        map.setCenter({ lat, lng });
+        map.setZoom(15);
+    }
+};
+
+if (useCurrentLocationBtn) {
+    useCurrentLocationBtn.addEventListener('click', () => {
+        if (!geocoder) {
+            updateMapStatus('Google geocoder unavailable. Set GOOGLE_MAPS_API_KEY.', true);
+            return;
+        }
+        if (!navigator.geolocation) {
+            updateMapStatus('Geolocation is not supported in this browser.', true);
+            return;
+        }
+
+        useCurrentLocationBtn.disabled = true;
+        useCurrentLocationBtn.classList.add('opacity-60', 'cursor-not-allowed');
+        updateMapStatus('Fetching your current location...');
+
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            try {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                applyLocationToMap(lat, lng);
+                updateMapStatus('Location found. Resolving address...');
+                const resolved = await reverseGeocode(lat, lng);
+                const hasText = resolved.composedAddress || resolved.city || resolved.country;
+                updateMapStatus(
+                    hasText
+                        ? 'Current location applied and form auto-filled.'
+                        : `Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`
+                );
+            } catch (error) {
+                updateMapStatus('Location pinned. Could not auto-fill address, please select a suggestion or type it manually.', true);
+            } finally {
+                useCurrentLocationBtn.disabled = false;
+                useCurrentLocationBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+            }
+        }, (error) => {
+            let message = 'Unable to access current location.';
+            if (error?.code === 1) message = 'Location permission denied. Allow location access and try again.';
+            if (error?.code === 2) message = 'Location unavailable. Check GPS/network and try again.';
+            if (error?.code === 3) message = 'Location request timed out. Try again.';
+            updateMapStatus(message, true);
+            useCurrentLocationBtn.disabled = false;
+            useCurrentLocationBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+        }, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+        });
+    });
+}
+</script>
+@endpush

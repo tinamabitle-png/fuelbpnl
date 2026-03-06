@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Events\Auth\UserLoggedIn;
+use App\Events\Auth\UserRegistered;
 use App\Models\User;
 use App\Models\OTP;
 use App\Models\Device;
@@ -21,7 +23,8 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'phone' => 'required|string|unique:users,phone',
             'email' => 'nullable|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => 'required|string|min:8|confirmed',
+            'role' => 'nullable|in:driver,merchant',
             'device_id' => 'required|string',
             'device_name' => 'required|string',
             'device_type' => 'required|in:android,ios',
@@ -33,6 +36,8 @@ class AuthController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
+
+        $role = (string) $request->input('role', 'driver');
 
         $user = User::create([
             'name' => $request->name,
@@ -49,8 +54,8 @@ class AuthController extends Controller
             'currency' => 'KES',
         ]);
 
-        // Assign driver role
-        $user->assignRole('driver');
+        // Restrict public registration to driver/merchant only.
+        $user->assignRole($role);
 
         // Record device
         Device::create([
@@ -73,6 +78,8 @@ class AuthController extends Controller
 
         // In production, send SMS here
         // $this->sendSMS($user->phone, "Your verification code is: {$otp->code}");
+
+        event(new UserRegistered($user, 'api_v1', $request->ip()));
 
         return response()->json([
             'success' => true,
@@ -185,6 +192,15 @@ class AuthController extends Controller
         // Create token
         $token = $user->createToken('mobile-app')->plainTextToken;
 
+        if (!$user->hasAnyRole(['driver', 'merchant'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This API login is limited to driver and merchant accounts.',
+            ], 403);
+        }
+
+        event(new UserLoggedIn($user, 'api_v1', $request->ip()));
+
         return response()->json([
             'success' => true,
             'message' => 'Login successful',
@@ -247,6 +263,8 @@ class AuthController extends Controller
         ]);
 
         $token = $user->createToken('mobile-quick-login')->plainTextToken;
+
+        event(new UserLoggedIn($user, 'api_v1_quick', $request->ip()));
 
         return response()->json([
             'success' => true,

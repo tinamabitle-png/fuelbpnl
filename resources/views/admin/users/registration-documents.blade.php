@@ -45,7 +45,7 @@
 
     <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-gray-200 text-sm text-gray-600">
-            Showing users with registration document uploads (ID, license, and bank statement).
+            Showing users with registration document uploads (driver and merchant compliance docs).
         </div>
 
         @if($users->isEmpty())
@@ -82,12 +82,24 @@
                                     @endforelse
                                 </td>
                                 <td class="px-4 py-3 align-top">
+                                    @php
+                                        $docsByType = $user->driverDocuments->keyBy('document_type');
+                                    @endphp
                                     <div class="flex flex-wrap gap-2">
                                         @if($user->id_document_path)
                                             <a href="{{ asset('storage/' . $user->id_document_path) }}" target="_blank" class="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50">ID</a>
                                         @endif
                                         @if($user->driver_license_path)
                                             <a href="{{ asset('storage/' . $user->driver_license_path) }}" target="_blank" class="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50">License</a>
+                                        @endif
+                                        @if($docsByType->has('vehicle_license'))
+                                            <a href="{{ asset('storage/' . $docsByType->get('vehicle_license')->document_path) }}" target="_blank" class="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50">Vehicle License</a>
+                                        @endif
+                                        @if($docsByType->has('merchant_ck'))
+                                            <a href="{{ asset('storage/' . $docsByType->get('merchant_ck')->document_path) }}" target="_blank" class="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50">CK</a>
+                                        @endif
+                                        @if($docsByType->has('merchant_bbbee'))
+                                            <a href="{{ asset('storage/' . $docsByType->get('merchant_bbbee')->document_path) }}" target="_blank" class="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50">B-BBEE</a>
                                         @endif
                                         @if($user->bank_statement_path)
                                             <a href="{{ asset('storage/' . $user->bank_statement_path) }}" target="_blank" class="text-xs px-2 py-1 rounded border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100">Bank Statement</a>

@@ -26,11 +26,23 @@
             <div class="driver-header-cta flex flex-wrap gap-3 md:justify-end">
                 <a href="{{ route('driver.vouchers.create') }}" class="btn-primary px-4 py-2.5 rounded-xl text-sm font-semibold">Apply for Voucher</a>
                 <a href="{{ route('driver.repayments.index') }}" class="btn-ghost px-4 py-2.5 rounded-xl text-sm font-semibold">View Repayments</a>
+                <a href="{{ route('driver.bank-statements.create') }}" class="btn-ghost px-4 py-2.5 rounded-xl text-sm font-semibold">Upload Bank Statement</a>
                 <a href="{{ route('driver.profile') }}" class="btn-ghost px-4 py-2.5 rounded-xl text-sm font-semibold">Profile</a>
             </div>
         </div>
     </div>
     @include('driver.partials.nav')
+
+    @if(session('error'))
+        <div class="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {{ session('error') }}
+        </div>
+    @endif
+    @if(session('success'))
+        <div class="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {{ session('success') }}
+        </div>
+    @endif
 
     <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div class="driver-active-voucher-card-wrap">
@@ -267,13 +279,11 @@
                             {{ $isOverdue ? 'OVERDUE' : ($isDueToday ? 'DUE TODAY' : $repayment->status) }}
                         </p>
                         @if(in_array($repayment->status, ['pending', 'overdue'], true))
-                            <form method="POST" action="{{ route('payments.paystack.repayment', $repayment) }}" class="mt-3 flex flex-wrap gap-2">
-                                @csrf
-                                <input type="hidden" name="payment_intent" value="force_now">
-                                <button name="payment_method" value="card" class="btn-primary pay-now-btn px-3 py-1.5 rounded-lg text-xs font-semibold">
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <a href="{{ route('driver.repayments.pay-now', $repayment, false) }}" class="btn-primary pay-now-btn px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center">
                                     Pay Now
-                                </button>
-                            </form>
+                                </a>
+                            </div>
                             <p class="text-[11px] text-slate-500 mt-2">One-time override. Auto-pay still runs on future due repayments.</p>
                         @endif
                     </div>

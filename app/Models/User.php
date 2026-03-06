@@ -28,6 +28,14 @@ class User extends Authenticatable
         'id_verification_status',
         'id_verified_at',
         'id_verification_provider',
+        'merchant_franchise_id',
+        'home_address',
+        'city',
+        'country',
+        'latitude',
+        'longitude',
+        'driver_platform',
+        'driver_platform_other',
         'password',
         'device_fingerprint',
         'credit_score',
@@ -60,6 +68,8 @@ class User extends Authenticatable
         'autopay_failures' => 'integer',
         'autopay_last_attempt_at' => 'datetime',
         'autopay_next_attempt_at' => 'datetime',
+        'latitude' => 'float',
+        'longitude' => 'float',
     ];
 
     protected $appends = ['available_credit'];
@@ -118,6 +128,36 @@ class User extends Authenticatable
     public function driverDocuments()
     {
         return $this->hasMany(DriverDocument::class);
+    }
+
+    public function bankStatementUploads()
+    {
+        return $this->hasMany(BankStatementUpload::class);
+    }
+
+    public function creditDecisions()
+    {
+        return $this->hasMany(CreditDecision::class);
+    }
+
+    public function merchantFranchise()
+    {
+        return $this->belongsTo(MerchantFranchise::class, 'merchant_franchise_id');
+    }
+
+    public function accountApprovals()
+    {
+        return $this->hasMany(AccountApproval::class);
+    }
+
+    public function latestAccountApproval()
+    {
+        return $this->hasOne(AccountApproval::class)->latestOfMany();
+    }
+
+    public function latestCreditDecision()
+    {
+        return $this->hasOne(CreditDecision::class)->latestOfMany('decided_at');
     }
 
     // Accessors

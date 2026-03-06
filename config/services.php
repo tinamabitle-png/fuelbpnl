@@ -61,6 +61,21 @@ return [
         'key' => env('GOOGLE_MAPS_API_KEY'),
     ],
 
+    'here_maps' => [
+        'key' => env('HERE_MAPS_API_KEY'),
+        'user_id' => env('HERE_USER_ID'),
+        'client_id' => env('HERE_CLIENT_ID'),
+        'access_key_id' => env('HERE_ACCESS_KEY_ID'),
+        'access_key_secret' => env('HERE_ACCESS_KEY_SECRET'),
+        'token_endpoint_url' => env('HERE_TOKEN_ENDPOINT_URL', 'https://account.api.here.com/oauth2/token'),
+    ],
+
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+        'model' => env('OPENAI_CREDIT_MODEL', 'gpt-4o-mini'),
+        'timeout' => env('OPENAI_TIMEOUT', 20),
+    ],
+
     'redemption_geofence' => [
         'enabled' => env('REDEMPTION_GEOFENCE_ENABLED', false),
         'radius_meters' => env('REDEMPTION_GEOFENCE_RADIUS_METERS', 150),

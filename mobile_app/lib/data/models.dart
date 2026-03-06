@@ -21,12 +21,12 @@ class VoucherItem {
 
   factory VoucherItem.fromDriverMap(Map<String, dynamic> map) {
     return VoucherItem(
-      id: (map['id'] ?? 0) as int,
-      code: (map['code'] ?? '') as String,
-      status: (map['status'] ?? '') as String,
+      id: int.tryParse('${map['id'] ?? 0}') ?? 0,
+      code: (map['code'] ?? '').toString(),
+      status: (map['status'] ?? '').toString(),
       amount: double.tryParse('${map['amount'] ?? 0}') ?? 0,
-      fuelType: (map['fuel_type'] ?? 'petrol') as String,
-      qrCode: (map['qr_code'] ?? '') as String,
+      fuelType: (map['fuel_type'] ?? 'petrol').toString(),
+      qrCode: (map['qr_code'] ?? '').toString(),
       stationName:
           (map['fuel_station']?['name'] ?? map['fuel_station']?['city'])
               ?.toString(),
@@ -38,12 +38,12 @@ class VoucherItem {
 
   factory VoucherItem.fromMerchantMap(Map<String, dynamic> map) {
     return VoucherItem(
-      id: (map['voucher_id'] ?? map['id'] ?? 0) as int,
-      code: (map['voucher_code'] ?? map['code'] ?? '') as String,
-      status: (map['status'] ?? '') as String,
+      id: int.tryParse('${map['voucher_id'] ?? map['id'] ?? 0}') ?? 0,
+      code: (map['voucher_code'] ?? map['code'] ?? '').toString(),
+      status: (map['status'] ?? '').toString(),
       amount: double.tryParse('${map['amount'] ?? 0}') ?? 0,
-      fuelType: (map['fuel_type'] ?? 'petrol') as String,
-      qrCode: (map['qr_code'] ?? '') as String,
+      fuelType: (map['fuel_type'] ?? 'petrol').toString(),
+      qrCode: (map['qr_code'] ?? '').toString(),
       stationName: (map['station']?['name'] ?? map['fuelStation']?['name'])
           ?.toString(),
       expiresAt: map['expires_at'] == null

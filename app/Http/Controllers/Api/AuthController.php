@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Events\Auth\UserLoggedIn;
+use App\Events\Auth\UserRegistered;
 use App\Models\User;
 use App\Models\Otp;
 use App\Models\Device;
@@ -27,6 +29,7 @@ class AuthController extends Controller
             'phone' => 'required|string|unique:users',
             'email' => 'nullable|email|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'role' => 'nullable|in:driver,merchant',
             'device_id' => 'required|string',
             'device_name' => 'required|string',
             'device_type' => 'required|in:android,ios,web',
@@ -39,6 +42,8 @@ class AuthController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
+
+        $role = (string) $request->input('role', 'driver');
 
         // Generate OTP for verification
         $otp = Otp::generate($request->phone, 'registration');
@@ -54,10 +59,10 @@ class AuthController extends Controller
             'credit_score' => 500, // Default score
         ]);
 
-        // Assign driver role
-        $driverRole = Role::where('name', 'driver')->first();
-        if ($driverRole) {
-            $user->assignRole($driverRole);
+        // Restrict public registration to driver/merchant only.
+        $allowedRole = Role::where('name', $role)->first();
+        if ($allowedRole) {
+            $user->assignRole($allowedRole);
         }
 
         // Create wallet
@@ -89,6 +94,8 @@ class AuthController extends Controller
 
         // Send OTP via SMS (in production, integrate with SMS gateway)
         // $this->sendSms($request->phone, "Your verification code is: {$otp->code}");
+
+        event(new UserRegistered($user, 'api', $request->ip()));
 
         return response()->json([
             'success' => true,
@@ -191,11 +198,11 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // Check if user is a driver
-        if (!$user->hasRole('driver')) {
+        // Production hardening: API login channel only supports driver/merchant.
+        if (!$user->hasAnyRole(['driver', 'merchant'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Access denied. Driver account required.'
+                'message' => 'Access denied. Driver or merchant account required.'
             ], 403);
         }
 
@@ -223,6 +230,8 @@ class AuthController extends Controller
 
         // Generate token
         $token = $user->createToken('mobile')->plainTextToken;
+
+        event(new UserLoggedIn($user, 'api', $request->ip()));
 
         return response()->json([
             'success' => true,
@@ -359,6 +368,8 @@ class AuthController extends Controller
 
         // Generate token
         $token = $user->createToken('mobile')->plainTextToken;
+
+        event(new UserLoggedIn($user, 'api_otp', $request->ip()));
 
         return response()->json([
             'success' => true,

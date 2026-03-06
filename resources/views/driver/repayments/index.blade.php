@@ -169,14 +169,12 @@
                                         );
                                         $shareTextWithUrl = $shareText . ' ' . $requestUrl;
                                     @endphp
-                                    <form method="POST" action="{{ route('payments.paystack.repayment', $repayment) }}" class="flex flex-wrap gap-2">
-                                        @csrf
-                                        <input type="hidden" name="payment_intent" value="force_now">
-                                        <button name="payment_method" value="card" class="btn-primary pay-now-btn px-3 py-2 rounded-lg text-xs font-semibold">Pay Now</button>
+                                    <div class="flex flex-wrap gap-2">
+                                        <a href="{{ route('driver.repayments.pay-now', $repayment, false) }}" class="btn-primary pay-now-btn px-3 py-2 rounded-lg text-xs font-semibold inline-flex items-center">Pay Now</a>
                                         <button type="button" class="px-3 py-2 rounded-lg text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 cursor-not-allowed" title="Ethereum repayments coming soon" disabled>
                                             <i class="fab fa-ethereum mr-1"></i> ETH (Soon)
                                         </button>
-                                    </form>
+                                    </div>
                                     <div class="mt-2">
                                         <a href="https://wa.me/?text={{ urlencode($shareTextWithUrl) }}" target="_blank" rel="noopener" class="pay-for-me-btn">
                                             <span class="pay-for-me-btn-label">Pay for me</span>

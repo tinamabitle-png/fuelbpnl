@@ -138,6 +138,17 @@
                     </div>
                 @endif
 
+                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <a href="{{ route('register.driver') }}"
+                       class="inline-flex justify-center items-center py-2 px-4 border border-slate-300 rounded-md text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
+                        Register Driver
+                    </a>
+                    <a href="{{ route('register.merchant') }}"
+                       class="inline-flex justify-center items-center py-2 px-4 border border-slate-300 rounded-md text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
+                        Register Merchant
+                    </a>
+                </div>
+
                 <div class="mt-6">
                     <div class="relative">
                         <div class="absolute inset-0 flex items-center">

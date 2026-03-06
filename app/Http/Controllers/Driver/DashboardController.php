@@ -536,6 +536,27 @@ class DashboardController extends Controller
 
     public function payRepayment(Request $request, Repayment $repayment)
     {
+        $intent = strtolower(trim((string) $request->input('payment_intent', 'force_now')));
+        if (!in_array($intent, ['force_now', 'pay_now', 'manual'], true)) {
+            // Be permissive for older forms/buttons that may not submit payment_intent.
+            $intent = 'force_now';
+        }
+
+        $method = $request->input('payment_method', 'card');
+        if (!in_array($method, ['card'], true)) {
+            $method = 'card';
+        }
+
+        return $this->startRepaymentCheckout($request, $repayment, $intent, (string) $method);
+    }
+
+    public function payRepaymentNow(Request $request, Repayment $repayment)
+    {
+        return $this->startRepaymentCheckout($request, $repayment, 'force_now', 'card');
+    }
+
+    private function startRepaymentCheckout(Request $request, Repayment $repayment, string $intent, string $method)
+    {
         $user = Auth::user();
         $this->authorizeDriverPortal($user);
 
@@ -547,22 +568,12 @@ class DashboardController extends Controller
             return back()->with('error', 'Repayment has already been processed.');
         }
 
-        $intent = strtolower(trim((string) $request->input('payment_intent', '')));
-        if ($intent !== 'force_now') {
-            return back()->with('error', 'Manual checkout is disabled unless you explicitly choose Force Pay Now.');
-        }
-
-        $method = $request->input('payment_method', 'card');
-        if (!in_array($method, ['card'], true)) {
-            $method = 'card';
-        }
-
         try {
             $checkout = $this->paystackService->initializeRepaymentCheckout(
                 $user,
                 $repayment,
                 $method,
-                route('driver.repayments.paystack.callback')
+                $this->absoluteRouteForCurrentHost($request, 'driver.repayments.paystack.callback')
             );
 
             $repayment->forceFill([
@@ -641,7 +652,7 @@ class DashboardController extends Controller
                 $driver,
                 $repayment,
                 'card',
-                route('driver.repayments.request.callback'),
+                $this->absoluteRouteForCurrentHost($request, 'driver.repayments.request.callback'),
                 $payerEmail !== '' ? $payerEmail : null,
                 'repayment_request'
             );
@@ -916,6 +927,13 @@ class DashboardController extends Controller
     private function resolvePaystackPaymentMethodFromMetadata(array $metadata): string
     {
         return 'paystack_card';
+    }
+
+    private function absoluteRouteForCurrentHost(Request $request, string $routeName, array $parameters = []): string
+    {
+        $path = route($routeName, $parameters, false);
+
+        return rtrim($request->getSchemeAndHttpHost(), '/') . $path;
     }
 
     private function notifyRepaymentUser($user, string $subject, string $message): void

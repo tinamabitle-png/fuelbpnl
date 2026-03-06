@@ -3,17 +3,211 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountApproval;
+use App\Models\BankStatementUpload;
+use App\Models\CreditDecision;
+use App\Models\FuelStation;
+use App\Models\MerchantFranchise;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\CreditLimit;
+use App\Services\AuditTrailService;
+use App\Services\BankStatementCreditAssessmentService;
 use App\Services\DriverUnderwritingService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    private const ALLOWED_ADMIN_MANAGED_ROLES = ['driver', 'merchant', 'admin', 'super_admin', 'employee'];
+
+    public function registrationDocuments(Request $request)
+    {
+        $roles = Role::query()
+            ->whereIn('name', ['driver', 'merchant', 'admin'])
+            ->orderBy('name')
+            ->get();
+
+        $users = User::query()
+            ->with(['roles', 'bankStatementUploads.creditDecisions', 'driverDocuments'])
+            ->where(function ($q) {
+                $q->whereNotNull('id_document_path')
+                    ->orWhereNotNull('driver_license_path')
+                    ->orWhereNotNull('bank_statement_path')
+                    ->orWhereHas('driverDocuments')
+                    ->orWhereHas('bankStatementUploads');
+            })
+            ->when($request->filled('role'), function ($q) use ($request) {
+                $q->role((string) $request->input('role'));
+            })
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $search = trim((string) $request->input('search'));
+                $q->where(function ($inner) use ($search) {
+                    $inner->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('id_number', 'like', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('admin.users.registration-documents', compact('users', 'roles'));
+    }
+
+    public function accountApprovals(Request $request)
+    {
+        $franchises = MerchantFranchise::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        $approvals = AccountApproval::query()
+            ->with(['user.roles', 'franchise', 'reviewer'])
+            ->when($request->filled('status'), function ($q) use ($request) {
+                $q->where('status', (string) $request->input('status'));
+            })
+            ->when($request->filled('role'), function ($q) use ($request) {
+                $q->where('role', (string) $request->input('role'));
+            })
+            ->when($request->filled('franchise_id'), function ($q) use ($request) {
+                $q->where('merchant_franchise_id', (int) $request->input('franchise_id'));
+            })
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $search = trim((string) $request->input('search'));
+                $q->whereHas('user', function ($userQuery) use ($search) {
+                    $userQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
+                });
+            })
+            ->latest('submitted_at')
+            ->latest('id')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('admin.users.account-approvals', compact('approvals', 'franchises'));
+    }
+
+    public function approveAccount(Request $request, AccountApproval $approval)
+    {
+        $request->validate([
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        if ($approval->status !== 'pending') {
+            return back()->with('error', 'This approval request is not pending.');
+        }
+
+        $approval->loadMissing(['user', 'franchise']);
+        $user = $approval->user;
+        if (!$user) {
+            return back()->with('error', 'Approval user record no longer exists.');
+        }
+
+        DB::transaction(function () use ($approval, $user, $request): void {
+            $userData = [
+                'status' => 'active',
+                'merchant_franchise_id' => $approval->merchant_franchise_id ?: $user->merchant_franchise_id,
+            ];
+            if ($approval->role === 'driver') {
+                $userData['id_verification_status'] = 'verified';
+                $userData['id_verified_at'] = now();
+                $userData['id_verification_provider'] = 'manual';
+            }
+            $user->update($userData);
+
+            if ($approval->role === 'merchant') {
+                $existingStation = FuelStation::query()
+                    ->where('owner_id', $user->id)
+                    ->first();
+                $approvalMetadata = is_array($approval->metadata) ? $approval->metadata : [];
+                $brandName = (string) (optional($approval->franchise)->name ?? 'Independent');
+                $address = trim((string) ($approval->business_address ?: ($approvalMetadata['business_address'] ?? '')));
+                $city = trim((string) ($approval->city ?: ($approvalMetadata['city'] ?? '')));
+                $country = trim((string) ($approval->country ?: ($approvalMetadata['country'] ?? 'South Africa')));
+                $latitude = is_numeric($approval->latitude)
+                    ? (float) $approval->latitude
+                    : (isset($approvalMetadata['latitude']) && is_numeric($approvalMetadata['latitude'])
+                        ? (float) $approvalMetadata['latitude']
+                        : null);
+                $longitude = is_numeric($approval->longitude)
+                    ? (float) $approval->longitude
+                    : (isset($approvalMetadata['longitude']) && is_numeric($approvalMetadata['longitude'])
+                        ? (float) $approvalMetadata['longitude']
+                        : null);
+
+                $stationPayload = [
+                    'name' => trim($user->name . ' Station'),
+                    'company' => $brandName !== '' ? $brandName : 'Independent',
+                    'address' => $address !== '' ? $address : 'Pending address',
+                    'city' => $city !== '' ? $city : 'Pending city',
+                    'country' => $country !== '' ? $country : 'South Africa',
+                    'latitude' => $latitude,
+                    'longitude' => $longitude,
+                    'contact_person' => $user->name,
+                    'contact_phone' => $user->phone,
+                    'contact_email' => $user->email,
+                    'status' => 'active',
+                    'owner_id' => $user->id,
+                ];
+
+                if ($existingStation) {
+                    $existingStation->update($stationPayload);
+                } else {
+                    $stationPayload['license_number'] = 'LIC-' . strtoupper(Str::random(10));
+                    $stationPayload['wallet_balance'] = 0;
+                    $stationPayload['total_settlements'] = 0;
+                    FuelStation::create($stationPayload);
+                }
+            }
+
+            $approval->update([
+                'status' => 'approved',
+                'reviewed_at' => now(),
+                'reviewed_by' => auth()->id(),
+                'review_notes' => $request->input('notes'),
+            ]);
+        });
+
+        return back()->with('success', 'Account approval completed successfully.');
+    }
+
+    public function rejectAccount(Request $request, AccountApproval $approval)
+    {
+        $validated = $request->validate([
+            'notes' => 'required|string|max:1000',
+        ]);
+
+        if ($approval->status !== 'pending') {
+            return back()->with('error', 'This approval request is not pending.');
+        }
+
+        $approval->loadMissing('user');
+        $user = $approval->user;
+
+        DB::transaction(function () use ($approval, $user, $validated): void {
+            if ($user) {
+                $user->update(['status' => 'suspended']);
+            }
+
+            $approval->update([
+                'status' => 'rejected',
+                'reviewed_at' => now(),
+                'reviewed_by' => auth()->id(),
+                'review_notes' => $validated['notes'],
+            ]);
+        });
+
+        return back()->with('success', 'Account request rejected.');
+    }
+
     public function index(Request $request)
     {
         $query = User::with(['wallet', 'creditLimit']);
@@ -46,7 +240,10 @@ class UserController extends Controller
 
     public function create()
     {
-        $roles = Role::all();
+        $roles = Role::query()
+            ->whereIn('name', self::ALLOWED_ADMIN_MANAGED_ROLES)
+            ->orderBy('name')
+            ->get();
         return view('admin.users.create', compact('roles'));
     }
 
@@ -57,7 +254,7 @@ class UserController extends Controller
             'email' => 'nullable|email|unique:users',
             'phone' => 'required|string|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|exists:roles,name',
+            'role' => ['required', Rule::in(self::ALLOWED_ADMIN_MANAGED_ROLES)],
             'credit_score' => 'nullable|integer|min:300|max:850',
             'status' => 'required|in:active,suspended,flagged,blocked',
         ]);
@@ -95,7 +292,16 @@ class UserController extends Controller
 
     public function show(User $user, DriverUnderwritingService $driverUnderwritingService)
     {
-        $user->load(['wallet', 'creditLimit', 'vouchers', 'leases.repayments', 'roles', 'driverDocuments.verifier']);
+        $user->load([
+            'wallet',
+            'creditLimit',
+            'vouchers',
+            'leases.repayments',
+            'roles',
+            'driverDocuments.verifier',
+            'bankStatementUploads.creditDecisions',
+            'latestCreditDecision',
+        ]);
 
         $underwritingSummary = null;
         if ($user->hasRole('driver')) {
@@ -112,7 +318,7 @@ class UserController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        if (!in_array($documentType, ['driver_license', 'sa_id'], true)) {
+        if (!in_array($documentType, ['driver_license', 'sa_id', 'vehicle_license', 'merchant_ck', 'merchant_bbbee'], true)) {
             abort(404);
         }
 
@@ -144,9 +350,91 @@ class UserController extends Controller
         return back()->with('success', $isVerify ? 'Document verified successfully.' : 'Document marked for re-submission.');
     }
 
+    public function reviewBankStatement(
+        Request $request,
+        User $user,
+        BankStatementCreditAssessmentService $assessmentService
+    ) {
+        $validated = $request->validate([
+            'upload_id' => 'nullable|integer',
+            'action' => 'required|in:approve,reject,reassess',
+            'apply_recommended_limit' => 'nullable|boolean',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $upload = BankStatementUpload::query()
+            ->where('user_id', $user->id)
+            ->when(!empty($validated['upload_id']), function ($q) use ($validated) {
+                $q->where('id', (int) $validated['upload_id']);
+            })
+            ->latest('id')
+            ->first();
+
+        if (!$upload) {
+            return back()->with('error', 'No bank statement upload found for this user.');
+        }
+
+        $latestDecision = CreditDecision::query()
+            ->where('user_id', $user->id)
+            ->where('upload_id', $upload->id)
+            ->latest('decided_at')
+            ->first();
+
+        $action = (string) $validated['action'];
+        if ($action === 'reassess') {
+            $latestDecision = $assessmentService->assessAndStore($user, $upload);
+            AuditTrailService::record(
+                'bank_statement_reassessed_by_admin',
+                $upload,
+                [],
+                ['decision_id' => $latestDecision->id],
+                'Admin triggered bank statement reassessment'
+            );
+
+            return back()->with('success', 'Bank statement reassessed successfully.');
+        }
+
+        if ($action === 'approve') {
+            $upload->forceFill([
+                'status' => 'completed',
+                'error_message' => null,
+                'processed_at' => now(),
+            ])->save();
+
+            if ($latestDecision && (bool) ($validated['apply_recommended_limit'] ?? false)) {
+                $assessmentService->applyDecisionToCreditLimit($user, $latestDecision);
+            }
+        } else {
+            $upload->forceFill([
+                'status' => 'needs_review',
+                'error_message' => (string) ($validated['notes'] ?? 'Rejected during admin review.'),
+                'processed_at' => now(),
+            ])->save();
+        }
+
+        AuditTrailService::record(
+            'bank_statement_reviewed_by_admin',
+            $upload,
+            [],
+            [
+                'action' => $action,
+                'notes' => $validated['notes'] ?? null,
+                'apply_recommended_limit' => (bool) ($validated['apply_recommended_limit'] ?? false),
+            ],
+            'Admin reviewed bank statement upload'
+        );
+
+        return back()->with('success', $action === 'approve'
+            ? 'Bank statement approved successfully.'
+            : 'Bank statement marked for further review.');
+    }
+
     public function edit(User $user)
     {
-        $roles = Role::all();
+        $roles = Role::query()
+            ->whereIn('name', self::ALLOWED_ADMIN_MANAGED_ROLES)
+            ->orderBy('name')
+            ->get();
         return view('admin.users.edit', compact('user', 'roles'));
     }
 
@@ -166,7 +454,7 @@ class UserController extends Controller
             ],
             'credit_score' => 'nullable|integer|min:300|max:850',
             'status' => 'required|in:active,suspended,flagged,blocked',
-            'role' => 'required|exists:roles,name',
+            'role' => ['required', Rule::in(self::ALLOWED_ADMIN_MANAGED_ROLES)],
         ]);
 
         $user->update([

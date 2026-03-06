@@ -7,29 +7,35 @@
     <div class="glass rounded-3xl p-8 md:p-12">
         <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full">
             <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-            Live BNPL Platform
+            Live
         </p>
         <h1 class="brand-font text-4xl md:text-6xl font-semibold text-slate-900 mt-4 leading-tight">
-            Fuel Credit, Vouchers, and Settlements
-            <span class="hero-gradient-text block">Built for Real-World Operations</span>
+            Fuel Infrastructure Finance and Payments for Vouchers, and Settlements
+            <span class="hero-gradient-text block">Built for Real-Time Operations</span>
         </h1>
-        <p class="text-slate-600 mt-5 max-w-3xl text-lg">
-            FuelLevy connects drivers, stations, and finance teams on one production-ready platform.
+        <p class="text-slate-600 mt-5 max-w-3xl text-medium">
+            Bwiser connects drivers, stations, and finance teams on one production-ready platform.
             Approve fuel credit, issue secure vouchers, redeem instantly at station level, and settle to bank with full audit visibility.
         </p>
         <div class="mt-7 flex flex-wrap gap-3">
-            <a class="btn-primary px-5 py-3 rounded-xl text-sm font-semibold" href="{{ Route::has('register') ? route('register') : (Route::has('quick-login.role') ? route('quick-login.role', ['role' => 'driver']) : '/login') }}">
-                Get Started
+            <a class="btn-primary px-5 py-3 rounded-xl text-sm font-semibold" href="{{ route('register.driver') }}">
+                Register Driver
             </a>
             <a class="btn-ghost px-5 py-3 rounded-xl text-sm font-semibold" href="{{ Route::has('login') ? route('login') : '/login' }}">
                 Sign In
             </a>
-            @if(Route::has('quick-login.role'))
-                <a class="btn-ghost px-5 py-3 rounded-xl text-sm font-semibold" href="{{ route('quick-login.role', ['role' => 'merchant']) }}">
-                    Merchant Access
-                </a>
-            @endif
+            <a class="btn-ghost px-5 py-3 rounded-xl text-sm font-semibold" href="{{ route('register.merchant') }}">
+                Register Merchant
+            </a>
         </div>
+        <!-- <div class="welcome-driver-market mt-8">
+            <img
+                src="{{ asset('images/illustrations/fuel-delivery-banner.png') }}"
+                alt="Fuel delivery illustration"
+                class="welcome-driver-market-img"
+                loading="lazy"
+            >
+        </div> -->
     </div>
 
 
@@ -71,7 +77,7 @@
             <p class="text-sm text-slate-600 mt-2">From first voucher to final settlement, every transaction is traceable and production-ready.</p>
         </div>
         <div class="flex flex-wrap gap-3">
-            <a class="btn-primary px-5 py-3 rounded-xl text-sm font-semibold" href="{{ Route::has('register') ? route('register') : (Route::has('login') ? route('login') : '/') }}">
+            <a class="btn-primary px-5 py-3 rounded-xl text-sm font-semibold" href="{{ route('register.driver') }}">
                 Launch Now
             </a>
             <a class="btn-ghost px-5 py-3 rounded-xl text-sm font-semibold" href="{{ Route::has('login') ? route('login') : '/login' }}">
@@ -86,6 +92,44 @@
         position: relative;
         overflow: hidden;
         border-radius: 0.9rem;
+    }
+
+    .welcome-driver-market {
+        position: relative;
+        width: 100%;
+        border-radius: 1rem;
+        overflow: hidden;
+        border: 1px solid #dbeafe;
+        background: radial-gradient(circle at 20% 20%, #eff6ff, #dbeafe 55%, #bfdbfe);
+        box-shadow: 0 16px 34px -26px rgba(37, 99, 235, 0.5);
+    }
+
+    .welcome-driver-market::before,
+    .welcome-driver-market::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: clamp(2.2rem, 8vw, 5.5rem);
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    .welcome-driver-market::before {
+        left: 0;
+        background: linear-gradient(to right, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0));
+    }
+
+    .welcome-driver-market::after {
+        right: 0;
+        background: linear-gradient(to left, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0));
+    }
+
+    .welcome-driver-market-img {
+        width: 100%;
+        height: auto;
+        display: block;
+        object-fit: cover;
     }
 
     .trusted-ticker-track {
