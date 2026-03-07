@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @php
-        $siteName = 'Bwiser';
+        $siteName = (string) config('seo.site_name', 'Bwiser');
         $metaTitle = trim($__env->yieldContent('title', $siteName));
         if (!str_contains(strtolower($metaTitle), strtolower($siteName))) {
             $metaTitle .= ' | '.$siteName;
@@ -15,20 +15,38 @@
         $canonical = trim($__env->yieldContent('canonical', url()->current()));
         $ogType = trim($__env->yieldContent('og_type', 'website'));
         $ogImage = trim($__env->yieldContent('og_image', asset('images/brand-logo.png')));
+        $locale = (string) config('seo.default_locale', 'en_ZA');
+        $themeColor = (string) config('seo.theme_color', '#2563eb');
+        $twitterSite = (string) config('seo.twitter_site', '@bwiser');
     @endphp
     <title>{{ $metaTitle }}</title>
     <meta name="description" content="{{ $metaDescription }}">
     <meta name="robots" content="{{ $metaRobots }}">
+    <meta name="theme-color" content="{{ $themeColor }}">
+    <meta name="application-name" content="{{ $siteName }}">
     <link rel="canonical" href="{{ $canonical }}">
     <meta property="og:type" content="{{ $ogType }}">
+    <meta property="og:site_name" content="{{ $siteName }}">
+    <meta property="og:locale" content="{{ $locale }}">
     <meta property="og:title" content="{{ $metaTitle }}">
     <meta property="og:description" content="{{ $metaDescription }}">
     <meta property="og:url" content="{{ $canonical }}">
     <meta property="og:image" content="{{ $ogImage }}">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="{{ $twitterSite }}">
     <meta name="twitter:title" content="{{ $metaTitle }}">
     <meta name="twitter:description" content="{{ $metaDescription }}">
     <meta name="twitter:image" content="{{ $ogImage }}">
+    <script type="application/ld+json">
+    {!! json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'Organization',
+        'name' => $siteName,
+        'url' => config('seo.site_url'),
+        'logo' => asset('images/brand-logo.png'),
+        'sameAs' => [],
+    ], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}
+    </script>
     <link rel="icon" type="image/png" href="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}">
     <link rel="apple-touch-icon" href="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">

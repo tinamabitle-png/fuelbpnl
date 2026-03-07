@@ -26,6 +26,7 @@ use App\Http\Controllers\Driver\BankStatementController as DriverBankStatementCo
 use App\Http\Controllers\Investor\InvestorDashboardController;
 use App\Http\Controllers\Admin\InvestorController as AdminInvestorController;
 use App\Http\Controllers\FeedbackController;
+use App\Support\Seo\SitemapBuilder;
 
 // ========== PUBLIC ROUTES ==========
 Route::get('/', function () {
@@ -33,19 +34,7 @@ Route::get('/', function () {
 });
 
 Route::get('/sitemap.xml', function () {
-    $pages = [
-        ['loc' => url('/'), 'changefreq' => 'daily', 'priority' => '1.0'],
-        ['loc' => route('legal.terms'), 'changefreq' => 'monthly', 'priority' => '0.5'],
-        ['loc' => route('legal.cookies'), 'changefreq' => 'monthly', 'priority' => '0.5'],
-        ['loc' => route('legal.aml'), 'changefreq' => 'monthly', 'priority' => '0.5'],
-        ['loc' => route('legal.poppia'), 'changefreq' => 'monthly', 'priority' => '0.5'],
-        ['loc' => route('legal.paia'), 'changefreq' => 'monthly', 'priority' => '0.5'],
-        ['loc' => route('legal.security'), 'changefreq' => 'monthly', 'priority' => '0.5'],
-    ];
-
-    if (Route::has('investor.register')) {
-        $pages[] = ['loc' => route('investor.register'), 'changefreq' => 'weekly', 'priority' => '0.7'];
-    }
+    $pages = app(SitemapBuilder::class)->build();
 
     return response()
         ->view('sitemap', ['pages' => $pages, 'lastmod' => now()->toAtomString()])

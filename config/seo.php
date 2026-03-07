@@ -1,0 +1,51 @@
+<?php
+
+return [
+    'site_name' => env('SEO_SITE_NAME', 'Bwiser'),
+    'site_url' => env('SEO_SITE_URL', env('APP_URL', 'https://bwiser.co.za')),
+    'default_locale' => env('SEO_DEFAULT_LOCALE', 'en_ZA'),
+    'theme_color' => env('SEO_THEME_COLOR', '#2563eb'),
+    'twitter_site' => env('SEO_TWITTER_SITE', '@bwiser'),
+
+    'sitemap' => [
+        'excluded_route_names' => [
+            'login',
+            'logout',
+            'register',
+            'register.driver',
+            'register.driver.store',
+            'register.merchant',
+            'register.merchant.store',
+            'auth.google.redirect',
+            'auth.google.callback',
+            'auth.google.complete.form',
+            'auth.google.complete.store',
+            'registration.complete',
+            'registration.documents.store',
+            'here.geocode',
+            'here.reverse',
+            'sitemap',
+            'driver.repayments.request.show',
+            'driver.repayments.request.pay',
+            'driver.repayments.request.callback',
+        ],
+        'excluded_name_prefixes' => [
+            'admin.',
+            'driver.',
+            'merchant.',
+            'employee.',
+            'investor.',
+        ],
+        'excluded_uri_prefixes' => [
+            'admin',
+            'driver',
+            'merchant',
+            'employee',
+            'investor',
+            'setup-roles',
+            'test-roles',
+            'add-investor-role',
+        ],
+    ],
+];
+

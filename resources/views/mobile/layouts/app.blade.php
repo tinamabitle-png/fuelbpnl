@@ -4,9 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="theme-color" content="#2563eb">
     @php
-        $siteName = 'Bwiser';
+        $siteName = (string) config('seo.site_name', 'Bwiser');
         $metaTitle = trim($__env->yieldContent('title', $siteName.' Mobile'));
         if (!str_contains(strtolower($metaTitle), strtolower($siteName))) {
             $metaTitle .= ' | '.$siteName;
@@ -15,20 +14,36 @@
         $metaRobots = trim($__env->yieldContent('meta_robots', 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1'));
         $canonical = trim($__env->yieldContent('canonical', url()->current()));
         $ogImage = trim($__env->yieldContent('og_image', asset('images/brand-logo.png')));
+        $locale = (string) config('seo.default_locale', 'en_ZA');
+        $themeColor = (string) config('seo.theme_color', '#2563eb');
+        $twitterSite = (string) config('seo.twitter_site', '@bwiser');
     @endphp
     <title>{{ $metaTitle }}</title>
     <meta name="description" content="{{ $metaDescription }}">
     <meta name="robots" content="{{ $metaRobots }}">
+    <meta name="theme-color" content="{{ $themeColor }}">
+    <meta name="application-name" content="{{ $siteName }} Mobile">
     <link rel="canonical" href="{{ $canonical }}">
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="{{ $siteName }}">
+    <meta property="og:locale" content="{{ $locale }}">
     <meta property="og:title" content="{{ $metaTitle }}">
     <meta property="og:description" content="{{ $metaDescription }}">
     <meta property="og:url" content="{{ $canonical }}">
     <meta property="og:image" content="{{ $ogImage }}">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="{{ $twitterSite }}">
     <meta name="twitter:title" content="{{ $metaTitle }}">
     <meta name="twitter:description" content="{{ $metaDescription }}">
     <meta name="twitter:image" content="{{ $ogImage }}">
+    <script type="application/ld+json">
+    {!! json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'WebSite',
+        'name' => $siteName,
+        'url' => config('seo.site_url'),
+    ], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}
+    </script>
     <link rel="icon" type="image/png" href="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}">
     <link rel="apple-touch-icon" href="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
