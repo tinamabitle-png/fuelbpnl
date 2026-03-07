@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\RegistrationDocumentsController;
 use App\Http\Controllers\HereMapsController;
@@ -115,6 +116,10 @@ if (app()->environment(['local', 'development', 'testing'])) {
 // ========== AUTH ROUTES ==========
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login');
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('auth.google.redirect');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
+Route::get('/auth/google/complete', [GoogleAuthController::class, 'showCompleteForm'])->name('auth.google.complete.form');
+Route::post('/auth/google/complete', [GoogleAuthController::class, 'completeRegistration'])->name('auth.google.complete.store');
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/register', fn () => redirect()->route('register.driver'))->name('register');
 Route::get('/register/driver', [RegisterController::class, 'showDriver'])->name('register.driver');

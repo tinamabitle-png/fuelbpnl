@@ -25,6 +25,12 @@
             <a class="btn-ghost px-5 py-3 rounded-xl text-sm font-semibold" href="{{ route('register.merchant') }}">
                 Register Merchant
             </a>
+            @if(config('services.google.client_id'))
+                @include('partials.google-button', [
+                    'label' => 'Continue with Google',
+                    'class' => 'inline-flex justify-center items-center px-5 py-3 rounded-xl text-sm font-semibold border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 shadow-sm'
+                ])
+            @endif
             <button type="button" id="acceptCookiesBtn" class="btn-ghost px-5 py-3 rounded-xl text-sm font-semibold hidden">
                 Accept Cookies
             </button>

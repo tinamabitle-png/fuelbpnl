@@ -61,6 +61,12 @@ return [
         'key' => env('GOOGLE_MAPS_API_KEY'),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL') . '/auth/google/callback'),
+    ],
+
     'here_maps' => [
         'key' => env('HERE_MAPS_API_KEY'),
         'user_id' => env('HERE_USER_ID'),

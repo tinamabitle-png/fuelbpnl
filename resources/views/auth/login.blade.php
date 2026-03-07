@@ -109,6 +109,16 @@
                     </div>
                 </form>
 
+                @if(config('services.google.client_id'))
+                    <div class="mt-4">
+                        @include('partials.google-button', [
+                            'label' => 'Continue with Google',
+                            'class' => 'w-full inline-flex justify-center items-center py-2.5 px-4 border border-slate-300 rounded-md text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 shadow-sm'
+                        ])
+                        <p class="text-xs text-slate-500 mt-1 text-center">If this is a new account, you will complete the same role-specific registration fields next.</p>
+                    </div>
+                @endif
+
                 <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <a href="{{ route('register.driver') }}"
                        class="inline-flex justify-center items-center py-2 px-4 border border-slate-300 rounded-md text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
