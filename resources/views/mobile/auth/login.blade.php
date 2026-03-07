@@ -51,7 +51,7 @@
                 <div class="mt-3">
                     @include('partials.google-button', [
                         'label' => 'Continue with Google',
-                        'class' => 'w-full inline-flex justify-center items-center py-2.5 px-4 border border-slate-300 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 shadow-sm'
+                        'class' => 'w-full'
                     ])
                 </div>
             @endif

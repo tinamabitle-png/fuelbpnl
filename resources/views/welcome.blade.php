@@ -16,19 +16,28 @@
             Approve fuel credit, issue secure vouchers, redeem instantly at station level, and settle to bank with full audit visibility.
         </p>
         <div class="mt-7 flex flex-wrap gap-3">
-            <a class="btn-primary px-5 py-3 rounded-xl text-sm font-semibold" href="{{ route('register.driver') }}">
-                Register Driver
+            <a class="super-button" href="{{ route('register.driver') }}">
+                <span>Register Driver</span>
+                <svg fill="none" viewBox="0 0 24 24" class="arrow" aria-hidden="true">
+                    <path stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="currentColor" d="M5 12h14M13 6l6 6-6 6"></path>
+                </svg>
             </a>
-            <a class="btn-ghost px-5 py-3 rounded-xl text-sm font-semibold" href="{{ Route::has('login') ? route('login') : '/login' }}">
-                Sign In
+            <a class="super-button" href="{{ Route::has('login') ? route('login') : '/login' }}">
+                <span>Sign In</span>
+                <svg fill="none" viewBox="0 0 24 24" class="arrow" aria-hidden="true">
+                    <path stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="currentColor" d="M5 12h14M13 6l6 6-6 6"></path>
+                </svg>
             </a>
-            <a class="btn-ghost px-5 py-3 rounded-xl text-sm font-semibold" href="{{ route('register.merchant') }}">
-                Register Merchant
+            <a class="super-button" href="{{ route('register.merchant') }}">
+                <span>Register Merchant</span>
+                <svg fill="none" viewBox="0 0 24 24" class="arrow" aria-hidden="true">
+                    <path stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="currentColor" d="M5 12h14M13 6l6 6-6 6"></path>
+                </svg>
             </a>
             @if(config('services.google.client_id'))
                 @include('partials.google-button', [
                     'label' => 'Continue with Google',
-                    'class' => 'inline-flex justify-center items-center px-5 py-3 rounded-xl text-sm font-semibold border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 shadow-sm'
+                    'class' => ''
                 ])
             @endif
             <button type="button" id="acceptCookiesBtn" class="btn-ghost px-5 py-3 rounded-xl text-sm font-semibold hidden">
@@ -78,6 +87,70 @@
 </section>
 
 <style>
+    .super-button {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 14px 28px;
+        background: linear-gradient(145deg, #0f0f0f, #1c1c1c);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 100px;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        overflow: hidden;
+        transition: all 0.4s ease-in-out;
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+        backdrop-filter: blur(8px);
+        z-index: 1;
+    }
+
+    .super-button::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: conic-gradient(from 0deg, #00ffff, #ff00ff, #00ffff);
+        animation: rotate 4s linear infinite;
+        z-index: -2;
+    }
+
+    .super-button::after {
+        content: "";
+        position: absolute;
+        inset: 2px;
+        background: #0a0a0a;
+        border-radius: inherit;
+        z-index: -1;
+    }
+
+    .super-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 40px rgba(0, 255, 255, 0.2);
+    }
+
+    .super-button:hover .arrow {
+        transform: translateX(6px);
+    }
+
+    .arrow {
+        width: 22px;
+        height: 22px;
+        transition: transform 0.3s ease-in-out;
+        color: #00ffff;
+    }
+
+    @keyframes rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
     .trusted-ticker-wrap {
         position: relative;
         overflow: hidden;

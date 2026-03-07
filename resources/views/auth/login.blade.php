@@ -113,7 +113,7 @@
                     <div class="mt-4">
                         @include('partials.google-button', [
                             'label' => 'Continue with Google',
-                            'class' => 'w-full inline-flex justify-center items-center py-2.5 px-4 border border-slate-300 rounded-md text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 shadow-sm'
+                            'class' => 'w-full'
                         ])
                         <p class="text-xs text-slate-500 mt-1 text-center">If this is a new account, you will complete the same role-specific registration fields next.</p>
                     </div>
