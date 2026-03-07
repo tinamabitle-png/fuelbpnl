@@ -108,7 +108,10 @@
         <footer class="px-4 pb-6 pt-2">
             <div class="mx-auto max-w-md mobile-card px-4 py-3 space-y-2">
                 <p class="text-[11px] text-slate-500">© {{ date('Y') }} Bwiser</p>
-                @include('partials.legal-links', ['class' => 'w-full flex flex-wrap items-center gap-2 text-[11px] text-slate-700'])
+                <div class="pt-2 mt-2 border-t border-slate-200/80">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 mb-1.5">Legal</p>
+                    @include('partials.legal-links', ['class' => 'w-full flex flex-wrap items-center gap-2 text-[11px] text-slate-700'])
+                </div>
             </div>
         </footer>
     </div>

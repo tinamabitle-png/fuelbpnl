@@ -327,7 +327,8 @@
         </main>
 
         <footer class="border-t border-slate-200 mt-16">
-            <div class="max-w-6xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between gap-4 text-sm text-slate-500">
+            <div class="max-w-6xl mx-auto px-6 py-8 text-sm text-slate-500">
+                <div class="flex flex-col md:flex-row justify-between gap-4">
                 <div class="flex items-center gap-2">
                     <x-logo-shell size="sm">
                         <x-brand-mark class="h-5 w-auto" />
@@ -338,7 +339,11 @@
                     <span>Support: support@bwiser.co.za</span>
                     <span>Johannesburg, South Africa</span>
                 </div>
-                @include('partials.legal-links', ['class' => 'w-full md:w-auto flex flex-wrap items-center gap-2 text-xs text-slate-600'])
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-200/80">
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 mb-2">Legal</p>
+                    @include('partials.legal-links', ['class' => 'w-full flex flex-wrap items-center gap-2 text-sm text-slate-700'])
+                </div>
             </div>
         </footer>
     </div>
