@@ -18,21 +18,12 @@
         <div class="mt-7 flex flex-wrap gap-3">
             <a class="super-button" href="{{ route('register.driver') }}">
                 <span>Register Driver</span>
-                <svg fill="none" viewBox="0 0 24 24" class="arrow" aria-hidden="true">
-                    <path stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="currentColor" d="M5 12h14M13 6l6 6-6 6"></path>
-                </svg>
             </a>
             <a class="super-button" href="{{ Route::has('login') ? route('login') : '/login' }}">
                 <span>Sign In</span>
-                <svg fill="none" viewBox="0 0 24 24" class="arrow" aria-hidden="true">
-                    <path stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="currentColor" d="M5 12h14M13 6l6 6-6 6"></path>
-                </svg>
             </a>
             <a class="super-button" href="{{ route('register.merchant') }}">
                 <span>Register Merchant</span>
-                <svg fill="none" viewBox="0 0 24 24" class="arrow" aria-hidden="true">
-                    <path stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="currentColor" d="M5 12h14M13 6l6 6-6 6"></path>
-                </svg>
             </a>
             @if(config('services.google.client_id'))
                 @include('partials.google-button', [
@@ -133,17 +124,6 @@
     .super-button:hover {
         transform: scale(1.05);
         box-shadow: 0 0 40px rgba(0, 255, 255, 0.2);
-    }
-
-    .super-button:hover .arrow {
-        transform: translateX(6px);
-    }
-
-    .arrow {
-        width: 22px;
-        height: 22px;
-        transition: transform 0.3s ease-in-out;
-        color: #00ffff;
     }
 
     @keyframes rotate {
