@@ -19,6 +19,9 @@ use Spatie\Permission\Models\Role;
 
 class RegisterController extends Controller
 {
+    /** @var array<string, bool> */
+    private array $columnCache = [];
+
     public function showDriver()
     {
         return view('auth.driver.register');
@@ -90,8 +93,11 @@ class RegisterController extends Controller
                 'bank_statement_document' => ['nullable', 'file', 'mimetypes:application/pdf', 'max:8192'],
             ]);
         } else {
+            $hasFranchiseTable = Schema::hasTable('merchant_franchises');
             $rules = array_merge($rules, [
-                'franchise_id' => ['required', Rule::exists('merchant_franchises', 'id')->where('is_active', true)],
+                'franchise_id' => $hasFranchiseTable
+                    ? ['required', Rule::exists('merchant_franchises', 'id')->where('is_active', true)]
+                    : ['nullable'],
                 'business_address' => ['required', 'string', 'max:500'],
                 'city' => ['required', 'string', 'max:120'],
                 'country' => ['required', 'string', 'max:120'],
@@ -105,7 +111,7 @@ class RegisterController extends Controller
         $validated = $request->validate($rules);
 
         $user = DB::transaction(function () use ($request, $validated, $role) {
-            $user = User::create([
+            $userPayload = [
                 'name' => $validated['name'],
                 'phone' => $validated['phone'],
                 'email' => $validated['email'],
@@ -113,7 +119,9 @@ class RegisterController extends Controller
                 'status' => 'flagged',
                 'credit_score' => 500,
                 'id_number' => $role === 'driver' ? $validated['id_number'] : null,
-                'merchant_franchise_id' => $role === 'merchant' ? (int) $validated['franchise_id'] : null,
+                'merchant_franchise_id' => $role === 'merchant'
+                    ? (isset($validated['franchise_id']) ? (int) $validated['franchise_id'] : null)
+                    : null,
                 'home_address' => $role === 'driver' ? ($validated['home_address'] ?? null) : null,
                 'city' => $role === 'driver' ? ($validated['city'] ?? null) : null,
                 'country' => $role === 'driver' ? ($validated['country'] ?? null) : null,
@@ -123,29 +131,35 @@ class RegisterController extends Controller
                 'driver_platform_other' => $role === 'driver'
                     ? (($validated['driver_platform'] ?? null) === 'other' ? ($validated['driver_platform_other'] ?? null) : null)
                     : null,
-            ]);
+            ];
+
+            $user = User::create($this->onlyExistingColumns('users', $userPayload));
 
             $roleModel = Role::query()->where('name', $role)->first();
             if ($roleModel) {
                 $user->assignRole($roleModel);
             }
 
-            $user->wallet()->firstOrCreate([], [
-                'balance' => 0,
-                'outstanding_balance' => 0,
-                'currency' => 'ZAR',
-            ]);
+            if (Schema::hasTable('wallets')) {
+                $user->wallet()->firstOrCreate([], [
+                    'balance' => 0,
+                    'outstanding_balance' => 0,
+                    'currency' => 'ZAR',
+                ]);
+            }
 
             if ($role === 'driver') {
-                $user->creditLimit()->firstOrCreate(
-                    [],
-                    [
-                        'limit' => 3000,
-                        'used' => 0,
-                        'status' => 'active',
-                        'review_date' => now()->addDays(90)->toDateString(),
-                    ]
-                );
+                if (Schema::hasTable('credit_limits')) {
+                    $user->creditLimit()->firstOrCreate(
+                        [],
+                        [
+                            'limit' => 3000,
+                            'used' => 0,
+                            'status' => 'active',
+                            'review_date' => now()->addDays(90)->toDateString(),
+                        ]
+                    );
+                }
 
                 $idPath = $request->file('id_document')->store('driver_documents/id', 'public');
                 $driverLicensePath = $request->file('driver_license_document')->store('driver_documents/license', 'public');
@@ -154,120 +168,134 @@ class RegisterController extends Controller
                     ? $request->file('bank_statement_document')->store('driver_documents/bank', 'public')
                     : null;
 
-                $user->update([
+                $user->update($this->onlyExistingColumns('users', [
                     'id_document_path' => $idPath,
                     'driver_license_path' => $driverLicensePath,
                     'bank_statement_path' => $bankPath,
                     'id_verification_status' => 'pending_review',
                     'id_verification_provider' => 'manual',
                     'id_verified_at' => null,
-                ]);
+                ]));
 
-                DriverDocument::create([
-                    'user_id' => $user->id,
-                    'document_type' => 'sa_id',
-                    'document_path' => $idPath,
-                    'document_name' => basename($idPath),
-                    'document_number' => $validated['id_number'],
-                    'verified' => false,
-                ]);
+                if (Schema::hasTable('driver_documents')) {
+                    DriverDocument::create([
+                        'user_id' => $user->id,
+                        'document_type' => 'sa_id',
+                        'document_path' => $idPath,
+                        'document_name' => basename($idPath),
+                        'document_number' => $validated['id_number'],
+                        'verified' => false,
+                    ]);
 
-                DriverDocument::create([
-                    'user_id' => $user->id,
-                    'document_type' => 'driver_license',
-                    'document_path' => $driverLicensePath,
-                    'document_name' => basename($driverLicensePath),
-                    'verified' => false,
-                ]);
+                    DriverDocument::create([
+                        'user_id' => $user->id,
+                        'document_type' => 'driver_license',
+                        'document_path' => $driverLicensePath,
+                        'document_name' => basename($driverLicensePath),
+                        'verified' => false,
+                    ]);
 
-                DriverDocument::create([
-                    'user_id' => $user->id,
-                    'document_type' => 'vehicle_license',
-                    'document_path' => $vehicleLicensePath,
-                    'document_name' => basename($vehicleLicensePath),
-                    'verified' => false,
-                ]);
+                    DriverDocument::create([
+                        'user_id' => $user->id,
+                        'document_type' => 'vehicle_license',
+                        'document_path' => $vehicleLicensePath,
+                        'document_name' => basename($vehicleLicensePath),
+                        'verified' => false,
+                    ]);
+                }
             } else {
                 $ckPath = $request->file('ck_document')->store('merchant_documents/ck', 'public');
                 $bbbeePath = $request->file('bbbee_document')->store('merchant_documents/bbbee', 'public');
 
-                DriverDocument::create([
-                    'user_id' => $user->id,
-                    'document_type' => 'merchant_ck',
-                    'document_path' => $ckPath,
-                    'document_name' => basename($ckPath),
-                    'verified' => false,
-                ]);
+                if (Schema::hasTable('driver_documents')) {
+                    DriverDocument::create([
+                        'user_id' => $user->id,
+                        'document_type' => 'merchant_ck',
+                        'document_path' => $ckPath,
+                        'document_name' => basename($ckPath),
+                        'verified' => false,
+                    ]);
 
-                DriverDocument::create([
-                    'user_id' => $user->id,
-                    'document_type' => 'merchant_bbbee',
-                    'document_path' => $bbbeePath,
-                    'document_name' => basename($bbbeePath),
-                    'verified' => false,
-                ]);
+                    DriverDocument::create([
+                        'user_id' => $user->id,
+                        'document_type' => 'merchant_bbbee',
+                        'document_path' => $bbbeePath,
+                        'document_name' => basename($bbbeePath),
+                        'verified' => false,
+                    ]);
+                }
 
-                $franchise = MerchantFranchise::query()->find((int) $validated['franchise_id']);
+                $franchise = Schema::hasTable('merchant_franchises')
+                    ? MerchantFranchise::query()->find((int) ($validated['franchise_id'] ?? 0))
+                    : null;
                 $brandName = (string) ($franchise ? $franchise->name : 'Independent');
                 $address = (string) ($validated['business_address'] ?? '');
                 $city = (string) ($validated['city'] ?? '');
                 $country = (string) ($validated['country'] ?? 'South Africa');
 
-                $existingStation = FuelStation::query()
-                    ->where('owner_id', $user->id)
-                    ->first();
+                if (Schema::hasTable('fuel_stations')) {
+                    $existingStation = FuelStation::query()
+                        ->where('owner_id', $user->id)
+                        ->first();
 
-                $stationPayload = [
-                    'name' => trim($user->name . ' Station'),
-                    'company' => $brandName !== '' ? $brandName : 'Independent',
-                    'address' => $address !== '' ? $address : 'Pending address',
-                    'city' => $city !== '' ? $city : 'Pending city',
-                    'country' => $country !== '' ? $country : 'South Africa',
-                    'latitude' => $validated['latitude'] ?? null,
-                    'longitude' => $validated['longitude'] ?? null,
-                    'contact_person' => $user->name,
-                    'contact_phone' => $user->phone,
-                    'contact_email' => $user->email,
-                    'owner_id' => $user->id,
-                    'status' => 'inactive',
-                    'wallet_balance' => 0,
-                    'total_settlements' => 0,
-                ];
+                    $stationPayload = $this->onlyExistingColumns('fuel_stations', [
+                        'name' => trim($user->name . ' Station'),
+                        'company' => $brandName !== '' ? $brandName : 'Independent',
+                        'address' => $address !== '' ? $address : 'Pending address',
+                        'city' => $city !== '' ? $city : 'Pending city',
+                        'country' => $country !== '' ? $country : 'South Africa',
+                        'latitude' => $validated['latitude'] ?? null,
+                        'longitude' => $validated['longitude'] ?? null,
+                        'contact_person' => $user->name,
+                        'contact_phone' => $user->phone,
+                        'contact_email' => $user->email,
+                        'owner_id' => $user->id,
+                        'status' => 'inactive',
+                        'wallet_balance' => 0,
+                        'total_settlements' => 0,
+                    ]);
 
-                if ($existingStation) {
-                    $existingStation->update($stationPayload);
-                } else {
-                    $stationPayload['license_number'] = 'LIC-' . strtoupper(Str::random(10));
-                    FuelStation::create($stationPayload);
+                    if ($existingStation) {
+                        $existingStation->update($stationPayload);
+                    } else {
+                        if ($this->tableHasColumn('fuel_stations', 'license_number')) {
+                            $stationPayload['license_number'] = 'LIC-' . strtoupper(Str::random(10));
+                        }
+                        FuelStation::create($stationPayload);
+                    }
                 }
             }
 
-            AccountApproval::create([
-                'user_id' => $user->id,
-                'role' => $role,
-                'merchant_franchise_id' => $role === 'merchant' ? (int) $validated['franchise_id'] : null,
-                'business_address' => $role === 'merchant' ? ($validated['business_address'] ?? null) : null,
-                'city' => $validated['city'] ?? null,
-                'country' => $validated['country'] ?? null,
-                'latitude' => $validated['latitude'] ?? null,
-                'longitude' => $validated['longitude'] ?? null,
-                'status' => 'pending',
-                'submitted_at' => now(),
-                'metadata' => [
-                    'registered_via' => 'web_register_' . $role,
-                    'ip' => $request->ip(),
+            if (Schema::hasTable('account_approvals')) {
+                AccountApproval::create($this->onlyExistingColumns('account_approvals', [
+                    'user_id' => $user->id,
+                    'role' => $role,
+                    'merchant_franchise_id' => $role === 'merchant'
+                        ? (isset($validated['franchise_id']) ? (int) $validated['franchise_id'] : null)
+                        : null,
                     'business_address' => $role === 'merchant' ? ($validated['business_address'] ?? null) : null,
-                    'home_address' => $role === 'driver' ? ($validated['home_address'] ?? null) : null,
                     'city' => $validated['city'] ?? null,
                     'country' => $validated['country'] ?? null,
                     'latitude' => $validated['latitude'] ?? null,
                     'longitude' => $validated['longitude'] ?? null,
-                    'driver_platform' => $role === 'driver' ? ($validated['driver_platform'] ?? null) : null,
-                    'driver_platform_other' => $role === 'driver'
-                        ? (($validated['driver_platform'] ?? null) === 'other' ? ($validated['driver_platform_other'] ?? null) : null)
-                        : null,
-                ],
-            ]);
+                    'status' => 'pending',
+                    'submitted_at' => now(),
+                    'metadata' => [
+                        'registered_via' => 'web_register_' . $role,
+                        'ip' => $request->ip(),
+                        'business_address' => $role === 'merchant' ? ($validated['business_address'] ?? null) : null,
+                        'home_address' => $role === 'driver' ? ($validated['home_address'] ?? null) : null,
+                        'city' => $validated['city'] ?? null,
+                        'country' => $validated['country'] ?? null,
+                        'latitude' => $validated['latitude'] ?? null,
+                        'longitude' => $validated['longitude'] ?? null,
+                        'driver_platform' => $role === 'driver' ? ($validated['driver_platform'] ?? null) : null,
+                        'driver_platform_other' => $role === 'driver'
+                            ? (($validated['driver_platform'] ?? null) === 'other' ? ($validated['driver_platform_other'] ?? null) : null)
+                            : null,
+                    ],
+                ]));
+            }
 
             return $user;
         });
@@ -297,5 +325,25 @@ class RegisterController extends Controller
         }
 
         return $clean;
+    }
+
+    private function onlyExistingColumns(string $table, array $payload): array
+    {
+        return collect($payload)
+            ->filter(fn ($_value, $column) => $this->tableHasColumn($table, (string) $column))
+            ->all();
+    }
+
+    private function tableHasColumn(string $table, string $column): bool
+    {
+        $key = $table.'.'.$column;
+        if (array_key_exists($key, $this->columnCache)) {
+            return $this->columnCache[$key];
+        }
+
+        $exists = Schema::hasTable($table) && Schema::hasColumn($table, $column);
+        $this->columnCache[$key] = $exists;
+
+        return $exists;
     }
 }

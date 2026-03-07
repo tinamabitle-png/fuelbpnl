@@ -23,16 +23,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (app()->environment('production') && env('FORCE_HTTPS', true)) {
-            $host = request()->getHost();
-            $isLocalHost = in_array($host, ['localhost', '127.0.0.1'], true)
-                || str_starts_with($host, '192.168.')
-                || str_starts_with($host, '10.')
-                || preg_match('/^172\.(1[6-9]|2\d|3[0-1])\./', $host) === 1;
-
-            if (!$isLocalHost) {
-                URL::forceScheme('https');
-            }
+        if (app()->environment('production') && config('app.force_https')) {
+            URL::forceScheme('https');
         }
 
         RateLimiter::for('login', function (Request $request) {
