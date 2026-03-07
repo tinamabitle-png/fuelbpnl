@@ -16,21 +16,9 @@
             Approve fuel credit, issue secure vouchers, redeem instantly at station level, and settle to bank with full audit visibility.
         </p>
         <div class="mt-7 flex flex-wrap gap-3">
-            <a class="super-button" href="{{ route('register.driver') }}">
-                <span>Register Driver</span>
-            </a>
             <a class="super-button" href="{{ Route::has('login') ? route('login') : '/login' }}">
-                <span>Sign In</span>
+                <span>Get Started</span>
             </a>
-            <a class="super-button" href="{{ route('register.merchant') }}">
-                <span>Register Merchant</span>
-            </a>
-            @if(config('services.google.client_id'))
-                @include('partials.google-button', [
-                    'label' => 'Continue with Google',
-                    'class' => ''
-                ])
-            @endif
             <button type="button" id="acceptCookiesBtn" class="btn-ghost px-5 py-3 rounded-xl text-sm font-semibold hidden">
                 Accept Cookies
             </button>
