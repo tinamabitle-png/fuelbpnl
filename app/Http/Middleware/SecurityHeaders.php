@@ -41,10 +41,10 @@ class SecurityHeaders
                     "connect-src 'self' http: https: ws: wss:; " .
                     "frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
                 : "default-src 'self'; " .
-                    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com; " .
-                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
+                    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com https://cdn.tailwindcss.com; " .
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; " .
                     "img-src 'self' data: blob: https:; " .
-                    "font-src 'self' data: https://fonts.gstatic.com; " .
+                    "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
                     "connect-src 'self' https: wss:; " .
                     "frame-ancestors 'self'; base-uri 'self'; form-action 'self'";
 

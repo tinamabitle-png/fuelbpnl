@@ -31,7 +31,18 @@
         </div>
     @endif
 
-    @yield('content')
+    <div class="min-h-screen flex flex-col">
+        <main class="flex-1">
+            @yield('content')
+        </main>
+
+        <footer class="border-t border-slate-200 bg-white">
+            <div class="max-w-4xl mx-auto px-4 py-5 space-y-2">
+                <p class="text-xs text-slate-500">© {{ date('Y') }} Bwiser. Johannesburg, South Africa.</p>
+                @include('partials.legal-links')
+            </div>
+        </footer>
+    </div>
 
     @stack('scripts')
 </body>

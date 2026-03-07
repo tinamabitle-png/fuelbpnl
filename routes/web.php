@@ -31,6 +31,13 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::view('/legal/terms', 'legal.terms')->name('legal.terms');
+Route::view('/legal/cookies', 'legal.cookies')->name('legal.cookies');
+Route::view('/legal/aml-kyc', 'legal.aml')->name('legal.aml');
+Route::view('/legal/poppia', 'legal.poppia')->name('legal.poppia');
+Route::view('/legal/paia-manual', 'legal.paia')->name('legal.paia');
+Route::view('/legal/security-compliance', 'legal.security')->name('legal.security');
+
 Route::get('/repayments/request/{repayment}', [DriverDashboardController::class, 'publicRepaymentRequest'])
     ->middleware('signed')
     ->name('driver.repayments.request.show');
@@ -109,13 +116,15 @@ Route::middleware('auth')->group(function () {
 });
 
 // ========== HELPER FUNCTION FOR ACCESS CONTROL ==========
-function checkUserAccess($requiredRoles = [])
-{
-    $user = auth()->user();
-    if (!$user || !$user->hasAnyRole($requiredRoles)) {
-        abort(403, 'Access denied. Required roles: ' . implode(', ', $requiredRoles));
+if (! function_exists('checkUserAccess')) {
+    function checkUserAccess($requiredRoles = [])
+    {
+        $user = auth()->user();
+        if (!$user || !$user->hasAnyRole($requiredRoles)) {
+            abort(403, 'Access denied. Required roles: ' . implode(', ', $requiredRoles));
+        }
+        return true;
     }
-    return true;
 }
 
 // ========== PROTECTED ROUTES ==========
