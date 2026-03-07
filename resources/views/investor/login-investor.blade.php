@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Investor Login - Fuel BNPL</title>
+    <title>Investor Login - Bwiser</title>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -32,7 +32,7 @@
                     <i class="fas fa-gas-pump text-blue-600 text-3xl"></i>
                 </div>
                 <h1 class="text-2xl font-bold text-white">Investor Portal</h1>
-                <p class="text-blue-100 mt-2">Fuel BNPL Investment Platform</p>
+                <p class="text-blue-100 mt-2">Bwiser Investment Platform</p>
             </div>
             
             <!-- Login Form -->

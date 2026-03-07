@@ -20,7 +20,7 @@ class SettingsController extends Controller
     {
         $settings = [
             'general' => [
-                'app_name' => config('app.name', 'Fuel BNPL'),
+                'app_name' => config('app.name', 'Bwiser'),
                 'app_url' => config('app.url'),
                 'timezone' => config('app.timezone'),
                 'locale' => config('app.locale'),

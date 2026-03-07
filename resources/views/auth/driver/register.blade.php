@@ -18,7 +18,18 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700">Phone (South Africa)</label>
-                    <input name="phone" type="text" value="{{ old('phone') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="+27XXXXXXXXX or 0XXXXXXXXX">
+                    <input
+                        name="phone"
+                        type="tel"
+                        value="{{ old('phone') }}"
+                        required
+                        inputmode="tel"
+                        autocomplete="tel"
+                        pattern="^(\+27|27|0)[6-8][0-9]{8}$"
+                        title="Use SA mobile format: +27XXXXXXXXX, 27XXXXXXXXX, or 0XXXXXXXXX"
+                        class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2"
+                        placeholder="+27XXXXXXXXX or 0XXXXXXXXX"
+                    >
                     <p class="text-xs text-slate-500 mt-1">Accepted formats: `+27XXXXXXXXX`, `27XXXXXXXXX`, or `0XXXXXXXXX`.</p>
                     @error('phone')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
                 </div>

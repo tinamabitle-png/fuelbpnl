@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title') - Fuel BNPL Investor Portal</title>
+    <title>@yield('title') - Bwiser Investor Portal</title>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -46,7 +46,7 @@
                     <div class="flex-shrink-0 flex items-center">
                         <a href="{{ route('investor.dashboard') }}" class="text-xl font-bold text-gray-900">
                             <i class="fas fa-gas-pump text-blue-600 mr-2"></i>
-                            Fuel BNPL <span class="text-blue-600">Investor</span>
+                            Bwiser <span class="text-blue-600">Investor</span>
                         </a>
                     </div>
                     
@@ -234,7 +234,7 @@
         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="text-gray-600 text-sm">
-                    © {{ date('Y') }} Fuel BNPL Investor Portal. All rights reserved.
+                    © {{ date('Y') }} Bwiser Investor Portal. All rights reserved.
                 </div>
                 <div class="flex space-x-6 mt-4 md:mt-0">
                     <a href="#" class="text-gray-500 hover:text-gray-700 text-sm">

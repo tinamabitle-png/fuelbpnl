@@ -101,26 +101,6 @@ Route::get('/geo/here/reverse', [HereMapsController::class, 'reverse'])
     ->middleware('throttle:120,1')
     ->name('here.reverse');
 
-Route::get('/quick-login/admin', function () {
-    $enabled = app()->environment('local', 'development') || (bool) env('ONE_CLICK_ADMIN_LOGIN_ENABLED', false);
-    if (!$enabled) {
-        abort(403, 'One-click admin login is disabled.');
-    }
-
-    $user = \App\Models\User::role('super_admin')->orderByDesc('id')->first()
-        ?? \App\Models\User::role('admin')->orderByDesc('id')->first();
-
-    if (!$user) {
-        return redirect()->route('login')->withErrors([
-            'email' => 'No admin account found for one-click login.',
-        ]);
-    }
-
-    auth()->login($user);
-
-    return redirect()->route('admin.dashboard');
-})->name('quick-login.admin');
-
 Route::middleware('auth')->group(function () {
     Route::get('/registration/complete/{role?}', [RegistrationDocumentsController::class, 'show'])
         ->name('registration.complete');
@@ -311,9 +291,9 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/test-email', function(Request $request) {
                 checkUserAccess(['super_admin', 'admin', 'employee']);
                 try {
-                    Mail::raw('Test email from Fuel BNPL Admin', function ($message) use ($request) {
+                    Mail::raw('Test email from Bwiser Admin', function ($message) use ($request) {
                         $message->to($request->email)
-                                ->subject('Test Email from Fuel BNPL');
+                                ->subject('Test Email from Bwiser');
                     });
                     return response()->json(['success' => true]);
                 } catch (\Exception $e) {
@@ -637,47 +617,3 @@ Route::get('/clear-cache', function() {
     
     return "✅ Cache cleared! <a href='/'>Home</a>";
 });
-
-Route::get('/quick-login/{userId?}', function($userId = 1) {
-    $user = \App\Models\User::find($userId);
-    if (!$user) $user = \App\Models\User::first();
-    
-    if ($user) {
-        auth()->login($user);
-        return redirect('/test-roles')->with('success', "Logged in as {$user->email}");
-    }
-    
-    return "No user found";
-});
-
-Route::get('/quick-login/role/{role}', function(string $role) {
-    $allowedRoles = ['admin', 'investor', 'merchant', 'driver', 'employee', 'super_admin'];
-    $role = strtolower($role);
-
-    if (!in_array($role, $allowedRoles, true)) {
-        abort(404);
-    }
-
-    if (!app()->environment('local', 'development')) {
-        abort(403, 'One-click login is only available in local/development.');
-    }
-
-    $user = \App\Models\User::role($role)->orderByDesc('id')->first();
-    if (!$user) {
-        return response("No user exists with role '{$role}'.", 404);
-    }
-
-    auth()->login($user);
-
-    if ($user->hasAnyRole(['super_admin', 'admin', 'employee'])) {
-        return redirect()->route('admin.dashboard');
-    }
-    if ($user->hasRole('investor')) {
-        return redirect()->route('investor.dashboard');
-    }
-    if ($user->hasRole('merchant')) {
-        return redirect()->route('merchant.dashboard');
-    }
-
-    return redirect()->route('driver.dashboard');
-})->name('quick-login.role');

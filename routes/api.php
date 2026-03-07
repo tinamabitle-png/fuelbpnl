@@ -24,7 +24,6 @@ Route::prefix('v1')->group(function () {
     Route::middleware('throttle:auth')->group(function () {
         Route::post('/auth/register', [AuthController::class, 'register']);
         Route::post('/auth/login', [AuthController::class, 'login']);
-        Route::post('/auth/quick-login', [AuthController::class, 'quickLogin']);
         Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
         Route::post('/auth/login-with-otp', [AuthController::class, 'loginWithOtp']);
         Route::post('/auth/complete-otp-login', [AuthController::class, 'completeOtpLogin']);

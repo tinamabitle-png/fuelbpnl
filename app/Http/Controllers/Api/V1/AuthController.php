@@ -11,8 +11,6 @@ use App\Models\Device;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
@@ -204,71 +202,6 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Login successful',
-            'data' => [
-                'token' => $token,
-                'user' => $user->load('wallet'),
-                'roles' => $user->getRoleNames(),
-            ]
-        ]);
-    }
-
-    public function quickLogin(Request $request)
-    {
-        if (!App::environment(['local', 'development'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Quick login is only enabled in local/development environments.'
-            ], 403);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'role' => 'required|string|in:driver,merchant',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $role = (string) $request->input('role');
-        $user = User::query()
-            ->where('status', 'active')
-            ->whereHas('roles', fn ($q) => $q->where('name', $role))
-            ->orderBy('id')
-            ->first();
-
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => "No active {$role} account found.",
-            ], 404);
-        }
-
-        $deviceId = 'quick-login-' . $role . '-' . Str::random(8);
-        Device::updateOrCreate(
-            ['user_id' => $user->id, 'device_id' => $deviceId],
-            [
-                'last_login_at' => now(),
-                'ip_address' => $request->ip(),
-                'device_name' => 'Quick Login',
-                'device_type' => 'web',
-            ]
-        );
-
-        $user->update([
-            'last_login_at' => now(),
-            'last_login_ip' => $request->ip(),
-        ]);
-
-        $token = $user->createToken('mobile-quick-login')->plainTextToken;
-
-        event(new UserLoggedIn($user, 'api_v1_quick', $request->ip()));
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Quick login successful',
             'data' => [
                 'token' => $token,
                 'user' => $user->load('wallet'),

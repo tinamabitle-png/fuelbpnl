@@ -1,6 +1,6 @@
 @extends('layouts.guest')
 
-@section('title', 'Investor Registration - Fuel BNPL')
+@section('title', 'Investor Registration - Bwiser')
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-4xl mx-auto">

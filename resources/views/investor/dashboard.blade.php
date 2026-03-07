@@ -95,7 +95,7 @@
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <div>
             <h2 class="text-2xl font-bold text-gray-900">Welcome back, {{ $investor->contact_person }}</h2>
-            <p class="text-gray-600 mt-1">Manage your fuel BNPL investments and explore new opportunities</p>
+            <p class="text-gray-600 mt-1">Manage your Bwiser investments and explore new opportunities</p>
         </div>
         <div class="flex space-x-3 mt-4 md:mt-0">
             <a href="{{ route('investor.opportunities') }}" 

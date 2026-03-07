@@ -2,7 +2,7 @@
 
 @section('title', 'Dashboard')
 @section('page-title', 'Dashboard')
-@section('page-description', 'Fuel BNPL System Overview')
+@section('page-description', 'Bwiser System Overview')
 
 @section('content')
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

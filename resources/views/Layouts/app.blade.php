@@ -291,8 +291,6 @@
                             <a class="btn-ghost px-4 py-2 rounded-xl" href="{{ Route::has('login') ? route('login') : '/login' }}">Login</a>
                             @if(Route::has('investor.register'))
                                 <a class="btn-primary px-4 py-2 rounded-xl" href="{{ route('investor.register') }}">Get Started</a>
-                            @elseif(Route::has('quick-login.role'))
-                                <a class="btn-primary px-4 py-2 rounded-xl" href="{{ route('quick-login.role', ['role' => 'investor']) }}">Get Started</a>
                             @endif
                         @endauth
                     </nav>
@@ -313,7 +311,7 @@
                     <span>© {{ date('Y') }} Bwiser. All rights reserved.</span>
                 </div>
                 <div class="flex items-center gap-6">
-                    <span>Support: support@fuelbnpl.com</span>
+                    <span>Support: support@bwiser.co.za</span>
                     <span>Johannesburg, South Africa</span>
                 </div>
             </div>

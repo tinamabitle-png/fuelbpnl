@@ -1,6 +1,6 @@
 <aside class="w-64 bg-gray-800 text-white">
     <div class="p-4">
-        <h2 class="text-2xl font-bold">Fuel BNPL</h2>
+        <h2 class="text-2xl font-bold">Bwiser</h2>
         <p class="text-gray-400 text-sm">Admin Dashboard</p>
     </div>
     

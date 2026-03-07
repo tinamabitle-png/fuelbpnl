@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'FuelLevy Control Platform')
+@section('title', 'Bwiser Control Platform')
 
 @section('content')
 <section class="max-w-6xl mx-auto px-6 pt-16 pb-20">
@@ -68,23 +68,6 @@
         </div>
     </div>
 
- 
-
-    <div class="glass rounded-2xl p-8 mt-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-            <p class="text-xs uppercase tracking-[0.2em] text-blue-600">Ready to Launch</p>
-            <h3 class="brand-font text-2xl text-slate-900 mt-2">Deploy FuelLevy as your live BNPL operating layer.</h3>
-            <p class="text-sm text-slate-600 mt-2">From first voucher to final settlement, every transaction is traceable and production-ready.</p>
-        </div>
-        <div class="flex flex-wrap gap-3">
-            <a class="btn-primary px-5 py-3 rounded-xl text-sm font-semibold" href="{{ route('register.driver') }}">
-                Launch Now
-            </a>
-            <a class="btn-ghost px-5 py-3 rounded-xl text-sm font-semibold" href="{{ Route::has('login') ? route('login') : '/login' }}">
-                Contact Sales
-            </a>
-        </div>
-    </div>
 </section>
 
 <style>
