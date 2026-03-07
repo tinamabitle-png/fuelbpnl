@@ -37,15 +37,17 @@ return [
             'investor.',
         ],
         'excluded_uri_prefixes' => [
+            'api',
             'admin',
             'driver',
             'merchant',
             'employee',
             'investor',
+            'payments',
+            'repayments/request',
             'setup-roles',
             'test-roles',
             'add-investor-role',
         ],
     ],
 ];
-
