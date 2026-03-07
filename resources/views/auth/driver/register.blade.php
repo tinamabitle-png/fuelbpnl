@@ -1,4 +1,4 @@
-@extends('layouts.guest')
+@extends('Layouts.guest')
 
 @section('title', 'Driver Registration')
 @section('meta_description', 'Register as a driver on Bwiser to access voucher and fuel finance workflows.')

@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('Layouts.admin')
 
 @section('title', 'Voucher Live Monitor')
 @section('page-title', 'Voucher Live Monitor')

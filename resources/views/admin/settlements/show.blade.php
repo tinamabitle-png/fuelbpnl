@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('Layouts.admin')
 
 @section('title', 'Direct Bank Deposit #' . $settlement->id)
 @section('page-title', 'Direct Bank Deposit Details')

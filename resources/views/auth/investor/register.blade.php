@@ -1,4 +1,4 @@
-@extends('layouts.guest')
+@extends('Layouts.guest')
 
 @section('title', 'Investor Registration - Bwiser')
 @section('content')

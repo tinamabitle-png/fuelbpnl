@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('Layouts.admin')
 
 @section('title', 'Fuel Stations Management')
 @section('page-title', 'Fuel Stations Dashboard')

@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('Layouts.admin')
 
 @section('title', 'Credit Decisions')
 @section('page-title', 'Credit Decisions')

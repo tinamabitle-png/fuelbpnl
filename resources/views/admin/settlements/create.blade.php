@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('Layouts.admin')
 
 @section('title', 'Create New Direct Bank Deposit')
 @section('page-title', 'New Direct Bank Deposit')

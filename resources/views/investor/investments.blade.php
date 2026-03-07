@@ -1,5 +1,5 @@
 {{-- [file name]: investor/investments.blade.php --}}
-@extends('layouts.investor')
+@extends('Layouts.investor')
 
 @section('title', 'My Investments')
 @section('page-title', 'Investment Portfolio')

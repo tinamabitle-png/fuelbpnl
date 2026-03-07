@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('Layouts.admin')
 
 @section('title', 'Lease #' . $lease->id . ' - Details')
 @section('page-title', 'Lease Details')

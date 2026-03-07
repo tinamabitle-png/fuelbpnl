@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('Layouts.admin')
 
 @section('title', 'Feedback Inbox')
 @section('page-title', 'Feedback Inbox')

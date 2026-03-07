@@ -1,4 +1,4 @@
-@extends('layouts.guest')
+@extends('Layouts.guest')
 
 @section('title', 'Merchant Registration')
 @section('meta_description', 'Register your fuel station or merchant account on Bwiser for voucher redemption and settlements.')

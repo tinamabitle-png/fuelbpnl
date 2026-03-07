@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('Layouts.admin')
 
 @section('title', 'Energy Project Details')
 @section('page-title', 'Energy Project Details')

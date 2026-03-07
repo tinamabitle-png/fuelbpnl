@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('Layouts.admin')
 
 @section('title', 'PayFast Bulk Direct Bank Deposit')
 @section('page-title', 'PayFast Bulk Direct Bank Deposit')

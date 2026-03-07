@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('Layouts.admin')
 
 @section('title', 'Station Services - ' . $station->name)
 @section('page-title', 'Station Services')
