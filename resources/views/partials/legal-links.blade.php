@@ -10,4 +10,6 @@
     <a href="{{ route('legal.paia') }}" class="hover:text-blue-700">PAIA Manual</a>
     <span aria-hidden="true">•</span>
     <a href="{{ route('legal.security') }}" class="hover:text-blue-700">PCI DSS & ISO</a>
+    <span aria-hidden="true">•</span>
+    <a href="{{ route('sitemap') }}" class="hover:text-blue-700">Sitemap</a>
 </div>

@@ -4,7 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Bwiser')</title>
+    @php
+        $siteName = 'Bwiser';
+        $metaTitle = trim($__env->yieldContent('title', $siteName));
+        if (!str_contains(strtolower($metaTitle), strtolower($siteName))) {
+            $metaTitle .= ' | '.$siteName;
+        }
+        $metaDescription = trim($__env->yieldContent('meta_description', 'Secure onboarding and access portal for the Bwiser platform.'));
+        $metaRobots = trim($__env->yieldContent('meta_robots', 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1'));
+        $canonical = trim($__env->yieldContent('canonical', url()->current()));
+        $ogImage = trim($__env->yieldContent('og_image', asset('images/brand-logo.png')));
+    @endphp
+    <title>{{ $metaTitle }}</title>
+    <meta name="description" content="{{ $metaDescription }}">
+    <meta name="robots" content="{{ $metaRobots }}">
+    <link rel="canonical" href="{{ $canonical }}">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ $metaTitle }}">
+    <meta property="og:description" content="{{ $metaDescription }}">
+    <meta property="og:url" content="{{ $canonical }}">
+    <meta property="og:image" content="{{ $ogImage }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $metaTitle }}">
+    <meta name="twitter:description" content="{{ $metaDescription }}">
+    <meta name="twitter:image" content="{{ $ogImage }}">
     <link rel="icon" type="image/png" href="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}">
     <link rel="apple-touch-icon" href="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">

@@ -1,6 +1,7 @@
 @extends('mobile.layouts.app')
 
 @section('title', 'Merchant Registration - Bwiser Mobile')
+@section('meta_robots', 'noindex,nofollow')
 
 @section('content')
 <main class="px-4 pb-10 pt-6">

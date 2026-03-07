@@ -1,2 +1,11 @@
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin/
+Disallow: /driver/
+Disallow: /merchant/
+Disallow: /employee/
+Disallow: /login
+Disallow: /logout
+Disallow: /register
+
+Sitemap: https://bwiser.co.za/sitemap.xml

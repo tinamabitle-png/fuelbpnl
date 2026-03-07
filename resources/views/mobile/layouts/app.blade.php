@@ -5,12 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#2563eb">
+    @php
+        $siteName = 'Bwiser';
+        $metaTitle = trim($__env->yieldContent('title', $siteName.' Mobile'));
+        if (!str_contains(strtolower($metaTitle), strtolower($siteName))) {
+            $metaTitle .= ' | '.$siteName;
+        }
+        $metaDescription = trim($__env->yieldContent('meta_description', 'Bwiser mobile web experience for fuel finance and voucher operations.'));
+        $metaRobots = trim($__env->yieldContent('meta_robots', 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1'));
+        $canonical = trim($__env->yieldContent('canonical', url()->current()));
+        $ogImage = trim($__env->yieldContent('og_image', asset('images/brand-logo.png')));
+    @endphp
+    <title>{{ $metaTitle }}</title>
+    <meta name="description" content="{{ $metaDescription }}">
+    <meta name="robots" content="{{ $metaRobots }}">
+    <link rel="canonical" href="{{ $canonical }}">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ $metaTitle }}">
+    <meta property="og:description" content="{{ $metaDescription }}">
+    <meta property="og:url" content="{{ $canonical }}">
+    <meta property="og:image" content="{{ $ogImage }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $metaTitle }}">
+    <meta name="twitter:description" content="{{ $metaDescription }}">
+    <meta name="twitter:image" content="{{ $ogImage }}">
     <link rel="icon" type="image/png" href="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}">
     <link rel="apple-touch-icon" href="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <title>@yield('title', 'Bwiser Mobile')</title>
     @php
         $viteManifestPath = public_path('build/manifest.json');
         $hasViteManifest = is_file($viteManifestPath);

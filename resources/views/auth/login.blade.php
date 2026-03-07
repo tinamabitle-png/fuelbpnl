@@ -3,7 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Bwiser</title>
+    <title>Login | Bwiser</title>
+    <meta name="description" content="Secure sign-in portal for Bwiser platform users.">
+    <meta name="robots" content="noindex,nofollow">
+    <link rel="canonical" href="{{ url()->current() }}">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Login | Bwiser">
+    <meta property="og:description" content="Secure sign-in portal for Bwiser platform users.">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:image" content="{{ asset('images/brand-logo.png') }}">
+    <meta name="twitter:card" content="summary">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/png" href="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}">
@@ -116,6 +125,9 @@
                 <p class="text-sm text-gray-600">
                     © {{ date('Y') }} Bwiser. All rights reserved.
                 </p>
+                <div class="mt-2">
+                    @include('partials.legal-links', ['class' => 'flex flex-wrap justify-center items-center gap-2 text-xs text-gray-500'])
+                </div>
             </div>
         </div>
     </div>

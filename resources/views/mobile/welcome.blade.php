@@ -1,6 +1,7 @@
 @extends('mobile.layouts.app')
 
 @section('title', 'Bwiser Mobile')
+@section('meta_description', 'Bwiser fuel finance and payments platform for drivers and merchants in South Africa.')
 
 @section('content')
 <main class="px-4 pb-8 pt-6">
