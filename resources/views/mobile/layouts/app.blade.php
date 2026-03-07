@@ -108,7 +108,7 @@
         <footer class="px-4 pb-6 pt-2">
             <div class="mx-auto max-w-md mobile-card px-4 py-3 space-y-2">
                 <p class="text-[11px] text-slate-500">© {{ date('Y') }} Bwiser</p>
-                @include('partials.legal-links', ['class' => 'flex flex-wrap items-center gap-2 text-[11px] text-slate-600'])
+                @include('partials.legal-links', ['class' => 'w-full flex flex-wrap items-center gap-2 text-[11px] text-slate-700'])
             </div>
         </footer>
     </div>

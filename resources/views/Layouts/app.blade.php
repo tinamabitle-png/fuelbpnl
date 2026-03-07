@@ -338,7 +338,7 @@
                     <span>Support: support@bwiser.co.za</span>
                     <span>Johannesburg, South Africa</span>
                 </div>
-                @include('partials.legal-links', ['class' => 'flex flex-wrap items-center gap-2 text-xs text-slate-500'])
+                @include('partials.legal-links', ['class' => 'w-full md:w-auto flex flex-wrap items-center gap-2 text-xs text-slate-600'])
             </div>
         </footer>
     </div>

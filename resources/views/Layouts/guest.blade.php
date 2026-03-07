@@ -62,7 +62,7 @@
         <footer class="border-t border-slate-200 bg-white">
             <div class="max-w-4xl mx-auto px-4 py-5 space-y-2">
                 <p class="text-xs text-slate-500">© {{ date('Y') }} Bwiser. Johannesburg, South Africa.</p>
-                @include('partials.legal-links')
+                @include('partials.legal-links', ['class' => 'flex flex-wrap items-center gap-2 text-xs text-slate-600'])
             </div>
         </footer>
     </div>

@@ -7,10 +7,6 @@
 @section('content')
 <section class="max-w-6xl mx-auto px-6 pt-16 pb-20">
     <div class="glass rounded-3xl p-8 md:p-12">
-        <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full">
-            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-            Live
-        </p>
         <h1 class="brand-font text-4xl md:text-6xl font-semibold text-slate-900 mt-4 leading-tight">
             Fuel Infrastructure Finance and Payments for Vouchers, and Settlements
             <span class="hero-gradient-text block">Built for Real-Time Operations</span>
@@ -29,6 +25,9 @@
             <a class="btn-ghost px-5 py-3 rounded-xl text-sm font-semibold" href="{{ route('register.merchant') }}">
                 Register Merchant
             </a>
+            <button type="button" id="acceptCookiesBtn" class="btn-ghost px-5 py-3 rounded-xl text-sm font-semibold hidden">
+                Accept Cookies
+            </button>
         </div>
         <!-- <div class="welcome-driver-market mt-8">
             <img
@@ -174,4 +173,18 @@
         }
     }
 </style>
+<script>
+    (function () {
+        const key = 'bwiser_cookie_consent_v1';
+        const button = document.getElementById('acceptCookiesBtn');
+        if (!button) return;
+        if (localStorage.getItem(key) === 'accepted') return;
+        button.classList.remove('hidden');
+        button.addEventListener('click', function () {
+            localStorage.setItem(key, 'accepted');
+            document.cookie = "bwiser_cookie_consent=accepted; path=/; max-age=31536000; SameSite=Lax";
+            button.classList.add('hidden');
+        });
+    })();
+</script>
 @endsection
