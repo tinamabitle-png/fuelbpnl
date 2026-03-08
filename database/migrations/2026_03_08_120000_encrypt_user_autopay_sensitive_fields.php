@@ -11,6 +11,7 @@ return new class extends Migration
         $driver = DB::getDriverName();
 
         if ($driver === 'mysql') {
+            $this->dropAutopayCheckConstraintsForMySql();
             DB::statement('ALTER TABLE users MODIFY autopay_token TEXT NULL');
             DB::statement('ALTER TABLE users MODIFY autopay_email TEXT NULL');
             DB::statement('ALTER TABLE users MODIFY autopay_customer_code TEXT NULL');
@@ -62,6 +63,43 @@ return new class extends Migration
         // Intentionally non-reversible to avoid writing decrypted payment data back to disk.
     }
 
+    private function dropAutopayCheckConstraintsForMySql(): void
+    {
+        $database = (string) DB::getDatabaseName();
+
+        $constraints = DB::select(
+            <<<'SQL'
+            SELECT tc.CONSTRAINT_NAME AS constraint_name, cc.CHECK_CLAUSE AS check_clause
+            FROM information_schema.TABLE_CONSTRAINTS tc
+            JOIN information_schema.CHECK_CONSTRAINTS cc
+              ON tc.CONSTRAINT_NAME = cc.CONSTRAINT_NAME
+             AND tc.CONSTRAINT_SCHEMA = cc.CONSTRAINT_SCHEMA
+            WHERE tc.CONSTRAINT_SCHEMA = ?
+              AND tc.TABLE_NAME = 'users'
+              AND tc.CONSTRAINT_TYPE = 'CHECK'
+            SQL,
+            [$database]
+        );
+
+        foreach ($constraints as $constraint) {
+            $name = (string) ($constraint->constraint_name ?? '');
+            $clause = strtolower((string) ($constraint->check_clause ?? ''));
+
+            if ($name === '') {
+                continue;
+            }
+
+            if (
+                str_contains($clause, 'autopay_token') ||
+                str_contains($clause, 'autopay_email') ||
+                str_contains($clause, 'autopay_customer_code') ||
+                str_contains($clause, 'autopay_details')
+            ) {
+                DB::statement("ALTER TABLE users DROP CHECK `{$name}`");
+            }
+        }
+    }
+
     private function encryptIfNeeded(mixed $value): ?string
     {
         if ($value === null) {
@@ -90,4 +128,3 @@ return new class extends Migration
         }
     }
 };
-
