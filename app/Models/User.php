@@ -58,6 +58,10 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'autopay_token',
+        'autopay_email',
+        'autopay_customer_code',
+        'autopay_details',
     ];
 
     protected $casts = [
@@ -65,7 +69,10 @@ class User extends Authenticatable
         'last_login_at' => 'datetime',
         'credit_score' => 'integer',
         'autopay_enabled' => 'boolean',
-        'autopay_details' => 'array',
+        'autopay_token' => 'encrypted',
+        'autopay_email' => 'encrypted',
+        'autopay_customer_code' => 'encrypted',
+        'autopay_details' => 'encrypted:array',
         'autopay_failures' => 'integer',
         'autopay_last_attempt_at' => 'datetime',
         'autopay_next_attempt_at' => 'datetime',

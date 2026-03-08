@@ -166,7 +166,7 @@
                             $issuedAt = $voucher->issued_at;
                             $expiresAt = $voucher->expires_at;
                             $qrValue = (string) ($voucher->qr_code ?: $voucher->code ?: $voucher->id);
-                            $qrImage = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=' . urlencode($qrValue);
+                            $qrImage = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&ecc=H&format=png&data=' . urlencode($qrValue);
                             $voucherStatus = (string) ($voucher->status ?? 'approved');
                         @endphp
 
@@ -189,7 +189,7 @@
                                     <svg class="av-qr-stroke" viewBox="0 0 98 132" aria-hidden="true">
                                         <rect x="2.5" y="2.5" width="93" height="127" rx="12" ry="12"></rect>
                                     </svg>
-                                    <div class="av-qr-inner">
+                                    <div class="av-qr-inner bwiser-qr-stack">
                                         <span class="av-card-qr-loader" aria-hidden="true">
                                             <span class="av-card-qr-spinner"></span>
                                         </span>
@@ -198,7 +198,7 @@
                                             alt="QR for voucher {{ $voucher->code }}"
                                             loading="lazy"
                                             onload="this.style.opacity='1'; this.previousElementSibling.style.display='none';"
-                                            onerror="this.style.display='none'; this.previousElementSibling.style.display='none'; this.nextElementSibling.style.display='grid';"
+                                            onerror="this.style.display='none'; this.previousElementSibling.style.display='none'; const fb=this.parentElement.querySelector('.av-card-qr-fallback'); if(fb) fb.style.display='grid';"
                                         >
                                         <span class="av-card-qr-fallback" style="display:none;">QR</span>
                                     </div>

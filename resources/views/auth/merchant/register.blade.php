@@ -152,9 +152,6 @@
 @endsection
 
 @push('scripts')
-@if(config('services.google_maps.key'))
-<script src="https://maps.googleapis.com/maps/api/js?key={{ urlencode((string) config('services.google_maps.key')) }}&libraries=places"></script>
-@endif
 <script>
 const googleMapsApiKey = @json(config('services.google_maps.key'));
 document.querySelectorAll('.file-drop').forEach((dropZone) => {
@@ -228,6 +225,25 @@ let marker = null;
 let geocodeTimer = null;
 let geocoder = null;
 let autocompleteService = null;
+
+const upsertMapMarker = (currentMarker, position) => {
+    if (!map) return currentMarker;
+
+    if (currentMarker) {
+        if (typeof currentMarker.setPosition === 'function') {
+            currentMarker.setPosition(position);
+        } else {
+            currentMarker.position = position;
+        }
+        return currentMarker;
+    }
+
+    if (google.maps.marker?.AdvancedMarkerElement) {
+        return new google.maps.marker.AdvancedMarkerElement({ map, position });
+    }
+
+    return new google.maps.Marker({ map, position });
+};
 
 const updateMapStatus = (message, isError = false) => {
     if (!mapStatus) return;
@@ -343,7 +359,12 @@ const renderSuggestions = (items) => {
     addressSuggestions.classList.remove('hidden');
 };
 
-if (mapNode && window.google?.maps && googleMapsApiKey) {
+const initMerchantRegisterMap = () => {
+    if (!mapNode || !window.google?.maps || !googleMapsApiKey) {
+        updateMapStatus('Google map preview unavailable (GOOGLE_MAPS_API_KEY not set).');
+        return;
+    }
+
     map = new google.maps.Map(mapNode, {
         center: { lat: fallbackCenter[0], lng: fallbackCenter[1] },
         zoom: 11,
@@ -357,14 +378,28 @@ if (mapNode && window.google?.maps && googleMapsApiKey) {
     const existingLat = parseFloat(latitudeInput?.value || '');
     const existingLng = parseFloat(longitudeInput?.value || '');
     if (Number.isFinite(existingLat) && Number.isFinite(existingLng)) {
-        marker = new google.maps.Marker({
-            position: { lat: existingLat, lng: existingLng },
-            map,
-        });
+        marker = upsertMapMarker(marker, { lat: existingLat, lng: existingLng });
         map.setCenter({ lat: existingLat, lng: existingLng });
         map.setZoom(15);
         updateMapStatus(`Pinned at ${existingLat.toFixed(6)}, ${existingLng.toFixed(6)}`);
     }
+};
+window.initMerchantRegisterMap = initMerchantRegisterMap;
+
+if (window.google?.maps && googleMapsApiKey) {
+    initMerchantRegisterMap();
+} else if (googleMapsApiKey) {
+    updateMapStatus('Loading Google Maps...');
+    if (typeof window.gm_authFailure !== 'function') {
+        window.gm_authFailure = () => {
+            updateMapStatus('Google Maps authentication failed. Check API key, billing, and domain restrictions.', true);
+        };
+    }
+    window.setTimeout(() => {
+        if (!map && !window.google?.maps) {
+            updateMapStatus('Google Maps failed to load. Check API key restrictions or internet access.', true);
+        }
+    }, 4500);
 } else {
     updateMapStatus('Google map preview unavailable (GOOGLE_MAPS_API_KEY not set).');
 }
@@ -456,14 +491,7 @@ const applyLocationToMap = (lat, lng) => {
     if (longitudeInput) longitudeInput.value = String(lng);
 
     if (map) {
-        if (!marker) {
-            marker = new google.maps.Marker({
-                position: { lat, lng },
-                map,
-            });
-        } else {
-            marker.setPosition({ lat, lng });
-        }
+        marker = upsertMapMarker(marker, { lat, lng });
         map.setCenter({ lat, lng });
         map.setZoom(15);
     }
@@ -519,4 +547,7 @@ if (useCurrentLocationBtn) {
     });
 }
 </script>
+@if(config('services.google_maps.key'))
+<script src="https://maps.googleapis.com/maps/api/js?key={{ urlencode((string) config('services.google_maps.key')) }}&libraries=places,marker&loading=async&callback=initMerchantRegisterMap" async defer></script>
+@endif
 @endpush

@@ -71,11 +71,11 @@
                             <td class="px-4 py-3">
                                 @php
                                     $qrValue = $voucher->qr_code ?: $voucher->code;
-                                    $qrImage = 'https://api.qrserver.com/v1/create-qr-code/?size=96x96&margin=8&data=' . urlencode($qrValue);
+                                    $qrImage = 'https://api.qrserver.com/v1/create-qr-code/?size=96x96&margin=8&ecc=H&format=png&data=' . urlencode($qrValue);
                                     $blurQr = $voucher->status === 'issued';
                                 @endphp
                                 <div @class([
-                                    'relative inline-flex items-center justify-center p-2 rounded-xl border-2 border-slate-300 bg-white shadow-sm',
+                                    'relative inline-flex items-center justify-center p-2 rounded-xl border-2 border-slate-300 bg-white shadow-sm bwiser-qr-stack',
                                     'approved-voucher-outline' => $voucher->status === 'approved',
                                 ])>
                                     <img
@@ -83,7 +83,7 @@
                                         alt="QR {{ $voucher->code }}"
                                         class="h-20 w-20 rounded-md bg-white {{ $blurQr ? 'blur-sm opacity-70' : '' }}"
                                         loading="lazy"
-                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
+                                        onerror="this.style.display='none'; const fb=this.parentElement.querySelector('span.hidden'); if(fb) fb.style.display='grid';"
                                     >
                                     <span class="hidden h-20 w-20 place-items-center rounded-md border border-dashed border-slate-300 bg-slate-50 text-[10px] font-semibold text-slate-600 px-1 text-center {{ $blurQr ? 'blur-sm opacity-70' : '' }}">
                                         {{ $voucher->code }}

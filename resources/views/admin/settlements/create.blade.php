@@ -362,7 +362,76 @@
 <!-- Loading Modal -->
 <div id="loadingModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
     <div class="bg-white rounded-2xl p-8 text-center">
-        <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+        <style>
+            .themed-loader {
+                width: 80px;
+                height: 50px;
+                position: relative;
+                margin: 0 auto 1rem;
+            }
+
+            .themed-loader-text {
+                position: absolute;
+                top: 0;
+                padding: 0;
+                margin: 0;
+                color: #C8B6FF;
+                animation: themed_text_713 3.5s ease both infinite;
+                font-size: .8rem;
+                letter-spacing: 1px;
+                text-transform: lowercase;
+            }
+
+            .themed-load {
+                background-color: #9A79FF;
+                border-radius: 50px;
+                display: block;
+                height: 16px;
+                width: 16px;
+                bottom: 0;
+                position: absolute;
+                transform: translateX(64px);
+                animation: themed_loading_713 3.5s ease both infinite;
+            }
+
+            .themed-load::before {
+                position: absolute;
+                content: "";
+                width: 100%;
+                height: 100%;
+                background-color: #D1C2FF;
+                border-radius: inherit;
+                animation: themed_loading2_713 3.5s ease both infinite;
+            }
+
+            @keyframes themed_text_713 {
+                0% { letter-spacing: 1px; transform: translateX(0px); }
+                40% { letter-spacing: 2px; transform: translateX(26px); }
+                80% { letter-spacing: 1px; transform: translateX(32px); }
+                90% { letter-spacing: 2px; transform: translateX(0px); }
+                100% { letter-spacing: 1px; transform: translateX(0px); }
+            }
+
+            @keyframes themed_loading_713 {
+                0% { width: 16px; transform: translateX(0px); }
+                40% { width: 100%; transform: translateX(0px); }
+                80% { width: 16px; transform: translateX(64px); }
+                90% { width: 100%; transform: translateX(0px); }
+                100% { width: 16px; transform: translateX(0px); }
+            }
+
+            @keyframes themed_loading2_713 {
+                0% { transform: translateX(0px); width: 16px; }
+                40% { transform: translateX(0%); width: 80%; }
+                80% { width: 100%; transform: translateX(0px); }
+                90% { width: 80%; transform: translateX(15px); }
+                100% { transform: translateX(0px); width: 16px; }
+            }
+        </style>
+        <div class="themed-loader" aria-hidden="true">
+            <span class="themed-loader-text">loading</span>
+            <span class="themed-load"></span>
+        </div>
         <p class="text-lg font-semibold text-gray-900">Creating Direct Bank Deposit</p>
         <p class="text-gray-600 mt-2">Please wait while we process your request...</p>
     </div>

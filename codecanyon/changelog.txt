@@ -1,0 +1,5 @@
+Version 1.0.0 - 2026-03-07
+- Initial CodeCanyon packaging structure
+- Added buyer documentation and reviewer notes
+- Added preview image generation script
+- Added packaging build script and distributable output layout

@@ -542,8 +542,6 @@
     const leaseDefaults = {!! $leaseDefaultsJson !!};
     const mapsApiKey = @json($googleMapsApiKey);
     let stationsMap;
-    let directionsService;
-    let directionsRenderer;
     let mapLoadPromise = null;
     let selectedStation = null;
     let filteredStations = [];
@@ -917,7 +915,7 @@
             return;
         }
         ensureMapLoaded().then((loaded) => {
-            if (!loaded || !directionsService || !directionsRenderer) {
+            if (!loaded) {
                 routeSummary.textContent = 'Map services are not ready.';
                 return;
             }
@@ -933,22 +931,9 @@
                     lng: Number(selectedStation.longitude)
                 };
 
-                directionsService.route({
-                    origin,
-                    destination,
-                    travelMode: google.maps.TravelMode.DRIVING
-                }, (result, status) => {
-                    if (status !== google.maps.DirectionsStatus.OK) {
-                        routeSummary.textContent = 'Could not draw route right now.';
-                        return;
-                    }
-
-                    directionsRenderer.setDirections(result);
-                    const leg = result.routes?.[0]?.legs?.[0];
-                    if (leg) {
-                        routeSummary.textContent = `Route: ${leg.distance.text} • ${leg.duration.text}`;
-                    }
-                });
+                const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(`${origin.lat},${origin.lng}`)}&destination=${encodeURIComponent(`${destination.lat},${destination.lng}`)}&travelmode=driving`;
+                window.open(directionsUrl, '_blank', 'noopener,noreferrer');
+                routeSummary.textContent = 'Opened driving directions in a new tab.';
             }, () => {
                 routeSummary.textContent = 'Location permission denied. Allow location access and try again.';
             });
@@ -977,7 +962,7 @@
         mapStatus.textContent = 'Loading map services...';
         mapLoadPromise = new Promise((resolve) => {
             const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(mapsApiKey)}`;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(mapsApiKey)}&libraries=marker&loading=async`;
             script.async = true;
             script.defer = true;
             script.onload = () => {
@@ -1000,19 +985,20 @@
             zoom: 5
         });
 
-        directionsService = new google.maps.DirectionsService();
-        directionsRenderer = new google.maps.DirectionsRenderer({
-            map: stationsMap,
-            suppressMarkers: false
-        });
-
         driverStations.forEach((station) => {
             if (!station.latitude || !station.longitude) return;
-            const marker = new google.maps.Marker({
-                map: stationsMap,
-                position: { lat: Number(station.latitude), lng: Number(station.longitude) },
-                title: station.name
-            });
+            const position = { lat: Number(station.latitude), lng: Number(station.longitude) };
+            const marker = google.maps.marker?.AdvancedMarkerElement
+                ? new google.maps.marker.AdvancedMarkerElement({
+                    map: stationsMap,
+                    position,
+                    title: station.name
+                })
+                : new google.maps.Marker({
+                    map: stationsMap,
+                    position,
+                    title: station.name
+                });
             marker.addListener('click', () => {
                 stationIdInput.value = String(station.id);
                 const brandValue = String(station.brand || '').trim();

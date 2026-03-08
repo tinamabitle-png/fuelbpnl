@@ -12,9 +12,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp"></script>
+    @php
+        $hasViteAssets = is_file(public_path('hot')) || is_file(public_path('build/manifest.json'));
+    @endphp
+    @if($hasViteAssets)
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @else
+        <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp"></script>
+    @endif
     
     <!-- Charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -36,11 +41,21 @@
         body {
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
         }
-        
+
         /* Smooth transitions */
         .sidebar-link, button, a {
-            transition: all 0.2s ease-in-out;
+            transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        button:focus-visible,
+        a:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
         }
         
         /* Custom scrollbar */

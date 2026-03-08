@@ -158,10 +158,8 @@
 @endsection
 
 @push('scripts')
-@if(config('services.google_maps.key'))
-<script src="https://maps.googleapis.com/maps/api/js?key={{ urlencode((string) config('services.google_maps.key')) }}&libraries=places"></script>
-@endif
 <script>
+const googleMapsApiKey = @json(config('services.google_maps.key'));
 document.querySelectorAll('.file-drop').forEach((dropZone) => {
     const inputId = dropZone.getAttribute('data-target');
     const input = document.getElementById(inputId);
@@ -224,6 +222,25 @@ let driverMarker = null;
 let driverGeocodeTimer = null;
 let driverGeocoder = null;
 let driverAutocompleteService = null;
+
+const upsertDriverMarker = (currentMarker, position) => {
+    if (!driverMap) return currentMarker;
+
+    if (currentMarker) {
+        if (typeof currentMarker.setPosition === 'function') {
+            currentMarker.setPosition(position);
+        } else {
+            currentMarker.position = position;
+        }
+        return currentMarker;
+    }
+
+    if (google.maps.marker?.AdvancedMarkerElement) {
+        return new google.maps.marker.AdvancedMarkerElement({ map: driverMap, position });
+    }
+
+    return new google.maps.Marker({ map: driverMap, position });
+};
 
 const updateDriverMapStatus = (message, isError = false) => {
     if (!driverMapStatus) return;
@@ -300,14 +317,7 @@ const applyDriverLocationToMap = (lat, lng) => {
     if (driverLongitudeInput) driverLongitudeInput.value = String(lng);
 
     if (driverMap) {
-        if (!driverMarker) {
-            driverMarker = new google.maps.Marker({
-                position: { lat, lng },
-                map: driverMap,
-            });
-        } else {
-            driverMarker.setPosition({ lat, lng });
-        }
+        driverMarker = upsertDriverMarker(driverMarker, { lat, lng });
         driverMap.setCenter({ lat, lng });
         driverMap.setZoom(15);
     }
@@ -349,7 +359,12 @@ const renderDriverSuggestions = (items) => {
     driverAddressSuggestions.classList.remove('hidden');
 };
 
-if (driverMapNode && window.google?.maps && @json(config('services.google_maps.key'))) {
+const initDriverRegisterMap = () => {
+    if (!driverMapNode || !window.google?.maps || !googleMapsApiKey) {
+        updateDriverMapStatus('Google map preview unavailable (GOOGLE_MAPS_API_KEY not set).');
+        return;
+    }
+
     driverMap = new google.maps.Map(driverMapNode, {
         center: { lat: fallbackCenter[0], lng: fallbackCenter[1] },
         zoom: 11,
@@ -363,14 +378,28 @@ if (driverMapNode && window.google?.maps && @json(config('services.google_maps.k
     const existingLat = parseFloat(driverLatitudeInput?.value || '');
     const existingLng = parseFloat(driverLongitudeInput?.value || '');
     if (Number.isFinite(existingLat) && Number.isFinite(existingLng)) {
-        driverMarker = new google.maps.Marker({
-            position: { lat: existingLat, lng: existingLng },
-            map: driverMap,
-        });
+        driverMarker = upsertDriverMarker(driverMarker, { lat: existingLat, lng: existingLng });
         driverMap.setCenter({ lat: existingLat, lng: existingLng });
         driverMap.setZoom(15);
         updateDriverMapStatus(`Pinned at ${existingLat.toFixed(6)}, ${existingLng.toFixed(6)}`);
     }
+};
+window.initDriverRegisterMap = initDriverRegisterMap;
+
+if (window.google?.maps && googleMapsApiKey) {
+    initDriverRegisterMap();
+} else if (googleMapsApiKey) {
+    updateDriverMapStatus('Loading Google Maps...');
+    if (typeof window.gm_authFailure !== 'function') {
+        window.gm_authFailure = () => {
+            updateDriverMapStatus('Google Maps authentication failed. Check API key, billing, and domain restrictions.', true);
+        };
+    }
+    window.setTimeout(() => {
+        if (!driverMap && !window.google?.maps) {
+            updateDriverMapStatus('Google Maps failed to load. Check API key restrictions or internet access.', true);
+        }
+    }, 4500);
 } else {
     updateDriverMapStatus('Google map preview unavailable (GOOGLE_MAPS_API_KEY not set).');
 }
@@ -500,4 +529,7 @@ if (useDriverCurrentLocationBtn) {
     });
 }
 </script>
+@if(config('services.google_maps.key'))
+<script src="https://maps.googleapis.com/maps/api/js?key={{ urlencode((string) config('services.google_maps.key')) }}&libraries=places,marker&loading=async&callback=initDriverRegisterMap" async defer></script>
+@endif
 @endpush

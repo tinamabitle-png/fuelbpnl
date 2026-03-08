@@ -53,7 +53,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.tailwindcss.com"></script>
+    @php
+        $hasViteAssets = is_file(public_path('hot')) || is_file(public_path('build/manifest.json'));
+    @endphp
+    @if($hasViteAssets)
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @else
+        <script src="https://cdn.tailwindcss.com"></script>
+    @endif
     <style>
         :root {
             --ink: #0f172a;
@@ -79,6 +86,64 @@
                 radial-gradient(1000px 700px at 90% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
                 #f8fafc;
             min-height: 100vh;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        a,
+        button,
+        input,
+        select,
+        textarea {
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+        }
+
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+        }
+
+        input,
+        select,
+        textarea {
+            border-radius: 0.75rem;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #0f172a;
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: #94a3b8;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 0.9rem;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 0.75rem 0.9rem;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            font-size: 0.78rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #475569;
+            background: #f8fafc;
         }
 
         .brand-font {
@@ -111,6 +176,19 @@
         .btn-ghost:hover {
             border-color: rgba(59, 130, 246, 0.6);
             background: #eff6ff;
+        }
+
+        .surface-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            box-shadow: 0 14px 28px -24px rgba(15, 23, 42, 0.35);
+        }
+
+        .bwiser-qr-stack {
+            position: relative;
+            isolation: isolate;
+            display: inline-flex;
         }
 
         .hero-gradient-text {

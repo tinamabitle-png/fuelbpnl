@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bwiser - CodeCanyon Documentation</title>
+  <link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+  <header>
+    <h1>Bwiser Documentation</h1>
+    <p>Version 1.0.0 | Laravel Fuel Credit & Voucher Platform</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Package Contents</h2>
+      <ul>
+        <li><code>Main-Files/Bwiser-Laravel-App-v1.0.0.zip</code> - full source package</li>
+        <li><code>Documentation/</code> - buyer docs</li>
+        <li><code>Preview-Images/</code> - Envato preview/thumbnail/screenshots</li>
+        <li><code>Licensing/THIRD_PARTY_LICENSES.md</code> - license references</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Server Requirements</h2>
+      <ul>
+        <li>PHP 8.2+</li>
+        <li>MySQL 8.0+ or MariaDB 10.6+</li>
+        <li>Composer 2.x</li>
+        <li>Node.js 20+ and npm 10+</li>
+        <li>Nginx or Apache with URL rewriting</li>
+        <li>SSL certificate for production</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Installation</h2>
+      <ol>
+        <li>Upload and extract <code>Bwiser-Laravel-App-v1.0.0.zip</code>.</li>
+        <li>Run <code>composer install --no-dev --optimize-autoloader</code>.</li>
+        <li>Run <code>npm ci && npm run build</code>.</li>
+        <li>Copy <code>.env.example</code> to <code>.env</code>.</li>
+        <li>Set database, app URL, and third-party keys in <code>.env</code>.</li>
+        <li>Run <code>php artisan key:generate</code>.</li>
+        <li>Run <code>php artisan migrate --force</code>.</li>
+        <li>Run <code>php artisan storage:link</code>.</li>
+        <li>Run <code>php artisan config:cache && php artisan route:cache && php artisan view:cache</code>.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Environment Keys</h2>
+      <p>Configure only the providers you use:</p>
+      <ul>
+        <li>Google Sign In: <code>GOOGLE_CLIENT_ID</code>, <code>GOOGLE_CLIENT_SECRET</code>, <code>GOOGLE_REDIRECT_URI</code></li>
+        <li>Google Maps: <code>GOOGLE_MAPS_API_KEY</code></li>
+        <li>Paystack: <code>PAYSTACK_PUBLIC_KEY</code>, <code>PAYSTACK_SECRET_KEY</code></li>
+        <li>OpenAI (optional): <code>OPENAI_API_KEY</code></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>First Admin Account</h2>
+      <ol>
+        <li>Create a user account via registration.</li>
+        <li>Assign admin role via Tinker or SQL according to your deployment policy.</li>
+        <li>Login and complete platform settings.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Envato Submission Notes</h2>
+      <ul>
+        <li>All secrets removed from package.</li>
+        <li>Demo credentials not included.</li>
+        <li>Replace placeholder preview images with final UI screenshots if needed.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

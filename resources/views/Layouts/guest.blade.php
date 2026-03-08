@@ -50,7 +50,46 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.tailwindcss.com"></script>
+    @php
+        $hasViteAssets = is_file(public_path('hot')) || is_file(public_path('build/manifest.json'));
+    @endphp
+    @if($hasViteAssets)
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @else
+        <script src="https://cdn.tailwindcss.com"></script>
+    @endif
+    <style>
+        * {
+            font-family: "Outfit", sans-serif;
+        }
+
+        body {
+            background:
+                radial-gradient(1200px 800px at 12% 8%, #eef2ff 0%, #f8fafc 58%),
+                radial-gradient(1000px 700px at 100% 0%, rgba(59, 130, 246, 0.12) 0%, transparent 52%),
+                #f8fafc;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        a,
+        button,
+        input,
+        select,
+        textarea {
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+        }
+
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+        }
+    </style>
     @stack('styles')
 </head>
 <body class="bg-slate-50 text-slate-900">
