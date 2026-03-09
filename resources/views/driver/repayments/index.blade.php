@@ -70,6 +70,66 @@
                 <p class="mt-1 font-semibold text-slate-800">{{ (int) ($autopay['failures'] ?? 0) }}</p>
             </div>
         </div>
+        <div class="mt-4 flex flex-wrap gap-4 items-start">
+            <div class="pay-card-wrap" aria-label="Saved repayment card">
+                <div class="pay-card">
+                    <div class="pay-card__info">
+                        <div class="pay-card__logo">{{ strtoupper((string) ($autopay['card']['brand'] ?? 'Card')) }}</div>
+                        <div class="pay-card__chip">
+                            <svg class="pay-card__chip-lines" role="img" width="20" height="20" viewBox="0 0 100 100" aria-label="Chip">
+                                <g opacity="0.8">
+                                    <polyline points="0,50 35,50" fill="none" stroke="#000" stroke-width="2"></polyline>
+                                    <polyline points="0,20 20,20 35,35" fill="none" stroke="#000" stroke-width="2"></polyline>
+                                    <polyline points="50,0 50,35" fill="none" stroke="#000" stroke-width="2"></polyline>
+                                    <polyline points="65,35 80,20 100,20" fill="none" stroke="#000" stroke-width="2"></polyline>
+                                    <polyline points="100,50 65,50" fill="none" stroke="#000" stroke-width="2"></polyline>
+                                    <polyline points="35,35 65,35 65,65 35,65 35,35" fill="none" stroke="#000" stroke-width="2"></polyline>
+                                    <polyline points="0,80 20,80 35,65" fill="none" stroke="#000" stroke-width="2"></polyline>
+                                    <polyline points="50,100 50,65" fill="none" stroke="#000" stroke-width="2"></polyline>
+                                    <polyline points="65,65 80,80 100,80" fill="none" stroke="#000" stroke-width="2"></polyline>
+                                </g>
+                            </svg>
+                            <div class="pay-card__chip-texture"></div>
+                        </div>
+                        <div class="pay-card__type">autopay</div>
+                        <div class="pay-card__number">
+                            <span class="pay-card__digit-group">••••</span>
+                            <span class="pay-card__digit-group">••••</span>
+                            <span class="pay-card__digit-group">••••</span>
+                            <span class="pay-card__digit-group">{{ ($autopay['card']['last4'] ?? '') !== '' ? ($autopay['card']['last4']) : '----' }}</span>
+                        </div>
+                        <div class="pay-card__valid-thru" aria-label="Valid thru">Valid<br>thru</div>
+                        <div class="pay-card__exp-date">
+                            <time datetime="2038-01">{{ (string) ($autopay['card']['expiry'] ?? 'N/A') }}</time>
+                        </div>
+                        <div class="pay-card__name">{{ strtoupper((string) ($autopay['card']['holder'] ?? 'Card Holder')) }}</div>
+                        @php
+                            $cardBrand = strtolower((string) ($autopay['card']['brand'] ?? ''));
+                        @endphp
+                        @if(str_contains($cardBrand, 'visa'))
+                            <div class="pay-card__vendor pay-card__vendor--visa" role="img" aria-label="Visa">
+                                <span class="pay-card__vendor-visa-text">VISA</span>
+                            </div>
+                        @elseif(str_contains($cardBrand, 'master'))
+                            <div class="pay-card__vendor pay-card__vendor--mastercard" role="img" aria-label="Mastercard">
+                                <span class="pay-card__vendor-sr">Mastercard</span>
+                            </div>
+                        @else
+                            <div class="pay-card__vendor pay-card__vendor--generic" role="img" aria-label="Card">
+                                <span class="pay-card__vendor-generic-text">{{ strtoupper((string) ($autopay['card']['brand'] ?? 'CARD')) }}</span>
+                            </div>
+                        @endif
+                        <div class="pay-card__texture"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600 max-w-sm">
+                <p class="font-semibold text-slate-800">Saved Card</p>
+                <p class="mt-1">
+                    {{ ($autopay['card']['is_saved'] ?? false) ? ('Using ' . ($autopay['card']['brand'] ?? 'Card') . ' ending in ' . ($autopay['card']['last4'] ?? '')) : 'No saved card yet. Make one successful card repayment first.' }}
+                </p>
+            </div>
+        </div>
         <div class="mt-4 flex flex-wrap items-center gap-2">
             <form method="POST" action="{{ route('driver.repayments.autopay.toggle') }}">
                 @csrf
@@ -457,6 +517,227 @@
         font-family: system-ui, -apple-system, sans-serif;
     }
 
+    .pay-card,
+    .pay-card__chip {
+        overflow: hidden;
+        position: relative;
+    }
+
+    .pay-card,
+    .pay-card__chip-texture,
+    .pay-card__texture {
+        animation-duration: 3s;
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: infinite;
+    }
+
+    .pay-card-wrap {
+        perspective: 700px;
+    }
+
+    .pay-card {
+        --pay-primary: #1d4ed8;
+        animation-name: payCardRotate;
+        background-color: var(--pay-primary);
+        background-image:
+            radial-gradient(circle at 100% 0%, hsla(0,0%,100%,0.1) 29.5%, hsla(0,0%,100%,0) 30%),
+            radial-gradient(circle at 100% 0%, hsla(0,0%,100%,0.1) 39.5%, hsla(0,0%,100%,0) 40%),
+            radial-gradient(circle at 100% 0%, hsla(0,0%,100%,0.1) 49.5%, hsla(0,0%,100%,0) 50%),
+            linear-gradient(130deg, #1d4ed8 0%, #0ea5e9 100%);
+        border-radius: 0.9rem;
+        box-shadow: 0 18px 34px -20px rgba(2, 6, 23, 0.55), -0.2rem 0 0.75rem 0 rgba(2, 6, 23, 0.25);
+        color: #fff;
+        width: 18rem;
+        height: 11.2rem;
+        transform: translate3d(0, 0, 0);
+    }
+
+    .pay-card__info,
+    .pay-card__chip-texture,
+    .pay-card__texture {
+        position: absolute;
+    }
+
+    .pay-card__chip-texture,
+    .pay-card__texture {
+        animation-name: payCardTexture;
+        top: 0;
+        left: 0;
+        width: 200%;
+        height: 100%;
+    }
+
+    .pay-card__info {
+        font: 0.8rem/1 "DM Sans", sans-serif;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 0.95rem;
+        inset: 0;
+    }
+
+    .pay-card__logo,
+    .pay-card__number {
+        width: 100%;
+    }
+
+    .pay-card__logo {
+        font-weight: 700;
+        letter-spacing: 0.06em;
+    }
+
+    .pay-card__chip {
+        background-image: linear-gradient(hsl(0,0%,70%), hsl(0,0%,80%));
+        border-radius: 0.25rem;
+        box-shadow: 0 0 0 0.05rem hsla(0,0%,0%,0.45) inset;
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+
+    .pay-card__chip-lines {
+        width: 100%;
+        height: auto;
+    }
+
+    .pay-card__chip-texture {
+        background-image: linear-gradient(-80deg, hsla(0,0%,100%,0), hsla(0,0%,100%,0.55) 48% 52%, hsla(0,0%,100%,0));
+    }
+
+    .pay-card__type {
+        align-self: flex-end;
+        margin-left: auto;
+        text-transform: uppercase;
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+    }
+
+    .pay-card__digit-group,
+    .pay-card__exp-date,
+    .pay-card__name {
+        background: linear-gradient(hsl(0,0%,100%), hsl(0,0%,85%) 15% 55%, hsl(0,0%,70%) 70%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-family: "Courier Prime", monospace;
+        filter: drop-shadow(0 0.05rem hsla(0,0%,0%,0.3));
+    }
+
+    .pay-card__number {
+        font-size: 0.92rem;
+        display: flex;
+        justify-content: space-between;
+        margin-top: 0.2rem;
+    }
+
+    .pay-card__valid-thru,
+    .pay-card__name {
+        text-transform: uppercase;
+    }
+
+    .pay-card__valid-thru,
+    .pay-card__exp-date {
+        margin-bottom: 0.2rem;
+        width: 50%;
+    }
+
+    .pay-card__valid-thru {
+        font-size: 0.38rem;
+        padding-right: 0.25rem;
+        text-align: right;
+    }
+
+    .pay-card__exp-date,
+    .pay-card__name {
+        font-size: 0.66rem;
+    }
+
+    .pay-card__exp-date {
+        padding-left: 0.25rem;
+    }
+
+    .pay-card__name {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        width: 11rem;
+    }
+
+    .pay-card__vendor,
+    .pay-card__vendor:before,
+    .pay-card__vendor:after {
+        position: absolute;
+    }
+
+    .pay-card__vendor {
+        right: 0.6rem;
+        bottom: 0.6rem;
+        width: 2.9rem;
+        height: 1.6rem;
+    }
+
+    .pay-card__vendor--mastercard:before,
+    .pay-card__vendor--mastercard:after {
+        border-radius: 50%;
+        content: "";
+        display: block;
+        top: 0;
+        width: 1.6rem;
+        height: 1.6rem;
+    }
+
+    .pay-card__vendor--mastercard:before {
+        background-color: #e71d1a;
+        left: 0;
+    }
+
+    .pay-card__vendor--mastercard:after {
+        background-color: #fa5e03;
+        box-shadow: -1.1rem 0 0 #f59d1a inset;
+        right: 0;
+    }
+
+    .pay-card__vendor--visa {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .pay-card__vendor-visa-text {
+        font-family: "DM Sans", sans-serif;
+        font-weight: 800;
+        font-size: 1.05rem;
+        letter-spacing: 0.03em;
+        color: #f8fafc;
+        text-shadow: 0 1px 2px rgba(2, 6, 23, 0.45);
+    }
+
+    .pay-card__vendor--generic {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .pay-card__vendor-generic-text {
+        font-family: "DM Sans", sans-serif;
+        font-weight: 700;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        color: #f8fafc;
+        text-shadow: 0 1px 2px rgba(2, 6, 23, 0.45);
+    }
+
+    .pay-card__vendor-sr {
+        clip: rect(1px, 1px, 1px, 1px);
+        overflow: hidden;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+    }
+
+    .pay-card__texture {
+        animation-name: payCardTexture;
+        background-image: linear-gradient(-80deg, hsla(0,0%,100%,0.25) 25%, hsla(0,0%,100%,0) 45%);
+    }
+
     @keyframes iconRotate {
         0% {
             opacity: 0;
@@ -497,6 +778,36 @@
         100% {
             opacity: 1;
             transform: scale(1) rotate(0deg);
+        }
+    }
+
+    @keyframes payCardRotate {
+        from, to {
+            animation-timing-function: ease-in;
+            box-shadow: 0 18px 34px -20px rgba(2, 6, 23, 0.55);
+            transform: rotateY(-8deg);
+        }
+
+        25%, 75% {
+            animation-timing-function: ease-out;
+            box-shadow: 0 22px 36px -24px rgba(2, 6, 23, 0.5);
+            transform: rotateY(0deg);
+        }
+
+        50% {
+            animation-timing-function: ease-in;
+            box-shadow: 0 26px 40px -24px rgba(2, 6, 23, 0.55);
+            transform: rotateY(8deg);
+        }
+    }
+
+    @keyframes payCardTexture {
+        from, to {
+            transform: translate3d(0, 0, 0);
+        }
+
+        50% {
+            transform: translate3d(-50%, 0, 0);
         }
     }
 

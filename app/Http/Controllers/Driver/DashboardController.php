@@ -482,6 +482,23 @@ class DashboardController extends Controller
             'last_attempt_at' => $user->autopay_last_attempt_at,
         ];
 
+        $autopayDetails = (array) ($user->autopay_details ?? []);
+        $authorization = (array) ($autopayDetails['authorization'] ?? []);
+        $rawLast4 = preg_replace('/\D+/', '', (string) ($authorization['last4'] ?? ''));
+        $safeLast4 = strlen($rawLast4) === 4 ? $rawLast4 : '';
+        $brand = trim((string) ($authorization['brand'] ?? 'Card'));
+        $expMonth = str_pad((string) ($authorization['exp_month'] ?? ''), 2, '0', STR_PAD_LEFT);
+        $expYearRaw = trim((string) ($authorization['exp_year'] ?? ''));
+        $expYear = strlen($expYearRaw) >= 2 ? substr($expYearRaw, -2) : '';
+
+        $autopay['card'] = [
+            'brand' => $brand !== '' ? $brand : 'Card',
+            'last4' => $safeLast4,
+            'expiry' => ($expMonth !== '' && $expYear !== '') ? ($expMonth . '/' . $expYear) : 'N/A',
+            'holder' => (string) ($user->name ?? 'Card Holder'),
+            'is_saved' => $safeLast4 !== '' && ($autopay['has_token'] ?? false),
+        ];
+
         $autopayEvents = AuditLog::query()
             ->where('user_id', $user->id)
             ->whereIn('action', [
