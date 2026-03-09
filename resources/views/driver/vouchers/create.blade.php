@@ -237,6 +237,13 @@
                 <h2 class="brand-font text-xl text-slate-900">Station Map & Route</h2>
                 <button id="routeButton" type="button" class="btn-ghost px-3 py-2 rounded-lg text-sm font-semibold">Route from my location</button>
             </div>
+            <div class="mt-3 flex flex-wrap items-center gap-2" id="mapProviderTabs" role="tablist" aria-label="Map providers">
+                <button type="button" class="map-provider-tab px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-300 bg-white text-slate-700" data-map-provider="google">Google</button>
+                <button type="button" class="map-provider-tab px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-300 bg-white text-slate-700" data-map-provider="here">HERE</button>
+                <button type="button" class="map-provider-tab px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-300 bg-white text-slate-700" data-map-provider="bing">Bing</button>
+                <button type="button" class="map-provider-tab px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-300 bg-white text-slate-700" data-map-provider="leaflet">Leaflet</button>
+                <span id="mapProviderMeta" class="text-xs text-slate-500 ml-1">Map provider</span>
+            </div>
 
             <div class="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                 <label class="block text-sm font-semibold text-slate-700 mb-3">Choose Fuel Station</label>
@@ -254,9 +261,9 @@
                 <p id="stationAddressHint" class="text-xs text-slate-500 mt-2">Choose a brand and station to see address details.</p>
             </div>
 
-            @if(!config('services.google_maps.key'))
-                <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                    Google Maps API key not configured. Set <code>GOOGLE_MAPS_API_KEY</code> to enable map and route drawing.
+            @if(!(config('services.google_maps.enabled', true) && config('services.google_maps.key')) && !config('services.here_maps.key') && !config('services.bing_maps.key'))
+                <div class="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
+                    Running on Leaflet fallback. Add <code>GOOGLE_MAPS_API_KEY</code>, <code>HERE_MAPS_API_KEY</code>, or <code>BING_MAPS_API_KEY</code> for premium map providers.
                 </div>
             @endif
 
@@ -270,7 +277,10 @@
 @php
     $stationsJson = $stationsPayload->toJson();
     $leaseDefaultsJson = collect($leaseDefaults)->toJson();
+    $googleMapsEnabled = (bool) config('services.google_maps.enabled', true);
     $googleMapsApiKey = (string) config('services.google_maps.key');
+    $hereMapsApiKey = (string) config('services.here_maps.key');
+    $bingMapsApiKey = (string) config('services.bing_maps.key');
 @endphp
 <style>
     .repayment-control-wrap {
@@ -532,21 +542,49 @@
         transform: translate(-50%, -50%);
         background: rgba(255, 255, 255, calc((var(--active) * 0.4) + 0.5));
     }
+
+    .map-provider-tab.active {
+        border-color: #2563eb;
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .map-provider-tab.disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
 </style>
 <script>
     const driverStations = {!! $stationsJson !!};
     const allowedBrands = @json($stationBrands->values());
     const allowedBrandSet = new Set((allowedBrands || []).map((brand) => String(brand).trim()));
     const initialBrandFilter = @json($oldStation['brand'] ?? '');
+    const googleMapsEnabled = @json($googleMapsEnabled);
     const maxEligibleAmount = Number(@json((float) ($maxEligibleAmount ?? 100000)));
     const leaseDefaults = {!! $leaseDefaultsJson !!};
     const mapsApiKey = @json($googleMapsApiKey);
+    const hereMapsApiKey = @json($hereMapsApiKey);
+    const bingMapsApiKey = @json($bingMapsApiKey);
+    const hasGoogleMaps = Boolean(googleMapsEnabled && mapsApiKey);
+    const hasHereMaps = Boolean(hereMapsApiKey);
+    const hasBingMaps = Boolean(bingMapsApiKey);
+    const hasLeafletMaps = true;
+    const mapProviderOrder = ['google', 'here', 'bing', 'leaflet'];
+    const mapProviderLabel = {
+        google: 'Google',
+        here: 'HERE',
+        bing: 'Bing',
+        leaflet: 'Leaflet',
+    };
+    const mapProviderStorageKey = 'bwiser_driver_voucher_map_provider';
+    let activeMapProvider = 'leaflet';
     let stationsMap;
     let mapLoadPromise = null;
     let selectedStation = null;
     let filteredStations = [];
     let userLocation = null;
     const markers = [];
+    const leafletMarkerByStationId = new Map();
     let projectionFrame = null;
     let activeBrandFilter = String(initialBrandFilter || '').trim();
 
@@ -575,11 +613,131 @@
     const submitVoucherButton = document.querySelector('#driverVoucherForm button[type=\"submit\"]');
     const repaymentControl = document.getElementById('repaymentControl');
     const routeButton = document.getElementById('routeButton');
+    const mapProviderTabs = Array.from(document.querySelectorAll('.map-provider-tab'));
+    const mapProviderMeta = document.getElementById('mapProviderMeta');
     const mapStatus = document.getElementById('mapStatus');
     const routeSummary = document.getElementById('routeSummary');
     const voucherForm = document.getElementById('driverVoucherForm');
     let lastDailyRepaymentValid = true;
     let submitInProgress = false;
+    const scriptLoadCache = new Map();
+
+    function isProviderAvailable(provider) {
+        if (provider === 'google') return hasGoogleMaps;
+        if (provider === 'here') return hasHereMaps;
+        if (provider === 'bing') return hasBingMaps;
+        if (provider === 'leaflet') return hasLeafletMaps;
+        return false;
+    }
+
+    function pickInitialMapProvider() {
+        const saved = String(localStorage.getItem(mapProviderStorageKey) || '').trim().toLowerCase();
+        if (isProviderAvailable(saved)) return saved;
+        return mapProviderOrder.find((provider) => isProviderAvailable(provider)) || 'leaflet';
+    }
+
+    function updateMapProviderTabs() {
+        mapProviderTabs.forEach((button) => {
+            const provider = String(button.dataset.mapProvider || '').toLowerCase();
+            const available = isProviderAvailable(provider);
+            const active = provider === activeMapProvider;
+            button.classList.toggle('active', active);
+            button.classList.toggle('disabled', !available);
+            button.disabled = !available;
+        });
+
+        if (mapProviderMeta) {
+            const label = mapProviderLabel[activeMapProvider] || activeMapProvider;
+            mapProviderMeta.textContent = `Provider: ${label}`;
+        }
+    }
+
+    function loadScriptOnce(src) {
+        if (scriptLoadCache.has(src)) return scriptLoadCache.get(src);
+
+        const promise = new Promise((resolve, reject) => {
+            const existing = Array.from(document.scripts).find((script) => script.src === src);
+            if (existing) {
+                if (existing.dataset.loaded === '1') {
+                    resolve();
+                    return;
+                }
+                existing.addEventListener('load', () => resolve(), { once: true });
+                existing.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)), { once: true });
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.defer = true;
+            script.onload = () => {
+                script.dataset.loaded = '1';
+                resolve();
+            };
+            script.onerror = () => reject(new Error(`Failed to load ${src}`));
+            document.head.appendChild(script);
+        });
+
+        scriptLoadCache.set(src, promise);
+        return promise;
+    }
+
+    function ensureLeafletCss() {
+        if (document.querySelector('link[data-leaflet-css="1"]')) return;
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        link.dataset.leafletCss = '1';
+        document.head.appendChild(link);
+    }
+
+    function ensureHereCss() {
+        if (document.querySelector('link[data-here-ui-css="1"]')) return;
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://js.api.here.com/v3/3.1/mapsjs-ui.css';
+        link.dataset.hereUiCss = '1';
+        document.head.appendChild(link);
+    }
+
+    function resetMapInstance() {
+        if (stationsMap) {
+            if (activeMapProvider === 'here' && typeof stationsMap.dispose === 'function') {
+                stationsMap.dispose();
+            } else if (activeMapProvider === 'leaflet' && typeof stationsMap.remove === 'function') {
+                stationsMap.remove();
+            }
+        }
+
+        markers.length = 0;
+        stationsMap = null;
+        mapLoadPromise = null;
+
+        const current = document.getElementById('stationsMap');
+        if (current && current.parentNode) {
+            const replacement = current.cloneNode(false);
+            current.parentNode.replaceChild(replacement, current);
+        }
+    }
+
+    function setActiveMapProvider(provider, options = {}) {
+        const { persist = true, reload = true } = options;
+        const nextProvider = String(provider || '').toLowerCase();
+        if (!isProviderAvailable(nextProvider)) return;
+
+        const changed = nextProvider !== activeMapProvider;
+        activeMapProvider = nextProvider;
+        if (persist) localStorage.setItem(mapProviderStorageKey, activeMapProvider);
+        updateMapProviderTabs();
+
+        if (reload && changed) {
+            resetMapInstance();
+            ensureMapLoaded().then((loaded) => {
+                if (loaded && selectedStation) focusStationOnMap(selectedStation);
+            });
+        }
+    }
 
     function getCurrentAmount() {
         return Number(amountInput?.value || 0);
@@ -746,6 +904,24 @@
         return r * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     }
 
+    function leafletStationIcon(isSelected = false) {
+        const color = isSelected ? '#dc2626' : '#2563eb';
+        return L.divIcon({
+            className: 'leaflet-station-pin',
+            html: `<span style="display:inline-block;width:14px;height:14px;border-radius:9999px;background:${color};border:2px solid #ffffff;box-shadow:0 0 0 2px rgba(15,23,42,0.2);"></span>`,
+            iconSize: [14, 14],
+            iconAnchor: [7, 7],
+        });
+    }
+
+    function updateLeafletSelectedMarker() {
+        if (activeMapProvider !== 'leaflet') return;
+        const selectedId = String(stationIdInput?.value || '');
+        leafletMarkerByStationId.forEach((marker, id) => {
+            marker.setIcon(leafletStationIcon(id === selectedId));
+        });
+    }
+
     function getFilteredStations() {
         const selectedBrand = activeBrandFilter;
         const searchTerm = stationSearchInput.value.trim();
@@ -858,6 +1034,7 @@
             routeSummary.textContent = '';
             stationAddressHint.textContent = 'Choose a brand and station to see address details.';
         }
+        updateLeafletSelectedMarker();
         updatePriceEstimate();
     }
 
@@ -907,8 +1084,20 @@
         }
 
         const target = { lat: Number(station.latitude), lng: Number(station.longitude) };
-        stationsMap.panTo(target);
-        stationsMap.setZoom(12);
+        if (activeMapProvider === 'here') {
+            stationsMap.setCenter(target);
+            stationsMap.setZoom(12);
+        } else if (activeMapProvider === 'leaflet') {
+            stationsMap.setView([target.lat, target.lng], 12);
+        } else if (activeMapProvider === 'bing') {
+            stationsMap.setView({
+                center: new Microsoft.Maps.Location(target.lat, target.lng),
+                zoom: 12,
+            });
+        } else {
+            stationsMap.panTo(target);
+            stationsMap.setZoom(12);
+        }
         mapStatus.textContent = `Selected: ${station.name}, ${station.city}`;
     }
 
@@ -938,7 +1127,12 @@
                     lng: Number(selectedStation.longitude)
                 };
 
-                const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(`${origin.lat},${origin.lng}`)}&destination=${encodeURIComponent(`${destination.lat},${destination.lng}`)}&travelmode=driving`;
+                let directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(`${origin.lat},${origin.lng}`)}&destination=${encodeURIComponent(`${destination.lat},${destination.lng}`)}&travelmode=driving`;
+                if (activeMapProvider === 'here') {
+                    directionsUrl = `https://wego.here.com/directions/drive/${origin.lat},${origin.lng}/${destination.lat},${destination.lng}`;
+                } else if (activeMapProvider === 'bing') {
+                    directionsUrl = `https://www.bing.com/maps?rtp=pos.${origin.lat}_${origin.lng}~pos.${destination.lat}_${destination.lng}&mode=D`;
+                }
                 window.open(directionsUrl, '_blank', 'noopener,noreferrer');
                 routeSummary.textContent = 'Opened driving directions in a new tab.';
             }, () => {
@@ -948,16 +1142,23 @@
     }
 
     function ensureMapLoaded() {
-        if (!mapsApiKey) {
-            mapStatus.textContent = 'Google Maps API key not configured.';
-            return Promise.resolve(false);
-        }
-
         if (stationsMap) {
             return Promise.resolve(true);
         }
 
-        if (window.google?.maps) {
+        if (activeMapProvider === 'google' && window.google?.maps) {
+            initDriverStationsMap();
+            return Promise.resolve(true);
+        }
+        if (activeMapProvider === 'here' && window.H?.service) {
+            initDriverStationsMap();
+            return Promise.resolve(true);
+        }
+        if (activeMapProvider === 'leaflet' && window.L?.map) {
+            initDriverStationsMap();
+            return Promise.resolve(true);
+        }
+        if (activeMapProvider === 'bing' && window.Microsoft?.Maps) {
             initDriverStationsMap();
             return Promise.resolve(true);
         }
@@ -966,60 +1167,235 @@
             return mapLoadPromise;
         }
 
+        if (!isProviderAvailable(activeMapProvider)) {
+            mapStatus.textContent = `Map provider ${mapProviderLabel[activeMapProvider] || activeMapProvider} is not configured.`;
+            return Promise.resolve(false);
+        }
+
         mapStatus.textContent = 'Loading map services...';
         mapLoadPromise = new Promise((resolve) => {
-            const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(mapsApiKey)}&libraries=marker&loading=async`;
-            script.async = true;
-            script.defer = true;
-            script.onload = () => {
-                initDriverStationsMap();
-                resolve(true);
-            };
-            script.onerror = () => {
-                mapStatus.textContent = 'Failed to load map services.';
-                resolve(false);
-            };
-            document.head.appendChild(script);
+            if (activeMapProvider === 'google') {
+                if (!mapsApiKey) {
+                    mapStatus.textContent = 'Google Maps key not configured.';
+                    resolve(false);
+                    return;
+                }
+                loadScriptOnce(`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(mapsApiKey)}&libraries=marker&loading=async`)
+                    .then(() => {
+                        if (!window.google?.maps) {
+                            throw new Error('Google Maps failed to initialize');
+                        }
+                        initDriverStationsMap();
+                        resolve(true);
+                    })
+                    .catch(() => {
+                        mapStatus.textContent = 'Failed to load Google Maps.';
+                        resolve(false);
+                    });
+                return;
+            }
+
+            if (activeMapProvider === 'here') {
+                if (!hereMapsApiKey) {
+                    mapStatus.textContent = 'HERE Maps key not configured.';
+                    resolve(false);
+                    return;
+                }
+                const hereScripts = [
+                    'https://js.api.here.com/v3/3.1/mapsjs-core.js',
+                    'https://js.api.here.com/v3/3.1/mapsjs-service.js',
+                    'https://js.api.here.com/v3/3.1/mapsjs-mapevents.js',
+                    'https://js.api.here.com/v3/3.1/mapsjs-ui.js',
+                ];
+
+                Promise.all(hereScripts.map(loadScriptOnce))
+                    .then(() => {
+                        ensureHereCss();
+                        if (!window.H?.service) {
+                            throw new Error('HERE Maps failed to initialize');
+                        }
+                        initDriverStationsMap();
+                        resolve(true);
+                    })
+                    .catch(() => {
+                        mapStatus.textContent = 'Failed to load HERE Maps.';
+                        resolve(false);
+                    });
+                return;
+            }
+
+            if (activeMapProvider === 'bing') {
+                if (!bingMapsApiKey) {
+                    mapStatus.textContent = 'Bing Maps key not configured.';
+                    resolve(false);
+                    return;
+                }
+
+                window.__onBingMapsLoaded = () => {
+                    initDriverStationsMap();
+                    resolve(true);
+                };
+
+                loadScriptOnce(`https://www.bing.com/api/maps/mapcontrol?callback=__onBingMapsLoaded&key=${encodeURIComponent(bingMapsApiKey)}`)
+                    .then(() => {
+                        if (window.Microsoft?.Maps && !stationsMap) {
+                            initDriverStationsMap();
+                            resolve(true);
+                        }
+                    })
+                    .catch(() => {
+                        mapStatus.textContent = 'Failed to load Bing Maps.';
+                        resolve(false);
+                    });
+                return;
+            }
+
+            if (activeMapProvider === 'leaflet') {
+                ensureLeafletCss();
+                loadScriptOnce('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js')
+                    .then(() => {
+                        if (!window.L?.map) {
+                            throw new Error('Leaflet failed to initialize');
+                        }
+                        initDriverStationsMap();
+                        resolve(true);
+                    })
+                    .catch(() => {
+                        mapStatus.textContent = 'Failed to load Leaflet.';
+                        resolve(false);
+                    });
+                return;
+            }
+
+            resolve(false);
         });
 
         return mapLoadPromise;
     }
 
     function initDriverStationsMap() {
-        stationsMap = new google.maps.Map(document.getElementById('stationsMap'), {
-            center: { lat: -30.5595, lng: 22.9375 },
-            zoom: 5
-        });
+        leafletMarkerByStationId.clear();
+        if (activeMapProvider === 'here') {
+            const platform = new H.service.Platform({ apikey: hereMapsApiKey });
+            const layers = platform.createDefaultLayers();
+            stationsMap = new H.Map(
+                document.getElementById('stationsMap'),
+                layers.vector.normal.map,
+                { center: { lat: -30.5595, lng: 22.9375 }, zoom: 5, pixelRatio: window.devicePixelRatio || 1 }
+            );
+            const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(stationsMap));
+            void behavior;
+            H.ui.UI.createDefault(stationsMap, layers);
+            window.addEventListener('resize', () => stationsMap.getViewPort().resize());
+        } else if (activeMapProvider === 'leaflet') {
+            stationsMap = L.map('stationsMap').setView([-30.5595, 22.9375], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors',
+            }).addTo(stationsMap);
+        } else if (activeMapProvider === 'bing') {
+            stationsMap = new Microsoft.Maps.Map(document.getElementById('stationsMap'), {
+                credentials: bingMapsApiKey,
+                center: new Microsoft.Maps.Location(-30.5595, 22.9375),
+                zoom: 5,
+            });
+        } else {
+            stationsMap = new google.maps.Map(document.getElementById('stationsMap'), {
+                center: { lat: -30.5595, lng: 22.9375 },
+                zoom: 5
+            });
+        }
 
         driverStations.forEach((station) => {
             if (!station.latitude || !station.longitude) return;
             const position = { lat: Number(station.latitude), lng: Number(station.longitude) };
-            const marker = google.maps.marker?.AdvancedMarkerElement
-                ? new google.maps.marker.AdvancedMarkerElement({
-                    map: stationsMap,
-                    position,
-                    title: station.name
-                })
-                : new google.maps.Marker({
-                    map: stationsMap,
-                    position,
-                    title: station.name
+            let marker;
+            if (activeMapProvider === 'here') {
+                marker = new H.map.Marker(position);
+                marker.setData(station.name);
+                marker.addEventListener('tap', () => {
+                    stationIdInput.value = String(station.id);
+                    const brandValue = String(station.brand || '').trim();
+                    activeBrandFilter = brandValue;
+                    renderStationPicker();
+                    stationPicker.value = String(station.id);
+                    applyStationSelection(String(station.id), { syncSearch: true });
                 });
-            marker.addListener('click', () => {
-                stationIdInput.value = String(station.id);
-                const brandValue = String(station.brand || '').trim();
-                activeBrandFilter = brandValue;
-                renderStationPicker();
-                stationPicker.value = String(station.id);
-                applyStationSelection(String(station.id), { syncSearch: true });
-            });
+                stationsMap.addObject(marker);
+            } else if (activeMapProvider === 'leaflet') {
+                marker = L.marker([position.lat, position.lng], {
+                    icon: leafletStationIcon(false),
+                }).addTo(stationsMap);
+                leafletMarkerByStationId.set(String(station.id), marker);
+                marker.on('click', () => {
+                    stationIdInput.value = String(station.id);
+                    const brandValue = String(station.brand || '').trim();
+                    activeBrandFilter = brandValue;
+                    renderStationPicker();
+                    stationPicker.value = String(station.id);
+                    applyStationSelection(String(station.id), { syncSearch: true });
+                });
+            } else if (activeMapProvider === 'bing') {
+                marker = new Microsoft.Maps.Pushpin(
+                    new Microsoft.Maps.Location(position.lat, position.lng),
+                    { title: station.name }
+                );
+                Microsoft.Maps.Events.addHandler(marker, 'click', () => {
+                    stationIdInput.value = String(station.id);
+                    const brandValue = String(station.brand || '').trim();
+                    activeBrandFilter = brandValue;
+                    renderStationPicker();
+                    stationPicker.value = String(station.id);
+                    applyStationSelection(String(station.id), { syncSearch: true });
+                });
+                stationsMap.entities.push(marker);
+            } else {
+                marker = google.maps.marker?.AdvancedMarkerElement
+                    ? new google.maps.marker.AdvancedMarkerElement({
+                        map: stationsMap,
+                        position,
+                        title: station.name
+                    })
+                    : new google.maps.Marker({
+                        map: stationsMap,
+                        position,
+                        title: station.name
+                    });
+                marker.addListener('click', () => {
+                    stationIdInput.value = String(station.id);
+                    const brandValue = String(station.brand || '').trim();
+                    activeBrandFilter = brandValue;
+                    renderStationPicker();
+                    stationPicker.value = String(station.id);
+                    applyStationSelection(String(station.id), { syncSearch: true });
+                });
+            }
             markers.push(marker);
         });
 
         const initialStation = getStationById(stationIdInput.value);
         if (initialStation) {
             focusStationOnMap(initialStation);
+        }
+        updateLeafletSelectedMarker();
+        mapStatus.textContent = `Map ready (${mapProviderLabel[activeMapProvider] || activeMapProvider}).`;
+    }
+
+    activeMapProvider = pickInitialMapProvider();
+    updateMapProviderTabs();
+
+    mapProviderTabs.forEach((button) => {
+        button.addEventListener('click', () => {
+            const provider = String(button.dataset.mapProvider || '').trim().toLowerCase();
+            if (!isProviderAvailable(provider)) return;
+            setActiveMapProvider(provider);
+        });
+    });
+
+    if (!isProviderAvailable(activeMapProvider)) {
+        const next = mapProviderOrder.find((provider) => isProviderAvailable(provider));
+        if (next) {
+            activeMapProvider = next;
         }
     }
 

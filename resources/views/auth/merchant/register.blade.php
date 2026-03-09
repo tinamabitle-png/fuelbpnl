@@ -153,6 +153,7 @@
 
 @push('scripts')
 <script>
+const googleMapsEnabled = @json((bool) config('services.google_maps.enabled', true));
 const googleMapsApiKey = @json(config('services.google_maps.key'));
 document.querySelectorAll('.file-drop').forEach((dropZone) => {
     const inputId = dropZone.getAttribute('data-target');
@@ -219,15 +220,35 @@ const mapNode = document.getElementById('merchantRegisterMap');
 const useCurrentLocationBtn = document.getElementById('useCurrentLocationBtn');
 const addressSuggestions = document.getElementById('merchantAddressSuggestions');
 
+const hereMapsApiKey = @json(config('services.here_maps.key'));
+const hereGeocodeUrl = @json(route('here.geocode'));
+const hereReverseUrl = @json(route('here.reverse'));
+
 const fallbackCenter = [-26.2041, 28.0473];
+const hasGoogleMaps = Boolean(googleMapsEnabled && googleMapsApiKey);
+const hasHereMaps = Boolean(hereMapsApiKey);
+let activeMapProvider = hasGoogleMaps ? 'google' : (hasHereMaps ? 'here' : 'none');
 let map = null;
 let marker = null;
 let geocodeTimer = null;
 let geocoder = null;
 let autocompleteService = null;
+let herePlatform = null;
 
 const upsertMapMarker = (currentMarker, position) => {
     if (!map) return currentMarker;
+
+    if (activeMapProvider === 'here') {
+        if (currentMarker) {
+            currentMarker.setGeometry(position);
+            return currentMarker;
+        }
+        const iconMarkup = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#2563eb"/></svg>';
+        const icon = new H.map.Icon(iconMarkup);
+        const next = new H.map.Marker(position, { icon });
+        map.addObject(next);
+        return next;
+    }
 
     if (currentMarker) {
         if (typeof currentMarker.setPosition === 'function') {
@@ -287,7 +308,48 @@ const fillAddressFields = (components, fallbackAddress = '') => {
     };
 };
 
+const fillAddressFromHereItem = (item) => {
+    const address = item?.address || {};
+    const line1 = [address.houseNumber || '', address.street || ''].filter(Boolean).join(' ').trim();
+    const area = address.district || address.subdistrict || '';
+    const city = address.city || address.county || '';
+    const country = address.countryName || '';
+    const fallbackAddress = address.label || item?.title || '';
+    const composedAddress = [line1, area].filter(Boolean).join(', ').trim();
+
+    if (addressInput) {
+        addressInput.value = composedAddress || fallbackAddress || addressInput.value;
+    }
+    if (cityInput && city) cityInput.value = city;
+    if (countryInput && country) countryInput.value = country;
+
+    return {
+        composedAddress: composedAddress || fallbackAddress,
+        city,
+        country,
+    };
+};
+
+const hereFetchGeocode = async (query) => {
+    const url = `${hereGeocodeUrl}?q=${encodeURIComponent(query)}&limit=5`;
+    const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!response.ok) throw new Error('HERE geocode request failed');
+    const payload = await response.json();
+    return Array.isArray(payload?.items) ? payload.items : [];
+};
+
+const hereFetchReverse = async (lat, lng) => {
+    const url = `${hereReverseUrl}?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}&limit=1`;
+    const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!response.ok) throw new Error('HERE reverse geocode request failed');
+    const payload = await response.json();
+    const first = Array.isArray(payload?.items) ? payload.items[0] : null;
+    if (!first) throw new Error('HERE reverse empty response');
+    return first;
+};
+
 const geocodeByPlaceId = (placeId) => new Promise((resolve, reject) => {
+    if (activeMapProvider !== 'google') return reject(new Error('Google geocoder not active'));
     if (!geocoder) return reject(new Error('Geocoder not available'));
     geocoder.geocode({ placeId }, (results, status) => {
         if (status === 'OK' && results && results.length) {
@@ -299,6 +361,7 @@ const geocodeByPlaceId = (placeId) => new Promise((resolve, reject) => {
 });
 
 const geocodeByAddress = (address) => new Promise((resolve, reject) => {
+    if (activeMapProvider !== 'google') return reject(new Error('Google geocoder not active'));
     if (!geocoder) return reject(new Error('Geocoder not available'));
     geocoder.geocode({ address }, (results, status) => {
         if (status === 'OK' && results && results.length) {
@@ -310,6 +373,7 @@ const geocodeByAddress = (address) => new Promise((resolve, reject) => {
 });
 
 const reverseGeocode = (lat, lng) => new Promise((resolve, reject) => {
+    if (activeMapProvider !== 'google') return reject(new Error('Google geocoder not active'));
     if (!geocoder) return reject(new Error('Geocoder not available'));
     geocoder.geocode({ location: { lat, lng } }, (results, status) => {
         if (status === 'OK' && results && results.length) {
@@ -324,12 +388,24 @@ const reverseGeocode = (lat, lng) => new Promise((resolve, reject) => {
 
 const pickSuggestion = async (prediction) => {
     try {
-        const result = await geocodeByPlaceId(prediction.place_id);
-        const location = result.geometry?.location;
-        if (!location) throw new Error('Missing geometry');
-        const lat = location.lat();
-        const lng = location.lng();
-        fillAddressFields(result.address_components || [], result.formatted_address || prediction.description || '');
+        let lat;
+        let lng;
+
+        if (activeMapProvider === 'google') {
+            const result = await geocodeByPlaceId(prediction.place_id);
+            const location = result.geometry?.location;
+            if (!location) throw new Error('Missing geometry');
+            lat = location.lat();
+            lng = location.lng();
+            fillAddressFields(result.address_components || [], result.formatted_address || prediction.description || '');
+        } else {
+            const position = prediction?.position || {};
+            lat = Number(position.lat);
+            lng = Number(position.lng);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('Missing geometry');
+            fillAddressFromHereItem(prediction);
+        }
+
         applyLocationToMap(lat, lng);
         updateMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
     } catch (error) {
@@ -350,7 +426,7 @@ const renderSuggestions = (items) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'w-full px-3 py-2 text-left hover:bg-slate-50 border-b last:border-b-0 border-slate-100';
-        const title = item?.description || 'Suggested location';
+        const title = item?.description || item?.address?.label || item?.title || 'Suggested location';
         button.innerHTML = `<span class="block text-xs text-slate-700 truncate">${title}</span>`;
         button.addEventListener('click', () => pickSuggestion(item));
         addressSuggestions.appendChild(button);
@@ -359,53 +435,125 @@ const renderSuggestions = (items) => {
     addressSuggestions.classList.remove('hidden');
 };
 
-const initMerchantRegisterMap = () => {
-    if (!mapNode || !window.google?.maps || !googleMapsApiKey) {
-        updateMapStatus('Google map preview unavailable (GOOGLE_MAPS_API_KEY not set).');
+const loadHereFallbackMap = () => {
+    if (!hasHereMaps) {
+        updateMapStatus('Map preview unavailable. Configure Google or HERE maps keys.', true);
         return;
     }
 
-    map = new google.maps.Map(mapNode, {
-        center: { lat: fallbackCenter[0], lng: fallbackCenter[1] },
-        zoom: 11,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-    });
-    geocoder = new google.maps.Geocoder();
-    autocompleteService = new google.maps.places.AutocompleteService();
+    activeMapProvider = 'here';
+    updateMapStatus('Loading HERE Maps fallback...');
+    let attempts = 0;
+    const tryInit = () => {
+        if (window.H?.service) {
+            initMerchantRegisterMap();
+            return;
+        }
+        attempts += 1;
+        if (attempts >= 20) {
+            updateMapStatus('HERE Maps failed to load. Check key, CSP, or internet access.', true);
+            return;
+        }
+        window.setTimeout(tryInit, 250);
+    };
+    tryInit();
+};
+
+const initMerchantRegisterMap = () => {
+    if (!mapNode) return;
+
+    if (activeMapProvider === 'google') {
+        if (!window.google?.maps || !googleMapsApiKey) {
+            updateMapStatus('Google map unavailable, attempting HERE fallback...');
+            if (hasHereMaps) {
+                loadHereFallbackMap();
+                return;
+            }
+            updateMapStatus('Map preview unavailable. Set GOOGLE_MAPS_API_KEY or HERE_MAPS_API_KEY.', true);
+            return;
+        }
+
+        map = new google.maps.Map(mapNode, {
+            center: { lat: fallbackCenter[0], lng: fallbackCenter[1] },
+            zoom: 11,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+        });
+        geocoder = new google.maps.Geocoder();
+        autocompleteService = new google.maps.places.AutocompleteService();
+    } else if (activeMapProvider === 'here') {
+        if (!window.H?.service || !hereMapsApiKey) {
+            updateMapStatus('HERE map preview unavailable. Check HERE_MAPS_API_KEY.', true);
+            return;
+        }
+
+        herePlatform = new H.service.Platform({ apikey: hereMapsApiKey });
+        const layers = herePlatform.createDefaultLayers();
+        map = new H.Map(
+            mapNode,
+            layers.vector.normal.map,
+            { center: { lat: fallbackCenter[0], lng: fallbackCenter[1] }, zoom: 11, pixelRatio: window.devicePixelRatio || 1 }
+        );
+        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+        void behavior;
+        H.ui.UI.createDefault(map, layers);
+        window.addEventListener('resize', () => map.getViewPort().resize());
+    } else {
+        updateMapStatus('Map preview unavailable. Configure Google or HERE maps keys.', true);
+        return;
+    }
 
     const existingLat = parseFloat(latitudeInput?.value || '');
     const existingLng = parseFloat(longitudeInput?.value || '');
     if (Number.isFinite(existingLat) && Number.isFinite(existingLng)) {
-        marker = upsertMapMarker(marker, { lat: existingLat, lng: existingLng });
-        map.setCenter({ lat: existingLat, lng: existingLng });
-        map.setZoom(15);
+        const pos = activeMapProvider === 'here'
+            ? { lat: existingLat, lng: existingLng }
+            : { lat: existingLat, lng: existingLng };
+        marker = upsertMapMarker(marker, pos);
+        if (activeMapProvider === 'here') {
+            map.setCenter(pos);
+            map.setZoom(15);
+        } else {
+            map.setCenter(pos);
+            map.setZoom(15);
+        }
         updateMapStatus(`Pinned at ${existingLat.toFixed(6)}, ${existingLng.toFixed(6)}`);
     }
 };
 window.initMerchantRegisterMap = initMerchantRegisterMap;
 
-if (window.google?.maps && googleMapsApiKey) {
+if (activeMapProvider === 'google' && window.google?.maps && googleMapsApiKey) {
     initMerchantRegisterMap();
-} else if (googleMapsApiKey) {
+} else if (activeMapProvider === 'google' && googleMapsApiKey) {
     updateMapStatus('Loading Google Maps...');
     if (typeof window.gm_authFailure !== 'function') {
         window.gm_authFailure = () => {
+            if (hasHereMaps) {
+                loadHereFallbackMap();
+                return;
+            }
             updateMapStatus('Google Maps authentication failed. Check API key, billing, and domain restrictions.', true);
         };
     }
     window.setTimeout(() => {
         if (!map && !window.google?.maps) {
+            if (hasHereMaps) {
+                loadHereFallbackMap();
+                return;
+            }
             updateMapStatus('Google Maps failed to load. Check API key restrictions or internet access.', true);
         }
     }, 4500);
+} else if (hasHereMaps) {
+    loadHereFallbackMap();
 } else {
-    updateMapStatus('Google map preview unavailable (GOOGLE_MAPS_API_KEY not set).');
+    updateMapStatus('Map preview unavailable. Configure Google or HERE maps keys.', true);
 }
 
 const scheduleGeocode = () => {
-    if (!geocoder || !autocompleteService) return;
+    if (activeMapProvider === 'google' && (!geocoder || !autocompleteService)) return;
+    if (activeMapProvider === 'none') return;
     if (geocodeTimer) window.clearTimeout(geocodeTimer);
 
     geocodeTimer = window.setTimeout(async () => {
@@ -432,30 +580,50 @@ const scheduleGeocode = () => {
         updateMapStatus('Locating address...');
 
         try {
-            autocompleteService.getPlacePredictions({ input: query }, async (predictions, status) => {
-                const validPredictions = Array.isArray(predictions) ? predictions : [];
-                if (status === google.maps.places.PlacesServiceStatus.OK && validPredictions.length) {
-                    renderSuggestions(validPredictions);
+            if (activeMapProvider === 'google') {
+                autocompleteService.getPlacePredictions({ input: query }, async (predictions, status) => {
+                    const validPredictions = Array.isArray(predictions) ? predictions : [];
+                    if (status === google.maps.places.PlacesServiceStatus.OK && validPredictions.length) {
+                        renderSuggestions(validPredictions);
+                    } else {
+                        hideSuggestions();
+                    }
+
+                    try {
+                        const primary = await geocodeByAddress(query);
+                        const location = primary.geometry?.location;
+                        if (!location) throw new Error('Missing geometry');
+                        const lat = location.lat();
+                        const lng = location.lng();
+                        applyLocationToMap(lat, lng);
+                        updateMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+                    } catch (innerError) {
+                        if (!validPredictions.length) {
+                            if (latitudeInput) latitudeInput.value = '';
+                            if (longitudeInput) longitudeInput.value = '';
+                            updateMapStatus('Address not found yet. Keep typing more detail.', true);
+                        }
+                    }
+                });
+            } else {
+                const items = await hereFetchGeocode(query);
+                if (items.length) {
+                    renderSuggestions(items);
+                    const first = items[0];
+                    const lat = Number(first?.position?.lat);
+                    const lng = Number(first?.position?.lng);
+                    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                        applyLocationToMap(lat, lng);
+                        fillAddressFromHereItem(first);
+                        updateMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+                    }
                 } else {
                     hideSuggestions();
+                    if (latitudeInput) latitudeInput.value = '';
+                    if (longitudeInput) longitudeInput.value = '';
+                    updateMapStatus('Address not found yet. Keep typing more detail.', true);
                 }
-
-                try {
-                    const primary = await geocodeByAddress(query);
-                    const location = primary.geometry?.location;
-                    if (!location) throw new Error('Missing geometry');
-                    const lat = location.lat();
-                    const lng = location.lng();
-                    applyLocationToMap(lat, lng);
-                    updateMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-                } catch (innerError) {
-                    if (!validPredictions.length) {
-                        if (latitudeInput) latitudeInput.value = '';
-                        if (longitudeInput) longitudeInput.value = '';
-                        updateMapStatus('Address not found yet. Keep typing more detail.', true);
-                    }
-                }
-            });
+            }
         } catch (error) {
             if (latitudeInput) latitudeInput.value = '';
             if (longitudeInput) longitudeInput.value = '';
@@ -471,7 +639,7 @@ const scheduleGeocode = () => {
     field.addEventListener('change', scheduleGeocode);
 });
 
-if ((addressInput?.value || cityInput?.value || countryInput?.value) && geocoder) {
+if ((addressInput?.value || cityInput?.value || countryInput?.value) && activeMapProvider !== 'none') {
     scheduleGeocode();
 }
 
@@ -491,16 +659,17 @@ const applyLocationToMap = (lat, lng) => {
     if (longitudeInput) longitudeInput.value = String(lng);
 
     if (map) {
-        marker = upsertMapMarker(marker, { lat, lng });
-        map.setCenter({ lat, lng });
+        const pos = { lat, lng };
+        marker = upsertMapMarker(marker, pos);
+        map.setCenter(pos);
         map.setZoom(15);
     }
 };
 
 if (useCurrentLocationBtn) {
     useCurrentLocationBtn.addEventListener('click', () => {
-        if (!geocoder) {
-            updateMapStatus('Google geocoder unavailable. Set GOOGLE_MAPS_API_KEY.', true);
+        if (activeMapProvider === 'none') {
+            updateMapStatus('Map provider is unavailable. Configure Google or HERE maps keys.', true);
             return;
         }
         if (!navigator.geolocation) {
@@ -518,7 +687,9 @@ if (useCurrentLocationBtn) {
                 const lng = position.coords.longitude;
                 applyLocationToMap(lat, lng);
                 updateMapStatus('Location found. Resolving address...');
-                const resolved = await reverseGeocode(lat, lng);
+                const resolved = activeMapProvider === 'google'
+                    ? await reverseGeocode(lat, lng)
+                    : fillAddressFromHereItem(await hereFetchReverse(lat, lng));
                 const hasText = resolved.composedAddress || resolved.city || resolved.country;
                 updateMapStatus(
                     hasText
@@ -547,7 +718,14 @@ if (useCurrentLocationBtn) {
     });
 }
 </script>
-@if(config('services.google_maps.key'))
+@if(config('services.google_maps.enabled', true) && config('services.google_maps.key'))
 <script src="https://maps.googleapis.com/maps/api/js?key={{ urlencode((string) config('services.google_maps.key')) }}&libraries=places,marker&loading=async&callback=initMerchantRegisterMap" async defer></script>
+@endif
+@if(config('services.here_maps.key'))
+<script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" async defer></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" async defer></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js" async defer></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js" async defer></script>
+<link rel="stylesheet" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css" />
 @endif
 @endpush

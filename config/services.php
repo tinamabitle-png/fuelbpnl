@@ -58,6 +58,7 @@ return [
     ],
 
     'google_maps' => [
+        'enabled' => env('GOOGLE_MAPS_ENABLED', true),
         'key' => env('GOOGLE_MAPS_API_KEY'),
     ],
 
@@ -74,6 +75,10 @@ return [
         'access_key_id' => env('HERE_ACCESS_KEY_ID'),
         'access_key_secret' => env('HERE_ACCESS_KEY_SECRET'),
         'token_endpoint_url' => env('HERE_TOKEN_ENDPOINT_URL', 'https://account.api.here.com/oauth2/token'),
+    ],
+
+    'bing_maps' => [
+        'key' => env('BING_MAPS_API_KEY'),
     ],
 
     'openai' => [
