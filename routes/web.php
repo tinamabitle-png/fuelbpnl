@@ -612,6 +612,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/vouchers', [DriverDashboardController::class, 'vouchers'])->name('vouchers.index');
         Route::get('/vouchers/create', [DriverDashboardController::class, 'createVoucher'])->name('vouchers.create');
         Route::post('/vouchers', [DriverDashboardController::class, 'storeVoucher'])->name('vouchers.store');
+        Route::post('/vouchers/{voucher}/cancel', [DriverDashboardController::class, 'cancelVoucher'])->name('vouchers.cancel');
         Route::get('/repayments', [DriverDashboardController::class, 'repayments'])->name('repayments.index');
         Route::get('/repayments/upcoming/export-pdf', [DriverDashboardController::class, 'exportUpcomingRepaymentsPdf'])->name('repayments.upcoming.export-pdf');
         Route::get('/profile', [DriverDashboardController::class, 'profile'])->name('profile');

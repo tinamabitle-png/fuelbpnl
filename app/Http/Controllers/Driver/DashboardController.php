@@ -138,6 +138,34 @@ class DashboardController extends Controller
         return view('driver.vouchers.index', compact('vouchers', 'stations', 'brands'));
     }
 
+    public function cancelVoucher(Request $request, FuelVoucher $voucher)
+    {
+        $user = Auth::user();
+        $this->authorizeDriverPortal($user);
+
+        if ((int) $voucher->user_id !== (int) $user->id) {
+            abort(403, 'You cannot cancel this voucher.');
+        }
+
+        if ((string) $voucher->status !== 'issued') {
+            return back()->with('error', 'Only issued applications can be cancelled.');
+        }
+
+        try {
+            $cancellation = $voucher->cancel();
+            $cancelledRepayments = (int) ($cancellation['cancelled_repayments'] ?? 0);
+
+            $message = 'Application cancelled successfully.';
+            if ($cancelledRepayments > 0) {
+                $message .= " {$cancelledRepayments} future repayment(s) were also cancelled.";
+            }
+
+            return back()->with('success', $message);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Failed to cancel application: ' . $e->getMessage());
+        }
+    }
+
     public function createVoucher()
     {
         $user = Auth::user();

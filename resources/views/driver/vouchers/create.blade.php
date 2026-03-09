@@ -281,6 +281,7 @@
     $googleMapsApiKey = (string) config('services.google_maps.key');
     $hereMapsApiKey = (string) config('services.here_maps.key');
     $bingMapsApiKey = (string) config('services.bing_maps.key');
+    $hereReverseUrl = route('here.reverse');
 @endphp
 <style>
     .repayment-control-wrap {
@@ -565,11 +566,12 @@
     const mapsApiKey = @json($googleMapsApiKey);
     const hereMapsApiKey = @json($hereMapsApiKey);
     const bingMapsApiKey = @json($bingMapsApiKey);
+    const hereReverseUrl = @json($hereReverseUrl);
     const hasGoogleMaps = Boolean(googleMapsEnabled && mapsApiKey);
     const hasHereMaps = Boolean(hereMapsApiKey);
     const hasBingMaps = Boolean(bingMapsApiKey);
     const hasLeafletMaps = true;
-    const mapProviderOrder = ['google', 'here', 'bing', 'leaflet'];
+    const mapProviderOrder = ['leaflet', 'here', 'google', 'bing'];
     const mapProviderLabel = {
         google: 'Google',
         here: 'HERE',
@@ -583,8 +585,10 @@
     let selectedStation = null;
     let filteredStations = [];
     let userLocation = null;
+    let currentLocationCoords = null;
     const markers = [];
     const leafletMarkerByStationId = new Map();
+    let currentLocationMarker = null;
     let projectionFrame = null;
     let activeBrandFilter = String(initialBrandFilter || '').trim();
 
@@ -631,8 +635,9 @@
     }
 
     function pickInitialMapProvider() {
+        if (isProviderAvailable('leaflet')) return 'leaflet';
         const saved = String(localStorage.getItem(mapProviderStorageKey) || '').trim().toLowerCase();
-        if (isProviderAvailable(saved)) return saved;
+        if (saved && isProviderAvailable(saved)) return saved;
         return mapProviderOrder.find((provider) => isProviderAvailable(provider)) || 'leaflet';
     }
 
@@ -702,6 +707,7 @@
     }
 
     function resetMapInstance() {
+        clearCurrentLocationMarker();
         if (stationsMap) {
             if (activeMapProvider === 'here' && typeof stationsMap.dispose === 'function') {
                 stationsMap.dispose();
@@ -922,6 +928,70 @@
         });
     }
 
+    function clearCurrentLocationMarker() {
+        if (!currentLocationMarker || !stationsMap) return;
+
+        if (activeMapProvider === 'leaflet' && typeof stationsMap.removeLayer === 'function') {
+            stationsMap.removeLayer(currentLocationMarker);
+        } else if (activeMapProvider === 'here' && typeof stationsMap.removeObject === 'function') {
+            stationsMap.removeObject(currentLocationMarker);
+        } else if (activeMapProvider === 'bing' && stationsMap.entities?.remove) {
+            stationsMap.entities.remove(currentLocationMarker);
+        } else if (activeMapProvider === 'google' && typeof currentLocationMarker.setMap === 'function') {
+            currentLocationMarker.setMap(null);
+        }
+
+        currentLocationMarker = null;
+    }
+
+    function showCurrentLocationOnMap(lat, lng) {
+        if (!stationsMap) return;
+        clearCurrentLocationMarker();
+
+        if (activeMapProvider === 'leaflet') {
+            currentLocationMarker = L.circleMarker([lat, lng], {
+                radius: 8,
+                color: '#0ea5e9',
+                weight: 3,
+                fillColor: '#38bdf8',
+                fillOpacity: 0.95,
+            }).addTo(stationsMap);
+            currentLocationMarker.bindTooltip('Your current location', { direction: 'top' });
+            return;
+        }
+
+        if (activeMapProvider === 'here') {
+            currentLocationMarker = new H.map.Marker({ lat, lng });
+            stationsMap.addObject(currentLocationMarker);
+            return;
+        }
+
+        if (activeMapProvider === 'bing') {
+            currentLocationMarker = new Microsoft.Maps.Pushpin(
+                new Microsoft.Maps.Location(lat, lng),
+                { color: '#0ea5e9', title: 'You' }
+            );
+            stationsMap.entities.push(currentLocationMarker);
+            return;
+        }
+
+        if (activeMapProvider === 'google') {
+            currentLocationMarker = new google.maps.Marker({
+                map: stationsMap,
+                position: { lat, lng },
+                title: 'Your current location',
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 8,
+                    fillColor: '#38bdf8',
+                    fillOpacity: 1,
+                    strokeColor: '#0ea5e9',
+                    strokeWeight: 3,
+                },
+            });
+        }
+    }
+
     function getFilteredStations() {
         const selectedBrand = activeBrandFilter;
         const searchTerm = stationSearchInput.value.trim();
@@ -1101,6 +1171,20 @@
         mapStatus.textContent = `Selected: ${station.name}, ${station.city}`;
     }
 
+    async function reverseGeocodeCurrentLocation(lat, lng) {
+        try {
+            const url = `${hereReverseUrl}?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}&limit=1`;
+            const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (!response.ok) return '';
+            const payload = await response.json();
+            const first = Array.isArray(payload?.items) ? payload.items[0] : null;
+            const label = String(first?.address?.label || first?.title || '').trim();
+            return label;
+        } catch (error) {
+            return '';
+        }
+    }
+
     function drawRouteToSelected() {
         if (!selectedStation || !selectedStation.latitude || !selectedStation.longitude) {
             routeSummary.textContent = 'Select a station with map coordinates first.';
@@ -1117,11 +1201,13 @@
             }
 
             routeSummary.textContent = 'Getting your location...';
-            navigator.geolocation.getCurrentPosition((position) => {
+            navigator.geolocation.getCurrentPosition(async (position) => {
                 const origin = {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 };
+                currentLocationCoords = origin;
+                showCurrentLocationOnMap(origin.lat, origin.lng);
                 const destination = {
                     lat: Number(selectedStation.latitude),
                     lng: Number(selectedStation.longitude)
@@ -1133,8 +1219,12 @@
                 } else if (activeMapProvider === 'bing') {
                     directionsUrl = `https://www.bing.com/maps?rtp=pos.${origin.lat}_${origin.lng}~pos.${destination.lat}_${destination.lng}&mode=D`;
                 }
+
+                const reverseAddress = await reverseGeocodeCurrentLocation(origin.lat, origin.lng);
                 window.open(directionsUrl, '_blank', 'noopener,noreferrer');
-                routeSummary.textContent = 'Opened driving directions in a new tab.';
+                routeSummary.textContent = reverseAddress
+                    ? `Opened driving directions in a new tab. Current location: ${reverseAddress}`
+                    : 'Opened driving directions in a new tab.';
             }, () => {
                 routeSummary.textContent = 'Location permission denied. Allow location access and try again.';
             });
@@ -1377,6 +1467,9 @@
         if (initialStation) {
             focusStationOnMap(initialStation);
         }
+        if (currentLocationCoords?.lat && currentLocationCoords?.lng) {
+            showCurrentLocationOnMap(Number(currentLocationCoords.lat), Number(currentLocationCoords.lng));
+        }
         updateLeafletSelectedMarker();
         mapStatus.textContent = `Map ready (${mapProviderLabel[activeMapProvider] || activeMapProvider}).`;
     }
@@ -1446,6 +1539,13 @@
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude,
             };
+            currentLocationCoords = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+            };
+            if (stationsMap) {
+                showCurrentLocationOnMap(position.coords.latitude, position.coords.longitude);
+            }
             renderStationPicker();
         }, () => {});
     }

@@ -200,21 +200,55 @@ class FuelVoucher extends Model
         return (float) $query->sum('amount');
     }
 
-    public function cancel()
+    public function cancel(bool $voidFutureRepayments = true): array
     {
         if ($this->status !== 'issued') {
             throw new \Exception('Only issued vouchers can be cancelled');
         }
 
-        $this->update(['status' => 'cancelled']);
+        return DB::transaction(function () use ($voidFutureRepayments) {
+            /** @var self $voucher */
+            $voucher = self::query()->whereKey($this->id)->lockForUpdate()->firstOrFail();
+            $voucher->update(['status' => 'cancelled']);
 
-        // If this was a BNPL voucher, release the credit
-        if ($this->lease_id) {
-            $this->user->wallet->decrement('outstanding_balance', $this->amount);
-            $this->user->creditLimit->releaseCredit($this->amount);
-        }
+            $cancelledRepayments = 0;
 
-        return $this;
+            // If this was a BNPL voucher, release the credit and void future unpaid repayments.
+            if ($voucher->lease_id) {
+                $user = $voucher->user;
+                if ($user && $user->wallet) {
+                    $user->wallet->decrement('outstanding_balance', (float) $voucher->amount);
+                }
+                if ($user && $user->creditLimit) {
+                    $user->creditLimit->releaseCredit((float) $voucher->amount);
+                }
+
+                if ($voidFutureRepayments) {
+                    $cancelledRepayments = Repayment::query()
+                        ->where('lease_id', $voucher->lease_id)
+                        ->whereNull('paid_at')
+                        ->whereIn('status', ['pending', 'overdue'])
+                        ->whereDate('due_date', '>=', now()->toDateString())
+                        ->delete();
+                }
+
+                // If the lease has no redeemable/active vouchers left, mark it cancelled.
+                $activeVouchersRemaining = self::query()
+                    ->where('lease_id', $voucher->lease_id)
+                    ->where('id', '!=', $voucher->id)
+                    ->whereIn('status', ['issued', 'approved', 'redeemed'])
+                    ->exists();
+
+                if (!$activeVouchersRemaining && $voucher->lease && $voucher->lease->status === 'active') {
+                    $voucher->lease->update(['status' => 'cancelled']);
+                }
+            }
+
+            return [
+                'voucher' => $voucher->fresh(),
+                'cancelled_repayments' => (int) $cancelledRepayments,
+            ];
+        });
     }
 
     public function softDeleteRepaymentsForExpiredVoucher(): void

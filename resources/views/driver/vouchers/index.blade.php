@@ -62,6 +62,7 @@
                         <th class="px-4 py-3 text-left">References</th>
                         <th class="px-4 py-3 text-left">Status</th>
                         <th class="px-4 py-3 text-left">Expires</th>
+                        <th class="px-4 py-3 text-left">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
@@ -131,10 +132,22 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-slate-700">{{ optional($voucher->expires_at)->format('d M Y H:i') }}</td>
+                            <td class="px-4 py-3">
+                                @if($voucher->status === 'issued')
+                                    <form method="POST" action="{{ route('driver.vouchers.cancel', $voucher) }}" onsubmit="return confirm('Cancel this application? Future unpaid repayments for this application will be removed.');">
+                                        @csrf
+                                        <button type="submit" class="text-xs px-3 py-1.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 font-semibold hover:bg-rose-100">
+                                            Cancel
+                                        </button>
+                                    </form>
+                                @else
+                                    <span class="text-xs text-slate-400">-</span>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-4 py-8 text-center text-slate-500">No vouchers found.</td>
+                            <td colspan="9" class="px-4 py-8 text-center text-slate-500">No vouchers found.</td>
                         </tr>
                     @endforelse
                 </tbody>

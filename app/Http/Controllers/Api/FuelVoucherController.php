@@ -249,12 +249,18 @@ class FuelVoucherController extends Controller
         DB::beginTransaction();
 
         try {
-            $voucher->cancel();
+            $cancellation = $voucher->cancel();
+            /** @var \App\Models\FuelVoucher $cancelledVoucher */
+            $cancelledVoucher = $cancellation['voucher'] ?? $voucher->fresh();
+            $cancelledRepayments = (int) ($cancellation['cancelled_repayments'] ?? 0);
 
             // Log the activity
             activity()
-                ->performedOn($voucher)
+                ->performedOn($cancelledVoucher)
                 ->causedBy($user)
+                ->withProperties([
+                    'cancelled_repayments' => $cancelledRepayments,
+                ])
                 ->log('voucher_cancelled');
 
             DB::commit();
@@ -263,8 +269,9 @@ class FuelVoucherController extends Controller
                 'success' => true,
                 'message' => 'Voucher cancelled successfully',
                 'data' => [
-                    'voucher' => $voucher,
-                    'refunded_amount' => $voucher->amount,
+                    'voucher' => $cancelledVoucher,
+                    'refunded_amount' => $cancelledVoucher->amount,
+                    'cancelled_repayments' => $cancelledRepayments,
                     'remaining_credit' => $user->available_credit,
                     'wallet_balance' => $user->wallet->balance,
                 ]

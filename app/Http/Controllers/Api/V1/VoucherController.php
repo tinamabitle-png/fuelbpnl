@@ -176,16 +176,15 @@ class VoucherController extends Controller
             ], 400);
         }
 
-        $voucher->update(['status' => 'cancelled']);
-
-        // If BNPL, reduce outstanding balance
-        if ($voucher->lease_id) {
-            auth()->user()->wallet->decrement('outstanding_balance', $voucher->amount);
-        }
+        $cancellation = $voucher->cancel();
+        $cancelledRepayments = (int) ($cancellation['cancelled_repayments'] ?? 0);
 
         return response()->json([
             'success' => true,
-            'message' => 'Voucher cancelled successfully'
+            'message' => 'Voucher cancelled successfully',
+            'data' => [
+                'cancelled_repayments' => $cancelledRepayments,
+            ],
         ]);
     }
 
