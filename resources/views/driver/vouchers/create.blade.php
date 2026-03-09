@@ -838,15 +838,22 @@
         });
     }
 
-    function applyStationSelection(stationId) {
+    function applyStationSelection(stationId, options = {}) {
+        const { syncSearch = false } = options;
         const station = getStationById(stationId);
         if (station) {
             stationIdInput.value = String(station.id);
+            if (syncSearch && stationSearchInput) {
+                stationSearchInput.value = String(station.name || '').trim();
+            }
             focusStationOnMap(station);
             stationAddressHint.textContent = `${station.brand || 'Brand'} • ${station.address || station.city || 'Address unavailable'}`;
         } else {
             stationIdInput.value = '';
             selectedStation = null;
+            if (syncSearch && stationSearchInput) {
+                stationSearchInput.value = '';
+            }
             mapStatus.textContent = 'Select a station to preview it on the map.';
             routeSummary.textContent = '';
             stationAddressHint.textContent = 'Choose a brand and station to see address details.';
@@ -1005,7 +1012,7 @@
                 activeBrandFilter = brandValue;
                 renderStationPicker();
                 stationPicker.value = String(station.id);
-                applyStationSelection(String(station.id));
+                applyStationSelection(String(station.id), { syncSearch: true });
             });
             markers.push(marker);
         });
@@ -1025,7 +1032,7 @@
     });
     stationSearchInput.addEventListener('input', renderStationPicker);
     stationPicker.addEventListener('change', (event) => {
-        applyStationSelection(event.target.value);
+        applyStationSelection(event.target.value, { syncSearch: true });
         requestAnimationFrame(centerSelectedStationOption);
     });
     fuelTypeSelect.addEventListener('change', updatePriceEstimate);

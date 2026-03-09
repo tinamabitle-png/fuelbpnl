@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\Crypt;
 
 class User extends Authenticatable
 {
@@ -69,10 +71,6 @@ class User extends Authenticatable
         'last_login_at' => 'datetime',
         'credit_score' => 'integer',
         'autopay_enabled' => 'boolean',
-        'autopay_token' => 'encrypted',
-        'autopay_email' => 'encrypted',
-        'autopay_customer_code' => 'encrypted',
-        'autopay_details' => 'encrypted:array',
         'autopay_failures' => 'integer',
         'autopay_last_attempt_at' => 'datetime',
         'autopay_next_attempt_at' => 'datetime',
@@ -239,5 +237,102 @@ class User extends Authenticatable
         $status = strtolower((string) ($this->autopay_status ?? 'inactive'));
         $blocked = ['disabled', 'failed', 'max_retries_exceeded', 'inactive'];
         return !in_array($status, $blocked, true);
+    }
+
+    public function getAutopayTokenAttribute($value): string
+    {
+        return $this->decryptAutopayString($value);
+    }
+
+    public function getAutopayEmailAttribute($value): string
+    {
+        return $this->decryptAutopayString($value);
+    }
+
+    public function getAutopayCustomerCodeAttribute($value): string
+    {
+        return $this->decryptAutopayString($value);
+    }
+
+    public function getAutopayDetailsAttribute($value): array
+    {
+        if ($value === null || $value === '') {
+            return [];
+        }
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        $decrypted = $this->decryptAutopayString($value);
+        if ($decrypted === '') {
+            return [];
+        }
+
+        $parsed = json_decode($decrypted, true);
+        return is_array($parsed) ? $parsed : [];
+    }
+
+    public function setAutopayTokenAttribute($value): void
+    {
+        $this->attributes['autopay_token'] = $this->encryptAutopayString($value);
+    }
+
+    public function setAutopayEmailAttribute($value): void
+    {
+        $this->attributes['autopay_email'] = $this->encryptAutopayString($value);
+    }
+
+    public function setAutopayCustomerCodeAttribute($value): void
+    {
+        $this->attributes['autopay_customer_code'] = $this->encryptAutopayString($value);
+    }
+
+    public function setAutopayDetailsAttribute($value): void
+    {
+        if ($value === null || $value === '') {
+            $this->attributes['autopay_details'] = null;
+            return;
+        }
+
+        $payload = is_array($value) ? json_encode($value) : (string) $value;
+        $this->attributes['autopay_details'] = $payload !== '' ? Crypt::encryptString($payload) : null;
+    }
+
+    private function decryptAutopayString($value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return '';
+        }
+
+        try {
+            return (string) Crypt::decryptString($raw);
+        } catch (DecryptException $e) {
+            return $raw;
+        }
+    }
+
+    private function encryptAutopayString($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return null;
+        }
+
+        try {
+            Crypt::decryptString($raw);
+            return $raw;
+        } catch (DecryptException $e) {
+            return Crypt::encryptString($raw);
+        }
     }
 }
