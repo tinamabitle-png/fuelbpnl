@@ -26,10 +26,8 @@ class PaystackService
         $this->assertConfigured();
 
         $reference = 'RPY-' . $repayment->id . '-' . strtoupper(Str::random(10));
-        $email = trim((string) ($payerEmail ?: $this->resolveEmail($user)));
-        if ($email === '') {
-            $email = $this->resolveEmail($user);
-        }
+        $email = $this->resolveCheckoutEmail($user, $payerEmail);
+        $callbackUrl = $this->normalizeCallbackUrl($callbackUrl);
 
         $payload = [
             'email' => $email,
@@ -73,10 +71,8 @@ class PaystackService
         $this->assertConfigured();
 
         $reference = 'AUTOSETUP-' . $user->id . '-' . strtoupper(Str::random(10));
-        $email = trim((string) ($payerEmail ?: $this->resolveEmail($user)));
-        if ($email === '') {
-            $email = $this->resolveEmail($user);
-        }
+        $email = $this->resolveCheckoutEmail($user, $payerEmail);
+        $callbackUrl = $this->normalizeCallbackUrl($callbackUrl);
 
         $payload = [
             'email' => $email,
@@ -201,16 +197,58 @@ class PaystackService
     private function resolveEmail(User $user): string
     {
         $email = trim((string) ($user->autopay_email ?? $user->email ?? ''));
-        if ($email !== '') {
+        if ($this->isValidEmail($email)) {
             return $email;
         }
 
         $digits = preg_replace('/\D+/', '', (string) ($user->phone ?? ''));
+        $domain = $this->fallbackEmailDomain();
         if ($digits === '') {
-            return 'driver+' . $user->id . '@bwiser.local';
+            return 'driver+' . $user->id . '@' . $domain;
         }
 
-        return 'driver' . $digits . '@bwiser.local';
+        return 'driver' . $digits . '@' . $domain;
+    }
+
+    private function resolveCheckoutEmail(User $user, ?string $payerEmail = null): string
+    {
+        $preferred = trim((string) ($payerEmail ?? ''));
+        if ($this->isValidEmail($preferred)) {
+            return $preferred;
+        }
+
+        return $this->resolveEmail($user);
+    }
+
+    private function normalizeCallbackUrl(string $callbackUrl): string
+    {
+        $url = trim($callbackUrl);
+        if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL)) {
+            return $url;
+        }
+
+        $fallback = rtrim((string) config('app.url', 'https://bwiser.co.za'), '/')
+            . '/driver/repayments/paystack/callback';
+
+        return filter_var($fallback, FILTER_VALIDATE_URL)
+            ? $fallback
+            : 'https://bwiser.co.za/driver/repayments/paystack/callback';
+    }
+
+    private function fallbackEmailDomain(): string
+    {
+        $host = (string) parse_url((string) config('app.url', ''), PHP_URL_HOST);
+        $host = strtolower(trim($host));
+        if ($host !== '' && $host !== 'localhost' && !preg_match('/^\d{1,3}(\.\d{1,3}){3}$/', $host)) {
+            return $host;
+        }
+
+        return 'bwiser.co.za';
+    }
+
+    private function isValidEmail(string $email): bool
+    {
+        return $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
     }
 
     private function assertConfigured(): void
