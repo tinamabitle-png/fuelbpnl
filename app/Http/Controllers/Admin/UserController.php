@@ -17,6 +17,7 @@ use App\Services\DriverUnderwritingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Illuminate\Validation\Rule;
@@ -536,6 +537,20 @@ class UserController extends Controller
         ]);
 
         return back()->with('success', 'Wallet updated successfully.');
+    }
+
+    public function forcePasswordReset(User $user)
+    {
+        if (empty($user->email)) {
+            return back()->with('error', 'User has no email address for password reset.');
+        }
+
+        $status = Password::sendResetLink(['email' => $user->email]);
+        if ($status !== Password::RESET_LINK_SENT) {
+            return back()->with('error', 'Failed to send password reset email. Please try again.');
+        }
+
+        return back()->with('success', 'Password reset link sent successfully.');
     }
 
     public function toggleStatus(User $user)

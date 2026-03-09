@@ -831,7 +831,7 @@
 <!-- Credit Limit Modal -->
 <div id="creditLimitModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <form action="{{ route('admin.users.show', $user) }}" method="POST">
+        <form action="{{ route('admin.users.credit-limit.update', $user) }}" method="POST">
             @csrf
             <div class="p-6">
                 <div class="flex justify-between items-center mb-4">
@@ -890,7 +890,7 @@
 <!-- Wallet Adjustment Modal -->
 <div id="walletModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <form action="{{ route('admin.users.show', $user) }}" method="POST">
+        <form action="{{ route('admin.users.wallet.update', $user) }}" method="POST">
             @csrf
             <div class="p-6">
                 <div class="flex justify-between items-center mb-4">
@@ -970,7 +970,7 @@
 <!-- Reset Password Modal -->
 <div id="resetPasswordModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <form action="{{ route('admin.users.show', $user) }}" method="POST">
+        <form action="{{ route('admin.users.force-password-reset', $user) }}" method="POST">
             @csrf
             <div class="p-6">
                 <div class="flex justify-between items-center mb-4">

@@ -248,6 +248,18 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('role:super_admin|admin')
             ->whereNumber('user')
             ->name('users.bank-statement.review');
+        Route::post('/users/{user}/credit-limit', [AdminUserController::class, 'updateCreditLimit'])
+            ->middleware('role:super_admin|admin')
+            ->whereNumber('user')
+            ->name('users.credit-limit.update');
+        Route::post('/users/{user}/wallet', [AdminUserController::class, 'updateWallet'])
+            ->middleware('role:super_admin|admin')
+            ->whereNumber('user')
+            ->name('users.wallet.update');
+        Route::post('/users/{user}/force-password-reset', [AdminUserController::class, 'forcePasswordReset'])
+            ->middleware('role:super_admin|admin')
+            ->whereNumber('user')
+            ->name('users.force-password-reset');
         
         // ========== SETTINGS ROUTES ==========
         Route::prefix('settings')->name('settings.')->group(function () {
