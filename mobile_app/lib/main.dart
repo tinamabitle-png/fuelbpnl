@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'core/app_loader.dart';
 import 'core/session_store.dart';
 import 'core/theme.dart';
 import 'data/api_client.dart';
@@ -35,19 +36,25 @@ class _BwiserAppState extends State<BwiserApp> {
     final token = await store.token();
     final storedRole = await store.role();
     if (token == null || storedRole == null) {
+      if (!mounted) return;
       setState(() => loading = false);
       return;
     }
 
     try {
       await api.profile();
+      if (!mounted) return;
       setState(() {
         role = storedRole;
         loading = false;
       });
     } catch (_) {
       await store.clear();
-      setState(() => loading = false);
+      if (!mounted) return;
+      setState(() {
+        role = null;
+        loading = false;
+      });
     }
   }
 
@@ -64,10 +71,10 @@ class _BwiserAppState extends State<BwiserApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Bwiser Mobile',
+      title: 'bwiser',
       theme: AppTheme.light,
       home: loading
-          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+          ? const Scaffold(body: Center(child: AppLoader()))
           : role == 'driver'
           ? DriverShell(api: api, onLogout: _onLogout)
           : role == 'station'

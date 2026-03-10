@@ -44,6 +44,15 @@ return [
         'timeout' => env('PAYSTACK_TIMEOUT', 15),
     ],
 
+    'rapidpay' => [
+        'base_url' => env('RAPIDPAY_BASE_URL', 'https://api.sandbox.rapidpaycollect.co.za'),
+        'username' => env('RAPIDPAY_USERNAME'),
+        'password' => env('RAPIDPAY_PASSWORD'),
+        'timeout' => env('RAPIDPAY_TIMEOUT', 20),
+        // Endpoint can differ per account integration. Override if needed.
+        'collection_path' => env('RAPIDPAY_COLLECTION_PATH', '/mandates/collect'),
+    ],
+
     'africastalking' => [
         'username' => env('AFRICASTALKING_USERNAME'),
         'api_key' => env('AFRICASTALKING_API_KEY'),

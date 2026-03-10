@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/app_loader.dart';
 import '../../core/feedback_panel.dart';
 import '../../core/fx_button.dart';
 import '../../core/nfc_hce_bridge.dart';
@@ -26,6 +29,92 @@ class DriverShell extends StatefulWidget {
 
 class _DriverShellState extends State<DriverShell> {
   int index = 0;
+  Timer? _approvalNotifierTimer;
+  final Set<int> _seenApprovedVoucherIds = <int>{};
+  final List<String> _notifications = <String>[];
+  int _unreadNotifications = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _startApprovalNotifier();
+  }
+
+  @override
+  void dispose() {
+    _approvalNotifierTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startApprovalNotifier() {
+    _checkApprovedVouchers(baselineOnly: true);
+    _approvalNotifierTimer?.cancel();
+    _approvalNotifierTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+      _checkApprovedVouchers();
+    });
+  }
+
+  Future<void> _checkApprovedVouchers({bool baselineOnly = false}) async {
+    try {
+      final vouchers = await widget.api.driverVouchers();
+      final approved = vouchers
+          .where((v) => v.status.toLowerCase().trim() == 'approved')
+          .toList();
+      if (_seenApprovedVoucherIds.isEmpty || baselineOnly) {
+        _seenApprovedVoucherIds.addAll(approved.map((v) => v.id));
+        return;
+      }
+
+      for (final voucher in approved) {
+        if (_seenApprovedVoucherIds.add(voucher.id)) {
+          if (!mounted) return;
+          final station = (voucher.stationName ?? 'station').trim();
+          final amount = voucher.amount.toStringAsFixed(2);
+          final message = 'Voucher approved at $station • ZAR $amount';
+          _notifications.insert(
+            0,
+            '${DateTime.now().toLocal().toString().substring(11, 16)}  $message',
+          );
+          _unreadNotifications += 1;
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
+          setState(() {});
+        }
+      }
+    } catch (_) {
+      // Keep polling quietly.
+    }
+  }
+
+  Future<void> _openNotifications() async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Notifications'),
+        content: SizedBox(
+          width: 420,
+          child: _notifications.isEmpty
+              ? const Text('No notifications yet.')
+              : ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _notifications.length,
+                  separatorBuilder: (_, _) => const Divider(height: 10),
+                  itemBuilder: (_, i) => Text(_notifications[i]),
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    setState(() => _unreadNotifications = 0);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,27 +134,49 @@ class _DriverShellState extends State<DriverShell> {
       DriverApplyVoucherPage(api: widget.api),
     ];
 
-    const titles = ['Dashboard', 'Vouchers', 'Navigate', 'Repay', 'Profile', 'Apply'];
-
     return Scaffold(
       appBar: AppBar(
-        leadingWidth: 48,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12, top: 8, bottom: 8),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Center(child: LogoMark(size: 22)),
-          ),
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 12, top: 8, bottom: 8),
+          child: Center(child: LogoMark(size: 22)),
         ),
-        title: Text(titles[index]),
+        title: const Text('bwiser'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () {},
+            onPressed: _openNotifications,
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.notifications_none_rounded),
+                if (_unreadNotifications > 0)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        _unreadNotifications > 9
+                            ? '9+'
+                            : '$_unreadNotifications',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_horiz),
@@ -233,7 +344,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: AppLoader());
     }
     if (error != null) {
       return Center(child: Text(error!));
@@ -456,7 +567,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
           ),
           const SizedBox(height: 6),
           const Text(
-            'Apply for new fuel access and manage issuance from one flow.',
+            'Apply for new fuel access and manage issuance in one place.',
             style: TextStyle(color: Color(0xFF94A3B8)),
           ),
           const SizedBox(height: 12),
@@ -616,25 +727,12 @@ class _DriverHomePageState extends State<DriverHomePage> {
             ),
           ),
           const SizedBox(height: 8),
-          RichText(
-            text: TextSpan(
-              style: const TextStyle(fontWeight: FontWeight.w800),
-              children: [
-                TextSpan(
-                  text: 'Be ',
-                  style: TextStyle(
-                    color: const Color(0xFF465512),
-                    fontSize: titleSize,
-                  ),
-                ),
-                TextSpan(
-                  text: 'Wealthy',
-                  style: TextStyle(
-                    color: const Color(0xFF7C3AED),
-                    fontSize: titleSize,
-                  ),
-                ),
-              ],
+          Text(
+            'Stay Wise',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF465512),
+              fontSize: titleSize,
             ),
           ),
           const SizedBox(height: 6),
@@ -657,7 +755,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
               color: const Color(0xFF465512),
             ),
           ),
-          const Spacer(),
+          const SizedBox(height: 14),
           Row(
             children: [
               Container(
@@ -755,7 +853,7 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (loading) return const Center(child: _RepayLoadingIndicator());
+    if (loading) return const Center(child: AppLoader());
     if (error != null) return Center(child: Text(error!));
 
     return RefreshIndicator(
@@ -897,7 +995,9 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
             runSpacing: 8,
             children: [
               InkWell(
-                onTap: stationMeta.hasTarget ? () => _openNavigateSheet(v) : null,
+                onTap: stationMeta.hasTarget
+                    ? () => _openNavigateSheet(v)
+                    : null,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -927,7 +1027,11 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.qr_code_2, color: AppTheme.primaryBlue, size: 20),
+                      Icon(
+                        Icons.qr_code_2,
+                        color: AppTheme.primaryBlue,
+                        size: 20,
+                      ),
                       SizedBox(width: 6),
                       Text(
                         'Show QR',
@@ -958,11 +1062,17 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
     if (target.isEmpty || stations.isEmpty) return null;
 
     for (final station in stations) {
-      final stationName = (station['name'] ?? '').toString().trim().toLowerCase();
+      final stationName = (station['name'] ?? '')
+          .toString()
+          .trim()
+          .toLowerCase();
       if (stationName == target) return station;
     }
     for (final station in stations) {
-      final stationName = (station['name'] ?? '').toString().trim().toLowerCase();
+      final stationName = (station['name'] ?? '')
+          .toString()
+          .trim()
+          .toLowerCase();
       if (target.contains(stationName) || stationName.contains(target)) {
         return station;
       }
@@ -970,7 +1080,9 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
     return null;
   }
 
-  List<Map<String, dynamic>> _inferStationsFromVouchers(List<VoucherItem> list) {
+  List<Map<String, dynamic>> _inferStationsFromVouchers(
+    List<VoucherItem> list,
+  ) {
     final unique = <String>{};
     final result = <Map<String, dynamic>>[];
     var nextId = 1;
@@ -992,7 +1104,9 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
   }
 
   _StationNavMeta _stationMeta(Map<String, dynamic>? station, VoucherItem v) {
-    final name = (v.stationName ?? station?['name'] ?? 'Station').toString().trim();
+    final name = (v.stationName ?? station?['name'] ?? 'Station')
+        .toString()
+        .trim();
     final rawName = (v.stationName ?? station?['name'] ?? '').toString().trim();
     final city = (station?['city'] ?? '').toString().trim();
     final address = (station?['address'] ?? '').toString().trim();
@@ -1017,9 +1131,11 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
         .trim();
     final city = (station?['city'] ?? '').toString().trim();
     final address = (station?['address'] ?? '').toString().trim();
-    final query = [destinationName, address, city]
-        .where((part) => part.trim().isNotEmpty)
-        .join(', ');
+    final query = [
+      destinationName,
+      address,
+      city,
+    ].where((part) => part.trim().isNotEmpty).join(', ');
     final lat = double.tryParse('${station?['latitude'] ?? ''}');
     final lng = double.tryParse('${station?['longitude'] ?? ''}');
     final hasCoords = lat != null && lng != null;
@@ -1029,7 +1145,9 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
     if (!hasCoords && query.trim().isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Station location data is not available.')),
+        const SnackBar(
+          content: Text('Station location data is not available.'),
+        ),
       );
       return;
     }
@@ -1059,134 +1177,148 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                  Center(
-                    child: Container(
-                      width: 44,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF64748B),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: AppTheme.actionGradient,
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Icon(
-                            Icons.local_taxi_rounded,
-                            color: Color(0xFFE2E8F0),
+                        Center(
+                          child: Container(
+                            width: 44,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF64748B),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: AppTheme.actionGradient,
+                          ),
+                          child: Row(
                             children: [
-                              const Text(
-                                'Navigate to Redeem Station',
-                                style: TextStyle(
-                                  color: Color(0xFFF8FAFC),
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: const Icon(
+                                  Icons.local_taxi_rounded,
+                                  color: Color(0xFFE2E8F0),
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                destinationName,
-                                style: const TextStyle(
-                                  color: Color(0xFFBFDBFE),
-                                  fontWeight: FontWeight.w600,
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Navigate to Redeem Station',
+                                      style: TextStyle(
+                                        color: Color(0xFFF8FAFC),
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      destinationName,
+                                      style: const TextStyle(
+                                        color: Color(0xFFBFDBFE),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    query.isEmpty ? 'Station location not available yet.' : query,
-                    style: const TextStyle(color: Color(0xFF94A3B8)),
-                  ),
-                  const SizedBox(height: 14),
-                  _mapOptionTile(
-                    icon: Icons.map_rounded,
-                    title: 'HERE WeGo',
-                    subtitle: 'Native HERE turn-by-turn route',
-                    color: const Color(0xFF00AFAA),
-                    onTap: () => _launchNavigation(
-                      appName: 'HERE WeGo',
-                      primary: hasCoords
-                          ? Uri.parse('here.directions://v1.0/mylocation/$waypoint')
-                          : Uri.parse('https://wego.here.com/search/${Uri.encodeComponent(query)}'),
-                      fallback: hasCoords
-                          ? Uri.parse('https://wego.here.com/directions/drive/mylocation/$waypoint')
-                          : Uri.parse('https://wego.here.com/search/${Uri.encodeComponent(query)}'),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _mapOptionTile(
-                    icon: Icons.navigation_rounded,
-                    title: 'Google Maps',
-                    subtitle: 'Fastest live traffic route',
-                    color: const Color(0xFF3B82F6),
-                    onTap: () => _launchNavigation(
-                      appName: 'Google Maps',
-                      primary: hasCoords
-                          ? Uri.parse('google.navigation:q=$waypoint&mode=d')
-                          : Uri.parse(
-                              'https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(query)}',
-                            ),
-                      fallback: hasCoords
-                          ? Uri.parse(
-                              'https://www.google.com/maps/dir/?api=1&destination=$waypoint&travelmode=driving',
-                            )
-                          : Uri.parse(
-                              'https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(query)}',
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _mapOptionTile(
-                    icon: Icons.alt_route_rounded,
-                    title: 'Waze',
-                    subtitle: 'Road alerts and quickest reroutes',
-                    color: const Color(0xFF38BDF8),
-                    onTap: () => _launchNavigation(
-                      appName: 'Waze',
-                      primary: hasCoords
-                          ? Uri.parse('waze://?ll=$waypoint&navigate=yes')
-                          : Uri.parse(
-                              'https://waze.com/ul?q=${Uri.encodeComponent(query)}&navigate=yes',
-                            ),
-                      fallback: hasCoords
-                          ? Uri.parse('https://waze.com/ul?ll=$waypoint&navigate=yes')
-                          : Uri.parse(
-                              'https://waze.com/ul?q=${Uri.encodeComponent(query)}&navigate=yes',
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  FxButton(
-                    label: 'Close',
-                    fullWidth: true,
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+                        const SizedBox(height: 10),
+                        Text(
+                          query.isEmpty
+                              ? 'Station location not available yet.'
+                              : query,
+                          style: const TextStyle(color: Color(0xFF94A3B8)),
+                        ),
+                        const SizedBox(height: 14),
+                        _mapOptionTile(
+                          icon: Icons.map_rounded,
+                          title: 'HERE WeGo',
+                          subtitle: 'Native HERE turn-by-turn route',
+                          color: const Color(0xFF00AFAA),
+                          onTap: () => _launchNavigation(
+                            appName: 'HERE WeGo',
+                            primary: hasCoords
+                                ? Uri.parse(
+                                    'here.directions://v1.0/mylocation/$waypoint',
+                                  )
+                                : Uri.parse(
+                                    'https://wego.here.com/search/${Uri.encodeComponent(query)}',
+                                  ),
+                            fallback: hasCoords
+                                ? Uri.parse(
+                                    'https://wego.here.com/directions/drive/mylocation/$waypoint',
+                                  )
+                                : Uri.parse(
+                                    'https://wego.here.com/search/${Uri.encodeComponent(query)}',
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _mapOptionTile(
+                          icon: Icons.navigation_rounded,
+                          title: 'Google Maps',
+                          subtitle: 'Fastest live traffic route',
+                          color: const Color(0xFF3B82F6),
+                          onTap: () => _launchNavigation(
+                            appName: 'Google Maps',
+                            primary: hasCoords
+                                ? Uri.parse(
+                                    'google.navigation:q=$waypoint&mode=d',
+                                  )
+                                : Uri.parse(
+                                    'https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(query)}',
+                                  ),
+                            fallback: hasCoords
+                                ? Uri.parse(
+                                    'https://www.google.com/maps/dir/?api=1&destination=$waypoint&travelmode=driving',
+                                  )
+                                : Uri.parse(
+                                    'https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(query)}',
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _mapOptionTile(
+                          icon: Icons.alt_route_rounded,
+                          title: 'Waze',
+                          subtitle: 'Road alerts and quickest reroutes',
+                          color: const Color(0xFF38BDF8),
+                          onTap: () => _launchNavigation(
+                            appName: 'Waze',
+                            primary: hasCoords
+                                ? Uri.parse('waze://?ll=$waypoint&navigate=yes')
+                                : Uri.parse(
+                                    'https://waze.com/ul?q=${Uri.encodeComponent(query)}&navigate=yes',
+                                  ),
+                            fallback: hasCoords
+                                ? Uri.parse(
+                                    'https://waze.com/ul?ll=$waypoint&navigate=yes',
+                                  )
+                                : Uri.parse(
+                                    'https://waze.com/ul?q=${Uri.encodeComponent(query)}&navigate=yes',
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        FxButton(
+                          label: 'Close',
+                          fullWidth: true,
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
                       ],
                     ),
                   ),
@@ -1223,11 +1355,7 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
-          ),
-        ),
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
     }
   }
@@ -1292,6 +1420,42 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
   Future<void> _showVoucherSheet(VoucherItem v) async {
     var mode = 'qr';
     final tapTokenFuture = widget.api.driverTapToken(v.id);
+    var tapArming = false;
+    var tapArmed = false;
+    var tapStatus = 'Switch to Tap to arm your phone for POS tap.';
+
+    Future<void> armTap(
+      StateSetter setSheetState,
+      BuildContext sheetContext,
+    ) async {
+      if (tapArming || tapArmed) return;
+      setSheetState(() {
+        tapArming = true;
+        tapStatus = 'Preparing secure tap token...';
+      });
+
+      try {
+        final token = await tapTokenFuture;
+        final enabled = await NfcHceBridge.isAvailable();
+        if (!enabled) {
+          throw Exception('NFC/HCE is unavailable or disabled on this phone.');
+        }
+        await NfcHceBridge.setTapToken(token);
+        if (!sheetContext.mounted) return;
+        setSheetState(() {
+          tapArming = false;
+          tapArmed = true;
+          tapStatus = 'Ready to tap. Hold phone near POS reader.';
+        });
+      } catch (e) {
+        if (!sheetContext.mounted) return;
+        setSheetState(() {
+          tapArming = false;
+          tapArmed = false;
+          tapStatus = e.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    }
 
     await showModalBottomSheet<void>(
       context: context,
@@ -1359,8 +1523,12 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                           ),
                         ],
                         selected: {mode},
-                        onSelectionChanged: (v) =>
-                            setSheetState(() => mode = v.first),
+                        onSelectionChanged: (v) {
+                          setSheetState(() => mode = v.first);
+                          if (v.first == 'tap') {
+                            unawaited(armTap(setSheetState, context));
+                          }
+                        },
                       ),
                       const SizedBox(height: 14),
                       if (mode == 'qr')
@@ -1398,151 +1566,40 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Tap token',
+                                'Phone Tap',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   color: Color(0xFFE2E8F0),
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              FutureBuilder<String>(
-                                future: tapTokenFuture,
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState !=
-                                      ConnectionState.done) {
-                                    return const Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        vertical: 6,
-                                      ),
-                                      child: SizedBox(
-                                        height: 18,
-                                        width: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  if (snapshot.hasError || !snapshot.hasData) {
-                                    return Text(
-                                      snapshot.error?.toString().replaceFirst(
-                                            'Exception: ',
-                                            '',
-                                          ) ??
-                                          'Failed to generate tap token.',
-                                      style: const TextStyle(
-                                        color: Color(0xFFFCA5A5),
-                                      ),
-                                    );
-                                  }
-                                  return SelectableText(
-                                    snapshot.data!,
-                                    style: const TextStyle(
-                                      fontFamily: 'monospace',
-                                      fontSize: 12,
+                              Row(
+                                children: [
+                                  if (tapArming)
+                                    const AppLoader(size: 18, showText: false)
+                                  else
+                                    Icon(
+                                      tapArmed
+                                          ? Icons.nfc_rounded
+                                          : Icons.error_outline_rounded,
+                                      size: 18,
+                                      color: tapArmed
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFFFCA5A5),
                                     ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 8),
-                              FxButton(
-                                label: 'Copy token',
-                                icon: Icons.copy_rounded,
-                                fullWidth: true,
-                                onPressed: () async {
-                                  try {
-                                    final token = await tapTokenFuture;
-                                    await Clipboard.setData(
-                                      ClipboardData(text: token),
-                                    );
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Tap token copied.'),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      tapStatus,
+                                      style: TextStyle(
+                                        color: tapArmed
+                                            ? const Color(0xFF86EFAC)
+                                            : const Color(0xFFFCA5A5),
+                                        fontSize: 12,
                                       ),
-                                    );
-                                  } catch (e) {
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          e.toString().replaceFirst(
-                                            'Exception: ',
-                                            '',
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                              const SizedBox(height: 8),
-                              FxButton(
-                                label: 'Enable Phone Tap',
-                                icon: Icons.nfc_rounded,
-                                fullWidth: true,
-                                onPressed: () async {
-                                  try {
-                                    final token = await tapTokenFuture;
-                                    final enabled =
-                                        await NfcHceBridge.isAvailable();
-                                    if (!enabled) {
-                                      throw Exception(
-                                        'NFC/HCE is unavailable or disabled on this phone.',
-                                      );
-                                    }
-                                    await NfcHceBridge.setTapToken(token);
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Phone tap is armed. Hold phone to POS reader.',
-                                        ),
-                                      ),
-                                    );
-                                  } catch (e) {
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          e.toString().replaceFirst(
-                                            'Exception: ',
-                                            '',
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                              const SizedBox(height: 8),
-                              FxButton(
-                                label: 'Disable Phone Tap',
-                                icon: Icons.nfc_outlined,
-                                fullWidth: true,
-                                onPressed: () async {
-                                  try {
-                                    await NfcHceBridge.clearTapToken();
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Phone tap disabled.'),
-                                      ),
-                                    );
-                                  } catch (e) {
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          e.toString().replaceFirst(
-                                            'Exception: ',
-                                            '',
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                },
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -1635,7 +1692,7 @@ class _DriverNavigatePageState extends State<DriverNavigatePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (loading) return const Center(child: _RepayLoadingIndicator());
+    if (loading) return const Center(child: AppLoader());
 
     return RefreshIndicator(
       onRefresh: fetch,
@@ -1872,69 +1929,6 @@ class DriverApplyVoucherPage extends StatefulWidget {
 }
 
 class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
-  static const List<Map<String, String>> _tapFeatureItems = [
-    {
-      'title': 'Tap Receipt + Share',
-      'description':
-          'Instant PDF/SMS/WhatsApp receipt after NFC payment with repayment breakdown.',
-    },
-    {
-      'title': 'Smart Auto-Collection',
-      'description':
-          'Auto-charge most recent due when driver taps, with merchant-defined rules.',
-    },
-    {
-      'title': 'Partial Payment Support',
-      'description':
-          'Let customer tap-pay part of weekly bundle and carry forward balance.',
-    },
-    {
-      'title': 'Retry + Recovery Queue',
-      'description':
-          'If network drops after NFC tap, queue and auto-retry settlement safely.',
-    },
-    {
-      'title': 'Driver Tap History',
-      'description':
-          'Timeline of all station tap payments, status, and outstanding balance.',
-    },
-    {
-      'title': 'Station Risk Controls',
-      'description':
-          'Per-station limits: max tap amount/day, failed attempts lock, manual override PIN.',
-    },
-    {
-      'title': 'Geo + Device Trust',
-      'description':
-          'Only allow tap settlement from approved station devices and geofence radius.',
-    },
-    {
-      'title': 'Real-time Alerts',
-      'description':
-          'Notify driver + station manager when payment succeeds/fails/needs verification.',
-    },
-    {
-      'title': 'Reconciliation Dashboard',
-      'description':
-          'Daily matching: tap requests vs settled repayments vs wallet movement.',
-    },
-    {
-      'title': 'NFC Loyalty Layer',
-      'description':
-          'Reward points/cashback for on-time weekly tap repayments.',
-    },
-    {
-      'title': 'Offline NFC Token Mode',
-      'description':
-          'Generate short-lived offline tap tokens to accept payments in poor coverage.',
-    },
-    {
-      'title': 'Dispute/Refund Flow',
-      'description':
-          'Guided dispute escalation and controlled refund approval with audit trail.',
-    },
-  ];
-
   bool loading = true;
   bool submitting = false;
   bool autopayEnabled = false;
@@ -1942,13 +1936,18 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
   String? error;
   final amountCtrl = TextEditingController(text: '500');
   final stationCtrl = TextEditingController();
+  final FocusNode stationFocusNode = FocusNode();
+  final MapController mapController = MapController();
   String fuelType = 'petrol';
   List<Map<String, dynamic>> stations = [];
+  Timer? stationSearchDebounce;
   Timer? approvalPollTimer;
   int approvedBeforeSubmit = 0;
   String? selectedStationName;
   Map<String, dynamic>? selectedStation;
   int? stationId;
+  double? driverLatitude;
+  double? driverLongitude;
 
   @override
   void initState() {
@@ -1958,9 +1957,11 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
 
   @override
   void dispose() {
+    stationSearchDebounce?.cancel();
     approvalPollTimer?.cancel();
     amountCtrl.dispose();
     stationCtrl.dispose();
+    stationFocusNode.dispose();
     super.dispose();
   }
 
@@ -1971,7 +1972,25 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
     });
     try {
       final profile = await widget.api.profile();
-      final st = await widget.api.stations();
+      _applyProfileLocationFallback(profile);
+      await _resolveCurrentLocation();
+      List<Map<String, dynamic>> st = const [];
+      if (driverLatitude != null && driverLongitude != null) {
+        try {
+          st = await widget.api.nearbyStations(
+            latitude: driverLatitude!,
+            longitude: driverLongitude!,
+            radiusKm: 40,
+            limit: 60,
+          );
+        } catch (_) {
+          // Fallback to full stations list below.
+        }
+      }
+      if (st.isEmpty) {
+        st = await widget.api.stations();
+      }
+      final sortedStations = _sortStationsByDistance(st);
       final vouchers = await widget.api.driverVouchers();
       final gateway = (profile['autopay_gateway'] ?? '')
           .toString()
@@ -1995,7 +2014,7 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
               hasToken &&
               !blocked.contains(status));
       setState(() {
-        stations = st;
+        stations = sortedStations;
         autopayEnabled = (profile['autopay_enabled'] ?? false) == true;
         autopayReady = ready;
         approvedBeforeSubmit = vouchers
@@ -2006,6 +2025,19 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
       setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => loading = false);
+    }
+  }
+
+  void _applyProfileLocationFallback(Map<String, dynamic> profile) {
+    final lat = double.tryParse(
+      '${profile['latitude'] ?? profile['lat'] ?? ''}',
+    );
+    final lng = double.tryParse(
+      '${profile['longitude'] ?? profile['lng'] ?? profile['lon'] ?? ''}',
+    );
+    if (lat != null && lng != null) {
+      driverLatitude = lat;
+      driverLongitude = lng;
     }
   }
 
@@ -2025,6 +2057,16 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Select station.')));
+      return;
+    }
+
+    final amount = double.tryParse(amountCtrl.text.trim()) ?? 0;
+    if (amount < 500 || amount > 1200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Voucher amount must be between R500 and R1200.'),
+        ),
+      );
       return;
     }
 
@@ -2060,7 +2102,7 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
     try {
       await widget.api.applyVoucher(
         stationId: stationId!,
-        amount: double.tryParse(amountCtrl.text) ?? 0,
+        amount: amount,
         fuelType: fuelType,
       );
       if (!mounted) return;
@@ -2101,6 +2143,157 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
     final amount =
         double.tryParse(raw.toString().replaceAll(',', '').trim()) ?? 0;
     return amount > 0;
+  }
+
+  Future<void> _resolveCurrentLocation() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
+      ).timeout(const Duration(seconds: 6));
+      driverLatitude = pos.latitude;
+      driverLongitude = pos.longitude;
+    } catch (_) {
+      try {
+        final last = await Geolocator.getLastKnownPosition();
+        if (last != null) {
+          driverLatitude = last.latitude;
+          driverLongitude = last.longitude;
+        }
+      } catch (_) {
+        // Keep station apply usable even if location lookup fails.
+      }
+    }
+  }
+
+  List<Map<String, dynamic>> _sortStationsByDistance(
+    List<Map<String, dynamic>> input,
+  ) {
+    final list = List<Map<String, dynamic>>.from(input);
+    list.sort((a, b) {
+      final ad = _distanceKm(a) ?? double.infinity;
+      final bd = _distanceKm(b) ?? double.infinity;
+      return ad.compareTo(bd);
+    });
+    return list;
+  }
+
+  double? _distanceKm(Map<String, dynamic> station) {
+    final rawDistance = station['distance'];
+    if (rawDistance != null) {
+      final normalized = rawDistance
+          .toString()
+          .toLowerCase()
+          .replaceAll('km', '')
+          .replaceAll(RegExp(r'[^0-9\.\-]'), '')
+          .trim();
+      final parsed = double.tryParse(normalized);
+      if (parsed != null) return parsed;
+    }
+
+    if (driverLatitude == null || driverLongitude == null) return null;
+    final lat = double.tryParse(
+      '${station['latitude'] ?? station['lat'] ?? ''}',
+    );
+    final lng = double.tryParse(
+      '${station['longitude'] ?? station['lng'] ?? station['lon'] ?? ''}',
+    );
+    if (lat == null || lng == null) return null;
+    final meters = Geolocator.distanceBetween(
+      driverLatitude!,
+      driverLongitude!,
+      lat,
+      lng,
+    );
+    return meters / 1000;
+  }
+
+  LatLng? _stationLatLng(Map<String, dynamic> station) {
+    final lat = double.tryParse(
+      '${station['latitude'] ?? station['lat'] ?? ''}',
+    );
+    final lng = double.tryParse(
+      '${station['longitude'] ?? station['lng'] ?? station['lon'] ?? ''}',
+    );
+    if (lat == null || lng == null) return null;
+    return LatLng(lat, lng);
+  }
+
+  List<Map<String, dynamic>> _nearestStationsForMap() {
+    return stations.where((s) => _stationLatLng(s) != null).take(30).toList();
+  }
+
+  List<Map<String, dynamic>> _matchingStations(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) {
+      return _sortStationsByDistance(stations).take(8).toList();
+    }
+    final matched = stations.where((s) {
+      final name = (s['name'] ?? '').toString().toLowerCase();
+      final city = (s['city'] ?? '').toString().toLowerCase();
+      return name.contains(q) || city.contains(q);
+    }).toList();
+    matched.sort((a, b) {
+      final ad = _distanceKm(a) ?? double.infinity;
+      final bd = _distanceKm(b) ?? double.infinity;
+      final cmp = ad.compareTo(bd);
+      if (cmp != 0) return cmp;
+      return (a['name'] ?? '').toString().compareTo(
+        (b['name'] ?? '').toString(),
+      );
+    });
+    return matched.take(8).toList();
+  }
+
+  void _moveMapToStation(Map<String, dynamic> station, {double zoom = 14}) {
+    final point = _stationLatLng(station);
+    if (point == null) return;
+    try {
+      mapController.move(point, zoom);
+    } catch (_) {
+      // Ignore map move race conditions before first frame.
+    }
+  }
+
+  void _previewSearchOnMap(String query) {
+    final candidates = _matchingStations(query);
+    if (candidates.isEmpty) return;
+    _moveMapToStation(candidates.first, zoom: 12.8);
+  }
+
+  LatLng _initialMapCenter() {
+    final selected = selectedStation == null
+        ? null
+        : _stationLatLng(selectedStation!);
+    if (selected != null) return selected;
+    if (driverLatitude != null && driverLongitude != null) {
+      return LatLng(driverLatitude!, driverLongitude!);
+    }
+    final first = stations.isEmpty ? null : _stationLatLng(stations.first);
+    return first ?? const LatLng(-26.2041, 28.0473);
+  }
+
+  void _selectStation(Map<String, dynamic> station) {
+    setState(() {
+      selectedStation = station;
+      stationId = int.tryParse('${station['id'] ?? 0}') ?? 0;
+      selectedStationName = (station['name'] ?? '').toString();
+      stationCtrl.text = selectedStationName ?? '';
+    });
+    _moveMapToStation(station);
   }
 
   void _startApprovalPolling() {
@@ -2148,11 +2341,33 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
     });
   }
 
+  Future<void> _searchStationsRemote(String query) async {
+    stationSearchDebounce?.cancel();
+    final trimmed = query.trim();
+    if (trimmed.length < 2) return;
+
+    stationSearchDebounce = Timer(const Duration(milliseconds: 260), () async {
+      try {
+        final found = await widget.api.searchStations(trimmed);
+        if (!mounted || stationCtrl.text.trim() != trimmed) return;
+        if (found.isNotEmpty) {
+          setState(() {
+            stations = _sortStationsByDistance(found);
+          });
+        }
+      } catch (_) {
+        // Keep local suggestions if network search fails.
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (loading) return const Center(child: CircularProgressIndicator());
+    if (loading) return const Center(child: AppLoader());
     if (error != null) return Center(child: Text(error!));
 
+    final nearestStations = _nearestStationsForMap();
+    final mapCenter = _initialMapCenter();
     return ListView(
       padding: const EdgeInsets.all(14),
       children: [
@@ -2180,38 +2395,102 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                   ),
                   const SizedBox(height: 12),
                 ],
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    height: 250,
+                    child: FlutterMap(
+                      mapController: mapController,
+                      options: MapOptions(
+                        initialCenter: mapCenter,
+                        initialZoom: 12.5,
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate:
+                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'co.za.bwiser.mobile',
+                        ),
+                        if (driverLatitude != null && driverLongitude != null)
+                          MarkerLayer(
+                            markers: [
+                              Marker(
+                                width: 26,
+                                height: 26,
+                                point: LatLng(
+                                  driverLatitude!,
+                                  driverLongitude!,
+                                ),
+                                child: const Icon(
+                                  Icons.my_location_rounded,
+                                  size: 22,
+                                  color: Color(0xFF2563EB),
+                                ),
+                              ),
+                            ],
+                          ),
+                        MarkerLayer(
+                          markers: nearestStations.map((s) {
+                            final point = _stationLatLng(s)!;
+                            final selected =
+                                (s['id'] ?? '').toString() ==
+                                (stationId ?? '').toString();
+                            return Marker(
+                              point: point,
+                              width: 34,
+                              height: 34,
+                              child: GestureDetector(
+                                onTap: () => _selectStation(s),
+                                child: Icon(
+                                  Icons.location_on_rounded,
+                                  size: selected ? 32 : 28,
+                                  color: selected
+                                      ? const Color(0xFFDC2626)
+                                      : const Color(0xFF16A34A),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Closest partner stations near you. Tap a marker to auto-fill station search.',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: fetch,
+                    icon: const Icon(Icons.my_location_rounded, size: 16),
+                    label: const Text('Use my location'),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 RawAutocomplete<Map<String, dynamic>>(
                   textEditingController: stationCtrl,
+                  focusNode: stationFocusNode,
                   optionsBuilder: (TextEditingValue value) {
-                    final query = value.text.trim().toLowerCase();
-                    if (query.isEmpty) return stations.take(8);
-                    return stations
-                        .where((s) {
-                          final name = (s['name'] ?? '')
-                              .toString()
-                              .toLowerCase();
-                          final city = (s['city'] ?? '')
-                              .toString()
-                              .toLowerCase();
-                          return name.contains(query) || city.contains(query);
-                        })
-                        .take(8);
+                    return _matchingStations(value.text);
                   },
                   displayStringForOption: (option) =>
                       '${option['name'] ?? 'Station'}',
                   onSelected: (s) {
-                    setState(() {
-                      selectedStation = s;
-                      stationId = int.tryParse('${s['id'] ?? 0}') ?? 0;
-                      selectedStationName = (s['name'] ?? '').toString();
-                      stationCtrl.text = selectedStationName ?? '';
-                    });
+                    _selectStation(s);
                   },
                   fieldViewBuilder:
                       (context, controller, focusNode, onFieldSubmitted) {
                         return TextField(
                           controller: controller,
                           focusNode: focusNode,
+                          style: const TextStyle(color: Color(0xFFFFFFFF)),
                           decoration: const InputDecoration(
                             labelText: 'Station',
                             hintText: 'Type station name',
@@ -2225,6 +2504,8 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                                 selectedStationName = null;
                               });
                             }
+                            _searchStationsRemote(controller.text);
+                            _previewSearchOnMap(controller.text);
                           },
                         );
                       },
@@ -2247,6 +2528,10 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                               final s = options.elementAt(index);
                               final partner = _stationIsPartner(s);
                               final funded = _stationHasFunds(s);
+                              final km = _distanceKm(s);
+                              final distanceText = km == null
+                                  ? 'distance unknown'
+                                  : '${km.toStringAsFixed(1)} km away';
                               return ListTile(
                                 dense: true,
                                 title: Text(
@@ -2256,7 +2541,7 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                                   ),
                                 ),
                                 subtitle: Text(
-                                  '${s['city'] ?? '-'} • ${partner ? 'Partner' : 'Non-partner'} • ${funded ? 'Funded' : 'No funds'}',
+                                  '${s['city'] ?? '-'} • $distanceText • ${partner ? 'Partner' : 'Non-partner'} • ${funded ? 'Funded' : 'No funds'}',
                                   style: const TextStyle(
                                     color: Color(0xFF94A3B8),
                                   ),
@@ -2273,16 +2558,37 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: amountCtrl,
+                  style: const TextStyle(color: Color(0xFFFFFFFF)),
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(labelText: 'Amount (ZAR)'),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: fuelType,
+                  style: const TextStyle(color: Color(0xFFFFFFFF)),
+                  dropdownColor: const Color(0xFF0F172A),
                   items: const [
-                    DropdownMenuItem(value: 'petrol', child: Text('Petrol')),
-                    DropdownMenuItem(value: 'diesel', child: Text('Diesel')),
-                    DropdownMenuItem(value: 'super', child: Text('Super')),
+                    DropdownMenuItem(
+                      value: 'petrol',
+                      child: Text(
+                        'Petrol',
+                        style: TextStyle(color: Color(0xFFFFFFFF)),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'diesel',
+                      child: Text(
+                        'Diesel',
+                        style: TextStyle(color: Color(0xFFFFFFFF)),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'super',
+                      child: Text(
+                        'Super',
+                        style: TextStyle(color: Color(0xFFFFFFFF)),
+                      ),
+                    ),
                   ],
                   onChanged: (v) => setState(() => fuelType = v ?? 'petrol'),
                   decoration: const InputDecoration(labelText: 'Fuel Type'),
@@ -2292,14 +2598,7 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                     ? const SizedBox(
                         height: 54,
                         child: Center(
-                          child: SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          ),
+                          child: AppLoader(size: 22, showText: false),
                         ),
                       )
                     : FxButton(
@@ -2312,229 +2611,8 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        _buildTapFeatureSection(context),
       ],
     );
-  }
-
-  Widget _buildTapFeatureSection(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    scheme.primary.withValues(alpha: 0.25),
-                    scheme.primary.withValues(alpha: 0.08),
-                  ],
-                ),
-                border: Border.all(color: scheme.primary.withValues(alpha: 0.38)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: scheme.primary.withValues(alpha: 0.22),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(
-                      Icons.local_shipping_rounded,
-                      color: scheme.primary,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Smart Tap Repayments',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: const Color(0xFFF8FAFC),
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'NFC flow with safer collections, retries, and better visibility.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFFBFDBFE),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.place_rounded, color: scheme.primary, size: 28),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _featurePill(
-                  label: '${_tapFeatureItems.length} capabilities',
-                  color: scheme.primary,
-                ),
-                _featurePill(
-                  label: 'Real-time alerts',
-                  color: const Color(0xFF22C55E),
-                ),
-                _featurePill(
-                  label: 'Offline-ready',
-                  color: const Color(0xFFF59E0B),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ..._tapFeatureItems.map((item) {
-              final title = (item['title'] ?? '').trim();
-              final description = (item['description'] ?? '').trim();
-              if (title.isEmpty || description.isEmpty) {
-                return const SizedBox.shrink();
-              }
-              final accent = _featureAccent(title, scheme);
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        accent.withValues(alpha: 0.14),
-                        const Color(0xFF0F172A),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: accent.withValues(alpha: 0.4)),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: accent.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          _featureIcon(title),
-                          size: 18,
-                          color: accent,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: accent,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              description,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: const Color(0xFFCBD5E1),
-                                height: 1.3,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 13,
-                        color: accent.withValues(alpha: 0.85),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _featurePill({required String label, required Color color}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.45)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 11.5,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-
-  IconData _featureIcon(String title) {
-    final key = title.toLowerCase();
-    if (key.contains('receipt')) return Icons.receipt_long_rounded;
-    if (key.contains('auto-collection')) return Icons.autorenew_rounded;
-    if (key.contains('partial')) return Icons.pie_chart_rounded;
-    if (key.contains('retry')) return Icons.sync_problem_rounded;
-    if (key.contains('history')) return Icons.history_toggle_off_rounded;
-    if (key.contains('risk')) return Icons.shield_rounded;
-    if (key.contains('geo')) return Icons.location_on_rounded;
-    if (key.contains('alert')) return Icons.notifications_active_rounded;
-    if (key.contains('reconciliation')) return Icons.fact_check_rounded;
-    if (key.contains('loyalty')) return Icons.card_giftcard_rounded;
-    if (key.contains('offline')) return Icons.cloud_off_rounded;
-    if (key.contains('dispute')) return Icons.gavel_rounded;
-    return Icons.bolt_rounded;
-  }
-
-  Color _featureAccent(String title, ColorScheme scheme) {
-    final key = title.toLowerCase();
-    if (key.contains('risk') || key.contains('dispute')) {
-      return const Color(0xFFF97316);
-    }
-    if (key.contains('geo') || key.contains('history')) {
-      return const Color(0xFF06B6D4);
-    }
-    if (key.contains('offline') || key.contains('retry')) {
-      return const Color(0xFFEAB308);
-    }
-    if (key.contains('loyalty') || key.contains('partial')) {
-      return const Color(0xFF22C55E);
-    }
-    return scheme.primary;
   }
 }
 
@@ -2659,7 +2737,7 @@ class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (loading) return const Center(child: CircularProgressIndicator());
+    if (loading) return const Center(child: AppLoader());
     if (error != null) return Center(child: Text(error!));
 
     return RefreshIndicator(
@@ -2835,24 +2913,25 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
     if (value) {
       final configured = await _setupPaystackAutopay();
       if (!configured) return;
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('AutoPay enabled (Paystack).')),
+      );
+      await fetch();
+      return;
     }
 
     setState(() => loading = true);
     try {
-      await widget.api.setAutopay(enabled: value, method: 'paystack');
-      setState(() {
-        enabled = value;
-        paymentMethod = 'paystack';
-        ready = value ? hasToken : false;
-      });
+      await widget.api.setAutopay(enabled: false, method: 'paystack');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            value ? 'AutoPay enabled (Paystack)' : 'AutoPay disabled',
-          ),
-        ),
-      );
+      setState(() {
+        enabled = false;
+        ready = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('AutoPay disabled.')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2967,9 +3046,30 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
     }
   }
 
+  Future<void> _authorizeAutopayCard() async {
+    setState(() => loading = true);
+    try {
+      final configured = await _setupPaystackAutopay();
+      if (!configured) return;
+      if (!mounted) return;
+      await fetch();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('AutoPay card authorized successfully.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (loading) return const Center(child: CircularProgressIndicator());
+    if (loading) return const Center(child: AppLoader());
     if (error != null) return Center(child: Text(error!));
 
     return ListView(
@@ -3019,112 +3119,44 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
         Card(
           child: Padding(
             padding: const EdgeInsets.all(14),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  ready
-                      ? Icons.check_circle_rounded
-                      : Icons.error_outline_rounded,
-                  color: ready
-                      ? const Color(0xFF10B981)
-                      : const Color(0xFFF59E0B),
+                Row(
+                  children: [
+                    Icon(
+                      ready
+                          ? Icons.check_circle_rounded
+                          : Icons.error_outline_rounded,
+                      color: ready
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFFF59E0B),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        ready
+                            ? 'AutoPay is healthy and tokenized for future billing.'
+                            : 'AutoPay is not healthy yet. Re-authorize Paystack to continue applying for vouchers.',
+                        style: const TextStyle(color: AppTheme.slate),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    ready
-                        ? 'AutoPay is healthy and tokenized for future billing.'
-                        : 'AutoPay is not healthy yet. Re-authorize Paystack to continue applying for vouchers.',
-                    style: const TextStyle(color: AppTheme.slate),
+                if (!ready) ...[
+                  const SizedBox(height: 12),
+                  FxButton(
+                    label: 'Authorize AutoPay Card',
+                    icon: Icons.credit_card_rounded,
+                    fullWidth: true,
+                    onPressed: _authorizeAutopayCard,
                   ),
-                ),
+                ],
               ],
             ),
           ),
         ),
       ],
-    );
-  }
-}
-
-class _RepayLoadingIndicator extends StatefulWidget {
-  const _RepayLoadingIndicator();
-
-  @override
-  State<_RepayLoadingIndicator> createState() => _RepayLoadingIndicatorState();
-}
-
-class _RepayLoadingIndicatorState extends State<_RepayLoadingIndicator>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1200),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 160,
-      height: 160,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 96,
-            height: 96,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF35526F)),
-                    color: const Color(0xFF0B1E33),
-                  ),
-                ),
-                RotationTransition(
-                  turns: _controller,
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: SweepGradient(
-                        colors: [
-                          Color(0x00020DFF),
-                          Color(0xFF7C3AED),
-                          Color(0xFF020DFF),
-                          Color(0x00020DFF),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF334155)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Loading...',
-            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 20),
-          ),
-        ],
-      ),
     );
   }
 }

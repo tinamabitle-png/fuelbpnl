@@ -226,17 +226,28 @@ class User extends Authenticatable
             return false;
         }
 
-        if (strtolower((string) $this->autopay_gateway) !== 'paystack') {
-            return false;
-        }
-
-        if (trim((string) $this->autopay_token) === '') {
-            return false;
-        }
-
         $status = strtolower((string) ($this->autopay_status ?? 'inactive'));
         $blocked = ['disabled', 'failed', 'max_retries_exceeded', 'inactive'];
-        return !in_array($status, $blocked, true);
+        if (in_array($status, $blocked, true)) {
+            return false;
+        }
+
+        $gateway = strtolower((string) $this->autopay_gateway);
+        $details = (array) ($this->autopay_details ?? []);
+        $debiStatus = strtolower((string) (($details['debicheck']['status'] ?? $details['debicheck_status'] ?? '')));
+        $debiReady = in_array($debiStatus, ['active', 'approved', 'accepted', 'verified'], true)
+            && trim((string) ($details['debicheck']['mandate_id'] ?? $details['debicheck_mandate_id'] ?? '')) !== '';
+        $paystackReady = trim((string) $this->autopay_token) !== '';
+
+        if ($gateway === 'debicheck') {
+            return $debiReady;
+        }
+
+        if ($gateway === 'hybrid') {
+            return $debiReady || $paystackReady;
+        }
+
+        return $paystackReady;
     }
 
     public function getAutopayTokenAttribute($value): string

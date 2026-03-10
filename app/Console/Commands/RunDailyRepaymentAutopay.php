@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Repayment;
 use App\Models\User;
 use App\Services\AuditTrailService;
+use App\Services\DebiCheckService;
 use App\Services\PaystackService;
 use App\Services\RepaymentPolicyService;
 use App\Services\RepaymentSettlementService;
@@ -17,16 +18,17 @@ class RunDailyRepaymentAutopay extends Command
 {
     protected $signature = 'repayments:run-daily-autopay {--limit=250}';
 
-    protected $description = 'Run daily Paystack authorization charges for due driver repayments.';
+    protected $description = 'Run daily AutoPay charges (DebiCheck + Paystack fallback) for due driver repayments.';
 
     public function handle(
         PaystackService $paystack,
+        DebiCheckService $debiCheck,
         RepaymentSettlementService $repaymentSettlement,
         RepaymentPolicyService $policyService
     ): int
     {
-        if (!$paystack->configured()) {
-            $this->warn('Paystack is not configured. Skipping daily autopay run.');
+        if (!$paystack->configured() && !$debiCheck->configured()) {
+            $this->warn('No AutoPay rails configured (Paystack/DebiCheck). Skipping daily autopay run.');
             return self::SUCCESS;
         }
 
@@ -70,7 +72,21 @@ class RunDailyRepaymentAutopay extends Command
 
             /** @var User|null $user */
             $user = $repayment->user;
-            if (!$user || !$user->autopay_enabled || strtolower((string) $user->autopay_gateway) !== 'paystack' || trim((string) $user->autopay_token) === '') {
+            if (!$user || !$user->autopay_enabled) {
+                $skipped++;
+                $skipReasons['user_not_eligible']++;
+                continue;
+            }
+
+            $details = (array) ($user->autopay_details ?? []);
+            $debi = (array) ($details['debicheck'] ?? []);
+            $debiStatus = strtolower((string) ($debi['status'] ?? ''));
+            $debiMandateId = trim((string) ($debi['mandate_id'] ?? ''));
+            $debiReady = $debiCheck->configured()
+                && $debiMandateId !== ''
+                && in_array($debiStatus, ['active', 'approved', 'accepted', 'verified'], true);
+            $paystackReady = $paystack->configured() && trim((string) $user->autopay_token) !== '';
+            if (!$debiReady && !$paystackReady) {
                 $skipped++;
                 $skipReasons['user_not_eligible']++;
                 continue;
@@ -118,10 +134,31 @@ class RunDailyRepaymentAutopay extends Command
             }
 
             try {
-                $charge = $paystack->chargeAuthorization($user, $repayment, 'daily_24h_cycle');
+                $gatewayUsed = 'paystack';
+                $charge = null;
+                if ($debiReady) {
+                    try {
+                        $charge = $debiCheck->collect(
+                            $debiMandateId,
+                            (float) $repayment->amount,
+                            'DBC-RPY-' . $repayment->id . '-' . strtoupper(substr(md5((string) now()->timestamp), 0, 8))
+                        );
+                        $gatewayUsed = 'debicheck';
+                    } catch (\Throwable $debiError) {
+                        if (!$paystackReady) {
+                            throw $debiError;
+                        }
+                        $charge = $paystack->chargeAuthorization($user, $repayment, 'daily_24h_cycle');
+                        $gatewayUsed = 'paystack_fallback';
+                    }
+                } else {
+                    $charge = $paystack->chargeAuthorization($user, $repayment, 'daily_24h_cycle');
+                    $gatewayUsed = 'paystack';
+                }
+
                 $repaymentSettlement->settleRepayment(
                     $repayment,
-                    'paystack_subscription',
+                    $gatewayUsed === 'debicheck' ? 'debicheck_mandate' : 'paystack_subscription',
                     (string) ($charge['reference'] ?? ''),
                     ['source' => 'daily_autopay']
                 );
@@ -149,6 +186,7 @@ class RunDailyRepaymentAutopay extends Command
                     $repayment,
                     [],
                     [
+                        'gateway' => $gatewayUsed,
                         'amount' => (float) $repayment->amount,
                         'reference' => (string) ($charge['reference'] ?? ''),
                     ],

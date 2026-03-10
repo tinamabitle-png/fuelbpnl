@@ -7,7 +7,7 @@ class AppTheme {
   static const Color softBlue = Color(0xFF6366F1);
   static const Color lilac = Color(0xFFA855F7);
   static const Color mist = Color(0xFF020617);
-  static const Color slate = Color(0xFFE2E8F0);
+  static const Color slate = Color(0xFFFFFFFF);
 
   // Backward-compatible aliases used by existing screens.
   static const Color navy = deepBlue;
@@ -121,14 +121,14 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: const Color(0xFF0F172A),
-        labelStyle: const TextStyle(color: Color(0xFFCBD5E1)),
-        floatingLabelStyle: const TextStyle(color: Color(0xFFE2E8F0)),
+        labelStyle: const TextStyle(color: Color(0xFFFFFFFF)),
+        floatingLabelStyle: const TextStyle(color: Color(0xFFFFFFFF)),
         hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
-        prefixStyle: const TextStyle(color: Color(0xFFE2E8F0)),
-        suffixStyle: const TextStyle(color: Color(0xFFE2E8F0)),
-        iconColor: const Color(0xFFCBD5E1),
-        prefixIconColor: const Color(0xFFCBD5E1),
-        suffixIconColor: const Color(0xFFCBD5E1),
+        prefixStyle: const TextStyle(color: Color(0xFFFFFFFF)),
+        suffixStyle: const TextStyle(color: Color(0xFFFFFFFF)),
+        iconColor: const Color(0xFFFFFFFF),
+        prefixIconColor: const Color(0xFFFFFFFF),
+        suffixIconColor: const Color(0xFFFFFFFF),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,

@@ -13,6 +13,8 @@ use App\Models\CreditLimit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
@@ -396,8 +398,16 @@ class AuthController extends Controller
     public function forgotPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'phone' => 'required|string',
+            'phone' => 'nullable|string',
+            'email' => 'nullable|email',
+            'channel' => 'nullable|in:phone,email,both',
         ]);
+
+        $validator->after(function ($v) use ($request) {
+            if (!$request->filled('phone') && !$request->filled('email')) {
+                $v->errors()->add('identifier', 'Provide phone or email.');
+            }
+        });
 
         if ($validator->fails()) {
             return response()->json([
@@ -406,27 +416,77 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user = User::where('phone', $request->phone)->first();
+        $phone = trim((string) $request->input('phone', ''));
+        $email = strtolower(trim((string) $request->input('email', '')));
+        $channel = strtolower(trim((string) $request->input('channel', 'both')));
+        if (!in_array($channel, ['phone', 'email', 'both'], true)) {
+            $channel = 'both';
+        }
+
+        $userQuery = User::query();
+        if ($phone !== '') {
+            $userQuery->where('phone', $phone);
+        }
+        if ($email !== '') {
+            if ($phone !== '') {
+                $userQuery->orWhere('email', $email);
+            } else {
+                $userQuery->where('email', $email);
+            }
+        }
+        $user = $userQuery->first();
 
         if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'Phone number not registered'
+                'message' => 'Account not found'
             ], 404);
         }
 
-        // Generate OTP
-        $otp = Otp::generate($request->phone, 'reset_password', $user->id);
+        $sentVia = [];
+        $debugCodes = [];
 
-        // Send OTP via SMS
-        // $this->sendSms($request->phone, "Your password reset code is: {$otp->code}");
+        if (in_array($channel, ['phone', 'both'], true) && trim((string) $user->phone) !== '') {
+            $otp = Otp::generateForChannel((string) $user->phone, 'reset_password', $user->id, 'phone');
+            $sentVia[] = 'phone';
+            if (config('app.debug')) {
+                $debugCodes['phone_otp_code'] = $otp->code;
+            }
+            Log::info('Password reset OTP generated for phone channel.', ['user_id' => $user->id]);
+        }
 
-        return response()->json([
+        if (in_array($channel, ['email', 'both'], true) && trim((string) $user->email) !== '') {
+            $otp = Otp::generateForChannel((string) $user->email, 'reset_password', $user->id, 'email');
+            Mail::raw(
+                "Your Bwiser password reset OTP is {$otp->code}. It expires in 10 minutes.",
+                function ($message) use ($user) {
+                    $message->to((string) $user->email)->subject('Bwiser Password Reset OTP');
+                }
+            );
+            $sentVia[] = 'email';
+            if (config('app.debug')) {
+                $debugCodes['email_otp_code'] = $otp->code;
+            }
+        }
+
+        if (empty($sentVia)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No delivery channel available for this account.',
+            ], 422);
+        }
+
+        $response = [
             'success' => true,
-            'message' => 'OTP sent to your phone for password reset',
-            // For development, include OTP
-            'otp_code' => config('app.debug') ? $otp->code : null,
-        ]);
+            'message' => 'OTP sent for password reset',
+            'sent_via' => $sentVia,
+        ];
+
+        if (!empty($debugCodes)) {
+            $response = array_merge($response, $debugCodes);
+        }
+
+        return response()->json($response);
     }
 
     /**
@@ -435,10 +495,18 @@ class AuthController extends Controller
     public function resetPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'phone' => 'required|string',
+            'phone' => 'nullable|string',
+            'email' => 'nullable|email',
             'code' => 'required|string|size:6',
             'password' => 'required|string|min:8|confirmed',
+            'channel' => 'nullable|in:phone,email',
         ]);
+
+        $validator->after(function ($v) use ($request) {
+            if (!$request->filled('phone') && !$request->filled('email')) {
+                $v->errors()->add('identifier', 'Provide phone or email.');
+            }
+        });
 
         if ($validator->fails()) {
             return response()->json([
@@ -447,7 +515,13 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $otp = Otp::verify($request->phone, $request->code, 'reset_password');
+        $phone = trim((string) $request->input('phone', ''));
+        $email = strtolower(trim((string) $request->input('email', '')));
+        $channel = strtolower(trim((string) $request->input('channel', '')));
+        $identifier = $phone !== '' ? $phone : $email;
+        $resolvedChannel = $channel !== '' ? $channel : ($phone !== '' ? 'phone' : 'email');
+
+        $otp = Otp::verifyForChannel($identifier, (string) $request->code, 'reset_password', $resolvedChannel);
 
         if (!$otp) {
             return response()->json([

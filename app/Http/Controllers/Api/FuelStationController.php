@@ -166,7 +166,7 @@ class FuelStationController extends Controller
         $query = FuelStation::active();
 
         // Search by name, company, or address
-        $searchQuery = $request->query;
+        $searchQuery = trim((string) $request->input('query', ''));
         $query->where(function ($q) use ($searchQuery) {
             $q->where('name', 'like', "%{$searchQuery}%")
               ->orWhere('company', 'like', "%{$searchQuery}%")
@@ -201,7 +201,7 @@ class FuelStationController extends Controller
                     ])
                     ->values(),
                 'search_params' => $request->all(),
-                'suggestions' => $this->getSearchSuggestions($request->query),
+                'suggestions' => $this->getSearchSuggestions($searchQuery),
             ]
         ]);
     }

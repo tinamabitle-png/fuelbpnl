@@ -129,56 +129,44 @@ Route::middleware('auth')->group(function () {
         ->name('registration.documents.store');
 });
 
-// ========== HELPER FUNCTION FOR ACCESS CONTROL ==========
-if (! function_exists('checkUserAccess')) {
-    function checkUserAccess($requiredRoles = [])
-    {
-        $user = auth()->user();
-        if (!$user || !$user->hasAnyRole($requiredRoles)) {
-            abort(403, 'Access denied. Required roles: ' . implode(', ', $requiredRoles));
-        }
-        return true;
-    }
-}
-
 // ========== PROTECTED ROUTES ==========
 Route::middleware(['auth'])->group(function () {
     
     // ========== INVESTOR ROUTES ==========
     Route::prefix('investor')->name('investor.')->group(function () {
         Route::get('/dashboard', function() {
-            checkUserAccess(['super_admin', 'admin', 'investor']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'investor']), 403);
             
           
             return app(InvestorDashboardController::class)->index();
         })->name('dashboard');
         
          Route::get('/investments', function() {
-            checkUserAccess(['super_admin', 'admin', 'investor']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'investor']), 403);
             return app(InvestorDashboardController::class)->investments(request());
         })->name('investments');
         
         Route::get('/investments/{investment}', [InvestorDashboardController::class, 'showInvestment'])->name('investments.show');
         
         Route::get('/opportunities', function() {
-            checkUserAccess(['super_admin', 'admin', 'investor']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'investor']), 403);
             return app(InvestorDashboardController::class)->opportunities(request());
         })->name('opportunities');
         
         Route::post('/invest', function() {
-            checkUserAccess(['super_admin', 'admin', 'investor']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'investor']), 403);
             return app(InvestorDashboardController::class)->invest(request());
         })->name('invest');
         
         Route::get('/profile', [InvestorDashboardController::class, 'profile'])->name('profile');
         
         Route::put('/preferences', function() {
-            checkUserAccess(['super_admin', 'admin', 'investor']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'investor']), 403);
             return app(InvestorDashboardController::class)->updatePreferences(request());
         })->name('preferences.update');
         
         Route::get('/statements', function() {
-            checkUserAccess(['super_admin', 'admin', 'investor']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'investor']), 403);
             return app(InvestorDashboardController::class)->statements(request());
         })->name('statements');
     });
@@ -187,35 +175,35 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('admin')->name('admin.')->group(function () {
         // Dashboard
         Route::get('/dashboard', function() {
-            checkUserAccess(['super_admin', 'admin', 'employee']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(AdminDashboardController::class)->index();
         })->name('dashboard');
 
         Route::get('/feedback', function() {
-            checkUserAccess(['super_admin', 'admin', 'employee']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(AdminFeedbackController::class)->index(request());
         })->name('feedback.index');
 
         Route::get('/repayments/ops', function() {
-            checkUserAccess(['super_admin', 'admin', 'employee']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(AdminRepaymentOpsController::class)->index(app(\App\Services\RepaymentPolicyService::class));
         })->name('repayments.ops');
         Route::post('/repayments/ops/policy', function() {
-            checkUserAccess(['super_admin', 'admin', 'employee']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(AdminRepaymentOpsController::class)->updatePolicy(request(), app(\App\Services\RepaymentPolicyService::class));
         })->name('repayments.ops.policy.update');
         Route::post('/repayments/ops/run-now', function() {
-            checkUserAccess(['super_admin', 'admin', 'employee']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(AdminRepaymentOpsController::class)->runNow();
         })->name('repayments.ops.run-now');
         Route::post('/repayments/ops/default-charges/run-now', function() {
-            checkUserAccess(['super_admin', 'admin', 'employee']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(AdminRepaymentOpsController::class)->runDefaultChargesNow();
         })->name('repayments.ops.default-charges.run-now');
         
         // ========== USERS ROUTES ==========
         Route::get('/users', function() {
-            checkUserAccess(['super_admin', 'admin']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin']), 403);
             return app(AdminUserController::class)->index(request());
         })->name('users.index');
         
@@ -264,67 +252,67 @@ Route::middleware(['auth'])->group(function () {
         // ========== SETTINGS ROUTES ==========
         Route::prefix('settings')->name('settings.')->group(function () {
             Route::get('/', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettingsController::class)->index();
             })->name('index');
             
             Route::post('/general', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettingsController::class)->updateGeneral(request());
             })->name('update-general');
             
             Route::post('/mail', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettingsController::class)->updateMail(request());
             })->name('update-mail');
             
             Route::post('/payment', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettingsController::class)->updatePayment(request());
             })->name('update-payment');
             
             Route::post('/vouchers', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettingsController::class)->updateVouchers(request());
             })->name('update-vouchers');
             
             Route::post('/system', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettingsController::class)->updateSystem(request());
             })->name('update-system');
 
             Route::post('/merchant-dashboard', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettingsController::class)->updateMerchantDashboard(request());
             })->name('update-merchant-dashboard');
             
             Route::post('/clear-cache', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettingsController::class)->clearCache(request());
             })->name('clear-cache');
             
             Route::post('/backup', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettingsController::class)->backupDatabase(request());
             })->name('backup');
             
             Route::get('/logs', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettingsController::class)->viewLogs();
             })->name('logs');
             
             Route::post('/clear-logs', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettingsController::class)->clearLogs(request());
             })->name('clear-logs');
             
             Route::get('/system-info', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettingsController::class)->systemInfo();
             })->name('system-info');
             
             Route::post('/test-email', function(Request $request) {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 try {
                     Mail::raw('Test email from Bwiser Admin', function ($message) use ($request) {
                         $message->to($request->email)
@@ -340,7 +328,7 @@ Route::middleware(['auth'])->group(function () {
         // ========== FUEL STATIONS ROUTES ==========
         Route::prefix('stations')->name('stations.')->group(function () {
             Route::get('/', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(FuelStationController::class)->index(request());
             })->name('index');
             
@@ -355,7 +343,7 @@ Route::middleware(['auth'])->group(function () {
         // ========== SETTLEMENTS ROUTES ==========
         Route::prefix('settlements')->name('settlements.')->group(function () {
             Route::get('/', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettlementController::class)->index(request());
             })->name('index');
             
@@ -374,67 +362,67 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{settlement}/finalize-paystack-otp', [SettlementController::class, 'finalizePaystackOtp'])->whereNumber('settlement')->name('finalize-paystack-otp');
             
             Route::post('/bulk-process', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettlementController::class)->bulkProcess(request());
             })->name('bulk-process');
 
             Route::post('/process-brand', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettlementController::class)->processBrand(request());
             })->name('process-brand');
 
             Route::post('/cycles/brand', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettlementController::class)->saveBrandCycle(request());
             })->name('cycles.brand');
 
             Route::post('/cycles/station', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettlementController::class)->saveStationCycle(request());
             })->name('cycles.station');
 
             Route::post('/cycles/run-due', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettlementController::class)->runDueWeeklyCycles();
             })->name('cycles.run-due');
 
             Route::post('/cycles/toggle', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettlementController::class)->toggleWeeklyCycles(request());
             })->name('cycles.toggle');
 
             Route::post('/stations/{station}/partner', function(\App\Models\FuelStation $station) {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettlementController::class)->setPartnerStation(request(), $station);
             })->name('stations.partner');
             
             Route::get('/export', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettlementController::class)->export(request());
             })->name('export');
             
             Route::get('/api/pending-amount', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettlementController::class)->getPendingAmount(request());
             })->name('api.pending-amount');
 
             Route::get('/api/stations-search', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettlementController::class)->stationSearch(request());
             })->name('api.stations-search');
 
             Route::get('/api/paystack-health', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettlementController::class)->paystackHealth(request());
             })->name('api.paystack-health');
 
             Route::get('/api/paystack-banks', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettlementController::class)->paystackBanks(request());
             })->name('api.paystack-banks');
             
             Route::get('/api/statistics', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettlementController::class)->statistics(request());
             })->name('api.statistics');
         });
@@ -443,24 +431,24 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('vouchers')->name('vouchers.')->group(function () {
             // List all vouchers
             Route::get('/', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(VoucherController::class)->index(request());
             })->name('index');
 
             // Create voucher
             Route::get('/create', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(VoucherController::class)->create();
             })->name('create');
 
             Route::post('/', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(VoucherController::class)->store(request());
             })->name('store');
             
             // Pending vouchers
             Route::get('/pending', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(VoucherController::class)->pending(request());
             })->name('pending');
             
@@ -475,13 +463,13 @@ Route::middleware(['auth'])->group(function () {
             
             // Bulk actions
             Route::post('/bulk-action', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(VoucherController::class)->bulkAction(request());
             })->name('bulk-action');
             
             // Export vouchers
             Route::get('/export', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(VoucherController::class)->export(request());
             })->name('export');
         });
@@ -489,7 +477,7 @@ Route::middleware(['auth'])->group(function () {
         // ========== LEASES ROUTES ==========
         Route::prefix('leases')->name('leases.')->group(function () {
             Route::get('/', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(LeaseController::class)->index(request());
             })->name('index');
             
@@ -509,61 +497,61 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{lease}/repayment-history', [LeaseController::class, 'repaymentHistory'])->name('repayment-history');
             
             Route::get('/export', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(LeaseController::class)->export(request());
             })->name('export');
             
             Route::get('/reports/overdue', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(LeaseController::class)->overdueReport(request());
             })->name('reports.overdue');
             
             Route::get('/reports/performance', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(LeaseController::class)->performanceReport(request());
             })->name('reports.performance');
             
             Route::get('/api/stats', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(LeaseController::class)->getStats(request());
             })->name('api.stats');
             
             Route::get('/api/recent', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(LeaseController::class)->getRecent(request());
             })->name('api.recent');
             
             Route::post('/calculate', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(LeaseController::class)->calculate(request());
             })->name('calculate');
         });
         
         // ========== REPORTS ROUTES ==========
         Route::get('/reports', function() {
-            checkUserAccess(['super_admin', 'admin', 'employee']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(AdminReportController::class)->index(request());
         })->name('reports.index');
         
         Route::get('/reports/financial', function() {
-            checkUserAccess(['super_admin', 'admin', 'employee']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(AdminReportController::class)->financial(request());
         })->name('reports.financial');
         
         Route::get('/reports/risk', function() {
-            checkUserAccess(['super_admin', 'admin', 'employee']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(AdminReportController::class)->risk(request());
         })->name('reports.risk');
         
         Route::get('/reports/export/{type}', function($type) {
-            checkUserAccess(['super_admin', 'admin', 'employee']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(AdminReportController::class)->export(request(), $type);
         })->name('reports.export');
         
         // ========== INVESTORS MANAGEMENT ROUTES ==========
         Route::prefix('investors')->name('investors.')->group(function () {
             Route::get('/', function() {
-                checkUserAccess(['super_admin', 'admin', 'employee', 'investor']);
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee', 'investor']), 403);
                 return app(AdminInvestorController::class)->index(request());
             })->name('index');
             
@@ -592,12 +580,12 @@ Route::middleware(['auth'])->group(function () {
     // Employee
     Route::prefix('employee')->name('employee.')->group(function () {
         Route::get('/dashboard', function() {
-            checkUserAccess(['super_admin', 'admin', 'employee']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(EmployeeDashboardController::class)->index();
         })->name('dashboard');
         
         Route::get('/approvals', function() {
-            checkUserAccess(['super_admin', 'admin', 'employee']);
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(EmployeeApprovalController::class)->index(request());
         })->name('approvals');
     });

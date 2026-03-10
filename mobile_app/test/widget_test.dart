@@ -5,14 +5,14 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:mobile_app/core/app_loader.dart';
 import 'package:mobile_app/main.dart';
 
 void main() {
   testWidgets('app bootstraps', (WidgetTester tester) async {
     await tester.pumpWidget(const BwiserApp());
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(AppLoader), findsOneWidget);
   });
 }

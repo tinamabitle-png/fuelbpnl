@@ -31,6 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
+  audioplayers: ^6.1.0
   http: ^1.2.2
   shared_preferences: ^2.3.2
   qr_flutter: ^4.1.0
@@ -43,6 +44,8 @@ dependencies:
   printing: ^5.13.4
   esc_pos_utils_plus: ^2.0.4
   geolocator: ^13.0.2
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
 
 dev_dependencies:
   flutter_test:
@@ -70,6 +73,7 @@ flutter:
     - assets/images/driver_logo.png
     - assets/images/app_logo.png
     - assets/images/brands/
+    - assets/audio/wiser.wav
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

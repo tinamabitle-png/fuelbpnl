@@ -274,7 +274,14 @@
                                 <th class="px-4 py-3 text-left">Amount</th>
                                 <th class="px-4 py-3 text-left">Status</th>
                                 <th class="px-4 py-3 text-left">Issued</th>
-                                <th class="px-4 py-3 text-left">Action</th>
+                                <th class="px-4 py-3 text-left">
+                                    <div class="action-scan-wrap">
+                                        <span>Action</span>
+                                        <p class="action-scan-loader" aria-label="Laser scanner active">
+                                            <span>Scan</span>
+                                        </p>
+                                    </div>
+                                </th>
                             </tr>
                         </thead>
                         <tbody id="voucherFeedBody" class="divide-y divide-slate-100"></tbody>
@@ -301,6 +308,67 @@
         place-items: center;
         overflow: hidden;
         box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    .action-scan-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .action-scan-loader {
+        max-width: fit-content;
+        color: #0f172a;
+        font-size: 0.88rem;
+        font-family: "DM Sans", sans-serif;
+        font-style: italic;
+        font-weight: 700;
+        position: relative;
+        margin: 0;
+        line-height: 1;
+        isolation: isolate;
+    }
+
+    .action-scan-loader span {
+        animation: actionScanCut 2s infinite;
+        transition: 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .action-scan-loader::before,
+    .action-scan-loader::after {
+        position: absolute;
+        content: "";
+        width: 100%;
+        left: 0;
+        border-radius: 4px;
+        animation: actionScanLine 2s infinite;
+        z-index: -1;
+        transition: 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .action-scan-loader::before {
+        height: 3px;
+        top: 0;
+        background-color: rgba(248, 113, 113, 0.95);
+        filter: opacity(0.9);
+    }
+
+    .action-scan-loader::after {
+        height: 4px;
+        top: 0;
+        background-color: rgba(248, 113, 113, 0.58);
+        filter: blur(6px);
+    }
+
+    @keyframes actionScanLine {
+        0%, 50% { top: 0; }
+        25%, 75% { top: 13px; }
+    }
+
+    @keyframes actionScanCut {
+        0%, 75% { clip-path: inset(0 0 0 0); }
+        25% { clip-path: inset(100% 0 0 0); }
+        50% { clip-path: inset(0 0 100% 0); }
     }
 
     .merchant-brand-mark-img {

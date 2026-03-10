@@ -26,7 +26,7 @@ class FuelVoucherController extends Controller
         
         $validator = Validator::make($request->all(), [
             'fuel_station_id' => 'required|exists:fuel_stations,id',
-            'amount' => 'required|numeric|min:500|max:50000',
+            'amount' => 'required|numeric|min:500|max:1200',
             'fuel_type' => 'required|in:petrol,diesel,super',
             'payment_type' => 'required|in:wallet,bnpl',
             'liters' => 'nullable|numeric|min:1',

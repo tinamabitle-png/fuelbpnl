@@ -11,6 +11,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/app_loader.dart';
+import '../../core/app_sfx.dart';
 import '../../core/fx_button.dart';
 import '../../core/logo_mark.dart';
 import '../../core/theme.dart';
@@ -103,6 +105,7 @@ class _StationShellState extends State<StationShell> {
     final pages = [
       StationHomePage(api: widget.api),
       StationRedeemPage(api: widget.api, receiptSettings: receiptSettings),
+      StationReportsPage(api: widget.api),
       StationReceiptSettingsPage(
         settings: receiptSettings,
         onChanged: _saveReceiptSettings,
@@ -111,19 +114,11 @@ class _StationShellState extends State<StationShell> {
 
     return Scaffold(
       appBar: AppBar(
-        leadingWidth: 48,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12, top: 8, bottom: 8),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Center(child: LogoMark(size: 22)),
-          ),
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 12, top: 8, bottom: 8),
+          child: Center(child: LogoMark(size: 22)),
         ),
-        title: const Text('Station Banking'),
+        title: const Text('bwiser'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout_rounded),
@@ -163,7 +158,9 @@ class _StationMenuBar extends StatelessWidget {
           Container(width: 1, height: 48, color: const Color(0xFF334155)),
           _item(1, Icons.qr_code_scanner, 'Redeem'),
           Container(width: 1, height: 48, color: const Color(0xFF334155)),
-          _item(2, Icons.receipt_long_rounded, 'Receipt'),
+          _item(2, Icons.bar_chart_rounded, 'Reports'),
+          Container(width: 1, height: 48, color: const Color(0xFF334155)),
+          _item(3, Icons.receipt_long_rounded, 'Receipt'),
         ],
       ),
     );
@@ -235,7 +232,7 @@ class _StationHomePageState extends State<StationHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (loading) return const Center(child: CircularProgressIndicator());
+    if (loading) return const Center(child: AppLoader());
     if (error != null) return Center(child: Text(error!));
 
     return RefreshIndicator(
@@ -327,6 +324,378 @@ class _StationHomePageState extends State<StationHomePage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class StationReportsPage extends StatefulWidget {
+  const StationReportsPage({super.key, required this.api});
+
+  final ApiClient api;
+
+  @override
+  State<StationReportsPage> createState() => _StationReportsPageState();
+}
+
+class _StationReportsPageState extends State<StationReportsPage> {
+  bool loading = true;
+  String? error;
+  List<VoucherItem> items = [];
+  double stationBalance = 0;
+  String stationBalanceLabel = 'Wallet';
+
+  @override
+  void initState() {
+    super.initState();
+    fetch();
+  }
+
+  Future<void> fetch() async {
+    setState(() {
+      loading = true;
+      error = null;
+    });
+    try {
+      final results = await Future.wait<dynamic>([
+        widget.api.stationVoucherHistory(limit: 60),
+        widget.api.profile(),
+        widget.api.stations(),
+      ]);
+      final history = results[0] as List<VoucherItem>;
+      final profile = results[1] as Map<String, dynamic>;
+      final stations = results[2] as List<Map<String, dynamic>>;
+
+      double resolvedBalance = _toDouble(
+        profile['wallet_balance'] ??
+            profile['available_balance'] ??
+            profile['balance'],
+      );
+      String resolvedLabel =
+          ((profile['station_name'] ?? profile['name']) ?? '').toString();
+
+      if (resolvedBalance <= 0 && stations.isNotEmpty) {
+        resolvedBalance = _toDouble(stations.first['wallet_balance']);
+        resolvedLabel = (stations.first['name'] ?? resolvedLabel).toString();
+      }
+
+      setState(() {
+        items = history;
+        stationBalance = resolvedBalance;
+        stationBalanceLabel = resolvedLabel.trim().isEmpty
+            ? 'Wallet'
+            : resolvedLabel;
+      });
+    } catch (e) {
+      setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) return const Center(child: AppLoader());
+    if (error != null) return Center(child: Text(error!));
+    if (items.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: fetch,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: const [
+            SizedBox(height: 80),
+            Center(
+              child: Text(
+                'No voucher data yet.',
+                style: TextStyle(color: Color(0xFF94A3B8)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final totalValue = items.fold<double>(
+      0,
+      (sum, v) => sum + _safeFinite(v.amount),
+    );
+    final avgTicket = items.isEmpty
+        ? 0.0
+        : _safeFinite(totalValue / items.length);
+    final statusCounts = <String, int>{};
+    final fuelValue = <String, double>{};
+    for (final item in items) {
+      final status = item.status.toLowerCase().trim();
+      statusCounts[status] = (statusCounts[status] ?? 0) + 1;
+      final fuel = item.fuelType.toUpperCase().trim();
+      fuelValue[fuel] = _safeFinite((fuelValue[fuel] ?? 0) + item.amount);
+    }
+    final statusSorted = statusCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final fuelSorted = fuelValue.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final recent = items.take(7).toList().reversed.toList();
+    final maxRecent = recent
+        .map((v) => v.amount)
+        .fold<double>(0, (a, b) => a > b ? a : b);
+
+    return RefreshIndicator(
+      onRefresh: fetch,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text(
+            'Station Reports',
+            style: TextStyle(
+              color: Color(0xFFE2E8F0),
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Column(
+            children: [
+              _metricCard(
+                'Station Balance',
+                'R ${stationBalance.toStringAsFixed(2)}',
+                const Color(0xFF22C55E),
+                subLabel: stationBalanceLabel,
+              ),
+              const SizedBox(height: 10),
+              _metricCard('Vouchers', '${items.length}', AppTheme.primaryBlue),
+              const SizedBox(height: 10),
+              _metricCard(
+                'Total Value',
+                'R ${totalValue.toStringAsFixed(2)}',
+                const Color(0xFF14B8A6),
+              ),
+              const SizedBox(height: 10),
+              _metricCard(
+                'Avg Ticket',
+                'R ${avgTicket.toStringAsFixed(2)}',
+                const Color(0xFFF59E0B),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _chartCard(
+            title: 'Voucher Status Mix',
+            child: Column(
+              children: statusSorted.map((entry) {
+                final ratio = items.isEmpty
+                    ? 0.0
+                    : _safeRatio(
+                        entry.value.toDouble(),
+                        items.length.toDouble(),
+                      );
+                return _horizontalBarRow(
+                  label: entry.key.toUpperCase(),
+                  valueText: '${entry.value}',
+                  ratio: ratio,
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _chartCard(
+            title: 'Fuel Type by Value',
+            child: Column(
+              children: fuelSorted.take(5).map((entry) {
+                final ratio = _safeRatio(entry.value, totalValue);
+                return _horizontalBarRow(
+                  label: entry.key,
+                  valueText: 'R ${_safeFinite(entry.value).toStringAsFixed(0)}',
+                  ratio: ratio,
+                  barColor: const Color(0xFF14B8A6),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _chartCard(
+            title: 'Recent Voucher Values',
+            child: SizedBox(
+              height: 160,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: recent.map((item) {
+                  final ratio = _safeRatio(item.amount, maxRecent);
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            _safeFinite(item.amount).toStringAsFixed(0),
+                            style: const TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 10,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            height: 110 * _safeRatio(ratio, 1.0),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [Color(0xFF2563EB), Color(0xFF60A5FA)],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            item.code.length > 4
+                                ? item.code.substring(item.code.length - 4)
+                                : item.code,
+                            style: const TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  double _toDouble(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return _safeFinite(value.toDouble());
+    return _safeFinite(double.tryParse(value.toString()) ?? 0);
+  }
+
+  double _safeFinite(double value) {
+    if (value.isNaN || value.isInfinite) return 0;
+    return value;
+  }
+
+  double _safeRatio(double numerator, double denominator) {
+    final n = _safeFinite(numerator);
+    final d = _safeFinite(denominator);
+    if (d <= 0) return 0;
+    final ratio = n / d;
+    if (ratio.isNaN || ratio.isInfinite) return 0;
+    return ratio.clamp(0.0, 1.0);
+  }
+
+  Widget _metricCard(
+    String label,
+    String value,
+    Color accent, {
+    String? subLabel,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1220),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF334155)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(color: Color(0xFF94A3B8))),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              color: accent,
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+            ),
+          ),
+          if (subLabel != null && subLabel.trim().isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              subLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0xFF64748B), fontSize: 10),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _chartCard({required String title, required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1220),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF334155)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xFFE2E8F0),
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _horizontalBarRow({
+    required String label,
+    required String valueText,
+    required double ratio,
+    Color barColor = AppTheme.primaryBlue,
+  }) {
+    final bounded = _safeRatio(ratio, 1.0);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Color(0xFFCBD5E1),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Text(
+                valueText,
+                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: bounded,
+              minHeight: 10,
+              backgroundColor: const Color(0xFF1F2937),
+              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -669,7 +1038,8 @@ class StationRedeemPage extends StatefulWidget {
   State<StationRedeemPage> createState() => _StationRedeemPageState();
 }
 
-class _StationRedeemPageState extends State<StationRedeemPage> {
+class _StationRedeemPageState extends State<StationRedeemPage>
+    with SingleTickerProviderStateMixin {
   final inputCtrl = TextEditingController();
   final FocusNode scannerFocusNode = FocusNode();
   Timer? _scanDebounce;
@@ -684,10 +1054,17 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
   int? selectedStationId;
   Printer? selectedPrinter;
   final Set<int> seenUssdEventIds = <int>{};
+  late final AnimationController _laserController;
+  String _lastSubmittedScan = '';
+  DateTime _lastSubmittedAt = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
     super.initState();
+    _laserController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat();
     _loadStations();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -700,9 +1077,72 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
   void dispose() {
     _scanDebounce?.cancel();
     _ussdPollTimer?.cancel();
+    _laserController.dispose();
     scannerFocusNode.dispose();
     inputCtrl.dispose();
     super.dispose();
+  }
+
+  Widget _laserScanIndicator() {
+    return AnimatedBuilder(
+      animation: _laserController,
+      builder: (context, _) {
+        final t = _laserController.value;
+        final scanY = (t < 0.25 || (t >= 0.5 && t < 0.75)) ? 16.0 : 0.0;
+        final clipTop = (t >= 0.25 && t < 0.5) ? 1.0 : 0.0;
+        final clipBottom = (t >= 0.5 && t < 0.75) ? 1.0 : 0.0;
+
+        return SizedBox(
+          width: 84,
+          height: 24,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                child: Center(
+                  child: ClipRect(
+                    child: Align(
+                      alignment: Alignment.center,
+                      heightFactor:
+                          1.0 - (clipTop + clipBottom).clamp(0.0, 1.0),
+                      child: const Text(
+                        'Scan',
+                        style: TextStyle(
+                          color: Color(0xFFF2FFF0),
+                          fontSize: 18,
+                          fontStyle: FontStyle.italic,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                top: scanY,
+                child: Container(
+                  height: 3,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF8282),
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x91FF8282),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   String _normalizeScanInput(String value) {
@@ -713,6 +1153,13 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
     if (submitting) return;
     final payload = _normalizeScanInput(inputCtrl.text);
     if (payload.isEmpty) return;
+    final now = DateTime.now();
+    if (payload == _lastSubmittedScan &&
+        now.difference(_lastSubmittedAt) < const Duration(milliseconds: 1200)) {
+      return;
+    }
+    _lastSubmittedScan = payload;
+    _lastSubmittedAt = now;
     await redeem(payload);
     if (mounted) {
       scannerFocusNode.requestFocus();
@@ -872,6 +1319,7 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
     setState(() => submitting = true);
     try {
       final receiptData = await widget.api.stationRedeem(scanInput: normalized);
+      unawaited(AppSfx.playWiserTone());
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Voucher redeemed successfully.')),
@@ -887,6 +1335,7 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
+      inputCtrl.clear();
       final failureCode = _extractCodeFromScan(value);
       await _showPrintReceiptDialog({
         'voucher_id': null,
@@ -900,7 +1349,10 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
         'transaction_status': 'failed',
       });
     } finally {
-      if (mounted) setState(() => submitting = false);
+      if (mounted) {
+        setState(() => submitting = false);
+        scannerFocusNode.requestFocus();
+      }
     }
   }
 
@@ -1806,6 +2258,22 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
                     onPressed: () => setState(() => scanMode = !scanMode),
                   ),
                   const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        scanMode
+                            ? 'Laser scanner active'
+                            : 'Laser scanner standby',
+                        style: const TextStyle(color: Color(0xFF94A3B8)),
+                      ),
+                      Opacity(
+                        opacity: scanMode ? 1 : 0.45,
+                        child: _laserScanIndicator(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   FxButton(
                     label: nfcListening
                         ? 'Waiting for NFC...'
@@ -1846,8 +2314,8 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
                                 ? capture.barcodes.first.rawValue
                                 : null;
                             if (code == null || submitting) return;
-                            setState(() => scanMode = false);
-                            redeem(code);
+                            inputCtrl.text = code;
+                            _submitScannerInput();
                           },
                         ),
                       ),
@@ -1857,21 +2325,12 @@ class _StationRedeemPageState extends State<StationRedeemPage> {
                       ? const SizedBox(
                           height: 54,
                           child: Center(
-                            child: SizedBox(
-                              height: 22,
-                              width: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            ),
+                            child: AppLoader(size: 28, showText: false),
                           ),
                         )
-                      : FxButton(
-                          label: 'Redeem Voucher',
-                          icon: Icons.check_circle_outline,
-                          fullWidth: true,
-                          onPressed: _submitScannerInput,
+                      : const Text(
+                          'Auto redeem is active.',
+                          style: TextStyle(color: Color(0xFF94A3B8)),
                         ),
                 ],
               ),

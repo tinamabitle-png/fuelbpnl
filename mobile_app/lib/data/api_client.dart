@@ -115,21 +115,27 @@ class ApiClient {
   Future<Map<String, dynamic>> login({
     required String phone,
     required String password,
-    required String role,
+    String? role,
   }) async {
+    final requestedRole = (role ?? '').toLowerCase().trim();
     if (mockMode) {
       final user = {
-        'id': role == 'driver' ? 1001 : 2001,
-        'name': role == 'driver' ? 'Mock Driver' : 'Mock Station Attendant',
+        'id': requestedRole == 'station' ? 2001 : 1001,
+        'name': requestedRole == 'station'
+            ? 'Mock Station Attendant'
+            : 'Mock Driver',
         'phone': phone.isEmpty ? '+27000000000' : phone,
-        'email': role == 'driver' ? 'driver@mock.local' : 'station@mock.local',
+        'email': requestedRole == 'station'
+            ? 'station@mock.local'
+            : 'driver@mock.local',
         'autopay_enabled': false,
       };
       _mockUser = Map<String, dynamic>.from(user);
+      final appRole = requestedRole == 'station' ? 'station' : 'driver';
       await _store.saveSession(
         token: 'mock-token-${DateTime.now().millisecondsSinceEpoch}',
         user: user,
-        role: role,
+        role: appRole,
       );
       return user;
     }
@@ -140,8 +146,7 @@ class ApiClient {
       body: {
         'phone': phone,
         'password': password,
-        'device_id':
-            'flutter-${role.toLowerCase()}-${DateTime.now().millisecondsSinceEpoch}',
+        'device_id': 'flutter-${DateTime.now().millisecondsSinceEpoch}',
         'device_name': 'Bwiser Flutter',
         'device_type': 'android',
       },
@@ -160,16 +165,18 @@ class ApiClient {
       throw Exception('Login response missing token or user payload.');
     }
 
-    final wantsDriver = role == 'driver';
-    if (wantsDriver && !roles.contains('driver')) {
-      throw Exception('This account is not assigned to Driver role.');
-    }
-    if (!wantsDriver &&
-        !roles.any((r) => r == 'merchant' || r == 'station' || r == 'admin')) {
-      throw Exception('This account is not assigned to Station/Merchant role.');
+    final appRole = roles.any((r) => r == 'merchant' || r == 'station')
+        ? 'station'
+        : roles.contains('driver')
+        ? 'driver'
+        : '';
+    if (appRole.isEmpty) {
+      throw Exception(
+        'This account is not assigned to Driver or Station role.',
+      );
     }
 
-    await _store.saveSession(token: token, user: user, role: role);
+    await _store.saveSession(token: token, user: user, role: appRole);
     return user;
   }
 
@@ -433,9 +440,10 @@ class ApiClient {
           .toList();
       if (mapped.isNotEmpty) return mapped;
     } catch (_) {
-      // Fallback below.
+      // Try generic public/search endpoint below.
     }
 
+    var searchFailed = false;
     try {
       final response = await _request(
         method: 'GET',
@@ -478,10 +486,125 @@ class ApiClient {
           .toList();
       if (mapped.isNotEmpty) return mapped;
     } catch (_) {
-      // fallback below
+      searchFailed = true;
     }
 
-    return List<Map<String, dynamic>>.from(_mockStations);
+    if (searchFailed) {
+      throw Exception(
+        'Unable to load stations from API right now. Please try again later.',
+      );
+    }
+    throw Exception('No stations returned by API.');
+  }
+
+  Future<List<Map<String, dynamic>>> nearbyStations({
+    required double latitude,
+    required double longitude,
+    double radiusKm = 35,
+    int limit = 50,
+  }) async {
+    if (mockMode) {
+      return List<Map<String, dynamic>>.from(_mockStations);
+    }
+
+    final response = await _request(
+      method: 'GET',
+      path:
+          '/stations/nearby?latitude=$latitude&longitude=$longitude&radius=$radiusKm&limit=$limit',
+    );
+    final data = _extractData(response.body);
+    final rows = _asList(data['stations'] ?? data['data'] ?? data);
+    return rows
+        .map(
+          (e) => {
+            'id': _toInt(e['id']),
+            'name': (e['name'] ?? 'Station').toString(),
+            'city': (e['city'] ?? '').toString(),
+            'address':
+                (e['address'] ?? e['street_address'] ?? e['location'] ?? '')
+                    .toString(),
+            'latitude':
+                e['latitude'] ??
+                e['lat'] ??
+                e['station_latitude'] ??
+                e['device_latitude'],
+            'longitude':
+                e['longitude'] ??
+                e['lng'] ??
+                e['lon'] ??
+                e['station_longitude'] ??
+                e['device_longitude'],
+            'status': (e['status'] ?? '').toString(),
+            'wallet_balance':
+                e['wallet_balance'] ??
+                e['available_balance'] ??
+                e['balance'] ??
+                e['prefunded_balance'] ??
+                e['funded_amount'] ??
+                0,
+            'total_settlements': e['total_settlements'] ?? 0,
+            'distance': e['distance'],
+          },
+        )
+        .where((e) => (e['id'] as int) > 0)
+        .toList();
+  }
+
+  Future<List<Map<String, dynamic>>> searchStations(String query) async {
+    final q = query.trim();
+    if (q.length < 2) return const [];
+
+    if (mockMode) {
+      final lower = q.toLowerCase();
+      return _mockStations.where((s) {
+        final name = (s['name'] ?? '').toString().toLowerCase();
+        final city = (s['city'] ?? '').toString().toLowerCase();
+        final address = (s['address'] ?? '').toString().toLowerCase();
+        return name.contains(lower) ||
+            city.contains(lower) ||
+            address.contains(lower);
+      }).toList();
+    }
+
+    final response = await _request(
+      method: 'GET',
+      path: '/stations/search?query=${Uri.encodeQueryComponent(q)}',
+    );
+    final data = _extractData(response.body);
+    final rows = _asList(data['stations'] ?? data['data'] ?? data);
+    return rows
+        .map(
+          (e) => {
+            'id': _toInt(e['id']),
+            'name': (e['name'] ?? 'Station').toString(),
+            'city': (e['city'] ?? '').toString(),
+            'address':
+                (e['address'] ?? e['street_address'] ?? e['location'] ?? '')
+                    .toString(),
+            'latitude':
+                e['latitude'] ??
+                e['lat'] ??
+                e['station_latitude'] ??
+                e['device_latitude'],
+            'longitude':
+                e['longitude'] ??
+                e['lng'] ??
+                e['lon'] ??
+                e['station_longitude'] ??
+                e['device_longitude'],
+            'status': (e['status'] ?? '').toString(),
+            'wallet_balance':
+                e['wallet_balance'] ??
+                e['available_balance'] ??
+                e['balance'] ??
+                e['prefunded_balance'] ??
+                e['funded_amount'] ??
+                0,
+            'total_settlements': e['total_settlements'] ?? 0,
+          },
+        )
+        .where((e) => (e['id'] as int) > 0)
+        .toList();
   }
 
   Future<List<VoucherItem>> stationApprovedVouchers() async {
@@ -910,7 +1033,7 @@ class ApiClient {
           message.contains('connection closed');
       if (isFetchFailure) {
         throw Exception(
-          'Cannot reach API at $base. Ensure backend is running on :8000 and use Base URL http://192.168.0.101:8000/api/v1 (phone) or http://localhost:8000/api/v1 (same machine).',
+          'Cannot reach API at $base. Ensure https://www.bwiser.co.za is reachable.',
         );
       }
       rethrow;
@@ -940,25 +1063,67 @@ class ApiClient {
   String _extractError(http.Response response) {
     try {
       final decoded = jsonDecode(response.body);
-      if (decoded is Map<String, dynamic>) {
-        final message = decoded['message']?.toString();
-        if (message != null && message.isNotEmpty) return message;
-
-        final errors = decoded['errors'];
-        if (errors is Map<String, dynamic>) {
-          for (final value in errors.values) {
-            if (value is List && value.isNotEmpty) {
-              return value.first.toString();
-            }
-            if (value != null) return value.toString();
-          }
-        }
+      final parsed = _stringifyErrorNode(decoded);
+      if (parsed.isNotEmpty) {
+        return parsed;
       }
     } catch (_) {
       // ignore parse errors
     }
 
     return 'Request failed (${response.statusCode}).';
+  }
+
+  String _stringifyErrorNode(dynamic node) {
+    if (node == null) return '';
+    if (node is String) {
+      final text = node.trim();
+      if (text.isEmpty) return '';
+      // Suppress noisy framework internals from end users.
+      if (text.toLowerCase().contains('could not be converted to string')) {
+        return 'A server validation error occurred.';
+      }
+      return text;
+    }
+    if (node is num || node is bool) return node.toString();
+
+    if (node is List) {
+      for (final item in node) {
+        final parsed = _stringifyErrorNode(item);
+        if (parsed.isNotEmpty) return parsed;
+      }
+      return '';
+    }
+
+    if (node is Map) {
+      final map = node.map((key, value) => MapEntry(key.toString(), value));
+
+      // Prefer common API message keys first.
+      const priorityKeys = <String>[
+        'message',
+        'error',
+        'detail',
+        'description',
+        'title',
+      ];
+      for (final key in priorityKeys) {
+        final parsed = _stringifyErrorNode(map[key]);
+        if (parsed.isNotEmpty) return parsed;
+      }
+
+      // Laravel style field errors: { errors: { phone: ["..."] } }
+      final errorsNode = map['errors'];
+      final parsedErrors = _stringifyErrorNode(errorsNode);
+      if (parsedErrors.isNotEmpty) return parsedErrors;
+
+      // Fallback: scan all values recursively.
+      for (final value in map.values) {
+        final parsed = _stringifyErrorNode(value);
+        if (parsed.isNotEmpty) return parsed;
+      }
+    }
+
+    return '';
   }
 
   List<Map<String, dynamic>> _asList(dynamic node) {

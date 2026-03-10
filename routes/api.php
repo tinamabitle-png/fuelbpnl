@@ -24,6 +24,8 @@ Route::prefix('v1')->group(function () {
     Route::middleware('throttle:auth')->group(function () {
         Route::post('/auth/register', [AuthController::class, 'register']);
         Route::post('/auth/login', [AuthController::class, 'login']);
+        // Backward-compatible endpoint for older mobile quick-login flows.
+        Route::post('/auth/quick-login', [AuthController::class, 'quickLogin']);
         Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
         Route::post('/auth/login-with-otp', [AuthController::class, 'loginWithOtp']);
         Route::post('/auth/complete-otp-login', [AuthController::class, 'completeOtpLogin']);
@@ -93,6 +95,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/paystack/verify', [RepaymentController::class, 'verifyPaystack']);
             Route::post('/autopay/paystack/initialize', [RepaymentController::class, 'initializeAutopayPaystack']);
             Route::post('/autopay/paystack/verify', [RepaymentController::class, 'verifyAutopayPaystack']);
+            Route::post('/autopay/debicheck/initialize', [RepaymentController::class, 'initializeAutopayDebicheck']);
+            Route::post('/autopay/debicheck/verify', [RepaymentController::class, 'verifyAutopayDebicheck']);
             Route::post('/setup-auto-payment', [RepaymentController::class, 'setupAutoPayment']);
             Route::get('/reminders', [RepaymentController::class, 'reminders']);
             Route::get('/statistics', [RepaymentController::class, 'statistics']);

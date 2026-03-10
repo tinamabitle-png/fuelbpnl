@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Lease;
 use App\Models\Repayment;
+use App\Services\DebiCheckService;
 use App\Services\PaystackService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -446,7 +447,7 @@ class RepaymentController extends Controller
         
         $validator = Validator::make($request->all(), [
             'enabled' => 'required|boolean',
-            'payment_method' => 'required_if:enabled,true|in:paystack',
+            'payment_method' => 'required_if:enabled,true|in:paystack,debicheck,hybrid',
             'authorization_code' => 'nullable|string|max:255',
             'paystack_email' => 'nullable|email|max:255',
             'threshold_days' => 'required_if:enabled,true|integer|min:1|max:7',
@@ -461,18 +462,24 @@ class RepaymentController extends Controller
         }
 
         if ((bool) $request->enabled) {
-            $gateway = (string) ($request->payment_method ?? 'paystack');
-            if ($gateway !== 'paystack') {
+            $gateway = strtolower((string) ($request->payment_method ?? 'paystack'));
+            $details = (array) ($user->autopay_details ?? []);
+            $hasPaystackToken = trim((string) ($request->authorization_code ?? $user->autopay_token ?? '')) !== '';
+            $debiStatus = strtolower((string) (($details['debicheck']['status'] ?? $details['debicheck_status'] ?? '')));
+            $hasDebicheckMandate = trim((string) ($details['debicheck']['mandate_id'] ?? $details['debicheck_mandate_id'] ?? '')) !== ''
+                && in_array($debiStatus, ['active', 'approved', 'accepted', 'verified'], true);
+
+            if (in_array($gateway, ['paystack', 'hybrid'], true) && !$hasPaystackToken) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Only Paystack AutoPay is supported.',
+                    'message' => 'Paystack authorization is required before enabling Paystack/Hybrid AutoPay.',
                 ], 422);
             }
 
-            if (trim((string) ($request->authorization_code ?? $user->autopay_token ?? '')) === '') {
+            if (in_array($gateway, ['debicheck', 'hybrid'], true) && !$hasDebicheckMandate) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Paystack authorization is required before enabling AutoPay.',
+                    'message' => 'DebiCheck mandate must be active before enabling DebiCheck/Hybrid AutoPay.',
                 ], 422);
             }
         }
@@ -496,10 +503,10 @@ class RepaymentController extends Controller
         $user->update([
             'autopay_enabled' => (bool) $request->enabled,
             'autopay_gateway' => (string) ($request->payment_method ?? $user->autopay_gateway ?? 'paystack'),
-            'autopay_token' => (bool) $request->enabled && (string) $request->payment_method === 'paystack'
+            'autopay_token' => (bool) $request->enabled && in_array((string) $request->payment_method, ['paystack', 'hybrid'], true)
                 ? (string) ($request->authorization_code ?? $user->autopay_token ?? '')
                 : $user->autopay_token,
-            'autopay_email' => (bool) $request->enabled && (string) $request->payment_method === 'paystack'
+            'autopay_email' => (bool) $request->enabled && in_array((string) $request->payment_method, ['paystack', 'hybrid'], true)
                 ? (string) ($request->paystack_email ?? $user->autopay_email ?? '')
                 : $user->autopay_email,
             'autopay_status' => (bool) $request->enabled ? 'active' : 'disabled',
@@ -620,6 +627,115 @@ class RepaymentController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'AutoPay authorization verification failed: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function initializeAutopayDebicheck(Request $request, DebiCheckService $debiCheck)
+    {
+        $validator = Validator::make($request->all(), [
+            // Keep payload open to allow provider-specific mandate structure.
+            'mandate' => 'required|array',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = $request->user();
+        try {
+            $result = $debiCheck->createMandate($user, (array) $request->input('mandate', []));
+            $details = (array) ($user->autopay_details ?? []);
+            $details['debicheck'] = [
+                'mandate_id' => (string) ($result['mandate_id'] ?? ''),
+                'status' => (string) ($result['status'] ?? 'submitted'),
+                'reference' => (string) ($result['reference'] ?? ''),
+                'raw' => (array) ($result['raw'] ?? []),
+                'updated_at' => now()->toDateTimeString(),
+            ];
+
+            $user->forceFill([
+                'autopay_details' => $details,
+                // Keep Paystack as the default rail unless user explicitly switches.
+                'autopay_gateway' => (string) ($user->autopay_gateway ?: 'paystack'),
+                'autopay_status' => 'pending_mandate',
+                'autopay_last_attempt_at' => now(),
+            ])->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'DebiCheck mandate initiation submitted.',
+                'data' => $result,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to initialize DebiCheck mandate: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function verifyAutopayDebicheck(Request $request, DebiCheckService $debiCheck)
+    {
+        $validator = Validator::make($request->all(), [
+            'mandate_id' => 'nullable|string|max:255',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = $request->user();
+        $details = (array) ($user->autopay_details ?? []);
+        $mandateId = trim((string) ($request->input('mandate_id') ?? $details['debicheck']['mandate_id'] ?? ''));
+        if ($mandateId === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'DebiCheck mandate_id is required.',
+            ], 422);
+        }
+
+        try {
+            $result = $debiCheck->getMandate($mandateId);
+            $status = strtolower((string) ($result['status'] ?? 'unknown'));
+            $isReady = in_array($status, ['active', 'approved', 'accepted', 'verified'], true);
+
+            $details['debicheck'] = [
+                'mandate_id' => $mandateId,
+                'status' => $status,
+                'raw' => (array) ($result['raw'] ?? []),
+                'updated_at' => now()->toDateTimeString(),
+            ];
+
+            $user->forceFill([
+                'autopay_enabled' => $isReady ? true : (bool) $user->autopay_enabled,
+                // Keep Paystack as default; gateway changes must be explicit.
+                'autopay_gateway' => (string) ($user->autopay_gateway ?: 'paystack'),
+                'autopay_details' => $details,
+                'autopay_status' => $isReady ? 'active' : 'pending_mandate',
+                'autopay_last_attempt_at' => now(),
+                'autopay_next_attempt_at' => $isReady ? now()->addDay() : $user->autopay_next_attempt_at,
+            ])->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => $isReady
+                    ? 'DebiCheck mandate verified and active.'
+                    : 'DebiCheck mandate still pending.',
+                'data' => [
+                    'mandate_id' => $mandateId,
+                    'status' => $status,
+                    'autopay_ready' => $user->fresh()->isAutopayReady(),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'DebiCheck verification failed: ' . $e->getMessage(),
             ], 422);
         }
     }
