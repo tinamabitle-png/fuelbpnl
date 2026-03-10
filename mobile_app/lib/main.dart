@@ -71,7 +71,7 @@ class _BwiserAppState extends State<BwiserApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'bwiser',
+      title: 'BWiser',
       theme: AppTheme.light,
       home: loading
           ? const Scaffold(body: Center(child: AppLoader()))

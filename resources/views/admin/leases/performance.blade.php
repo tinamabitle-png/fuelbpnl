@@ -159,7 +159,7 @@
                     <span class="font-bold text-gray-900">ZAR {{ number_format($metrics['total_principal'], 2) }}</span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-gray-600">Total Interest</span>
+                    <span class="text-gray-600">Total Late Fees</span>
                     <span class="font-bold text-red-600">ZAR {{ number_format($metrics['total_interest'], 2) }}</span>
                 </div>
                 <div class="flex justify-between items-center">
@@ -168,7 +168,7 @@
                 </div>
                 <div class="pt-4 border-t border-gray-200">
                     <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Average Interest Rate</span>
+                        <span class="text-gray-600">Average Late Fee Rate</span>
                         <span class="font-bold text-purple-600">{{ number_format($metrics['avg_interest_rate'], 1) }}%</span>
                     </div>
                 </div>
@@ -362,7 +362,7 @@
                             <i class="fas fa-percentage text-blue-600 text-xs"></i>
                         </div>
                         <div>
-                            <p class="text-sm font-medium text-blue-900">Low Interest Rates</p>
+                            <p class="text-sm font-medium text-blue-900">Low Late Fee Rates</p>
                             <p class="text-xs text-gray-600">Consider adjusting rates for better profitability</p>
                         </div>
                     </div>

@@ -342,7 +342,7 @@
                                     <span class="font-bold text-gray-900 ml-1">ZAR {{ number_format($lease->principal_amount, 2) }}</span>
                                 </div>
                                 <div class="text-sm">
-                                    <span class="text-gray-600">Interest:</span>
+                                    <span class="text-gray-600">Late Fees:</span>
                                     <span class="font-bold text-red-600 ml-1">ZAR {{ number_format($lease->interest_amount, 2) }}</span>
                                 </div>
                                 <div class="text-sm">
@@ -550,13 +550,13 @@
                     </span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-gray-600">Avg. Interest Rate</span>
+                    <span class="text-gray-600">Avg. Late Fee Rate</span>
                     <span class="font-bold text-red-600">
                         {{ number_format($totalLeases > 0 ? ($totalInterest / $totalLoanAmount) * 100 : 0, 1) }}%
                     </span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-gray-600">Total Interest</span>
+                    <span class="text-gray-600">Total Late Fees</span>
                     <span class="font-bold text-purple-600">
                         ZAR {{ number_format($totalInterest, 2) }}
                     </span>
@@ -653,10 +653,10 @@
                                    placeholder="Enter loan amount">
                         </div>
                         
-                        <!-- Interest Rate -->
+                        <!-- Late Fee Rate -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Interest Rate (%) *
+                                Late Fee Rate (%) *
                             </label>
                             <input type="number" 
                                    name="interest_rate" 
@@ -665,7 +665,7 @@
                                    max="100"
                                    step="0.1"
                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                   placeholder="Enter interest rate"
+                                   placeholder="Enter late fee rate"
                                    value="10">
                         </div>
                         
@@ -738,7 +738,7 @@
                                 <span id="previewPrincipal" class="font-medium ml-2">ZAR 0.00</span>
                             </div>
                             <div>
-                                <span class="text-gray-600">Interest:</span>
+                                <span class="text-gray-600">Late Fees:</span>
                                 <span id="previewInterest" class="font-medium text-red-600 ml-2">ZAR 0.00</span>
                             </div>
                             <div>

@@ -138,7 +138,7 @@
                                 <i class="fas fa-calendar-alt mr-2"></i> {{ $lease->term_days }} days
                             </span>
                             <span class="px-4 py-1.5 bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-full">
-                                <i class="fas fa-percentage mr-2"></i> {{ $lease->interest_rate }}% interest
+                                <i class="fas fa-percentage mr-2"></i> {{ $lease->interest_rate }}% late fee rate
                             </span>
                             <span class="px-4 py-1.5 bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-full">
                                 <i class="fas fa-calendar-day mr-2"></i> Due {{ $lease->due_date->format('M d, Y') }}
@@ -266,7 +266,7 @@
                                     <span class="font-bold text-gray-900">ZAR {{ number_format($lease->principal_amount, 2) }}</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-gray-600">Interest ({{ $lease->interest_rate }}%):</span>
+                                    <span class="text-gray-600">Late Fee ({{ $lease->interest_rate }}%):</span>
                                     <span class="font-bold text-red-600">ZAR {{ number_format($lease->interest_amount, 2) }}</span>
                                 </div>
                                 <div class="flex justify-between">

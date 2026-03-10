@@ -6,9 +6,14 @@ plugins {
 }
 
 android {
-    namespace = "com.example.mobile_app"
+    namespace = "za.bwiser.driverapp"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
+
+    buildFeatures {
+        // Needed for the POS printer bridge AIDL stubs (com.xcheng.printerservice.*).
+        aidl = true
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

@@ -682,7 +682,10 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                     brand['logo'] ?? '',
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, _, error) =>
-                                        const SizedBox.shrink(),
+                                        Image.asset(
+                                          'assets/images/app_logo.png',
+                                          fit: BoxFit.cover,
+                                        ),
                                   ),
                                 ),
                               ),

@@ -137,10 +137,10 @@
                                 @enderror
                             </div>
 
-                            <!-- Interest Rate -->
+                            <!-- Late Fee Rate -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    Interest Rate (%) *
+                                    Late Fee Rate (%) *
                                 </label>
                                 <input type="number" 
                                        name="interest_rate" 
@@ -228,7 +228,7 @@
                                 <div id="previewPrincipal" class="font-bold text-lg text-gray-900">ZAR {{ number_format($lease->principal_amount, 2) }}</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-gray-600">Interest</div>
+                                <div class="text-gray-600">Late Fees</div>
                                 <div id="previewInterest" class="font-bold text-lg text-red-600">ZAR {{ number_format($lease->interest_amount, 2) }}</div>
                             </div>
                             <div class="text-center">

@@ -2,6 +2,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -23,7 +25,20 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Fail-safe for intermittent session/CSRF mismatches in production.
+        $exceptions->renderable(function (TokenMismatchException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Session expired. Please refresh and try again.',
+                    'code' => 419,
+                ], 419);
+            }
+
+            return redirect()
+                ->back()
+                ->withInput($request->except(['_token', '_method', 'password', 'password_confirmation']))
+                ->with('error', 'Your session expired. Please try again.');
+        });
     })
     ->withEvents(discover: [
         __DIR__.'/../app/Listeners',

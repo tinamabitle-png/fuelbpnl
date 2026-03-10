@@ -16,6 +16,17 @@ class SecurityHeaders
         /** @var Response $response */
         $response = $next($request);
 
+        // Avoid Cloudflare/browser caching dynamic HTML with stale session/CSRF state.
+        // This is a common cause of repeated 419 "Page Expired" in production.
+        $path = ltrim((string) $request->path(), '/');
+        $isApi = str_starts_with($path, 'api/');
+        $isCacheableDoc = in_array($path, ['sitemap.xml', 'robots.txt'], true);
+        if (!$isApi && !$isCacheableDoc && !$response->headers->has('Cache-Control')) {
+            $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+        }
+
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');

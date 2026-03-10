@@ -2,15 +2,13 @@ package com.xcheng.printerservice;
 
 import com.xcheng.printerservice.IPrinterCallback;
 
+// Minimal service contract used by the Pro545PrinterBridge.
 interface IPrinterService {
-    void printerInit(in IPrinterCallback callback);
-    int updatePrinterState(in IPrinterCallback callback);
-    boolean printerPaper(in IPrinterCallback callback);
-    void sendRAWData(in byte[] data, in IPrinterCallback callback);
-    void setAlignment(int align, in IPrinterCallback callback);
-    void printText(String text, in IPrinterCallback callback);
-    void printQRCode(String text, int align, int size, in IPrinterCallback callback);
-    void printWrapPaper(int n, in IPrinterCallback callback);
-    void setPrintEncode(String encode, in IPrinterCallback callback);
+  void printerInit(IPrinterCallback cb);
+  void setPrintEncode(String encode, IPrinterCallback cb);
+  void setAlignment(int alignment, IPrinterCallback cb);
+  void printText(String text, IPrinterCallback cb);
+  void printWrapPaper(int lines, IPrinterCallback cb);
+  void printQRCode(String text, int qrType, int qrSize, IPrinterCallback cb);
 }
 
