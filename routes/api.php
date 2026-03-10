@@ -15,6 +15,24 @@ use App\Http\Controllers\Api\V1\StationController;
 use App\Http\Controllers\Api\V1\MerchantDeveloperController;
 use App\Http\Controllers\Api\UssdController;
 
+Route::get('/', function () {
+    return response()->json([
+        'name' => 'Bwiser API',
+        'status' => 'ok',
+        'version' => 'v1',
+        'docs' => url('/api/v1'),
+        'health' => url('/api/health'),
+    ]);
+});
+
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'service' => 'api',
+        'timestamp' => now()->toIso8601String(),
+    ]);
+});
+
 Route::match(['GET', 'POST'], '/ussd/africas-talking', [UssdController::class, 'africasTalking'])
     ->middleware('throttle:ussd');
 

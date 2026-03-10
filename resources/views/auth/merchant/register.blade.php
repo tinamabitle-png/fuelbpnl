@@ -65,6 +65,7 @@
                         </button>
                     </div>
                     <input id="merchant_address" name="business_address" type="text" value="{{ old('business_address') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="Street address, suburb">
+                    <p id="merchantAddressHint" class="mt-1 hidden text-xs text-slate-400">Press Tab to use suggestion</p>
                     <div id="merchantAddressSuggestions" class="mt-2 hidden rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"></div>
                     <p class="text-xs text-slate-500 mt-1">Map updates automatically while you type.</p>
                     @error('business_address')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
@@ -233,19 +234,15 @@ const mapStatus = document.getElementById('merchantMapStatus');
 const mapNode = document.getElementById('merchantRegisterMap');
 const useCurrentLocationBtn = document.getElementById('useCurrentLocationBtn');
 const addressSuggestions = document.getElementById('merchantAddressSuggestions');
+const addressHint = document.getElementById('merchantAddressHint');
 const topSuggestionWrap = document.getElementById('merchantAddressTopSuggestion');
 const topSuggestionBtn = document.getElementById('merchantAddressTopSuggestionBtn');
 const topSuggestionText = document.getElementById('merchantAddressTopSuggestionText');
-const googleMapsEnabled = @json((bool) config('services.google_maps.enabled', true));
-const googleMapsApiKey = @json(config('services.google_maps.key'));
-const googleAutocompleteUrl = @json(route('google.autocomplete'));
-const googlePlaceUrl = @json(route('google.place'));
-const googleReverseUrl = @json(route('google.reverse'));
-const hasGoogleGeocode = Boolean(googleMapsEnabled && googleMapsApiKey);
 const fallbackCenter = [-26.2041, 28.0473];
 let map = null;
 let marker = null;
 let geocodeTimer = null;
+let currentHintSuggestion = null;
 
 const initLeafletMap = () => {
     if (!mapNode || !window.L) return;
@@ -276,6 +273,28 @@ const hideSuggestions = () => {
     if (!addressSuggestions) return;
     addressSuggestions.innerHTML = '';
     addressSuggestions.classList.add('hidden');
+};
+
+const clearHintSuggestion = () => {
+    currentHintSuggestion = null;
+    if (!addressHint) return;
+    addressHint.textContent = '';
+    addressHint.classList.add('hidden');
+};
+
+const renderHintSuggestion = (item) => {
+    currentHintSuggestion = item || null;
+    if (!addressHint || !item) {
+        clearHintSuggestion();
+        return;
+    }
+    const title = item?.description || item?.display_name || item?.name || '';
+    if (!title) {
+        clearHintSuggestion();
+        return;
+    }
+    addressHint.textContent = `Hint: ${title} (press Tab to accept)`;
+    addressHint.classList.remove('hidden');
 };
 
 const clearTopSuggestion = () => {
@@ -323,7 +342,7 @@ const fillAddressFromNominatimItem = (item) => {
 };
 
 const nominatimFetchGeocode = async (query) => {
-    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=${encodeURIComponent(query)}`;
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&countrycodes=za&limit=5&q=${encodeURIComponent(query)}`;
     const response = await fetch(url, {
         headers: { 'Accept': 'application/json' }
     });
@@ -343,84 +362,18 @@ const nominatimFetchReverse = async (lat, lng) => {
     return first;
 };
 
-const googleFetchAutocomplete = async (query) => {
-    const response = await fetch(`${googleAutocompleteUrl}?q=${encodeURIComponent(query)}&country=ZA`, {
-        headers: { 'Accept': 'application/json' }
-    });
-    if (!response.ok) throw new Error('Google autocomplete failed');
-    const payload = await response.json();
-    return Array.isArray(payload?.items) ? payload.items : [];
-};
-
-const googleFetchPlace = async (placeId) => {
-    const response = await fetch(`${googlePlaceUrl}?place_id=${encodeURIComponent(placeId)}`, {
-        headers: { 'Accept': 'application/json' }
-    });
-    if (!response.ok) throw new Error('Google place details failed');
-    const payload = await response.json();
-    return payload?.item || null;
-};
-
-const googleFetchReverse = async (lat, lng) => {
-    const response = await fetch(`${googleReverseUrl}?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}`, {
-        headers: { 'Accept': 'application/json' }
-    });
-    if (!response.ok) throw new Error('Google reverse geocode failed');
-    const payload = await response.json();
-    return payload?.item || null;
-};
-
-const googleComponentValue = (components, types) => {
-    const wanted = new Set(types);
-    const match = (components || []).find((entry) => (entry.types || []).some((t) => wanted.has(t)));
-    return match ? (match.long_name || '') : '';
-};
-
-const fillAddressFromGoogleItem = (item) => {
-    const components = item?.address_components || [];
-    const streetNumber = googleComponentValue(components, ['street_number']);
-    const route = googleComponentValue(components, ['route']);
-    const suburb = googleComponentValue(components, ['sublocality', 'sublocality_level_1', 'neighborhood']);
-    const city = googleComponentValue(components, ['locality', 'administrative_area_level_2', 'administrative_area_level_1']);
-    const country = googleComponentValue(components, ['country']);
-    const line1 = [streetNumber, route].filter(Boolean).join(' ').trim();
-    const composedAddress = [line1, suburb].filter(Boolean).join(', ').trim();
-    const fallbackAddress = item?.formatted_address || '';
-
-    if (addressInput) {
-        addressInput.value = composedAddress || fallbackAddress || addressInput.value;
-    }
-    if (cityInput && city) cityInput.value = city;
-    if (countryInput && country) countryInput.value = country;
-
-    return {
-        composedAddress: composedAddress || fallbackAddress || '',
-        city,
-        country,
-    };
-};
-
 const pickSuggestion = async (prediction) => {
     try {
-        let lat;
-        let lng;
-        if (prediction?.source === 'google') {
-            const details = await googleFetchPlace(prediction.place_id);
-            lat = Number(details?.location?.lat);
-            lng = Number(details?.location?.lng);
-            if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('Missing geometry');
-            fillAddressFromGoogleItem(details);
-        } else {
-            lat = Number(prediction?.lat);
-            lng = Number(prediction?.lon);
-            if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('Missing geometry');
-            fillAddressFromNominatimItem(prediction);
-        }
+        const lat = Number(prediction?.lat);
+        const lng = Number(prediction?.lon);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('Missing geometry');
+        fillAddressFromNominatimItem(prediction);
         applyLocationToMap(lat, lng);
         updateMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
     } catch (error) {
         updateMapStatus('Could not load selected suggestion details.', true);
     }
+    clearHintSuggestion();
     hideSuggestions();
 };
 
@@ -428,11 +381,13 @@ const renderSuggestions = (items) => {
     if (!addressSuggestions) return;
     if (!Array.isArray(items) || !items.length) {
         clearTopSuggestion();
+        clearHintSuggestion();
         hideSuggestions();
         return;
     }
 
     renderTopSuggestion(items[0]);
+    renderHintSuggestion(items[0]);
     addressSuggestions.innerHTML = '';
     items.forEach((item) => {
         const button = document.createElement('button');
@@ -486,12 +441,14 @@ const scheduleGeocode = () => {
         if (!parts.length) {
             if (latitudeInput) latitudeInput.value = '';
             if (longitudeInput) longitudeInput.value = '';
+            clearHintSuggestion();
             updateMapStatus('Start entering an address to locate the station.');
             return;
         }
 
         if ((addressInput?.value || '').trim().length < 3 && !cityInput?.value?.trim()) {
             hideSuggestions();
+            clearHintSuggestion();
             updateMapStatus('Type at least 3 address characters for suggestions.');
             return;
         }
@@ -500,30 +457,10 @@ const scheduleGeocode = () => {
         updateMapStatus('Locating address...');
 
         try {
-            const items = hasGoogleGeocode
-                ? (await googleFetchAutocomplete(query)).map((item) => ({ ...item, source: 'google' }))
-                : await nominatimFetchGeocode(query);
+            const items = await nominatimFetchGeocode(query);
             if (items.length) {
                 renderSuggestions(items);
-                const first = items[0];
-                if (first?.source === 'google') {
-                    const details = await googleFetchPlace(first.place_id);
-                    const lat = Number(details?.location?.lat);
-                    const lng = Number(details?.location?.lng);
-                    if (Number.isFinite(lat) && Number.isFinite(lng)) {
-                        applyLocationToMap(lat, lng);
-                        fillAddressFromGoogleItem(details);
-                        updateMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-                    }
-                } else {
-                    const lat = Number(first?.lat);
-                    const lng = Number(first?.lon);
-                    if (Number.isFinite(lat) && Number.isFinite(lng)) {
-                        applyLocationToMap(lat, lng);
-                        fillAddressFromNominatimItem(first);
-                        updateMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-                    }
-                }
+                updateMapStatus('Select a suggestion or press Tab to accept the first hint.');
             } else {
                 hideSuggestions();
                 if (latitudeInput) latitudeInput.value = '';
@@ -531,6 +468,7 @@ const scheduleGeocode = () => {
                 if (stationLatitudeInput) stationLatitudeInput.value = '';
                 if (stationLongitudeInput) stationLongitudeInput.value = '';
                 clearTopSuggestion();
+                clearHintSuggestion();
                 updateMapStatus('Address not found yet. Keep typing more detail.', true);
             }
         } catch (error) {
@@ -540,6 +478,7 @@ const scheduleGeocode = () => {
             if (stationLongitudeInput) stationLongitudeInput.value = '';
             hideSuggestions();
             clearTopSuggestion();
+            clearHintSuggestion();
             updateMapStatus('Unable to geocode right now. Check internet or try again.', true);
         }
     }, 550);
@@ -556,6 +495,11 @@ if ((addressInput?.value || cityInput?.value || countryInput?.value)) {
 }
 
 if (addressInput) {
+    addressInput.addEventListener('keydown', (event) => {
+        if (event.key !== 'Tab' || !currentHintSuggestion) return;
+        event.preventDefault();
+        pickSuggestion(currentHintSuggestion);
+    });
     addressInput.addEventListener('blur', () => {
         window.setTimeout(() => hideSuggestions(), 200);
     });
@@ -606,17 +550,7 @@ const requestCurrentLocation = (silent = false) => {
                 const lng = position.coords.longitude;
                 applyLocationToMap(lat, lng);
                 updateMapStatus('Location found. Resolving address...');
-                let resolved = null;
-                if (hasGoogleGeocode) {
-                    try {
-                        resolved = fillAddressFromGoogleItem(await googleFetchReverse(lat, lng));
-                    } catch (_) {
-                        // Fallback when Google reverse geocode fails on key/billing/restrictions.
-                        resolved = fillAddressFromNominatimItem(await nominatimFetchReverse(lat, lng));
-                    }
-                } else {
-                    resolved = fillAddressFromNominatimItem(await nominatimFetchReverse(lat, lng));
-                }
+                const resolved = fillAddressFromNominatimItem(await nominatimFetchReverse(lat, lng));
                 const hasText = resolved.composedAddress || resolved.city || resolved.country;
                 updateMapStatus(
                     hasText
