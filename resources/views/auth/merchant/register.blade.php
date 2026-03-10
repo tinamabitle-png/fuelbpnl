@@ -341,18 +341,71 @@ const fillAddressFromNominatimItem = (item) => {
     };
 };
 
-const nominatimFetchGeocode = async (query) => {
-    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&countrycodes=za&limit=5&q=${encodeURIComponent(query)}`;
-    const response = await fetch(url, {
-        headers: { 'Accept': 'application/json' }
+const parseStructuredZaAddress = (query) => {
+    const parts = String(query || '')
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean);
+    if (parts.length < 2) return null;
+
+    const street = parts[0] || '';
+    const city = parts[parts.length - 1] || '';
+    const middle = parts.slice(1, -1).join(', ');
+    const postalMatch = query.match(/\b(\d{4})\b/);
+
+    if (!street || !city) return null;
+
+    return {
+        street,
+        city,
+        state: middle || undefined,
+        postalcode: postalMatch ? postalMatch[1] : undefined,
+        country: 'South Africa',
+    };
+};
+
+const buildNominatimUrl = (params) => {
+    const searchParams = new URLSearchParams({
+        format: 'jsonv2',
+        addressdetails: '1',
+        countrycodes: 'za',
+        limit: '8',
+        dedupe: '0',
+        'accept-language': 'en',
+        ...params,
     });
-    if (!response.ok) throw new Error('Nominatim geocode request failed');
-    const payload = await response.json();
-    return Array.isArray(payload) ? payload : [];
+    return `https://nominatim.openstreetmap.org/search?${searchParams.toString()}`;
+};
+
+const nominatimFetchGeocode = async (query) => {
+    const structured = parseStructuredZaAddress(query);
+    const urls = [];
+
+    if (structured) {
+        const structuredParams = Object.fromEntries(
+            Object.entries(structured).filter(([, value]) => Boolean(value))
+        );
+        urls.push(buildNominatimUrl(structuredParams));
+    }
+
+    urls.push(buildNominatimUrl({ q: query }));
+
+    for (const url of urls) {
+        const response = await fetch(url, {
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!response.ok) continue;
+        const payload = await response.json();
+        if (Array.isArray(payload) && payload.length) {
+            return payload;
+        }
+    }
+
+    return [];
 };
 
 const nominatimFetchReverse = async (lat, lng) => {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lng))}`;
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lng))}`;
     const response = await fetch(url, {
         headers: { 'Accept': 'application/json' }
     });
