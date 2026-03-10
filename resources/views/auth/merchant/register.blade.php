@@ -54,6 +54,16 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700">Business Address</label>
+                    <div id="merchantAddressTopSuggestion" class="mt-1 mb-1 hidden">
+                        <button
+                            type="button"
+                            id="merchantAddressTopSuggestionBtn"
+                            class="w-full text-left rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 hover:bg-blue-100"
+                        >
+                            <span class="text-[11px] uppercase tracking-wide text-blue-700 font-semibold">Suggested address</span>
+                            <span id="merchantAddressTopSuggestionText" class="block text-xs text-slate-700 truncate mt-0.5"></span>
+                        </button>
+                    </div>
                     <input id="merchant_address" name="business_address" type="text" value="{{ old('business_address') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="Street address, suburb">
                     <div id="merchantAddressSuggestions" class="mt-2 hidden rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"></div>
                     <p class="text-xs text-slate-500 mt-1">Map updates automatically while you type.</p>
@@ -223,6 +233,9 @@ const mapStatus = document.getElementById('merchantMapStatus');
 const mapNode = document.getElementById('merchantRegisterMap');
 const useCurrentLocationBtn = document.getElementById('useCurrentLocationBtn');
 const addressSuggestions = document.getElementById('merchantAddressSuggestions');
+const topSuggestionWrap = document.getElementById('merchantAddressTopSuggestion');
+const topSuggestionBtn = document.getElementById('merchantAddressTopSuggestionBtn');
+const topSuggestionText = document.getElementById('merchantAddressTopSuggestionText');
 const googleMapsEnabled = @json((bool) config('services.google_maps.enabled', true));
 const googleMapsApiKey = @json(config('services.google_maps.key'));
 const googleAutocompleteUrl = @json(route('google.autocomplete'));
@@ -263,6 +276,25 @@ const hideSuggestions = () => {
     if (!addressSuggestions) return;
     addressSuggestions.innerHTML = '';
     addressSuggestions.classList.add('hidden');
+};
+
+const clearTopSuggestion = () => {
+    if (!topSuggestionWrap || !topSuggestionText || !topSuggestionBtn) return;
+    topSuggestionWrap.classList.add('hidden');
+    topSuggestionText.textContent = '';
+    delete topSuggestionBtn.dataset.suggestion;
+};
+
+const renderTopSuggestion = (item) => {
+    if (!topSuggestionWrap || !topSuggestionText || !topSuggestionBtn || !item) return;
+    const title = item?.description || item?.display_name || item?.name || '';
+    if (!title) {
+        clearTopSuggestion();
+        return;
+    }
+    topSuggestionText.textContent = title;
+    topSuggestionBtn.dataset.suggestion = JSON.stringify(item);
+    topSuggestionWrap.classList.remove('hidden');
 };
 
 const fillAddressFromNominatimItem = (item) => {
@@ -395,10 +427,12 @@ const pickSuggestion = async (prediction) => {
 const renderSuggestions = (items) => {
     if (!addressSuggestions) return;
     if (!Array.isArray(items) || !items.length) {
+        clearTopSuggestion();
         hideSuggestions();
         return;
     }
 
+    renderTopSuggestion(items[0]);
     addressSuggestions.innerHTML = '';
     items.forEach((item) => {
         const button = document.createElement('button');
@@ -412,6 +446,19 @@ const renderSuggestions = (items) => {
 
     addressSuggestions.classList.remove('hidden');
 };
+
+if (topSuggestionBtn) {
+    topSuggestionBtn.addEventListener('click', () => {
+        try {
+            const raw = topSuggestionBtn.dataset.suggestion || '';
+            if (!raw) return;
+            const item = JSON.parse(raw);
+            pickSuggestion(item);
+        } catch (_) {
+            // ignore stale suggestion payload
+        }
+    });
+}
 
 const bootLeaflet = (attempt = 0) => {
     if (window.L) {
@@ -481,12 +528,18 @@ const scheduleGeocode = () => {
                 hideSuggestions();
                 if (latitudeInput) latitudeInput.value = '';
                 if (longitudeInput) longitudeInput.value = '';
+                if (stationLatitudeInput) stationLatitudeInput.value = '';
+                if (stationLongitudeInput) stationLongitudeInput.value = '';
+                clearTopSuggestion();
                 updateMapStatus('Address not found yet. Keep typing more detail.', true);
             }
         } catch (error) {
             if (latitudeInput) latitudeInput.value = '';
             if (longitudeInput) longitudeInput.value = '';
+            if (stationLatitudeInput) stationLatitudeInput.value = '';
+            if (stationLongitudeInput) stationLongitudeInput.value = '';
             hideSuggestions();
+            clearTopSuggestion();
             updateMapStatus('Unable to geocode right now. Check internet or try again.', true);
         }
     }, 550);
@@ -547,19 +600,27 @@ const requestCurrentLocation = (silent = false) => {
     setLocationButtonBusy(true);
     updateMapStatus(silent ? 'Attempting automatic location…' : 'Fetching your current location...');
 
-    navigator.geolocation.getCurrentPosition(async (position) => {
-        try {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            applyLocationToMap(lat, lng);
-            updateMapStatus('Location found. Resolving address...');
-            const resolved = hasGoogleGeocode
-                ? fillAddressFromGoogleItem(await googleFetchReverse(lat, lng))
-                : fillAddressFromNominatimItem(await nominatimFetchReverse(lat, lng));
-            const hasText = resolved.composedAddress || resolved.city || resolved.country;
-            updateMapStatus(
-                hasText
-                    ? 'Current location applied and form auto-filled.'
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            try {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                applyLocationToMap(lat, lng);
+                updateMapStatus('Location found. Resolving address...');
+                let resolved = null;
+                if (hasGoogleGeocode) {
+                    try {
+                        resolved = fillAddressFromGoogleItem(await googleFetchReverse(lat, lng));
+                    } catch (_) {
+                        // Fallback when Google reverse geocode fails on key/billing/restrictions.
+                        resolved = fillAddressFromNominatimItem(await nominatimFetchReverse(lat, lng));
+                    }
+                } else {
+                    resolved = fillAddressFromNominatimItem(await nominatimFetchReverse(lat, lng));
+                }
+                const hasText = resolved.composedAddress || resolved.city || resolved.country;
+                updateMapStatus(
+                    hasText
+                        ? 'Current location applied and form auto-filled.'
                     : `Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`
             );
         } catch (error) {
