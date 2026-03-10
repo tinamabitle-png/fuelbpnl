@@ -61,8 +61,12 @@
                 </div>
                 <input type="hidden" id="merchant_latitude" name="latitude" value="{{ old('latitude') }}">
                 <input type="hidden" id="merchant_longitude" name="longitude" value="{{ old('longitude') }}">
+                <input type="hidden" id="merchant_station_latitude" name="station_latitude" value="{{ old('station_latitude', old('latitude')) }}">
+                <input type="hidden" id="merchant_station_longitude" name="station_longitude" value="{{ old('station_longitude', old('longitude')) }}">
                 @error('latitude')<p class="text-xs text-rose-600 -mt-2">{{ $message }}</p>@enderror
                 @error('longitude')<p class="text-xs text-rose-600 -mt-2">{{ $message }}</p>@enderror
+                @error('station_latitude')<p class="text-xs text-rose-600 -mt-2">{{ $message }}</p>@enderror
+                @error('station_longitude')<p class="text-xs text-rose-600 -mt-2">{{ $message }}</p>@enderror
 
                 <div>
                     <label class="block text-sm font-medium text-slate-700">Password</label>
@@ -111,10 +115,10 @@
                         @error('ck_document')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
 
                         <div class="file-drop rounded-xl border-2 border-dashed border-blue-300 bg-white p-4 text-center cursor-pointer" data-target="bbbee_document">
-                            <p class="text-sm font-semibold text-slate-800">B-BBEE Document (PDF/JPG/PNG)</p>
+                            <p class="text-sm font-semibold text-slate-800">B-BBEE Document (Optional, if applicable)</p>
                             <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload (max 8MB)</p>
                             <p class="text-xs text-blue-700 mt-2 file-name" data-name-for="bbbee_document">No file selected</p>
-                            <input type="file" name="bbbee_document" id="bbbee_document" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
+                            <input type="file" name="bbbee_document" id="bbbee_document" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
                         </div>
                         @error('bbbee_document')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
                     </div>
@@ -153,8 +157,6 @@
 
 @push('scripts')
 <script>
-const googleMapsEnabled = @json((bool) config('services.google_maps.enabled', true));
-const googleMapsApiKey = @json(config('services.google_maps.key'));
 document.querySelectorAll('.file-drop').forEach((dropZone) => {
     const inputId = dropZone.getAttribute('data-target');
     const input = document.getElementById(inputId);
@@ -215,55 +217,39 @@ const cityInput = document.getElementById('merchant_city');
 const countryInput = document.getElementById('merchant_country');
 const latitudeInput = document.getElementById('merchant_latitude');
 const longitudeInput = document.getElementById('merchant_longitude');
+const stationLatitudeInput = document.getElementById('merchant_station_latitude');
+const stationLongitudeInput = document.getElementById('merchant_station_longitude');
 const mapStatus = document.getElementById('merchantMapStatus');
 const mapNode = document.getElementById('merchantRegisterMap');
 const useCurrentLocationBtn = document.getElementById('useCurrentLocationBtn');
 const addressSuggestions = document.getElementById('merchantAddressSuggestions');
-
-const hereMapsApiKey = @json(config('services.here_maps.key'));
-const hereGeocodeUrl = @json(route('here.geocode'));
-const hereReverseUrl = @json(route('here.reverse'));
-
+const googleMapsEnabled = @json((bool) config('services.google_maps.enabled', true));
+const googleMapsApiKey = @json(config('services.google_maps.key'));
+const googleAutocompleteUrl = @json(route('google.autocomplete'));
+const googlePlaceUrl = @json(route('google.place'));
+const googleReverseUrl = @json(route('google.reverse'));
+const hasGoogleGeocode = Boolean(googleMapsEnabled && googleMapsApiKey);
 const fallbackCenter = [-26.2041, 28.0473];
-const hasGoogleMaps = Boolean(googleMapsEnabled && googleMapsApiKey);
-const hasHereMaps = Boolean(hereMapsApiKey);
-let activeMapProvider = hasGoogleMaps ? 'google' : (hasHereMaps ? 'here' : 'none');
 let map = null;
 let marker = null;
 let geocodeTimer = null;
-let geocoder = null;
-let autocompleteService = null;
-let herePlatform = null;
 
-const upsertMapMarker = (currentMarker, position) => {
-    if (!map) return currentMarker;
+const initLeafletMap = () => {
+    if (!mapNode || !window.L) return;
+    map = L.map(mapNode, { zoomControl: true }).setView(fallbackCenter, 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-    if (activeMapProvider === 'here') {
-        if (currentMarker) {
-            currentMarker.setGeometry(position);
-            return currentMarker;
-        }
-        const iconMarkup = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#2563eb"/></svg>';
-        const icon = new H.map.Icon(iconMarkup);
-        const next = new H.map.Marker(position, { icon });
-        map.addObject(next);
-        return next;
+    const existingLat = parseFloat(latitudeInput?.value || stationLatitudeInput?.value || '');
+    const existingLng = parseFloat(longitudeInput?.value || stationLongitudeInput?.value || '');
+    if (Number.isFinite(existingLat) && Number.isFinite(existingLng)) {
+        applyLocationToMap(existingLat, existingLng);
+        updateMapStatus(`Pinned at ${existingLat.toFixed(6)}, ${existingLng.toFixed(6)}`);
+    } else {
+        updateMapStatus('Start entering an address to locate the station.');
     }
-
-    if (currentMarker) {
-        if (typeof currentMarker.setPosition === 'function') {
-            currentMarker.setPosition(position);
-        } else {
-            currentMarker.position = position;
-        }
-        return currentMarker;
-    }
-
-    if (google.maps.marker?.AdvancedMarkerElement) {
-        return new google.maps.marker.AdvancedMarkerElement({ map, position });
-    }
-
-    return new google.maps.Marker({ map, position });
 };
 
 const updateMapStatus = (message, isError = false) => {
@@ -279,43 +265,17 @@ const hideSuggestions = () => {
     addressSuggestions.classList.add('hidden');
 };
 
-const componentValue = (components, types) => {
-    const wanted = new Set(types);
-    const match = (components || []).find((entry) => (entry.types || []).some((t) => wanted.has(t)));
-    return match ? (match.long_name || '') : '';
-};
-
-const fillAddressFields = (components, fallbackAddress = '') => {
-    const streetNumber = componentValue(components, ['street_number']);
-    const route = componentValue(components, ['route']);
-    const suburb = componentValue(components, ['sublocality', 'sublocality_level_1', 'neighborhood']);
-    const city = componentValue(components, ['locality', 'administrative_area_level_2', 'administrative_area_level_1']);
-    const country = componentValue(components, ['country']);
-
-    const line1 = [streetNumber, route].filter(Boolean).join(' ').trim();
+const fillAddressFromNominatimItem = (item) => {
+    const addr = item?.address || {};
+    const line1 = [addr.house_number || '', addr.road || addr.pedestrian || '']
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+    const suburb = addr.suburb || addr.neighbourhood || addr.quarter || '';
+    const city = addr.city || addr.town || addr.village || addr.municipality || '';
+    const country = addr.country || '';
+    const fallbackAddress = item?.display_name || '';
     const composedAddress = [line1, suburb].filter(Boolean).join(', ').trim();
-
-    if (addressInput) {
-        addressInput.value = composedAddress || fallbackAddress || addressInput.value;
-    }
-    if (cityInput && city) cityInput.value = city;
-    if (countryInput && country) countryInput.value = country;
-
-    return {
-        composedAddress: composedAddress || fallbackAddress || '',
-        city,
-        country,
-    };
-};
-
-const fillAddressFromHereItem = (item) => {
-    const address = item?.address || {};
-    const line1 = [address.houseNumber || '', address.street || ''].filter(Boolean).join(' ').trim();
-    const area = address.district || address.subdistrict || '';
-    const city = address.city || address.county || '';
-    const country = address.countryName || '';
-    const fallbackAddress = address.label || item?.title || '';
-    const composedAddress = [line1, area].filter(Boolean).join(', ').trim();
 
     if (addressInput) {
         addressInput.value = composedAddress || fallbackAddress || addressInput.value;
@@ -330,82 +290,100 @@ const fillAddressFromHereItem = (item) => {
     };
 };
 
-const hereFetchGeocode = async (query) => {
-    const url = `${hereGeocodeUrl}?q=${encodeURIComponent(query)}&limit=5`;
-    const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    if (!response.ok) throw new Error('HERE geocode request failed');
+const nominatimFetchGeocode = async (query) => {
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=${encodeURIComponent(query)}`;
+    const response = await fetch(url, {
+        headers: { 'Accept': 'application/json' }
+    });
+    if (!response.ok) throw new Error('Nominatim geocode request failed');
     const payload = await response.json();
-    return Array.isArray(payload?.items) ? payload.items : [];
+    return Array.isArray(payload) ? payload : [];
 };
 
-const hereFetchReverse = async (lat, lng) => {
-    const url = `${hereReverseUrl}?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}&limit=1`;
-    const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    if (!response.ok) throw new Error('HERE reverse geocode request failed');
-    const payload = await response.json();
-    const first = Array.isArray(payload?.items) ? payload.items[0] : null;
+const nominatimFetchReverse = async (lat, lng) => {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lng))}`;
+    const response = await fetch(url, {
+        headers: { 'Accept': 'application/json' }
+    });
+    if (!response.ok) throw new Error('Nominatim reverse geocode request failed');
+    const first = await response.json();
     if (!first) throw new Error('HERE reverse empty response');
     return first;
 };
 
-const geocodeByPlaceId = (placeId) => new Promise((resolve, reject) => {
-    if (activeMapProvider !== 'google') return reject(new Error('Google geocoder not active'));
-    if (!geocoder) return reject(new Error('Geocoder not available'));
-    geocoder.geocode({ placeId }, (results, status) => {
-        if (status === 'OK' && results && results.length) {
-            resolve(results[0]);
-            return;
-        }
-        reject(new Error('Place geocode failed: ' + status));
+const googleFetchAutocomplete = async (query) => {
+    const response = await fetch(`${googleAutocompleteUrl}?q=${encodeURIComponent(query)}&country=ZA`, {
+        headers: { 'Accept': 'application/json' }
     });
-});
+    if (!response.ok) throw new Error('Google autocomplete failed');
+    const payload = await response.json();
+    return Array.isArray(payload?.items) ? payload.items : [];
+};
 
-const geocodeByAddress = (address) => new Promise((resolve, reject) => {
-    if (activeMapProvider !== 'google') return reject(new Error('Google geocoder not active'));
-    if (!geocoder) return reject(new Error('Geocoder not available'));
-    geocoder.geocode({ address }, (results, status) => {
-        if (status === 'OK' && results && results.length) {
-            resolve(results[0]);
-            return;
-        }
-        reject(new Error('Address geocode failed: ' + status));
+const googleFetchPlace = async (placeId) => {
+    const response = await fetch(`${googlePlaceUrl}?place_id=${encodeURIComponent(placeId)}`, {
+        headers: { 'Accept': 'application/json' }
     });
-});
+    if (!response.ok) throw new Error('Google place details failed');
+    const payload = await response.json();
+    return payload?.item || null;
+};
 
-const reverseGeocode = (lat, lng) => new Promise((resolve, reject) => {
-    if (activeMapProvider !== 'google') return reject(new Error('Google geocoder not active'));
-    if (!geocoder) return reject(new Error('Geocoder not available'));
-    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-        if (status === 'OK' && results && results.length) {
-            const best = results[0];
-            const normalized = fillAddressFields(best.address_components || [], best.formatted_address || '');
-            resolve(normalized);
-            return;
-        }
-        reject(new Error('Reverse geocode failed: ' + status));
+const googleFetchReverse = async (lat, lng) => {
+    const response = await fetch(`${googleReverseUrl}?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}`, {
+        headers: { 'Accept': 'application/json' }
     });
-});
+    if (!response.ok) throw new Error('Google reverse geocode failed');
+    const payload = await response.json();
+    return payload?.item || null;
+};
+
+const googleComponentValue = (components, types) => {
+    const wanted = new Set(types);
+    const match = (components || []).find((entry) => (entry.types || []).some((t) => wanted.has(t)));
+    return match ? (match.long_name || '') : '';
+};
+
+const fillAddressFromGoogleItem = (item) => {
+    const components = item?.address_components || [];
+    const streetNumber = googleComponentValue(components, ['street_number']);
+    const route = googleComponentValue(components, ['route']);
+    const suburb = googleComponentValue(components, ['sublocality', 'sublocality_level_1', 'neighborhood']);
+    const city = googleComponentValue(components, ['locality', 'administrative_area_level_2', 'administrative_area_level_1']);
+    const country = googleComponentValue(components, ['country']);
+    const line1 = [streetNumber, route].filter(Boolean).join(' ').trim();
+    const composedAddress = [line1, suburb].filter(Boolean).join(', ').trim();
+    const fallbackAddress = item?.formatted_address || '';
+
+    if (addressInput) {
+        addressInput.value = composedAddress || fallbackAddress || addressInput.value;
+    }
+    if (cityInput && city) cityInput.value = city;
+    if (countryInput && country) countryInput.value = country;
+
+    return {
+        composedAddress: composedAddress || fallbackAddress || '',
+        city,
+        country,
+    };
+};
 
 const pickSuggestion = async (prediction) => {
     try {
         let lat;
         let lng;
-
-        if (activeMapProvider === 'google') {
-            const result = await geocodeByPlaceId(prediction.place_id);
-            const location = result.geometry?.location;
-            if (!location) throw new Error('Missing geometry');
-            lat = location.lat();
-            lng = location.lng();
-            fillAddressFields(result.address_components || [], result.formatted_address || prediction.description || '');
-        } else {
-            const position = prediction?.position || {};
-            lat = Number(position.lat);
-            lng = Number(position.lng);
+        if (prediction?.source === 'google') {
+            const details = await googleFetchPlace(prediction.place_id);
+            lat = Number(details?.location?.lat);
+            lng = Number(details?.location?.lng);
             if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('Missing geometry');
-            fillAddressFromHereItem(prediction);
+            fillAddressFromGoogleItem(details);
+        } else {
+            lat = Number(prediction?.lat);
+            lng = Number(prediction?.lon);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('Missing geometry');
+            fillAddressFromNominatimItem(prediction);
         }
-
         applyLocationToMap(lat, lng);
         updateMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
     } catch (error) {
@@ -426,7 +404,7 @@ const renderSuggestions = (items) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'w-full px-3 py-2 text-left hover:bg-slate-50 border-b last:border-b-0 border-slate-100';
-        const title = item?.description || item?.address?.label || item?.title || 'Suggested location';
+        const title = item?.description || item?.display_name || item?.name || 'Suggested location';
         button.innerHTML = `<span class="block text-xs text-slate-700 truncate">${title}</span>`;
         button.addEventListener('click', () => pickSuggestion(item));
         addressSuggestions.appendChild(button);
@@ -435,125 +413,20 @@ const renderSuggestions = (items) => {
     addressSuggestions.classList.remove('hidden');
 };
 
-const loadHereFallbackMap = () => {
-    if (!hasHereMaps) {
-        updateMapStatus('Map preview unavailable. Configure Google or HERE maps keys.', true);
+const bootLeaflet = (attempt = 0) => {
+    if (window.L) {
+        initLeafletMap();
         return;
     }
-
-    activeMapProvider = 'here';
-    updateMapStatus('Loading HERE Maps fallback...');
-    let attempts = 0;
-    const tryInit = () => {
-        if (window.H?.service) {
-            initMerchantRegisterMap();
-            return;
-        }
-        attempts += 1;
-        if (attempts >= 20) {
-            updateMapStatus('HERE Maps failed to load. Check key, CSP, or internet access.', true);
-            return;
-        }
-        window.setTimeout(tryInit, 250);
-    };
-    tryInit();
-};
-
-const initMerchantRegisterMap = () => {
-    if (!mapNode) return;
-
-    if (activeMapProvider === 'google') {
-        if (!window.google?.maps || !googleMapsApiKey) {
-            updateMapStatus('Google map unavailable, attempting HERE fallback...');
-            if (hasHereMaps) {
-                loadHereFallbackMap();
-                return;
-            }
-            updateMapStatus('Map preview unavailable. Set GOOGLE_MAPS_API_KEY or HERE_MAPS_API_KEY.', true);
-            return;
-        }
-
-        map = new google.maps.Map(mapNode, {
-            center: { lat: fallbackCenter[0], lng: fallbackCenter[1] },
-            zoom: 11,
-            mapTypeControl: false,
-            streetViewControl: false,
-            fullscreenControl: false,
-        });
-        geocoder = new google.maps.Geocoder();
-        autocompleteService = new google.maps.places.AutocompleteService();
-    } else if (activeMapProvider === 'here') {
-        if (!window.H?.service || !hereMapsApiKey) {
-            updateMapStatus('HERE map preview unavailable. Check HERE_MAPS_API_KEY.', true);
-            return;
-        }
-
-        herePlatform = new H.service.Platform({ apikey: hereMapsApiKey });
-        const layers = herePlatform.createDefaultLayers();
-        map = new H.Map(
-            mapNode,
-            layers.vector.normal.map,
-            { center: { lat: fallbackCenter[0], lng: fallbackCenter[1] }, zoom: 11, pixelRatio: window.devicePixelRatio || 1 }
-        );
-        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
-        void behavior;
-        H.ui.UI.createDefault(map, layers);
-        window.addEventListener('resize', () => map.getViewPort().resize());
-    } else {
-        updateMapStatus('Map preview unavailable. Configure Google or HERE maps keys.', true);
+    if (attempt >= 40) {
+        updateMapStatus('Leaflet map failed to load. Check internet or CSP.', true);
         return;
     }
-
-    const existingLat = parseFloat(latitudeInput?.value || '');
-    const existingLng = parseFloat(longitudeInput?.value || '');
-    if (Number.isFinite(existingLat) && Number.isFinite(existingLng)) {
-        const pos = activeMapProvider === 'here'
-            ? { lat: existingLat, lng: existingLng }
-            : { lat: existingLat, lng: existingLng };
-        marker = upsertMapMarker(marker, pos);
-        if (activeMapProvider === 'here') {
-            map.setCenter(pos);
-            map.setZoom(15);
-        } else {
-            map.setCenter(pos);
-            map.setZoom(15);
-        }
-        updateMapStatus(`Pinned at ${existingLat.toFixed(6)}, ${existingLng.toFixed(6)}`);
-    }
+    window.setTimeout(() => bootLeaflet(attempt + 1), 150);
 };
-window.initMerchantRegisterMap = initMerchantRegisterMap;
-
-if (activeMapProvider === 'google' && window.google?.maps && googleMapsApiKey) {
-    initMerchantRegisterMap();
-} else if (activeMapProvider === 'google' && googleMapsApiKey) {
-    updateMapStatus('Loading Google Maps...');
-    if (typeof window.gm_authFailure !== 'function') {
-        window.gm_authFailure = () => {
-            if (hasHereMaps) {
-                loadHereFallbackMap();
-                return;
-            }
-            updateMapStatus('Google Maps authentication failed. Check API key, billing, and domain restrictions.', true);
-        };
-    }
-    window.setTimeout(() => {
-        if (!map && !window.google?.maps) {
-            if (hasHereMaps) {
-                loadHereFallbackMap();
-                return;
-            }
-            updateMapStatus('Google Maps failed to load. Check API key restrictions or internet access.', true);
-        }
-    }, 4500);
-} else if (hasHereMaps) {
-    loadHereFallbackMap();
-} else {
-    updateMapStatus('Map preview unavailable. Configure Google or HERE maps keys.', true);
-}
+bootLeaflet();
 
 const scheduleGeocode = () => {
-    if (activeMapProvider === 'google' && (!geocoder || !autocompleteService)) return;
-    if (activeMapProvider === 'none') return;
     if (geocodeTimer) window.clearTimeout(geocodeTimer);
 
     geocodeTimer = window.setTimeout(async () => {
@@ -580,49 +453,35 @@ const scheduleGeocode = () => {
         updateMapStatus('Locating address...');
 
         try {
-            if (activeMapProvider === 'google') {
-                autocompleteService.getPlacePredictions({ input: query }, async (predictions, status) => {
-                    const validPredictions = Array.isArray(predictions) ? predictions : [];
-                    if (status === google.maps.places.PlacesServiceStatus.OK && validPredictions.length) {
-                        renderSuggestions(validPredictions);
-                    } else {
-                        hideSuggestions();
-                    }
-
-                    try {
-                        const primary = await geocodeByAddress(query);
-                        const location = primary.geometry?.location;
-                        if (!location) throw new Error('Missing geometry');
-                        const lat = location.lat();
-                        const lng = location.lng();
-                        applyLocationToMap(lat, lng);
-                        updateMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-                    } catch (innerError) {
-                        if (!validPredictions.length) {
-                            if (latitudeInput) latitudeInput.value = '';
-                            if (longitudeInput) longitudeInput.value = '';
-                            updateMapStatus('Address not found yet. Keep typing more detail.', true);
-                        }
-                    }
-                });
-            } else {
-                const items = await hereFetchGeocode(query);
-                if (items.length) {
-                    renderSuggestions(items);
-                    const first = items[0];
-                    const lat = Number(first?.position?.lat);
-                    const lng = Number(first?.position?.lng);
+            const items = hasGoogleGeocode
+                ? (await googleFetchAutocomplete(query)).map((item) => ({ ...item, source: 'google' }))
+                : await nominatimFetchGeocode(query);
+            if (items.length) {
+                renderSuggestions(items);
+                const first = items[0];
+                if (first?.source === 'google') {
+                    const details = await googleFetchPlace(first.place_id);
+                    const lat = Number(details?.location?.lat);
+                    const lng = Number(details?.location?.lng);
                     if (Number.isFinite(lat) && Number.isFinite(lng)) {
                         applyLocationToMap(lat, lng);
-                        fillAddressFromHereItem(first);
+                        fillAddressFromGoogleItem(details);
                         updateMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
                     }
                 } else {
-                    hideSuggestions();
-                    if (latitudeInput) latitudeInput.value = '';
-                    if (longitudeInput) longitudeInput.value = '';
-                    updateMapStatus('Address not found yet. Keep typing more detail.', true);
+                    const lat = Number(first?.lat);
+                    const lng = Number(first?.lon);
+                    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                        applyLocationToMap(lat, lng);
+                        fillAddressFromNominatimItem(first);
+                        updateMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+                    }
                 }
+            } else {
+                hideSuggestions();
+                if (latitudeInput) latitudeInput.value = '';
+                if (longitudeInput) longitudeInput.value = '';
+                updateMapStatus('Address not found yet. Keep typing more detail.', true);
             }
         } catch (error) {
             if (latitudeInput) latitudeInput.value = '';
@@ -639,7 +498,7 @@ const scheduleGeocode = () => {
     field.addEventListener('change', scheduleGeocode);
 });
 
-if ((addressInput?.value || cityInput?.value || countryInput?.value) && activeMapProvider !== 'none') {
+if ((addressInput?.value || cityInput?.value || countryInput?.value)) {
     scheduleGeocode();
 }
 
@@ -657,75 +516,83 @@ if (addressInput) {
 const applyLocationToMap = (lat, lng) => {
     if (latitudeInput) latitudeInput.value = String(lat);
     if (longitudeInput) longitudeInput.value = String(lng);
+    if (stationLatitudeInput) stationLatitudeInput.value = String(lat);
+    if (stationLongitudeInput) stationLongitudeInput.value = String(lng);
 
     if (map) {
-        const pos = { lat, lng };
-        marker = upsertMapMarker(marker, pos);
-        map.setCenter(pos);
-        map.setZoom(15);
+        if (marker) {
+            marker.setLatLng([lat, lng]);
+        } else {
+            marker = L.marker([lat, lng]).addTo(map);
+        }
+        map.setView([lat, lng], 15);
     }
 };
 
-if (useCurrentLocationBtn) {
-    useCurrentLocationBtn.addEventListener('click', () => {
-        if (activeMapProvider === 'none') {
-            updateMapStatus('Map provider is unavailable. Configure Google or HERE maps keys.', true);
-            return;
-        }
-        if (!navigator.geolocation) {
-            updateMapStatus('Geolocation is not supported in this browser.', true);
-            return;
-        }
+let autoLocateRequested = false;
 
-        useCurrentLocationBtn.disabled = true;
-        useCurrentLocationBtn.classList.add('opacity-60', 'cursor-not-allowed');
-        updateMapStatus('Fetching your current location...');
+const setLocationButtonBusy = (busy) => {
+    if (!useCurrentLocationBtn) return;
+    useCurrentLocationBtn.disabled = busy;
+    useCurrentLocationBtn.classList.toggle('opacity-60', busy);
+    useCurrentLocationBtn.classList.toggle('cursor-not-allowed', busy);
+};
 
-        navigator.geolocation.getCurrentPosition(async (position) => {
-            try {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                applyLocationToMap(lat, lng);
-                updateMapStatus('Location found. Resolving address...');
-                const resolved = activeMapProvider === 'google'
-                    ? await reverseGeocode(lat, lng)
-                    : fillAddressFromHereItem(await hereFetchReverse(lat, lng));
-                const hasText = resolved.composedAddress || resolved.city || resolved.country;
-                updateMapStatus(
-                    hasText
-                        ? 'Current location applied and form auto-filled.'
-                        : `Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`
-                );
-            } catch (error) {
-                updateMapStatus('Location pinned. Could not auto-fill address, please select a suggestion or type it manually.', true);
-            } finally {
-                useCurrentLocationBtn.disabled = false;
-                useCurrentLocationBtn.classList.remove('opacity-60', 'cursor-not-allowed');
-            }
-        }, (error) => {
-            let message = 'Unable to access current location.';
-            if (error?.code === 1) message = 'Location permission denied. Allow location access and try again.';
-            if (error?.code === 2) message = 'Location unavailable. Check GPS/network and try again.';
-            if (error?.code === 3) message = 'Location request timed out. Try again.';
+const requestCurrentLocation = (silent = false) => {
+    if (!navigator.geolocation) {
+        if (!silent) updateMapStatus('Geolocation is not supported in this browser.', true);
+        return;
+    }
+
+    setLocationButtonBusy(true);
+    updateMapStatus(silent ? 'Attempting automatic location…' : 'Fetching your current location...');
+
+    navigator.geolocation.getCurrentPosition(async (position) => {
+        try {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            applyLocationToMap(lat, lng);
+            updateMapStatus('Location found. Resolving address...');
+            const resolved = hasGoogleGeocode
+                ? fillAddressFromGoogleItem(await googleFetchReverse(lat, lng))
+                : fillAddressFromNominatimItem(await nominatimFetchReverse(lat, lng));
+            const hasText = resolved.composedAddress || resolved.city || resolved.country;
+            updateMapStatus(
+                hasText
+                    ? 'Current location applied and form auto-filled.'
+                    : `Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`
+            );
+        } catch (error) {
+            updateMapStatus('Location pinned. Could not auto-fill address, please select a suggestion or type it manually.', true);
+        } finally {
+            setLocationButtonBusy(false);
+        }
+    }, (error) => {
+        let message = 'Unable to access current location.';
+        if (error?.code === 1) message = 'Location permission denied. Allow location access and try again.';
+        if (error?.code === 2) message = 'Location unavailable. Check GPS/network and try again.';
+        if (error?.code === 3) message = 'Location request timed out. Try again.';
+        if (!silent) {
             updateMapStatus(message, true);
-            useCurrentLocationBtn.disabled = false;
-            useCurrentLocationBtn.classList.remove('opacity-60', 'cursor-not-allowed');
-        }, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0,
-        });
+        }
+        setLocationButtonBusy(false);
+    }, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
     });
+};
+
+if (useCurrentLocationBtn) {
+    useCurrentLocationBtn.addEventListener('click', () => requestCurrentLocation(false));
 }
+
+window.setTimeout(() => {
+    if (autoLocateRequested) return;
+    autoLocateRequested = true;
+    requestCurrentLocation(true);
+}, 900);
 </script>
-@if(config('services.google_maps.enabled', true) && config('services.google_maps.key'))
-<script src="https://maps.googleapis.com/maps/api/js?key={{ urlencode((string) config('services.google_maps.key')) }}&libraries=places,marker&loading=async&callback=initMerchantRegisterMap" async defer></script>
-@endif
-@if(config('services.here_maps.key'))
-<script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" async defer></script>
-<script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" async defer></script>
-<script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js" async defer></script>
-<script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js" async defer></script>
-<link rel="stylesheet" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css" />
-@endif
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 @endpush

@@ -103,8 +103,10 @@ class RegisterController extends Controller
                 'country' => ['required', 'string', 'max:120'],
                 'latitude' => ['nullable', 'numeric', 'between:-90,90'],
                 'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+                'station_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+                'station_longitude' => ['nullable', 'numeric', 'between:-180,180'],
                 'ck_document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:8192'],
-                'bbbee_document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:8192'],
+                'bbbee_document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:8192'],
             ]);
         }
 
@@ -205,7 +207,9 @@ class RegisterController extends Controller
                 }
             } else {
                 $ckPath = $request->file('ck_document')->store('merchant_documents/ck', 'public');
-                $bbbeePath = $request->file('bbbee_document')->store('merchant_documents/bbbee', 'public');
+                $bbbeePath = $request->hasFile('bbbee_document')
+                    ? $request->file('bbbee_document')->store('merchant_documents/bbbee', 'public')
+                    : null;
 
                 if (Schema::hasTable('driver_documents')) {
                     DriverDocument::create([
@@ -216,13 +220,15 @@ class RegisterController extends Controller
                         'verified' => false,
                     ]);
 
-                    DriverDocument::create([
-                        'user_id' => $user->id,
-                        'document_type' => 'merchant_bbbee',
-                        'document_path' => $bbbeePath,
-                        'document_name' => basename($bbbeePath),
-                        'verified' => false,
-                    ]);
+                    if ($bbbeePath) {
+                        DriverDocument::create([
+                            'user_id' => $user->id,
+                            'document_type' => 'merchant_bbbee',
+                            'document_path' => $bbbeePath,
+                            'document_name' => basename($bbbeePath),
+                            'verified' => false,
+                        ]);
+                    }
                 }
 
                 $franchise = Schema::hasTable('merchant_franchises')
@@ -232,6 +238,8 @@ class RegisterController extends Controller
                 $address = (string) ($validated['business_address'] ?? '');
                 $city = (string) ($validated['city'] ?? '');
                 $country = (string) ($validated['country'] ?? 'South Africa');
+                $stationLatitude = $validated['station_latitude'] ?? ($validated['latitude'] ?? null);
+                $stationLongitude = $validated['station_longitude'] ?? ($validated['longitude'] ?? null);
 
                 if (Schema::hasTable('fuel_stations')) {
                     $existingStation = FuelStation::query()
@@ -244,8 +252,8 @@ class RegisterController extends Controller
                         'address' => $address !== '' ? $address : 'Pending address',
                         'city' => $city !== '' ? $city : 'Pending city',
                         'country' => $country !== '' ? $country : 'South Africa',
-                        'latitude' => $validated['latitude'] ?? null,
-                        'longitude' => $validated['longitude'] ?? null,
+                        'latitude' => $stationLatitude,
+                        'longitude' => $stationLongitude,
                         'contact_person' => $user->name,
                         'contact_phone' => $user->phone,
                         'contact_email' => $user->email,

@@ -212,6 +212,50 @@ class ApiClient {
     return user;
   }
 
+  Future<Map<String, dynamic>> forgotPassword({
+    String? phone,
+    String? email,
+    String channel = 'phone',
+  }) async {
+    final payload = <String, dynamic>{
+      'channel': channel,
+      if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+      if (email != null && email.trim().isNotEmpty) 'email': email.trim(),
+    };
+    final response = await _request(
+      method: 'POST',
+      path: '/auth/forgot-password',
+      body: payload,
+      auth: false,
+    );
+    return _extractData(response.body);
+  }
+
+  Future<Map<String, dynamic>> resetPassword({
+    String? phone,
+    String? email,
+    String channel = 'phone',
+    required String code,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    final payload = <String, dynamic>{
+      'channel': channel,
+      'code': code.trim(),
+      'password': password,
+      'password_confirmation': passwordConfirmation,
+      if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+      if (email != null && email.trim().isNotEmpty) 'email': email.trim(),
+    };
+    final response = await _request(
+      method: 'POST',
+      path: '/auth/reset-password',
+      body: payload,
+      auth: false,
+    );
+    return _extractData(response.body);
+  }
+
   Future<Map<String, dynamic>> profile() async {
     if (mockMode) {
       if (_mockUser != null) return Map<String, dynamic>.from(_mockUser!);

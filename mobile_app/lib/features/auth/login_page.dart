@@ -79,6 +79,170 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<void> _openForgotPasswordFlow() async {
+    final phone = phoneCtrl.text.trim();
+    final otpCtrl = TextEditingController();
+    final newPassCtrl = TextEditingController();
+    final confirmPassCtrl = TextEditingController();
+    var otpRequested = false;
+    var busy = false;
+    String? dialogError;
+
+    Future<void> requestOtp(StateSetter setDialogState) async {
+      if (phone.isEmpty) {
+        setDialogState(() => dialogError = 'Enter your phone number first.');
+        return;
+      }
+      setDialogState(() {
+        busy = true;
+        dialogError = null;
+      });
+      try {
+        await _ensureBaseUrl();
+        await widget.api.forgotPassword(phone: phone, channel: 'phone');
+        setDialogState(() => otpRequested = true);
+      } catch (e) {
+        setDialogState(
+          () => dialogError = e.toString().replaceFirst('Exception: ', ''),
+        );
+      } finally {
+        setDialogState(() => busy = false);
+      }
+    }
+
+    Future<void> submitReset(StateSetter setDialogState) async {
+      if (otpCtrl.text.trim().length != 6) {
+        setDialogState(() => dialogError = 'Enter a valid 6-digit OTP code.');
+        return;
+      }
+      if (newPassCtrl.text.length < 8) {
+        setDialogState(
+          () => dialogError = 'Password must be at least 8 characters.',
+        );
+        return;
+      }
+      if (newPassCtrl.text != confirmPassCtrl.text) {
+        setDialogState(() => dialogError = 'Passwords do not match.');
+        return;
+      }
+      setDialogState(() {
+        busy = true;
+        dialogError = null;
+      });
+      try {
+        await _ensureBaseUrl();
+        await widget.api.resetPassword(
+          phone: phone,
+          channel: 'phone',
+          code: otpCtrl.text.trim(),
+          password: newPassCtrl.text,
+          passwordConfirmation: confirmPassCtrl.text,
+        );
+        if (!mounted) return;
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password reset successful. Sign in.')),
+        );
+      } catch (e) {
+        setDialogState(
+          () => dialogError = e.toString().replaceFirst('Exception: ', ''),
+        );
+      } finally {
+        setDialogState(() => busy = false);
+      }
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF0F172A),
+              title: const Text(
+                'Reset password',
+                style: TextStyle(color: Color(0xFFE2E8F0)),
+              ),
+              content: SizedBox(
+                width: 360,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Phone: $phone',
+                      style: const TextStyle(color: Color(0xFF94A3B8)),
+                    ),
+                    const SizedBox(height: 12),
+                    if (!otpRequested)
+                      FxButton(
+                        label: busy ? 'Sending...' : 'Send OTP',
+                        icon: Icons.sms_outlined,
+                        fullWidth: true,
+                        onPressed: busy
+                            ? null
+                            : () => requestOtp(setDialogState),
+                      ),
+                    if (otpRequested) ...[
+                      TextField(
+                        controller: otpCtrl,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(color: Color(0xFFE2E8F0)),
+                        decoration: _inputDecoration().copyWith(
+                          labelText: 'OTP code',
+                          labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: newPassCtrl,
+                        obscureText: true,
+                        style: const TextStyle(color: Color(0xFFE2E8F0)),
+                        decoration: _inputDecoration().copyWith(
+                          labelText: 'New password',
+                          labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: confirmPassCtrl,
+                        obscureText: true,
+                        style: const TextStyle(color: Color(0xFFE2E8F0)),
+                        decoration: _inputDecoration().copyWith(
+                          labelText: 'Confirm password',
+                          labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                        ),
+                      ),
+                    ],
+                    if (dialogError != null) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        dialogError!,
+                        style: const TextStyle(color: Color(0xFFFCA5A5)),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: busy
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Close'),
+                ),
+                if (otpRequested)
+                  TextButton(
+                    onPressed: busy ? null : () => submitReset(setDialogState),
+                    child: Text(busy ? 'Submitting...' : 'Reset'),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,7 +284,9 @@ class _LoginPageState extends State<LoginPage> {
                           gradient: AppTheme.actionGradient,
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: const Center(child: LogoMark(size: 34)),
+                        child: const Center(
+                          child: LogoMark(size: 34, color: Colors.white),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -161,7 +327,7 @@ class _LoginPageState extends State<LoginPage> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {},
+                        onPressed: submitting ? null : _openForgotPasswordFlow,
                         child: const Text(
                           'Forgot Password ?',
                           style: TextStyle(

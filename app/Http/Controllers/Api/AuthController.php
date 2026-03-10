@@ -10,6 +10,7 @@ use App\Models\Otp;
 use App\Models\Device;
 use App\Models\Wallet;
 use App\Models\CreditLimit;
+use App\Services\AfricasTalkingSmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -448,11 +449,22 @@ class AuthController extends Controller
 
         if (in_array($channel, ['phone', 'both'], true) && trim((string) $user->phone) !== '') {
             $otp = Otp::generateForChannel((string) $user->phone, 'reset_password', $user->id, 'phone');
-            $sentVia[] = 'phone';
+            $sms = $this->sendSms(
+                (string) $user->phone,
+                "Your Bwiser password reset OTP is {$otp->code}. It expires in 10 minutes."
+            );
+            if ($sms['success'] ?? false) {
+                $sentVia[] = 'phone';
+            } else {
+                Log::warning('Failed to send forgot-password OTP via Africa\'s Talking', [
+                    'user_id' => $user->id,
+                    'phone' => $user->phone,
+                    'error' => $sms['error'] ?? 'Unknown SMS error',
+                ]);
+            }
             if (config('app.debug')) {
                 $debugCodes['phone_otp_code'] = $otp->code;
             }
-            Log::info('Password reset OTP generated for phone channel.', ['user_id' => $user->id]);
         }
 
         if (in_array($channel, ['email', 'both'], true) && trim((string) $user->email) !== '') {
@@ -683,9 +695,8 @@ class AuthController extends Controller
      */
     private function sendSms($phone, $message)
     {
-        // Integrate with SMS gateway like AfricasTalking, Twilio, etc.
-        // For now, just log it
-        \Log::info("SMS to {$phone}: {$message}");
-        return true;
+        /** @var AfricasTalkingSmsService $sms */
+        $sms = app(AfricasTalkingSmsService::class);
+        return $sms->sendOtp((string) $phone, (string) $message);
     }
 }

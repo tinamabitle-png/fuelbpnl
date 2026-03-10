@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\RegistrationDocumentsController;
 use App\Http\Controllers\HereMapsController;
+use App\Http\Controllers\GoogleMapsController;
 use App\Http\Controllers\Admin\FuelStationController;
 use App\Http\Controllers\Admin\SettlementController;
 use App\Http\Controllers\Admin\VoucherController;
@@ -121,6 +122,15 @@ Route::get('/geo/here/geocode', [HereMapsController::class, 'geocode'])
 Route::get('/geo/here/reverse', [HereMapsController::class, 'reverse'])
     ->middleware('throttle:120,1')
     ->name('here.reverse');
+Route::get('/geo/google/autocomplete', [GoogleMapsController::class, 'autocomplete'])
+    ->middleware('throttle:120,1')
+    ->name('google.autocomplete');
+Route::get('/geo/google/place', [GoogleMapsController::class, 'place'])
+    ->middleware('throttle:120,1')
+    ->name('google.place');
+Route::get('/geo/google/reverse', [GoogleMapsController::class, 'reverse'])
+    ->middleware('throttle:120,1')
+    ->name('google.reverse');
 
 Route::middleware('auth')->group(function () {
     Route::get('/registration/complete/{role?}', [RegistrationDocumentsController::class, 'show'])
