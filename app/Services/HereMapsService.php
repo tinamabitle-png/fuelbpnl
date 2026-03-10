@@ -14,18 +14,13 @@ class HereMapsService
     public function geocode(string $query, int $limit = 5): array
     {
         $url = 'https://geocode.search.hereapi.com/v1/geocode';
-        $token = $this->accessToken();
-
-        $response = Http::withToken($token)
-            ->acceptJson()
-            ->timeout(15)
-            ->get($url, [
-                'q' => $query,
-                'limit' => max(1, min($limit, 10)),
-            ]);
+        $response = $this->authorizedRequest($url, [
+            'q' => $query,
+            'limit' => max(1, min($limit, 10)),
+        ]);
 
         if (!$response->ok()) {
-            throw new RuntimeException('HERE geocode request failed with status ' . $response->status());
+            throw new RuntimeException($this->hereErrorMessage('geocode', $response->status(), $response->json(), $response->body()));
         }
 
         $payload = $response->json();
@@ -35,23 +30,58 @@ class HereMapsService
     public function reverseGeocode(float $lat, float $lng, int $limit = 1): array
     {
         $url = 'https://revgeocode.search.hereapi.com/v1/revgeocode';
-        $token = $this->accessToken();
-
-        $response = Http::withToken($token)
-            ->acceptJson()
-            ->timeout(15)
-            ->get($url, [
-                'at' => sprintf('%.8F,%.8F', $lat, $lng),
-                'lang' => 'en-US',
-                'limit' => max(1, min($limit, 5)),
-            ]);
+        $response = $this->authorizedRequest($url, [
+            'at' => sprintf('%.8F,%.8F', $lat, $lng),
+            'lang' => 'en-US',
+            'limit' => max(1, min($limit, 5)),
+        ]);
 
         if (!$response->ok()) {
-            throw new RuntimeException('HERE reverse geocode request failed with status ' . $response->status());
+            throw new RuntimeException($this->hereErrorMessage('reverse geocode', $response->status(), $response->json(), $response->body()));
         }
 
         $payload = $response->json();
         return is_array($payload) ? $payload : [];
+    }
+
+    private function authorizedRequest(string $url, array $query): \Illuminate\Http\Client\Response
+    {
+        $apiKey = trim((string) config('services.here_maps.key'));
+
+        if ($apiKey !== '') {
+            return Http::acceptJson()
+                ->timeout(15)
+                ->get($url, array_merge($query, ['apiKey' => $apiKey]));
+        }
+
+        $token = $this->accessToken();
+
+        return Http::withToken($token)
+            ->acceptJson()
+            ->timeout(15)
+            ->get($url, $query);
+    }
+
+    private function hereErrorMessage(string $operation, int $status, mixed $jsonPayload, string $rawBody): string
+    {
+        $message = '';
+        if (is_array($jsonPayload)) {
+            $message = (string) ($jsonPayload['error_description']
+                ?? $jsonPayload['error']
+                ?? $jsonPayload['title']
+                ?? $jsonPayload['cause']
+                ?? '');
+        }
+
+        if ($message === '' && $rawBody !== '') {
+            $message = mb_substr(trim($rawBody), 0, 180);
+        }
+
+        if ($message === '') {
+            return "HERE {$operation} request failed with status {$status}";
+        }
+
+        return "HERE {$operation} request failed with status {$status}: {$message}";
     }
 
     private function accessToken(): string
