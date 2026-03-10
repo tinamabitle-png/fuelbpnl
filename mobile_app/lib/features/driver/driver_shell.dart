@@ -2689,9 +2689,17 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                     final width = (viewportWidth - 56).clamp(260.0, 460.0);
                     return Material(
                       color: const Color(0xFF0B1220),
+                      elevation: 0,
+                      shadowColor: Colors.transparent,
+                      surfaceTintColor: Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
+                      clipBehavior: Clip.antiAlias,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Color(0xFF334155)),
+                      ),
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 220),
+                        constraints: const BoxConstraints(maxHeight: 180),
                         child: SizedBox(
                           width: width,
                           child: ListView.builder(
