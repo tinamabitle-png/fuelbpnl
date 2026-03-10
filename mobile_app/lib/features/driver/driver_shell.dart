@@ -2510,16 +2510,15 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                         );
                       },
                   optionsViewBuilder: (context, onSelected, options) {
-                    return Align(
-                      alignment: Alignment.topLeft,
-                      child: Material(
-                        color: const Color(0xFF0B1220),
-                        borderRadius: BorderRadius.circular(12),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            maxHeight: 220,
-                            maxWidth: 460,
-                          ),
+                    final viewportWidth = MediaQuery.of(context).size.width;
+                    final width = (viewportWidth - 56).clamp(260.0, 460.0);
+                    return Material(
+                      color: const Color(0xFF0B1220),
+                      borderRadius: BorderRadius.circular(12),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 220),
+                        child: SizedBox(
+                          width: width,
                           child: ListView.builder(
                             shrinkWrap: true,
                             padding: const EdgeInsets.symmetric(vertical: 6),

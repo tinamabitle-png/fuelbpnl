@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\RegistrationDocumentsController;
 use App\Http\Controllers\HereMapsController;
 use App\Http\Controllers\GoogleMapsController;
+use App\Http\Controllers\AccountDeletionController;
 use App\Http\Controllers\Admin\FuelStationController;
 use App\Http\Controllers\Admin\SettlementController;
 use App\Http\Controllers\Admin\VoucherController;
@@ -142,6 +143,8 @@ Route::middleware('auth')->group(function () {
 
 // ========== PROTECTED ROUTES ==========
 Route::middleware(['auth'])->group(function () {
+    Route::get('/account/delete', [AccountDeletionController::class, 'show'])->name('account.delete.show');
+    Route::delete('/account/delete', [AccountDeletionController::class, 'destroy'])->name('account.delete');
     
     // ========== INVESTOR ROUTES ==========
     Route::prefix('investor')->name('investor.')->group(function () {
