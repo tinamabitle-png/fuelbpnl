@@ -307,7 +307,7 @@ const fillDriverAddressFromHereItem = (item) => {
     const city = address.city || address.county || '';
     const country = address.countryName || '';
     const fallbackAddress = address.label || item?.title || '';
-    const composedAddress = [line1, area].filter(Boolean).join(', ').trim();
+    const composedAddress = [line1, area].filter(Boolean).join(', ').trim() || fallbackAddress;
 
     if (driverAddressInput) {
         driverAddressInput.value = composedAddress || fallbackAddress || driverAddressInput.value;
@@ -327,13 +327,28 @@ const driverHereFetchGeocode = async (query) => {
 };
 
 const driverHereFetchReverse = async (lat, lng) => {
-    const url = `${hereReverseUrl}?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}&limit=1`;
+    const url = `${hereReverseUrl}?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}&limit=3`;
     const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!response.ok) throw new Error('HERE reverse geocode request failed');
     const payload = await response.json();
-    const first = Array.isArray(payload?.items) ? payload.items[0] : null;
-    if (!first) throw new Error('HERE reverse empty response');
-    return first;
+    const items = Array.isArray(payload?.items) ? payload.items : [];
+    const pickBest = (candidates) => {
+        if (!Array.isArray(candidates) || !candidates.length) return null;
+        const score = (item) => {
+            const addr = item?.address || {};
+            let points = 0;
+            if (addr.houseNumber) points += 3;
+            if (addr.street) points += 2;
+            if (addr.postalCode) points += 1;
+            if (addr.city || addr.county) points += 1;
+            if (/\d/.test(String(addr.label || ''))) points += 1;
+            return points;
+        };
+        return [...candidates].sort((a, b) => score(b) - score(a))[0] || null;
+    };
+    const best = pickBest(items);
+    if (!best) throw new Error('HERE reverse empty response');
+    return best;
 };
 
 const driverGeocodeByPlaceId = (placeId) => new Promise((resolve, reject) => {
@@ -401,7 +416,15 @@ const pickDriverSuggestion = async (prediction) => {
             lat = Number(position.lat);
             lng = Number(position.lng);
             if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('Missing geometry');
-            fillDriverAddressFromHereItem(prediction);
+            let resolved = prediction;
+            if (!prediction?.address?.street && !prediction?.address?.houseNumber) {
+                try {
+                    resolved = await driverHereFetchReverse(lat, lng);
+                } catch (error) {
+                    resolved = prediction;
+                }
+            }
+            fillDriverAddressFromHereItem(resolved);
         }
 
         applyDriverLocationToMap(lat, lng);
@@ -424,7 +447,16 @@ const renderDriverSuggestions = (items) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'w-full px-3 py-2 text-left hover:bg-slate-50 border-b last:border-b-0 border-slate-100';
-        button.innerHTML = `<span class="block text-xs text-slate-700 truncate">${item?.description || item?.address?.label || item?.title || 'Suggested location'}</span>`;
+        const addr = item?.address || {};
+        const line1 = [addr.houseNumber || '', addr.street || ''].filter(Boolean).join(' ').trim();
+        const area = addr.district || addr.subdistrict || addr.neighborhood || '';
+        const city = addr.city || addr.county || addr.state || '';
+        const hint = [line1, area, city].filter(Boolean).join(', ').trim()
+            || addr.label
+            || item?.description
+            || item?.title
+            || 'Suggested location';
+        button.innerHTML = `<span class="block text-xs text-slate-700 truncate">${hint}</span>`;
         button.addEventListener('click', () => pickDriverSuggestion(item));
         driverAddressSuggestions.appendChild(button);
     });
@@ -603,7 +635,15 @@ const scheduleDriverGeocode = () => {
                     const lng = Number(first?.position?.lng);
                     if (Number.isFinite(lat) && Number.isFinite(lng)) {
                         applyDriverLocationToMap(lat, lng);
-                        fillDriverAddressFromHereItem(first);
+                        let resolved = first;
+                        if (!first?.address?.street && !first?.address?.houseNumber) {
+                            try {
+                                resolved = await driverHereFetchReverse(lat, lng);
+                            } catch (error) {
+                                resolved = first;
+                            }
+                        }
+                        fillDriverAddressFromHereItem(resolved);
                         updateDriverMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
                     }
                 } else {

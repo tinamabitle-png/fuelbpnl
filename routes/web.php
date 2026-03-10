@@ -45,6 +45,7 @@ Route::get('/sitemap.xml', function () {
 Route::view('/legal/terms', 'legal.terms')->name('legal.terms');
 Route::view('/legal/cookies', 'legal.cookies')->name('legal.cookies');
 Route::view('/legal/aml-kyc', 'legal.aml')->name('legal.aml');
+Route::view('/legal/privacy', 'legal.privacy')->name('legal.privacy');
 Route::view('/legal/poppia', 'legal.poppia')->name('legal.poppia');
 Route::view('/legal/paia-manual', 'legal.paia')->name('legal.paia');
 Route::view('/legal/security-compliance', 'legal.security')->name('legal.security');

@@ -3,6 +3,8 @@
     <span aria-hidden="true">•</span>
     <a href="{{ route('legal.cookies') }}" class="hover:text-blue-700">Cookie Policy</a>
     <span aria-hidden="true">•</span>
+    <a href="{{ route('legal.privacy') }}" class="hover:text-blue-700">Privacy Policy</a>
+    <span aria-hidden="true">•</span>
     <a href="{{ route('legal.aml') }}" class="hover:text-blue-700">AML & KYC Policy</a>
     <span aria-hidden="true">•</span>
     <a href="{{ route('legal.poppia') }}" class="hover:text-blue-700">POPIA Notice</a>

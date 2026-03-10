@@ -10,38 +10,87 @@ class HereMapsService
 {
     private const TOKEN_CACHE_KEY = 'here_maps_oauth_token';
     private const TOKEN_TTL_FALLBACK = 3000;
+    private const GEOCODE_CACHE_TTL_SECONDS = 300;
+    private const REVERSE_CACHE_TTL_SECONDS = 600;
 
     public function geocode(string $query, int $limit = 5): array
     {
-        $url = 'https://geocode.search.hereapi.com/v1/geocode';
-        $response = $this->authorizedRequest($url, [
-            'q' => $query,
-            'limit' => max(1, min($limit, 10)),
-        ]);
+        $normalizedLimit = max(1, min($limit, 10));
+        $cacheKey = 'here_geocode:' . sha1(strtolower(trim($query)) . '|' . $normalizedLimit);
 
-        if (!$response->ok()) {
-            throw new RuntimeException($this->hereErrorMessage('geocode', $response->status(), $response->json(), $response->body()));
-        }
+        return Cache::remember($cacheKey, now()->addSeconds(self::GEOCODE_CACHE_TTL_SECONDS), function () use ($query, $normalizedLimit) {
+            // First pass: bias to street + house-level suggestions.
+            $autocompleteUrl = 'https://autocomplete.search.hereapi.com/v1/autocomplete';
+            $streetLevelResponse = $this->authorizedRequest($autocompleteUrl, [
+                'q' => $query,
+                'limit' => $normalizedLimit,
+                'in' => 'countryCode:ZAF',
+                'types' => 'street,houseNumber',
+                'lang' => 'en-US',
+            ]);
 
-        $payload = $response->json();
-        return is_array($payload) ? $payload : [];
+            if ($streetLevelResponse->ok()) {
+                $streetPayload = $streetLevelResponse->json();
+                if (is_array($streetPayload) && !empty($streetPayload['items']) && is_array($streetPayload['items'])) {
+                    return $streetPayload;
+                }
+            }
+
+            // Second pass: generic autocomplete if street-level is empty.
+            $autocompleteResponse = $this->authorizedRequest($autocompleteUrl, [
+                'q' => $query,
+                'limit' => $normalizedLimit,
+                'in' => 'countryCode:ZAF',
+                'lang' => 'en-US',
+            ]);
+
+            if ($autocompleteResponse->ok()) {
+                $autocompletePayload = $autocompleteResponse->json();
+                if (is_array($autocompletePayload) && !empty($autocompletePayload['items']) && is_array($autocompletePayload['items'])) {
+                    return $autocompletePayload;
+                }
+            }
+
+            // Final fallback: geocode endpoint.
+            $geocodeUrl = 'https://geocode.search.hereapi.com/v1/geocode';
+            $geocodeResponse = $this->authorizedRequest($geocodeUrl, [
+                'q' => $query,
+                'limit' => $normalizedLimit,
+                'in' => 'countryCode:ZAF',
+                'lang' => 'en-US',
+            ]);
+
+            if (!$geocodeResponse->ok()) {
+                throw new RuntimeException($this->hereErrorMessage('geocode', $geocodeResponse->status(), $geocodeResponse->json(), $geocodeResponse->body()));
+            }
+
+            $payload = $geocodeResponse->json();
+            return is_array($payload) ? $payload : [];
+        });
     }
 
     public function reverseGeocode(float $lat, float $lng, int $limit = 1): array
     {
-        $url = 'https://revgeocode.search.hereapi.com/v1/revgeocode';
-        $response = $this->authorizedRequest($url, [
-            'at' => sprintf('%.8F,%.8F', $lat, $lng),
-            'lang' => 'en-US',
-            'limit' => max(1, min($limit, 5)),
-        ]);
+        $normalizedLimit = max(1, min($limit, 5));
+        $cacheKey = 'here_reverse:' . sha1(sprintf('%.6F,%.6F', $lat, $lng) . '|' . $normalizedLimit);
 
-        if (!$response->ok()) {
-            throw new RuntimeException($this->hereErrorMessage('reverse geocode', $response->status(), $response->json(), $response->body()));
-        }
+        return Cache::remember($cacheKey, now()->addSeconds(self::REVERSE_CACHE_TTL_SECONDS), function () use ($lat, $lng, $normalizedLimit) {
+            $url = 'https://revgeocode.search.hereapi.com/v1/revgeocode';
+            $response = $this->authorizedRequest($url, [
+                'at' => sprintf('%.8F,%.8F', $lat, $lng),
+                'lang' => 'en-US',
+                'limit' => $normalizedLimit,
+                'types' => 'address',
+                'radius' => 500,
+            ]);
 
-        $payload = $response->json();
-        return is_array($payload) ? $payload : [];
+            if (!$response->ok()) {
+                throw new RuntimeException($this->hereErrorMessage('reverse geocode', $response->status(), $response->json(), $response->body()));
+            }
+
+            $payload = $response->json();
+            return is_array($payload) ? $payload : [];
+        });
     }
 
     private function authorizedRequest(string $url, array $query): \Illuminate\Http\Client\Response
@@ -50,7 +99,7 @@ class HereMapsService
 
         if ($apiKey !== '') {
             return Http::acceptJson()
-                ->timeout(15)
+                ->timeout(10)
                 ->get($url, array_merge($query, ['apiKey' => $apiKey]));
         }
 
@@ -58,7 +107,7 @@ class HereMapsService
 
         return Http::withToken($token)
             ->acceptJson()
-            ->timeout(15)
+            ->timeout(10)
             ->get($url, $query);
     }
 
@@ -126,7 +175,7 @@ class HereMapsService
     {
         $formResponse = Http::asForm()
             ->acceptJson()
-            ->timeout(15)
+            ->timeout(10)
             ->post($endpoint, [
                 'grant_type' => 'client_credentials',
                 'client_id' => $clientId,
@@ -141,7 +190,7 @@ class HereMapsService
         $basicToken = base64_encode($clientId . ':' . $clientSecret);
         $basicResponse = Http::asForm()
             ->acceptJson()
-            ->timeout(15)
+            ->timeout(10)
             ->withHeaders([
                 'Authorization' => 'Basic ' . $basicToken,
             ])

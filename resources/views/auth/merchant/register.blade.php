@@ -229,6 +229,7 @@ const fallbackCenter = [-26.2041, 28.0473];
 let map = null;
 let marker = null;
 let geocodeTimer = null;
+let geocodeAbortController = null;
 
 const initLeafletMap = () => {
     if (!mapNode || !window.L) return;
@@ -263,7 +264,10 @@ const hideSuggestions = () => {
 
 const fillAddressFromHereItem = (item) => {
     const addr = item?.address || {};
-    const fallbackAddress = addr.label || item?.title || '';
+    const hasNumericLabel = /\d/.test(String(addr.label || ''));
+    const fallbackAddress = hasNumericLabel
+        ? String(addr.label || '')
+        : [item?.title || '', addr.label || ''].filter(Boolean).join(', ');
     const inferredHouseNumber = String(item?.title || '').match(/^\s*([0-9]{1,6}[A-Za-z]?)\b/)?.[1] || '';
     const houseNumber = addr.houseNumber || inferredHouseNumber;
     const line1 = [houseNumber, addr.street || '']
@@ -275,7 +279,7 @@ const fillAddressFromHereItem = (item) => {
     const country = addr.countryName || addr.countryCode || '';
     const postcode = addr.postalCode || '';
     const longComposedAddress = [line1, suburb, city, postcode].filter(Boolean).join(', ').trim();
-    const composedAddress = fallbackAddress || longComposedAddress || [line1, suburb].filter(Boolean).join(', ').trim();
+    const composedAddress = longComposedAddress || [line1, suburb].filter(Boolean).join(', ').trim() || fallbackAddress;
 
     if (addressInput) {
         addressInput.value = composedAddress || fallbackAddress || addressInput.value;
@@ -290,9 +294,10 @@ const fillAddressFromHereItem = (item) => {
     };
 };
 
-const hereFetchGeocode = async (query) => {
+const hereFetchGeocode = async (query, options = {}) => {
     const response = await fetch(`${hereGeocodeUrl}?q=${encodeURIComponent(query)}&limit=8`, {
-        headers: { 'Accept': 'application/json' }
+        headers: { 'Accept': 'application/json' },
+        signal: options.signal,
     });
     if (!response.ok) throw new Error('HERE geocode request failed');
     const payload = await response.json();
@@ -300,22 +305,53 @@ const hereFetchGeocode = async (query) => {
 };
 
 const hereFetchReverse = async (lat, lng) => {
-    const response = await fetch(`${hereReverseUrl}?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}&limit=1`, {
+    const response = await fetch(`${hereReverseUrl}?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}&limit=3`, {
         headers: { 'Accept': 'application/json' }
     });
     if (!response.ok) throw new Error('HERE reverse geocode request failed');
     const payload = await response.json();
-    const first = Array.isArray(payload?.items) ? payload.items[0] : null;
-    if (!first) throw new Error('HERE reverse empty response');
-    return first;
+    const items = Array.isArray(payload?.items) ? payload.items : [];
+    const pickBest = (candidates) => {
+        if (!Array.isArray(candidates) || !candidates.length) return null;
+        const score = (item) => {
+            const addr = item?.address || {};
+            let points = 0;
+            if (addr.houseNumber) points += 3;
+            if (addr.street) points += 2;
+            if (addr.postalCode) points += 1;
+            if (addr.city || addr.county) points += 1;
+            if (/\d/.test(String(addr.label || ''))) points += 1;
+            return points;
+        };
+        return [...candidates].sort((a, b) => score(b) - score(a))[0] || null;
+    };
+    const best = pickBest(items);
+    if (!best) throw new Error('HERE reverse empty response');
+    return best;
 };
 
 const pickSuggestion = async (prediction) => {
     try {
-        const lat = Number(prediction?.position?.lat);
-        const lng = Number(prediction?.position?.lng);
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('Missing geometry');
-        fillAddressFromHereItem(prediction);
+        let lat = Number(prediction?.position?.lat);
+        let lng = Number(prediction?.position?.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            const fallbackQuery = String(prediction?.title || prediction?.address?.label || '').trim();
+            if (!fallbackQuery) throw new Error('Missing geometry');
+            const fallbackItems = await hereFetchGeocode(fallbackQuery);
+            const fallback = Array.isArray(fallbackItems) ? fallbackItems.find((item) => Number.isFinite(Number(item?.position?.lat)) && Number.isFinite(Number(item?.position?.lng))) : null;
+            lat = Number(fallback?.position?.lat);
+            lng = Number(fallback?.position?.lng);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('Missing geometry');
+        }
+        let resolved = prediction;
+        if (!prediction?.address?.street && !prediction?.address?.houseNumber) {
+            try {
+                resolved = await hereFetchReverse(lat, lng);
+            } catch (error) {
+                resolved = prediction;
+            }
+        }
+        fillAddressFromHereItem(resolved);
         applyLocationToMap(lat, lng);
         updateMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
     } catch (error) {
@@ -336,8 +372,18 @@ const renderSuggestions = (items) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'w-full px-3 py-2 text-left hover:bg-slate-50 border-b last:border-b-0 border-slate-100';
-        const title = item?.address?.label || item?.title || item?.description || item?.display_name || item?.name || 'Suggested location';
-        button.innerHTML = `<span class="block text-xs text-slate-700 truncate">${title}</span>`;
+        const addr = item?.address || {};
+        const line1 = [addr.houseNumber || '', addr.street || ''].filter(Boolean).join(' ').trim();
+        const area = addr.district || addr.subdistrict || addr.neighborhood || '';
+        const city = addr.city || addr.county || addr.state || '';
+        const hint = [line1, area, city].filter(Boolean).join(', ').trim()
+            || addr.label
+            || item?.title
+            || item?.description
+            || item?.display_name
+            || item?.name
+            || 'Suggested location';
+        button.innerHTML = `<span class="block text-xs text-slate-700 truncate">${hint}</span>`;
         button.addEventListener('click', () => pickSuggestion(item));
         addressSuggestions.appendChild(button);
     });
@@ -385,7 +431,11 @@ const scheduleGeocode = () => {
         updateMapStatus('Locating address...');
 
         try {
-            const items = await hereFetchGeocode(query);
+            if (geocodeAbortController) {
+                geocodeAbortController.abort();
+            }
+            geocodeAbortController = new AbortController();
+            const items = await hereFetchGeocode(query, { signal: geocodeAbortController.signal });
             if (items.length) {
                 renderSuggestions(items);
                 updateMapStatus('Select an address suggestion from the list.');
@@ -398,6 +448,9 @@ const scheduleGeocode = () => {
                 updateMapStatus('Address not found yet. Keep typing more detail.', true);
             }
         } catch (error) {
+            if (error && (error.name === 'AbortError' || String(error).includes('AbortError'))) {
+                return;
+            }
             if (latitudeInput) latitudeInput.value = '';
             if (longitudeInput) longitudeInput.value = '';
             if (stationLatitudeInput) stationLatitudeInput.value = '';

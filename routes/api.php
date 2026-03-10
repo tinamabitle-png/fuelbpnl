@@ -37,7 +37,7 @@ Route::match(['GET', 'POST'], '/ussd/africas-talking', [UssdController::class, '
     ->middleware('throttle:ussd');
 
 Route::prefix('v1')->group(function () {
-    
+
     // Public routes
     Route::middleware('throttle:auth')->group(function () {
         Route::post('/auth/register', [AuthController::class, 'register']);
@@ -50,16 +50,16 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
         Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
     });
-    
+
     // Protected routes
     Route::middleware(['auth:sanctum'])->group(function () {
-        
+
         // Auth & Profile
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/auth/profile', [AuthController::class, 'profile']);
         Route::put('/auth/update-profile', [AuthController::class, 'updateProfile']);
         Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
-        
+
         // Profile Management
         Route::prefix('profile')->group(function () {
             Route::get('/', [ProfileController::class, 'getProfile']);
@@ -74,7 +74,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/export-data', [ProfileController::class, 'exportData']);
             Route::get('/support', [ProfileController::class, 'support']);
         });
-        
+
         // Wallet
         Route::prefix('wallet')->group(function () {
             Route::get('/balance', [WalletController::class, 'balance']);
@@ -84,7 +84,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/payment-methods', [WalletController::class, 'paymentMethods']);
             Route::post('/make-payment', [WalletController::class, 'makePayment']);
         });
-        
+
         // Vouchers
         Route::prefix('vouchers')->group(function () {
             Route::post('/request', [FuelVoucherController::class, 'requestVoucher']);
@@ -93,7 +93,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}', [FuelVoucherController::class, 'show'])->whereNumber('id');
             Route::post('/{id}/cancel', [FuelVoucherController::class, 'cancel'])->whereNumber('id');
         });
-        
+
         // Leases (BNPL)
         Route::prefix('leases')->group(function () {
             Route::get('/', [LeaseController::class, 'index']);
@@ -102,7 +102,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/{id}/request-extension', [LeaseController::class, 'requestExtension']);
             Route::get('/statistics', [LeaseController::class, 'statistics']);
         });
-        
+
         // Repayments
         Route::prefix('repayments')->group(function () {
             Route::get('/upcoming', [RepaymentController::class, 'upcoming']);
@@ -119,7 +119,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/reminders', [RepaymentController::class, 'reminders']);
             Route::get('/statistics', [RepaymentController::class, 'statistics']);
         });
-        
+
         // Fuel Stations
         Route::prefix('stations')->group(function () {
             Route::get('/nearby', [FuelStationController::class, 'nearby']);
@@ -127,7 +127,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}', [FuelStationController::class, 'show']);
             Route::get('/prices', [FuelStationController::class, 'prices']);
         });
-        
+
         // Credit Assessment
         Route::prefix('credit')->group(function () {
             Route::get('/eligibility', [CreditAssessmentController::class, 'checkEligibility']);
@@ -136,13 +136,13 @@ Route::prefix('v1')->group(function () {
             Route::post('/simulate-purchase', [CreditAssessmentController::class, 'simulatePurchase']);
             Route::get('/limit-history', [CreditAssessmentController::class, 'getLimitHistory']);
         });
-        
+
         // Driver routes
         Route::middleware(['role:driver'])->group(function () {
             Route::get('/driver/dashboard', [UserController::class, 'dashboard']);
             Route::get('/driver/leases', [UserController::class, 'leases']);
         });
-        
+
         // Merchant routes
         Route::middleware(['role:merchant'])->group(function () {
             Route::post('/merchant/redeem-voucher', [VoucherController::class, 'redeem']);
