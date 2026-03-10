@@ -1859,6 +1859,24 @@ class _DriverNavigatePageState extends State<DriverNavigatePage> {
                   ),
                   const SizedBox(height: 8),
                   _navOption(
+                    title: 'Bing Maps',
+                    icon: Icons.public_rounded,
+                    onTap: () => _launchMap(
+                      Uri.parse('https://www.bing.com/maps?q=$query'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _navOption(
+                    title: 'OpenStreetMap (Leaflet)',
+                    icon: Icons.map_outlined,
+                    onTap: () => _launchMap(
+                      Uri.parse(
+                        'https://www.openstreetmap.org/search?query=$query',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _navOption(
                     title: 'Waze',
                     icon: Icons.alt_route_rounded,
                     onTap: () => _launchMap(
@@ -1932,6 +1950,8 @@ class DriverApplyVoucherPage extends StatefulWidget {
 }
 
 class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
+  // Leaflet is the in-app default. Other providers are fallbacks that open externally.
+  _DriverMapProvider mapProvider = _DriverMapProvider.leaflet;
   bool loading = true;
   bool submitting = false;
   bool autopayEnabled = false;
@@ -1951,6 +1971,194 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
   int? stationId;
   double? driverLatitude;
   double? driverLongitude;
+
+  Uri _mapProviderUri(_DriverMapProvider provider) {
+    final name = (selectedStation?['name'] ?? selectedStationName ?? '')
+        .toString();
+    final coords = selectedStation == null
+        ? null
+        : _stationLatLng(selectedStation!);
+    final hasCoords = coords != null;
+    final lat = hasCoords ? coords.latitude : driverLatitude;
+    final lng = hasCoords ? coords.longitude : driverLongitude;
+    final hasDriverCoords = lat != null && lng != null;
+
+    final q = (name.trim().isNotEmpty) ? name.trim() : 'fuel station';
+    final query = Uri.encodeComponent(q);
+
+    switch (provider) {
+      case _DriverMapProvider.leaflet:
+        if (hasDriverCoords) {
+          // OpenStreetMap slippy map. Leaflet itself is embedded in-app.
+          return Uri.parse('https://www.openstreetmap.org/#map=14/$lat/$lng');
+        }
+        return Uri.parse('https://www.openstreetmap.org/search?query=$query');
+      case _DriverMapProvider.google:
+        if (hasDriverCoords) {
+          return Uri.parse(
+            'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('$lat,$lng')}&query_place_id=',
+          );
+        }
+        return Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=$query',
+        );
+      case _DriverMapProvider.here:
+        if (hasDriverCoords) {
+          return Uri.parse(
+            'https://wego.here.com/search/$query?map=$lat,$lng,14,normal',
+          );
+        }
+        return Uri.parse('https://wego.here.com/search/$query');
+      case _DriverMapProvider.bing:
+        if (hasDriverCoords) {
+          return Uri.parse(
+            'https://www.bing.com/maps?q=$query&cp=$lat~$lng&lvl=14',
+          );
+        }
+        return Uri.parse('https://www.bing.com/maps?q=$query');
+    }
+  }
+
+  Future<void> _openSelectedProvider() async {
+    final uri = _mapProviderUri(mapProvider);
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!mounted) return;
+    if (!opened) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open map provider.')),
+      );
+    }
+  }
+
+  Widget _providerChip(_DriverMapProvider provider, String label) {
+    final active = mapProvider == provider;
+    return InkWell(
+      onTap: () => setState(() => mapProvider = provider),
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          color: active ? const Color(0xFF1D4ED8) : const Color(0xFF111827),
+          border: Border.all(
+            color: active ? const Color(0xFF60A5FA) : const Color(0xFF334155),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: active ? Colors.white : const Color(0xFFCBD5E1),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _mapPanel({
+    required LatLng mapCenter,
+    required List<Map<String, dynamic>> nearestStations,
+  }) {
+    if (mapProvider != _DriverMapProvider.leaflet) {
+      final title = switch (mapProvider) {
+        _DriverMapProvider.google => 'Google Maps',
+        _DriverMapProvider.here => 'HERE WeGo',
+        _DriverMapProvider.bing => 'Bing Maps',
+        _DriverMapProvider.leaflet => 'Leaflet',
+      };
+      return Container(
+        height: 250,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF334155)),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0B1220), Color(0xFF111827)],
+          ),
+        ),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(0xFFE2E8F0),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Fallback provider opens in your map app/browser.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                FxButton(
+                  label: 'Open Map',
+                  icon: Icons.open_in_new_rounded,
+                  onPressed: _openSelectedProvider,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return FlutterMap(
+      mapController: mapController,
+      options: MapOptions(initialCenter: mapCenter, initialZoom: 12.5),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'co.za.bwiser.mobile',
+        ),
+        if (driverLatitude != null && driverLongitude != null)
+          MarkerLayer(
+            markers: [
+              Marker(
+                width: 26,
+                height: 26,
+                point: LatLng(driverLatitude!, driverLongitude!),
+                child: const Icon(
+                  Icons.my_location_rounded,
+                  size: 22,
+                  color: Color(0xFF2563EB),
+                ),
+              ),
+            ],
+          ),
+        MarkerLayer(
+          markers: nearestStations.map((s) {
+            final point = _stationLatLng(s)!;
+            final selected =
+                (s['id'] ?? '').toString() == (stationId ?? '').toString();
+            return Marker(
+              point: point,
+              width: 34,
+              height: 34,
+              child: GestureDetector(
+                onTap: () => _selectStation(s),
+                child: Icon(
+                  Icons.location_on_rounded,
+                  size: selected ? 32 : 28,
+                  color: selected
+                      ? const Color(0xFFDC2626)
+                      : const Color(0xFF16A34A),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
 
   @override
   void initState() {
@@ -2403,61 +2611,25 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                   borderRadius: BorderRadius.circular(12),
                   child: SizedBox(
                     height: 250,
-                    child: FlutterMap(
-                      mapController: mapController,
-                      options: MapOptions(
-                        initialCenter: mapCenter,
-                        initialZoom: 12.5,
-                      ),
-                      children: [
-                        TileLayer(
-                          urlTemplate:
-                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                          userAgentPackageName: 'co.za.bwiser.mobile',
-                        ),
-                        if (driverLatitude != null && driverLongitude != null)
-                          MarkerLayer(
-                            markers: [
-                              Marker(
-                                width: 26,
-                                height: 26,
-                                point: LatLng(
-                                  driverLatitude!,
-                                  driverLongitude!,
-                                ),
-                                child: const Icon(
-                                  Icons.my_location_rounded,
-                                  size: 22,
-                                  color: Color(0xFF2563EB),
-                                ),
-                              ),
-                            ],
-                          ),
-                        MarkerLayer(
-                          markers: nearestStations.map((s) {
-                            final point = _stationLatLng(s)!;
-                            final selected =
-                                (s['id'] ?? '').toString() ==
-                                (stationId ?? '').toString();
-                            return Marker(
-                              point: point,
-                              width: 34,
-                              height: 34,
-                              child: GestureDetector(
-                                onTap: () => _selectStation(s),
-                                child: Icon(
-                                  Icons.location_on_rounded,
-                                  size: selected ? 32 : 28,
-                                  color: selected
-                                      ? const Color(0xFFDC2626)
-                                      : const Color(0xFF16A34A),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
+                    child: _mapPanel(
+                      mapCenter: mapCenter,
+                      nearestStations: nearestStations,
                     ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _providerChip(_DriverMapProvider.leaflet, 'Leaflet'),
+                      const SizedBox(width: 8),
+                      _providerChip(_DriverMapProvider.google, 'Google'),
+                      const SizedBox(width: 8),
+                      _providerChip(_DriverMapProvider.bing, 'Bing'),
+                      const SizedBox(width: 8),
+                      _providerChip(_DriverMapProvider.here, 'HERE'),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -2625,6 +2797,8 @@ class DriverRepaymentsPage extends StatefulWidget {
   @override
   State<DriverRepaymentsPage> createState() => _DriverRepaymentsPageState();
 }
+
+enum _DriverMapProvider { leaflet, google, bing, here }
 
 class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
   bool loading = true;
