@@ -38,6 +38,23 @@ Route::match(['GET', 'POST'], '/ussd/africas-talking', [UssdController::class, '
 
 Route::prefix('v1')->group(function () {
 
+    Route::get('/', function () {
+        return response()->json([
+            'name' => 'Bwiser API',
+            'status' => 'ok',
+            'version' => 'v1',
+        ]);
+    });
+
+    Route::get('/health', function () {
+        return response()->json([
+            'status' => 'ok',
+            'service' => 'api',
+            'version' => 'v1',
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    });
+    
     // Public routes
     Route::middleware('throttle:auth')->group(function () {
         Route::post('/auth/register', [AuthController::class, 'register']);
