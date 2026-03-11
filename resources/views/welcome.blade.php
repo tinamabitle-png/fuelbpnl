@@ -8,7 +8,7 @@
 <section class="max-w-6xl mx-auto px-6 pt-16 pb-20">
     <div class="glass rounded-3xl p-8 md:p-12">
         <h1 class="brand-font text-4xl md:text-6xl font-semibold text-slate-900 mt-4 leading-tight">
-            Fuel Infrastructure Finance and Voucher Payment, Low Late Fees,
+            Fuel Infrastructure Finance and Voucher Payments, Low Late Fees,
             <span class="hero-gradient-text block">Built for Real-Time Operations</span>
         </h1>
         <p class="text-slate-600 mt-5 max-w-3xl text-medium">
