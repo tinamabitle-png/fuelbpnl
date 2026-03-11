@@ -2692,7 +2692,6 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                       elevation: 0,
                       shadowColor: Colors.transparent,
                       surfaceTintColor: Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
                       clipBehavior: Clip.antiAlias,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
