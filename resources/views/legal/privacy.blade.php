@@ -7,8 +7,12 @@
     <div class="glass rounded-2xl p-8 space-y-6">
         <div class="space-y-2">
             <h1 class="brand-font text-3xl text-slate-900">Privacy Policy</h1>
+            @php
+                $effectiveDate = 'March 11, 2026';
+                $lastUpdated = 'March 11, 2026';
+            @endphp
             <p class="text-sm text-slate-600">
-                Effective date: {{ date('F j, Y') }}. This policy describes how Bwiser processes personal information in South Africa in
+                Effective date: {{ $effectiveDate }}. Last updated: {{ $lastUpdated }}. This policy describes how Bwiser processes personal information in South Africa in
                 accordance with the Protection of Personal Information Act, 4 of 2013 (POPIA) and, where relevant, the Promotion of Access to
                 Information Act, 2 of 2000 (PAIA).
             </p>
@@ -68,6 +72,12 @@
                 operational accuracy, and to support fraud prevention and auditability (for example, confirming where a station redemption or
                 operational event occurred). You can often choose to type an address instead of using device location.
             </p>
+            <p>
+                Location, mapping, and address suggestions may be provided using third-party mapping or geocoding services. These suggestions
+                are best-effort and may not always include a full street-level address (for example, missing house numbers, unit numbers, or
+                informal settlement naming). You remain responsible for checking and confirming your address details and ensuring they are
+                accurate for onboarding, compliance, communication, and operational purposes.
+            </p>
 
             <h2 class="text-lg font-semibold text-slate-900">5. Lawful Bases for Processing (POPIA)</h2>
             <p>
@@ -100,7 +110,7 @@
                 we may request additional information to confirm accuracy before finalising a decision.
             </p>
 
-            <h2 class="text-lg font-semibold text-slate-900">8. Sharing and Disclosure</h2>
+            <h2 class="text-lg font-semibold text-slate-900">9. Sharing and Disclosure</h2>
             <p>
                 We do not sell personal information. We may share personal information with:
             </p>
@@ -115,7 +125,7 @@
                 We require operators to implement appropriate security safeguards and to process information only for authorised purposes.
             </p>
 
-            <h2 class="text-lg font-semibold text-slate-900">9. Direct Marketing</h2>
+            <h2 class="text-lg font-semibold text-slate-900">10. Direct Marketing</h2>
             <p>
                 We may send service-related communications (such as security notices, voucher status updates, repayment reminders, or support
                 responses) as part of providing the platform. Where we send promotional or marketing communications, we will do so in
@@ -123,33 +133,50 @@
                 or by contacting support.
             </p>
 
-            <h2 class="text-lg font-semibold text-slate-900">10. Cross-Border Transfers</h2>
+            <h2 class="text-lg font-semibold text-slate-900">11. Cross-Border Transfers</h2>
             <p>
                 Some service providers or infrastructure may be located outside South Africa. Where personal information is transferred
                 cross-border, we implement safeguards aligned with POPIA, such as contractual protections and assessing the recipient’s
                 security posture, to ensure that your personal information remains protected.
             </p>
+            <p>
+                Cross-border processing may occur for hosting, monitoring, secure content delivery, error reporting, or messaging services.
+                Where we use Operators outside South Africa, we aim to ensure they are bound by confidentiality and security obligations and
+                that they provide a level of protection that is substantially similar to POPIA’s requirements.
+            </p>
 
-            <h2 class="text-lg font-semibold text-slate-900">11. Security Safeguards</h2>
+            <h2 class="text-lg font-semibold text-slate-900">12. Security Safeguards</h2>
             <p>
                 We implement reasonable technical and organisational measures to protect personal information against loss, damage,
                 unauthorised access, and unlawful processing. Measures may include access controls, encryption in transit, audit logs,
                 segregation of duties, monitoring, secure development practices, and vendor due diligence.
             </p>
+            <p>
+                We also apply operational safeguards such as restricting access to onboarding documents, reviewing high-risk actions, and
+                maintaining event logs for key workflows (voucher issuance, redemption, and repayment events). If you suspect unauthorised
+                activity, contact us immediately so we can investigate and take appropriate action.
+            </p>
 
-            <h2 class="text-lg font-semibold text-slate-900">12. Data Retention</h2>
+            <h2 class="text-lg font-semibold text-slate-900">13. Data Retention</h2>
             <p>
                 We keep personal information only as long as necessary for the purposes described in this policy, unless a longer retention
                 period is required or permitted by law (for example, for auditing, dispute resolution, and financial record-keeping).
                 Retention periods may vary depending on the type of information and the applicable legal requirements.
             </p>
+            <p>Examples of retention approaches (illustrative) include:</p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><span class="font-semibold">Operational audit logs</span> retained to support investigations, reconciliation, and dispute resolution.</li>
+                <li><span class="font-semibold">Financial records</span> retained to support statutory recordkeeping and audits.</li>
+                <li><span class="font-semibold">KYC documents</span> retained to support compliance, onboarding validation, and ongoing monitoring obligations.</li>
+                <li><span class="font-semibold">Support communications</span> retained for a reasonable period to support service quality and complaint handling.</li>
+            </ul>
             <p>
                 When retention is no longer required, we take reasonable steps to securely delete, de-identify, or anonymise personal
                 information, subject to technical limitations and lawful exceptions (for example, information retained in backups for a
                 limited time for disaster recovery).
             </p>
 
-            <h2 class="text-lg font-semibold text-slate-900">13. Your Rights Under POPIA</h2>
+            <h2 class="text-lg font-semibold text-slate-900">14. Your Rights Under POPIA</h2>
             <p>
                 Subject to POPIA and other applicable laws, you may request to:
             </p>
@@ -166,7 +193,7 @@
                 where disclosure would prejudice another person’s rights, compromise security, or conflict with legal obligations).
             </p>
 
-            <h2 class="text-lg font-semibold text-slate-900">14. PAIA and Access to Records</h2>
+            <h2 class="text-lg font-semibold text-slate-900">15. PAIA and Access to Records</h2>
             <p>
                 PAIA provides a right of access to records held by private bodies, subject to conditions and grounds for refusal. Bwiser’s
                 PAIA process is described in our PAIA Manual. Where a PAIA request relates to personal information, we handle the request in
@@ -182,19 +209,36 @@
                 protect confidential commercial information, the safety of individuals, or where disclosure would be unlawful.
             </p>
 
-            <h2 class="text-lg font-semibold text-slate-900">15. Children</h2>
+            <h2 class="text-lg font-semibold text-slate-900">16. Children</h2>
             <p>
                 The platform is intended for adult users. If we become aware that we have processed personal information of a child without
                 appropriate authority, we will take steps to delete it or otherwise handle it in accordance with applicable law.
             </p>
 
-            <h2 class="text-lg font-semibold text-slate-900">16. Changes to This Policy</h2>
+            <h2 class="text-lg font-semibold text-slate-900">17. Changes to This Policy</h2>
             <p>
                 We may update this Privacy Policy from time to time to reflect changes in law, platform features, or our processing
-                activities. The effective date above will be updated, and material changes may be communicated through the platform.
+                activities. The “Last updated” date above will be updated, and material changes may be communicated through the platform.
             </p>
 
-            <h2 class="text-lg font-semibold text-slate-900">17. Contact and Complaints</h2>
+            <h2 class="text-lg font-semibold text-slate-900">18. Practical Examples (What This Means in Real Use)</h2>
+            <p>
+                The Platform is built for operational auditability. In practice, this means that when you apply for a voucher, redeem a
+                voucher, or make a repayment, the Platform records a structured event (who, what, when, and relevant references) so that we
+                can support reconciliation, dispute resolution, and fraud prevention. For example:
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>If a voucher is redeemed, we record the station identifier, the voucher identifier, the time of redemption, and the redemption outcome.</li>
+                <li>If a payment attempt fails, we record the payment reference and failure outcome to support retries and troubleshooting.</li>
+                <li>If location is enabled, we may record latitude/longitude at the moment an address is selected or a key operational event occurs to improve accuracy.</li>
+            </ul>
+            <p>
+                These records are not collected for curiosity. They exist to make the system reliable and to support fair resolution of
+                disagreements (for example, a driver claiming a voucher was not redeemed, or a station reporting a mismatch). We aim to
+                minimise what we collect and to limit access to authorised personnel.
+            </p>
+
+            <h2 class="text-lg font-semibold text-slate-900">19. Contact and Complaints</h2>
             <p>
                 For privacy requests, POPIA enquiries, or PAIA-related requests, contact our Information Officer (or designated representative)
                 at <span class="font-semibold">support@bwiser.co.za</span>. For operational support, use the in-app support channels where
