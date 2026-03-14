@@ -373,6 +373,7 @@
                 document.cookie = "bwiser_cookie_consent=accepted; path=/; max-age=31536000; SameSite=Lax";
                 bar.classList.add('hidden');
                 bar.style.display = 'none';
+                bar.remove();
             });
         };
         if (document.readyState === 'loading') {
