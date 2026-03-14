@@ -28,9 +28,6 @@
                     <span class="text-2">Google Play</span>
                 </span>
             </a>
-            <button type="button" id="acceptCookiesBtn" class="btn-ghost px-5 py-3 rounded-xl text-sm font-semibold hidden">
-                Accept Cookies
-            </button>
         </div>
         <!-- <div class="welcome-driver-market mt-8">
             <img
@@ -73,6 +70,22 @@
     </div>
 
 </section>
+<div id="cookieConsentBar" class="cookie-bar hidden" role="dialog" aria-live="polite" aria-label="Cookie consent">
+    <div class="cookie-bar__inner">
+        <div class="cookie-bar__copy">
+            <p class="cookie-bar__title">We use cookies</p>
+            <p class="cookie-bar__text">
+                We use essential cookies to keep BWiser secure and working properly. By continuing, you accept cookies used for core
+                platform functionality.
+            </p>
+        </div>
+        <div class="cookie-bar__actions">
+            <button type="button" id="acceptCookiesBtn" class="cookie-bar__button">
+                Accept Cookies
+            </button>
+        </div>
+    </div>
+</div>
 
 <style>
     .super-button {
@@ -255,6 +268,79 @@
         background: linear-gradient(to left, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0));
     }
 
+    .cookie-bar {
+        position: fixed;
+        inset: auto 1.5rem 1.5rem;
+        z-index: 60;
+        display: flex;
+        justify-content: center;
+    }
+
+    .cookie-bar__inner {
+        width: min(980px, 100%);
+        background: rgba(15, 23, 42, 0.92);
+        color: #f8fafc;
+        border-radius: 1.25rem;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 20px 50px -30px rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        backdrop-filter: blur(12px);
+    }
+
+    .cookie-bar__title {
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        margin-bottom: 0.25rem;
+    }
+
+    .cookie-bar__text {
+        font-size: 0.95rem;
+        color: rgba(226, 232, 240, 0.9);
+    }
+
+    .cookie-bar__actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-shrink: 0;
+    }
+
+    .cookie-bar__button {
+        background: linear-gradient(135deg, #38bdf8, #2563eb);
+        color: #fff;
+        border: none;
+        padding: 0.65rem 1.4rem;
+        border-radius: 999px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        box-shadow: 0 12px 22px -16px rgba(56, 189, 248, 0.8);
+        cursor: pointer;
+    }
+
+    .cookie-bar__button:hover {
+        filter: brightness(1.05);
+    }
+
+    @media (max-width: 720px) {
+        .cookie-bar {
+            inset: auto 1rem 1rem;
+        }
+
+        .cookie-bar__inner {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .cookie-bar__actions {
+            width: 100%;
+            justify-content: flex-end;
+        }
+    }
+
     @keyframes trustedBrandTicker {
         from { transform: translateX(0); }
         to { transform: translateX(-50%); }
@@ -275,15 +361,25 @@
 <script>
     (function () {
         const key = 'bwiser_cookie_consent_v1';
-        const button = document.getElementById('acceptCookiesBtn');
-        if (!button) return;
-        if (localStorage.getItem(key) === 'accepted') return;
-        button.classList.remove('hidden');
-        button.addEventListener('click', function () {
-            localStorage.setItem(key, 'accepted');
-            document.cookie = "bwiser_cookie_consent=accepted; path=/; max-age=31536000; SameSite=Lax";
-            button.classList.add('hidden');
-        });
+        const ready = () => {
+            const bar = document.getElementById('cookieConsentBar');
+            const button = document.getElementById('acceptCookiesBtn');
+            if (!button || !bar) return;
+            if (localStorage.getItem(key) === 'accepted') return;
+            bar.classList.remove('hidden');
+            bar.style.display = 'flex';
+            button.addEventListener('click', function () {
+                localStorage.setItem(key, 'accepted');
+                document.cookie = "bwiser_cookie_consent=accepted; path=/; max-age=31536000; SameSite=Lax";
+                bar.classList.add('hidden');
+                bar.style.display = 'none';
+            });
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', ready);
+        } else {
+            ready();
+        }
     })();
 </script>
 @endsection
