@@ -14,7 +14,10 @@ use Illuminate\Support\Facades\Validator;
 
 class LeaseController extends Controller
 {
-    private const MIN_REPAYMENT_AMOUNT = 30.00;
+    private function minRepaymentAmount(): float
+    {
+        return (float) config('credit.min_repayment_amount', 50);
+    }
 
     /**
      * Display a listing of leases.
@@ -153,12 +156,12 @@ class LeaseController extends Controller
             $interestAmount = $principal * ($interestRate / 100);
             $totalAmount = $principal + $interestAmount;
             $dailyRepayment = round($totalAmount / max((int) $request->term_days, 1), 2);
-            if ($dailyRepayment < self::MIN_REPAYMENT_AMOUNT) {
+            if ($dailyRepayment < $this->minRepaymentAmount()) {
                 return redirect()->back()
                     ->withErrors([
                         'term_days' => sprintf(
                             'Repayment per day cannot be below R%.2f. Increase principal or reduce term days.',
-                            self::MIN_REPAYMENT_AMOUNT
+                            $this->minRepaymentAmount()
                         ),
                     ])
                     ->withInput();
@@ -298,12 +301,12 @@ class LeaseController extends Controller
             $interestAmount = $principal * ($interestRate / 100);
             $totalAmount = $principal + $interestAmount;
             $dailyRepayment = round($totalAmount / max((int) $request->term_days, 1), 2);
-            if ($dailyRepayment < self::MIN_REPAYMENT_AMOUNT) {
+            if ($dailyRepayment < $this->minRepaymentAmount()) {
                 return redirect()->back()
                     ->withErrors([
                         'term_days' => sprintf(
                             'Repayment per day cannot be below R%.2f. Increase principal or reduce term days.',
-                            self::MIN_REPAYMENT_AMOUNT
+                            $this->minRepaymentAmount()
                         ),
                     ])
                     ->withInput();
@@ -895,12 +898,12 @@ class LeaseController extends Controller
             $interestAmount = $principal * ($interestRate / 100);
             $totalAmount = $principal + $interestAmount;
             $dailyRepayment = round($totalAmount / max((int) $request->term_days, 1), 2);
-            if ($dailyRepayment < self::MIN_REPAYMENT_AMOUNT) {
+            if ($dailyRepayment < $this->minRepaymentAmount()) {
                 return response()->json([
                     'success' => false,
                     'message' => sprintf(
                         'Repayment per day cannot be below R%.2f. Increase principal or reduce term days.',
-                        self::MIN_REPAYMENT_AMOUNT
+                        $this->minRepaymentAmount()
                     ),
                 ], 422);
             }

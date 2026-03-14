@@ -15,7 +15,10 @@ use Illuminate\Support\Facades\DB;
 
 class FuelVoucherController extends Controller
 {
-    private const MIN_REPAYMENT_AMOUNT = 30.00;
+    private function minRepaymentAmount(): float
+    {
+        return (float) config('credit.min_repayment_amount', 50);
+    }
 
     /**
      * Request a fuel voucher
@@ -346,10 +349,10 @@ class FuelVoucherController extends Controller
         $interestAmount = ($amount * $interestRate * $termDays) / (365 * 100);
         $totalAmount = $amount + $interestAmount;
         $dailyRepayment = round($totalAmount / max($termDays, 1), 2);
-        if ($dailyRepayment < self::MIN_REPAYMENT_AMOUNT) {
+        if ($dailyRepayment < $this->minRepaymentAmount()) {
             throw new \InvalidArgumentException(sprintf(
                 'Repayment per day cannot be below R%.2f. Increase voucher amount.',
-                self::MIN_REPAYMENT_AMOUNT
+                $this->minRepaymentAmount()
             ));
         }
 

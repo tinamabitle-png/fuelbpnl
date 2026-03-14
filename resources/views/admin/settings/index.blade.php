@@ -612,6 +612,25 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Minimum Daily Repayment *
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500">{{ $settings['payment']['currency_symbol'] }}</span>
+                            </div>
+                            <input type="number" 
+                                   name="min_repayment_amount" 
+                                   value="{{ old('min_repayment_amount', $settings['vouchers']['min_repayment_amount']) }}"
+                                   required
+                                   min="1"
+                                   step="1"
+                                   class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <p class="text-xs text-gray-500 mt-1">Minimum allowed daily repayment for new vouchers</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
                             Require Approval Threshold
                         </label>
                         <div class="relative">

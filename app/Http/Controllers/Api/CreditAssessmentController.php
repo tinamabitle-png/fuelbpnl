@@ -12,7 +12,10 @@ use Illuminate\Support\Facades\Auth;
 
 class CreditAssessmentController extends Controller
 {
-    private const MIN_REPAYMENT_AMOUNT = 30.00;
+    private function minRepaymentAmount(): float
+    {
+        return (float) config('credit.min_repayment_amount', 50);
+    }
 
     /**
      * Check credit eligibility
@@ -254,7 +257,7 @@ class CreditAssessmentController extends Controller
         $interestAmount = ($amount * $interestRate * $repaymentPeriod) / (365 * 100);
         $totalAmount = $amount + $interestAmount;
         $dailyRepayment = $totalAmount / $repaymentPeriod;
-        $meetsMinRepayment = $dailyRepayment >= self::MIN_REPAYMENT_AMOUNT;
+        $meetsMinRepayment = $dailyRepayment >= $this->minRepaymentAmount();
         
         // Check if user can afford this
         $canAfford = $user->canRequestVoucher($amount) && $meetsMinRepayment;
@@ -281,7 +284,7 @@ class CreditAssessmentController extends Controller
                     'total_amount' => round($totalAmount, 2),
                     'daily_repayment' => round($dailyRepayment, 2),
                     'weekly_repayment' => round($dailyRepayment * 7, 2),
-                    'minimum_repayment' => self::MIN_REPAYMENT_AMOUNT,
+                    'minimum_repayment' => $this->minRepaymentAmount(),
                     'meets_minimum_repayment' => $meetsMinRepayment,
                 ],
                 'credit_impact' => [

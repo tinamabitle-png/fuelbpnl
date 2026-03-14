@@ -48,6 +48,7 @@ class SettingsController extends Controller
                 'auto_approve_vouchers' => config('services.vouchers.auto_approve', false),
                 'max_voucher_amount' => config('services.vouchers.max_amount', 50000),
                 'min_voucher_amount' => config('services.vouchers.min_amount', 100),
+                'min_repayment_amount' => config('credit.min_repayment_amount', 50),
             ],
             'system' => [
                 'cache_driver' => config('cache.default'),
@@ -187,6 +188,7 @@ class SettingsController extends Controller
             'auto_approve_vouchers' => 'boolean',
             'max_voucher_amount' => 'required|numeric|min:100',
             'min_voucher_amount' => 'required|numeric|min:10',
+            'min_repayment_amount' => 'required|numeric|min:1',
             'require_approval_threshold' => 'nullable|numeric|min:0',
         ]);
 
@@ -194,6 +196,7 @@ class SettingsController extends Controller
         $this->updateEnvironmentValue('AUTO_APPROVE_VOUCHERS', $validated['auto_approve_vouchers'] ? 'true' : 'false');
         $this->updateEnvironmentValue('MAX_VOUCHER_AMOUNT', $validated['max_voucher_amount']);
         $this->updateEnvironmentValue('MIN_VOUCHER_AMOUNT', $validated['min_voucher_amount']);
+        $this->updateEnvironmentValue('MIN_REPAYMENT_AMOUNT', $validated['min_repayment_amount']);
         
         if ($request->filled('require_approval_threshold')) {
             $this->updateEnvironmentValue('REQUIRE_APPROVAL_THRESHOLD', $validated['require_approval_threshold']);

@@ -25,7 +25,10 @@ use Illuminate\Validation\ValidationException;
 
 class DashboardController extends Controller
 {
-    private const MIN_REPAYMENT_AMOUNT = 30.00;
+    private function minRepaymentAmount(): float
+    {
+        return (float) config('credit.min_repayment_amount', 50);
+    }
 
     public function __construct(
         private FuelPriceService $fuelPriceService,
@@ -257,7 +260,7 @@ class DashboardController extends Controller
                 'min_days' => 7,
                 'max_days' => 60,
                 'rate_per_day' => 0.05,
-                'min_daily_repayment' => self::MIN_REPAYMENT_AMOUNT,
+                'min_daily_repayment' => $this->minRepaymentAmount(),
             ];
         });
 
@@ -339,11 +342,11 @@ class DashboardController extends Controller
         $interestAmount = round($principal * ($rate / 100), 2);
         $totalAmount = round($principal + $interestAmount, 2);
         $dailyRepayment = round($totalAmount / max($termDays, 1), 2);
-        if ($dailyRepayment < self::MIN_REPAYMENT_AMOUNT) {
+        if ($dailyRepayment < $this->minRepaymentAmount()) {
             throw ValidationException::withMessages([
                 'repayment_days' => sprintf(
                     'Repayment per day cannot be below R%.2f. Increase amount or reduce repayment days.',
-                    self::MIN_REPAYMENT_AMOUNT
+                    $this->minRepaymentAmount()
                 ),
             ]);
         }

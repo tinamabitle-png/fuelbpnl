@@ -15,7 +15,10 @@ use Illuminate\Validation\ValidationException;
 
 class VoucherController extends Controller
 {
-    private const MIN_REPAYMENT_AMOUNT = 30.00;
+    private function minRepaymentAmount(): float
+    {
+        return (float) config('credit.min_repayment_amount', 50);
+    }
 
     public function index(Request $request)
     {
@@ -116,12 +119,12 @@ class VoucherController extends Controller
             $totalAmount = round($principal + $interestAmount, 2);
             $dailyRepayment = round($totalAmount / max($leaseTermDays, 1), 2);
 
-            if ($dailyRepayment < self::MIN_REPAYMENT_AMOUNT) {
+            if ($dailyRepayment < $this->minRepaymentAmount()) {
                 return back()
                     ->withErrors([
                         'lease_term_days' => sprintf(
                             'Repayment per day cannot be below R%.2f. Increase amount or reduce repayment days.',
-                            self::MIN_REPAYMENT_AMOUNT
+                            $this->minRepaymentAmount()
                         ),
                     ])
                     ->withInput();
