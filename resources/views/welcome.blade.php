@@ -80,7 +80,7 @@
             </p>
         </div>
         <div class="cookie-bar__actions">
-            <button type="button" id="acceptCookiesBtn" class="cookie-bar__button">
+            <button type="button" id="acceptCookiesBtn" class="cookie-bar__button" onclick="return window.bwiserAcceptCookies && window.bwiserAcceptCookies();">
                 Accept Cookies
             </button>
         </div>
@@ -361,6 +361,16 @@
 <script>
     (function () {
         const key = 'bwiser_cookie_consent_v1';
+        window.bwiserAcceptCookies = function () {
+            const bar = document.getElementById('cookieConsentBar');
+            if (!bar) return false;
+            localStorage.setItem(key, 'accepted');
+            document.cookie = "bwiser_cookie_consent=accepted; path=/; max-age=31536000; SameSite=Lax";
+            bar.classList.add('hidden');
+            bar.style.display = 'none';
+            bar.remove();
+            return false;
+        };
         const ready = () => {
             const bar = document.getElementById('cookieConsentBar');
             const button = document.getElementById('acceptCookiesBtn');
@@ -369,11 +379,7 @@
             bar.classList.remove('hidden');
             bar.style.display = 'flex';
             button.addEventListener('click', function () {
-                localStorage.setItem(key, 'accepted');
-                document.cookie = "bwiser_cookie_consent=accepted; path=/; max-age=31536000; SameSite=Lax";
-                bar.classList.add('hidden');
-                bar.style.display = 'none';
-                bar.remove();
+                window.bwiserAcceptCookies();
             });
         };
         if (document.readyState === 'loading') {
