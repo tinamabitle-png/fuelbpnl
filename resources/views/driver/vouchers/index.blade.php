@@ -51,7 +51,7 @@
 
     <div class="glass rounded-2xl mt-6 overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="min-w-full text-[13px] sm:text-sm">
+            <table class="min-w-full text-[12px] sm:text-sm">
                 <thead class="bg-slate-50 text-slate-600">
                     <tr>
                         <th class="px-3 py-2.5 sm:px-4 sm:py-3 text-left whitespace-nowrap">Code</th>
@@ -62,7 +62,6 @@
                         <th class="px-3 py-2.5 sm:px-4 sm:py-3 text-left">Refs</th>
                         <th class="px-3 py-2.5 sm:px-4 sm:py-3 text-left whitespace-nowrap">Status</th>
                         <th class="px-3 py-2.5 sm:px-4 sm:py-3 text-left whitespace-nowrap">Expires</th>
-                        <th class="px-3 py-2.5 sm:px-4 sm:py-3 text-left whitespace-nowrap">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
@@ -166,27 +165,23 @@
                                 @endif
                             </td>
                             <td class="px-3 py-2.5 sm:px-4 sm:py-3 whitespace-nowrap">
-                                <span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 uppercase">
+                                <span class="text-[10px] sm:text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 uppercase">
                                     {{ $voucher->status }}
                                 </span>
-                            </td>
-                            <td class="px-3 py-2.5 sm:px-4 sm:py-3 text-slate-700 whitespace-nowrap">{{ optional($voucher->expires_at)->format('d M Y H:i') }}</td>
-                            <td class="px-3 py-2.5 sm:px-4 sm:py-3 whitespace-nowrap">
                                 @if($voucher->status === 'issued')
-                                    <form method="POST" action="{{ route('driver.vouchers.cancel', $voucher) }}" onsubmit="return confirm('Cancel this application? Future unpaid repayments for this application will be removed.');">
+                                    <form method="POST" action="{{ route('driver.vouchers.cancel', $voucher) }}" class="mt-2" onsubmit="return confirm('Cancel this application? Future unpaid repayments for this application will be removed.');">
                                         @csrf
-                                        <button type="submit" class="text-sm h-8 w-8 inline-flex items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700 font-semibold hover:bg-rose-100" aria-label="Cancel voucher">
-                                            ×
+                                        <button type="submit" class="text-[11px] px-3 py-1.5 inline-flex items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700 font-semibold hover:bg-rose-100" aria-label="Cancel voucher">
+                                            Close
                                         </button>
                                     </form>
-                                @else
-                                    <span class="text-xs text-slate-400">-</span>
                                 @endif
                             </td>
+                            <td class="px-3 py-2.5 sm:px-4 sm:py-3 text-slate-700 whitespace-nowrap">{{ optional($voucher->expires_at)->format('d M Y H:i') }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-4 py-8 text-center text-slate-500">No vouchers found.</td>
+                            <td colspan="8" class="px-4 py-8 text-center text-slate-500">No vouchers found.</td>
                         </tr>
                     @endforelse
                 </tbody>
