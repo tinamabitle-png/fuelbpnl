@@ -3,13 +3,17 @@
 namespace App\Http\Controllers\Driver;
 
 use App\Http\Controllers\Controller;
+use App\Models\FuelStation;
+use App\Models\FuelVoucher;
 use App\Models\VirtualCard;
 use App\Models\Wallet;
 use App\Services\FlutterwaveVirtualCardService;
+use App\Services\FuelPriceService;
 use App\Services\VirtualCardService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class VirtualCardController extends Controller
 {
@@ -118,6 +122,8 @@ class VirtualCardController extends Controller
             ]);
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage() ?: 'Failed to provision virtual card.');
         }
 
         return back()->with('success', 'Virtual card created.');
@@ -225,5 +231,129 @@ class VirtualCardController extends Controller
         }
 
         return back()->with('success', 'Funds allocated to virtual card.');
+    }
+
+    public function convertToVoucher(Request $request, VirtualCard $card, FuelPriceService $fuelPriceService)
+    {
+        $user = Auth::user();
+        $this->authorizeDriverPortal($user);
+        abort_unless($card->user_id === $user->id, 404);
+
+        $validated = $request->validate([
+            'fuel_station_id' => 'required|integer|exists:fuel_stations,id',
+            'amount' => 'required|numeric|min:10',
+            'fuel_type' => 'required|in:petrol,diesel,super',
+        ]);
+
+        $voucher = null;
+
+        try {
+            DB::transaction(function () use ($user, $card, $validated, $fuelPriceService, &$voucher) {
+                $lockedUser = $user->newQuery()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+
+                $wallet = Wallet::query()
+                    ->where('user_id', $lockedUser->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                /** @var VirtualCard $lockedCard */
+                $lockedCard = VirtualCard::query()
+                    ->where('user_id', $lockedUser->id)
+                    ->whereKey($card->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if (!in_array($lockedCard->status, ['active', 'frozen'], true)) {
+                    throw ValidationException::withMessages([
+                        'card' => 'Card is closed.',
+                    ]);
+                }
+
+                $amount = (float) $validated['amount'];
+                $allocated = (float) ($lockedCard->allocated_amount ?? 0);
+                if ($amount > $allocated) {
+                    throw ValidationException::withMessages([
+                        'amount' => 'Amount exceeds allocated card balance.',
+                    ]);
+                }
+
+                /** @var FuelStation $station */
+                $station = FuelStation::query()
+                    ->whereKey((int) $validated['fuel_station_id'])
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if ((string) $station->status !== 'active') {
+                    throw ValidationException::withMessages([
+                        'fuel_station_id' => 'Station is not active.',
+                    ]);
+                }
+
+                $openExposure = FuelVoucher::query()
+                    ->where('fuel_station_id', $station->id)
+                    ->whereIn('status', ['issued', 'approved'])
+                    ->lockForUpdate()
+                    ->sum('amount');
+                $availableCapacity = max(0, (float) $station->wallet_balance - (float) $openExposure);
+                if ($availableCapacity < $amount) {
+                    throw ValidationException::withMessages([
+                        'fuel_station_id' => sprintf(
+                            'Station wallet has insufficient capacity for this voucher. Available capacity: R%.2f.',
+                            $availableCapacity
+                        ),
+                    ]);
+                }
+
+                $resolvedPrice = $fuelPriceService->resolvePriceForStationFuel(
+                    (int) $station->id,
+                    (string) $validated['fuel_type'],
+                    true
+                );
+                $pricePerLiter = (float) ($resolvedPrice['price'] ?? 25.00);
+                $liters = round($amount / max($pricePerLiter, 0.01), 3);
+
+                // Move reserved funds from "card allocation" into a wallet-funded voucher reserve.
+                $lockedCard->decrement('allocated_amount', $amount);
+
+                $voucher = FuelVoucher::create([
+                    'user_id' => $lockedUser->id,
+                    'fuel_station_id' => (int) $station->id,
+                    'lease_id' => null,
+                    'funding_source' => 'wallet',
+                    'amount' => $amount,
+                    'liters' => $liters,
+                    'fuel_type' => (string) $validated['fuel_type'],
+                    'status' => 'approved',
+                    'issued_at' => now(),
+                    'expires_at' => now()->addHours(24),
+                    'transaction_reference' => 'VIRTUALCARD-' . (int) $lockedCard->id,
+                ]);
+
+                // Touch wallet so clients refreshing right away see updated computed balances.
+                $wallet->refresh();
+            });
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            report($e);
+            throw ValidationException::withMessages([
+                'amount' => 'Could not convert card allocation to voucher.',
+            ]);
+        }
+
+        $redirectUrl = route('driver.vouchers.index', ['status' => 'approved']);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Voucher created from virtual card allocation.',
+                'data' => [
+                    'voucher_id' => (int) ($voucher?->id ?? 0),
+                    'redirect_url' => $redirectUrl,
+                ],
+            ]);
+        }
+
+        return redirect($redirectUrl)->with('success', 'Voucher created from virtual card allocation.');
     }
 }

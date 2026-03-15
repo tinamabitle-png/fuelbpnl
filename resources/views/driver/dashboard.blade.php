@@ -213,10 +213,10 @@
                             // Render oldest at the back, newest at the front.
                             $cardsForPocket = $virtualCards->reverse()->values();
                         @endphp
-                        <div class="driver-vwallet-pocket" role="group" aria-label="Virtual card wallet">
-                            <div class="driver-vwallet-back" aria-hidden="true"></div>
+	                        <div class="driver-vwallet-pocket" role="group" aria-label="Virtual card wallet">
+	                            <div class="driver-vwallet-back" aria-hidden="true"></div>
 
-                            @foreach($cardsForPocket as $card)
+	                            @foreach($cardsForPocket as $card)
                             @php
                                 $slug = (string) ($card->brand ?? 'generic');
                                 $theme = $brandTheme[$slug] ?? ['bg' => '#0b1220', 'fg' => '#ffffff', 'accent' => '#38bdf8'];
@@ -237,7 +237,10 @@
 	                                class="driver-vwallet-card slot-{{ $loop->iteration }}"
 	                                data-card-id="{{ (int) $card->id }}"
 	                                data-reveal-url="{{ route('driver.virtual-cards.reveal', $card) }}"
+	                                data-convert-url="{{ route('driver.virtual-cards.convert-to-voucher', $card) }}"
 	                                data-csrf="{{ csrf_token() }}"
+	                                data-brand-slug="{{ $slug }}"
+	                                data-allocated="{{ (float) ($card->allocated_amount ?? 0) }}"
 	                                style="--card-bg: {{ $theme['bg'] }}; --card-fg: {{ $theme['fg'] }}; --card-accent: {{ $theme['accent'] }};"
 	                            >
                                 <div class="driver-vwallet-card-inner">
@@ -269,9 +272,12 @@
 	                                    <button type="button" class="driver-vwallet-reveal-btn" aria-label="Reveal card details">
 	                                        Reveal
 	                                    </button>
+	                                    <button type="button" class="driver-vwallet-convert-btn" aria-label="Convert allocation to voucher">
+	                                        Convert
+	                                    </button>
 	                                </div>
 	                            </div>
-                            @endforeach
+	                            @endforeach
 
                             <div class="driver-vwallet-pocket-front" aria-hidden="true">
                                 <svg class="driver-vwallet-pocket-svg" viewBox="0 0 280 160" fill="none">
@@ -305,12 +311,56 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <p class="driver-vwallet-hint">Hover to see balance</p>
-                    @else
-                        <div class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-                            No virtual cards yet. Create one to start spending.
-                        </div>
+	                        </div>
+	                        <p class="driver-vwallet-hint">Hover to see balance</p>
+	                        <div
+	                            id="driverVwalletConvertModal"
+	                            class="driver-vwallet-modal"
+	                            role="dialog"
+	                            aria-modal="true"
+	                            aria-label="Convert virtual card allocation to voucher"
+	                        >
+	                            <div class="driver-vwallet-modal-card">
+	                                <div class="driver-vwallet-modal-head">
+	                                    <div class="driver-vwallet-modal-title">Convert To Voucher</div>
+	                                    <button type="button" class="driver-vwallet-modal-close" data-close>Close</button>
+	                                </div>
+	                                <div class="driver-vwallet-modal-body">
+	                                    <div class="text-sm text-slate-600">
+	                                        This moves funds from your virtual card allocation into a wallet-funded voucher (approved instantly).
+	                                    </div>
+	                                    <div id="driverVwalletConvertError" class="mt-3 hidden rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"></div>
+	
+	                                    <div class="driver-vwallet-form-row">
+	                                        <div>
+	                                            <label for="driverVwalletStation">Station</label>
+	                                            <select id="driverVwalletStation" class="driver-vwallet-select"></select>
+	                                        </div>
+	                                        <div>
+	                                            <label for="driverVwalletFuelType">Fuel type</label>
+	                                            <select id="driverVwalletFuelType" class="driver-vwallet-select">
+	                                                <option value="petrol">Petrol</option>
+	                                                <option value="diesel">Diesel</option>
+	                                                <option value="super">Super</option>
+	                                            </select>
+	                                        </div>
+	                                        <div>
+	                                            <label for="driverVwalletAmount">Amount (ZAR)</label>
+	                                            <input id="driverVwalletAmount" class="driver-vwallet-input" type="number" min="10" step="0.01" inputmode="decimal">
+	                                            <div id="driverVwalletAmountHint" class="mt-1 text-xs text-slate-500"></div>
+	                                        </div>
+	                                    </div>
+	                                </div>
+	                                <div class="driver-vwallet-modal-actions">
+	                                    <button type="button" class="driver-vwallet-btn" data-close>Cancel</button>
+	                                    <button type="button" id="driverVwalletConvertSubmit" class="driver-vwallet-btn primary">Create Voucher</button>
+	                                </div>
+	                            </div>
+	                        </div>
+	                    @else
+	                        <div class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+	                            No virtual cards yet. Create one to start spending.
+	                        </div>
                     @endif
                 </div>
             </div>
@@ -753,10 +803,10 @@
         letter-spacing: 1px;
     }
 
-    .driver-vwallet-reveal-btn {
-        position: absolute;
-        right: 14px;
-        top: 14px;
+	    .driver-vwallet-reveal-btn {
+	        position: absolute;
+	        right: 14px;
+	        top: 14px;
         z-index: 2;
         border: 1px solid rgba(255, 255, 255, 0.18);
         background: rgba(15, 23, 42, 0.22);
@@ -779,11 +829,158 @@
         opacity: 1;
     }
 
-    .driver-vwallet-reveal-btn[disabled] {
-        opacity: 0.55;
-        cursor: not-allowed;
-        transform: none;
-    }
+	    .driver-vwallet-reveal-btn[disabled] {
+	        opacity: 0.55;
+	        cursor: not-allowed;
+	        transform: none;
+	    }
+
+	    .driver-vwallet-convert-btn {
+	        position: absolute;
+	        right: 14px;
+	        top: 46px;
+	        z-index: 2;
+	        border: 1px solid rgba(255, 255, 255, 0.18);
+	        background: rgba(255, 255, 255, 0.12);
+	        color: var(--card-fg, #fff);
+	        padding: 6px 10px;
+	        border-radius: 999px;
+	        font-size: 11px;
+	        font-weight: 800;
+	        letter-spacing: 0.06em;
+	        text-transform: uppercase;
+	        cursor: pointer;
+	        backdrop-filter: blur(10px);
+	        transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+	        opacity: 0.9;
+	    }
+
+	    .driver-vwallet-convert-btn:hover {
+	        transform: translateY(-1px);
+	        background: rgba(255, 255, 255, 0.18);
+	        opacity: 1;
+	    }
+
+	    .driver-vwallet-convert-btn[disabled] {
+	        opacity: 0.55;
+	        cursor: not-allowed;
+	        transform: none;
+	    }
+
+	    .driver-vwallet-modal {
+	        position: fixed;
+	        inset: 0;
+	        z-index: 80;
+	        display: none;
+	        align-items: center;
+	        justify-content: center;
+	        padding: 1rem;
+	        background: rgba(15, 23, 42, 0.55);
+	        backdrop-filter: blur(8px);
+	    }
+
+	    .driver-vwallet-modal.is-open {
+	        display: flex;
+	    }
+
+	    .driver-vwallet-modal-card {
+	        width: min(520px, 100%);
+	        border-radius: 18px;
+	        background: #ffffff;
+	        border: 1px solid rgba(148, 163, 184, 0.45);
+	        box-shadow: 0 24px 70px -40px rgba(15, 23, 42, 0.9);
+	        overflow: hidden;
+	    }
+
+	    .driver-vwallet-modal-head {
+	        padding: 14px 16px;
+	        display: flex;
+	        align-items: center;
+	        justify-content: space-between;
+	        border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+	        background: linear-gradient(135deg, #eff6ff, #ffffff);
+	    }
+
+	    .driver-vwallet-modal-title {
+	        font-weight: 900;
+	        color: #0f172a;
+	    }
+
+	    .driver-vwallet-modal-close {
+	        border: 0;
+	        background: transparent;
+	        color: #0f172a;
+	        font-weight: 900;
+	        cursor: pointer;
+	        padding: 6px 10px;
+	        border-radius: 10px;
+	    }
+
+	    .driver-vwallet-modal-close:hover {
+	        background: rgba(15, 23, 42, 0.06);
+	    }
+
+	    .driver-vwallet-modal-body {
+	        padding: 16px;
+	    }
+
+	    .driver-vwallet-form-row {
+	        display: grid;
+	        grid-template-columns: 1fr;
+	        gap: 12px;
+	        margin-top: 12px;
+	    }
+
+	    .driver-vwallet-form-row label {
+	        display: block;
+	        font-size: 12px;
+	        font-weight: 800;
+	        letter-spacing: 0.06em;
+	        text-transform: uppercase;
+	        color: #334155;
+	        margin-bottom: 6px;
+	    }
+
+	    .driver-vwallet-input,
+	    .driver-vwallet-select {
+	        width: 100%;
+	        border: 1px solid rgba(148, 163, 184, 0.55);
+	        border-radius: 12px;
+	        padding: 10px 12px;
+	        font-size: 14px;
+	        color: #0f172a;
+	        background: #ffffff;
+	    }
+
+	    .driver-vwallet-modal-actions {
+	        display: flex;
+	        gap: 10px;
+	        justify-content: flex-end;
+	        padding: 14px 16px 16px;
+	        border-top: 1px solid rgba(148, 163, 184, 0.35);
+	    }
+
+	    .driver-vwallet-btn {
+	        border-radius: 12px;
+	        padding: 10px 14px;
+	        font-weight: 800;
+	        font-size: 13px;
+	        cursor: pointer;
+	        border: 1px solid rgba(148, 163, 184, 0.55);
+	        background: #ffffff;
+	        color: #0f172a;
+	    }
+
+	    .driver-vwallet-btn.primary {
+	        background: #1d4ed8;
+	        border-color: #1d4ed8;
+	        color: #ffffff;
+	    }
+
+	    .driver-vwallet-btn[disabled] {
+	        opacity: 0.6;
+	        cursor: not-allowed;
+	    }
 
     .driver-vwallet-pocket:hover {
         transform: translateY(-5px);
@@ -1766,6 +1963,154 @@
                     btn.removeAttribute('disabled');
                 }
             });
+        });
+    })();
+
+    (function initDriverVirtualCardConvertToVoucher() {
+        const modal = document.getElementById('driverVwalletConvertModal');
+        if (!modal) return;
+
+        const stationsByBrand = @json($stationsByBrandSlug ?? []);
+        const stationSelect = document.getElementById('driverVwalletStation');
+        const fuelTypeSelect = document.getElementById('driverVwalletFuelType');
+        const amountInput = document.getElementById('driverVwalletAmount');
+        const amountHint = document.getElementById('driverVwalletAmountHint');
+        const submitBtn = document.getElementById('driverVwalletConvertSubmit');
+        const errorBox = document.getElementById('driverVwalletConvertError');
+
+        let activeCardEl = null;
+
+        const close = () => {
+            modal.classList.remove('is-open');
+            activeCardEl = null;
+            if (errorBox) {
+                errorBox.classList.add('hidden');
+                errorBox.textContent = '';
+            }
+        };
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) close();
+        });
+        modal.querySelectorAll('[data-close]').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                close();
+            });
+        });
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('is-open')) close();
+        });
+
+        const renderStations = (slug) => {
+            const list = Array.isArray(stationsByBrand?.[slug]) ? stationsByBrand[slug] : [];
+            stationSelect.innerHTML = '';
+            if (!list.length) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = 'No active stations for this brand';
+                stationSelect.appendChild(opt);
+                stationSelect.disabled = true;
+                return;
+            }
+            list.forEach((row) => {
+                const opt = document.createElement('option');
+                opt.value = String(row.id);
+                opt.textContent = `${row.name}${row.city ? ' • ' + row.city : ''}`;
+                stationSelect.appendChild(opt);
+            });
+            stationSelect.disabled = false;
+        };
+
+        const open = (cardEl) => {
+            activeCardEl = cardEl;
+            const slug = cardEl.getAttribute('data-brand-slug') || '';
+            const allocated = Number(cardEl.getAttribute('data-allocated') || '0') || 0;
+            renderStations(slug);
+            amountInput.value = allocated > 0 ? allocated.toFixed(2) : '';
+            amountInput.max = allocated > 0 ? String(allocated.toFixed(2)) : '';
+            if (amountHint) {
+                amountHint.textContent = allocated > 0
+                    ? `Max: R ${allocated.toFixed(2)} (allocated on card)`
+                    : 'No allocation available on this card.';
+            }
+            modal.classList.add('is-open');
+        };
+
+        document.querySelectorAll('.driver-vwallet-convert-btn').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const cardEl = btn.closest('.driver-vwallet-card');
+                if (!cardEl) return;
+                open(cardEl);
+            });
+        });
+
+        submitBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (!activeCardEl) return;
+
+            const url = activeCardEl.getAttribute('data-convert-url') || '';
+            const csrf = activeCardEl.getAttribute('data-csrf') || '';
+            const stationId = String(stationSelect.value || '').trim();
+            const fuelType = String(fuelTypeSelect.value || 'petrol').trim();
+            const amount = Number(amountInput.value || '0');
+
+            if (!url) return;
+            if (!stationId) {
+                if (errorBox) {
+                    errorBox.textContent = 'Select a station.';
+                    errorBox.classList.remove('hidden');
+                }
+                return;
+            }
+            if (!Number.isFinite(amount) || amount < 10) {
+                if (errorBox) {
+                    errorBox.textContent = 'Enter a valid amount (min R10).';
+                    errorBox.classList.remove('hidden');
+                }
+                return;
+            }
+
+            submitBtn.setAttribute('disabled', 'disabled');
+            submitBtn.textContent = 'Creating...';
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
+                    },
+                    body: JSON.stringify({
+                        fuel_station_id: Number(stationId),
+                        amount,
+                        fuel_type: fuelType,
+                    }),
+                });
+
+                const payload = await res.json().catch(() => ({}));
+                if (!res.ok || payload?.success !== true) {
+                    const msg = payload?.message || payload?.errors?.amount?.[0] || 'Could not create voucher.';
+                    throw new Error(msg);
+                }
+
+                const redirect = payload?.data?.redirect_url || '';
+                if (redirect) {
+                    window.location.href = redirect;
+                    return;
+                }
+                window.location.reload();
+            } catch (err) {
+                if (errorBox) {
+                    errorBox.textContent = err?.message || 'Could not create voucher.';
+                    errorBox.classList.remove('hidden');
+                }
+            } finally {
+                submitBtn.removeAttribute('disabled');
+                submitBtn.textContent = 'Create Voucher';
+            }
         });
     })();
 

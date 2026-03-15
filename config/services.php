@@ -108,6 +108,15 @@ return [
         'env' => env('FLUTTERWAVE_ENV', 'sandbox'),
         'base_url' => env('FLUTTERWAVE_BASE_URL', 'https://api.flutterwave.com'),
         'timeout' => env('FLUTTERWAVE_TIMEOUT', 20),
+        // Virtual Cards (explicitly gated to prevent accidental live provisioning)
+        'virtual_cards_enabled' => env('FLUTTERWAVE_VIRTUAL_CARDS_ENABLED', false),
+        'virtual_cards_initial_amount' => env('FLUTTERWAVE_VIRTUAL_CARDS_INITIAL_AMOUNT', 1),
+        'virtual_cards_billing_address' => env('FLUTTERWAVE_VIRTUAL_CARDS_BILLING_ADDRESS', 'Unknown'),
+        'virtual_cards_billing_city' => env('FLUTTERWAVE_VIRTUAL_CARDS_BILLING_CITY', 'Johannesburg'),
+        'virtual_cards_billing_state' => env('FLUTTERWAVE_VIRTUAL_CARDS_BILLING_STATE', 'Gauteng'),
+        'virtual_cards_billing_postal_code' => env('FLUTTERWAVE_VIRTUAL_CARDS_BILLING_POSTAL_CODE', '0001'),
+        'virtual_cards_billing_country' => env('FLUTTERWAVE_VIRTUAL_CARDS_BILLING_COUNTRY', 'ZA'),
+        'virtual_cards_callback_url' => env('FLUTTERWAVE_VIRTUAL_CARDS_CALLBACK_URL', env('APP_URL')),
     ],
 
     'redemption_geofence' => [

@@ -158,6 +158,11 @@ class VirtualCardController extends Controller
             ], 201);
         } catch (\InvalidArgumentException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage() ?: 'Failed to provision virtual card.',
+            ], 502);
         }
     }
 

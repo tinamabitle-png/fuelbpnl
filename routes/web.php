@@ -635,6 +635,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/virtual-cards/{card}/close', [DriverVirtualCardController::class, 'close'])->name('virtual-cards.close');
         Route::post('/virtual-cards/{card}/allocate', [DriverVirtualCardController::class, 'allocate'])->name('virtual-cards.allocate');
         Route::post('/virtual-cards/{card}/reveal', [DriverVirtualCardController::class, 'reveal'])->name('virtual-cards.reveal');
+        Route::post('/virtual-cards/{card}/convert-to-voucher', [DriverVirtualCardController::class, 'convertToVoucher'])->name('virtual-cards.convert-to-voucher');
         Route::get('/repayments', [DriverDashboardController::class, 'repayments'])->name('repayments.index');
         Route::get('/repayments/upcoming/export-pdf', [DriverDashboardController::class, 'exportUpcomingRepaymentsPdf'])->name('repayments.upcoming.export-pdf');
         Route::get('/profile', [DriverDashboardController::class, 'profile'])->name('profile');

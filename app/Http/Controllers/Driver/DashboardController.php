@@ -10,6 +10,7 @@ use App\Models\Lease;
 use App\Models\Repayment;
 use App\Models\AuditLog;
 use App\Models\VirtualCard;
+use Illuminate\Support\Collection;
 use App\Services\AuditTrailService;
 use App\Services\DriverUnderwritingService;
 use App\Services\FuelPriceService;
@@ -55,6 +56,45 @@ class DashboardController extends Controller
             ->where('user_id', $user->id)
             ->open()
             ->sum('allocated_amount');
+
+        $retailBrands = collect((array) config('retail_brands', []))
+            ->map(fn ($row) => (array) $row)
+            ->filter(fn ($row) => !empty($row['slug']) && !empty($row['name']))
+            ->values();
+
+        $brandNameToSlug = $retailBrands
+            ->mapWithKeys(fn ($row) => [strtolower(trim((string) $row['name'])) => (string) $row['slug']]);
+
+        $stationsByBrandSlug = Cache::remember('driver:stations_by_brand_slug:v1', now()->addMinutes(5), function () use ($brandNameToSlug) {
+            $stations = FuelStation::query()
+                ->where('status', 'active')
+                ->orderBy('company')
+                ->orderBy('name')
+                ->get(['id', 'name', 'company', 'city']);
+
+            return $stations
+                ->map(function ($station) use ($brandNameToSlug) {
+                    $normalizedName = $this->normalizePopularBrand((string) ($station->company ?? ''));
+                    $slug = $normalizedName !== ''
+                        ? (string) ($brandNameToSlug[strtolower($normalizedName)] ?? '')
+                        : '';
+
+                    return [
+                        'id' => (int) $station->id,
+                        'name' => (string) ($station->name ?? ''),
+                        'city' => (string) ($station->city ?? ''),
+                        'brand_slug' => $slug,
+                    ];
+                })
+                ->filter(fn ($row) => !empty($row['brand_slug']))
+                ->groupBy('brand_slug')
+                ->map(fn (Collection $rows) => $rows->map(fn ($row) => [
+                    'id' => $row['id'],
+                    'name' => $row['name'],
+                    'city' => $row['city'],
+                ])->values()->all())
+                ->toArray();
+        });
 
         $activeVoucherCount = FuelVoucher::where('user_id', $user->id)
             ->whereIn('status', ['approved', 'issued'])
@@ -108,6 +148,7 @@ class DashboardController extends Controller
         return view('driver.dashboard', compact(
             'virtualCards',
             'virtualCardsAllocatedTotal',
+            'stationsByBrandSlug',
             'activeVoucherCount',
             'pendingRepayments',
             'pendingRepaymentAmount',
