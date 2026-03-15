@@ -12,6 +12,16 @@ class FuelVoucher extends Model
 {
     use HasFactory;
 
+    public function isVirtualCardConvertedVoucher(): bool
+    {
+        // Legacy-safe marker: vouchers created by converting virtual-card allocations.
+        // These may end up as 'issued' if migrations for 'approved' haven't been run yet.
+        $ref = (string) ($this->transaction_reference ?? '');
+        return empty($this->lease_id)
+            && ($this->funding_source === 'wallet' || empty($this->funding_source))
+            && \Illuminate\Support\Str::startsWith($ref, 'VIRTUALCARD-');
+    }
+
     protected $fillable = [
         'code',
         'qr_code',
@@ -146,7 +156,10 @@ class FuelVoucher extends Model
 
     public function getIsRedeemableAttribute()
     {
-        return $this->status === 'approved'
+        $statusOk = $this->status === 'approved'
+            || ($this->status === 'issued' && $this->isVirtualCardConvertedVoucher());
+
+        return $statusOk
             && $this->expires_at
             && $this->expires_at->gt(now())
             && $this->issued_at

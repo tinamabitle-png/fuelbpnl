@@ -450,7 +450,8 @@ class DashboardController extends Controller
             return back()->with('error', 'Voucher not found for this station.');
         }
 
-        if ($voucher->status !== 'approved') {
+        $isLegacyVirtualCardVoucher = ($voucher->status === 'issued') && $voucher->isVirtualCardConvertedVoucher();
+        if ($voucher->status !== 'approved' && !$isLegacyVirtualCardVoucher) {
             return back()->with('error', "Voucher must be in APPROVED state before redemption. Current: {$voucher->status}");
         }
 
@@ -464,7 +465,8 @@ class DashboardController extends Controller
                 $lockedStation = FuelStation::whereKey($station->id)->lockForUpdate()->firstOrFail();
                 $lockedVoucher = FuelVoucher::whereKey($voucher->id)->lockForUpdate()->firstOrFail();
 
-                if ($lockedVoucher->status !== 'approved') {
+                $isLegacyVirtualCardVoucher = ($lockedVoucher->status === 'issued') && $lockedVoucher->isVirtualCardConvertedVoucher();
+                if ($lockedVoucher->status !== 'approved' && !$isLegacyVirtualCardVoucher) {
                     throw new \Exception("Voucher must be APPROVED before redemption. Current: {$lockedVoucher->status}");
                 }
 

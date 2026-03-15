@@ -198,7 +198,8 @@ class MerchantDeveloperController extends Controller
             ], 404);
         }
 
-        if ($voucher->status !== 'approved') {
+        $isLegacyVirtualCardVoucher = ($voucher->status === 'issued') && $voucher->isVirtualCardConvertedVoucher();
+        if ($voucher->status !== 'approved' && !$isLegacyVirtualCardVoucher) {
             return response()->json([
                 'success' => false,
                 'message' => "Voucher must be APPROVED before redemption. Current status: {$voucher->status}.",
@@ -506,7 +507,8 @@ class MerchantDeveloperController extends Controller
             ], 404);
         }
 
-        $canRedeem = $voucher->status === 'approved' && (!$voucher->expires_at || now()->lte($voucher->expires_at));
+        $canRedeem = ($voucher->status === 'approved' || (($voucher->status === 'issued') && $voucher->isVirtualCardConvertedVoucher()))
+            && (!$voucher->expires_at || now()->lte($voucher->expires_at));
 
         return response()->json([
             'success' => true,
@@ -533,7 +535,8 @@ class MerchantDeveloperController extends Controller
     {
         DB::transaction(function () use (&$voucher, $payload) {
             $lockedVoucher = FuelVoucher::whereKey($voucher->id)->lockForUpdate()->firstOrFail();
-            if ($lockedVoucher->status !== 'approved') {
+            $isLegacyVirtualCardVoucher = ($lockedVoucher->status === 'issued') && $lockedVoucher->isVirtualCardConvertedVoucher();
+            if ($lockedVoucher->status !== 'approved' && !$isLegacyVirtualCardVoucher) {
                 throw new \RuntimeException("Voucher must be APPROVED before redemption. Current status: {$lockedVoucher->status}.");
             }
 
