@@ -652,12 +652,19 @@ class _DriverVirtualCardsPageState extends State<DriverVirtualCardsPage> {
                               ),
                             ),
                             if (brandLogoUrl != null)
-                              Image.network(
-                                brandLogoUrl,
-                                height: 22,
-                                errorBuilder: (_, _, _) =>
-                                    const SizedBox.shrink(),
-                              ),
+                              (brandLogoUrl.startsWith('http')
+                                  ? Image.network(
+                                      brandLogoUrl,
+                                      height: 22,
+                                      errorBuilder: (_, _, _) =>
+                                          const SizedBox.shrink(),
+                                    )
+                                  : Image.asset(
+                                      brandLogoUrl,
+                                      height: 22,
+                                      errorBuilder: (_, _, _) =>
+                                          const SizedBox.shrink(),
+                                    )),
                           ],
                         ),
                         const SizedBox(height: 18),

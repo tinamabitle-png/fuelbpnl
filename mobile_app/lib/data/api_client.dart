@@ -163,7 +163,71 @@ class ApiClient {
       'name': 'Vivo Energy',
       'logo': 'images/brands/vivo-energy.png',
     },
+    {
+      'slug': 'mulilo',
+      'name': 'Mulilo',
+      'logo': 'images/brands/mulilo.png',
+    },
+    {
+      'slug': 'petrosa',
+      'name': 'PetroSA',
+      'logo': 'images/brands/petrosa.png',
+    },
+    {
+      'slug': 'eskom',
+      'name': 'Eskom',
+      'logo': 'images/brands/eskom.png',
+    },
+    {
+      'slug': 'central-energy-fund',
+      'name': 'Central Energy Fund',
+      'logo': 'images/brands/central-energy-fund.png',
+    },
   ];
+
+  static final List<Map<String, dynamic>> _fallbackBrands =
+      <Map<String, dynamic>>[
+        {
+          'slug': 'shell-sa',
+          'name': 'Shell',
+          'logo_url': 'assets/images/brands/shell-sa.png',
+        },
+        {
+          'slug': 'bp-southern-africa',
+          'name': 'BP',
+          'logo_url': 'assets/images/brands/bp-southern-africa.png',
+        },
+        {'slug': 'engen', 'name': 'Engen', 'logo_url': 'assets/images/brands/engen.png'},
+        {'slug': 'sasol', 'name': 'Sasol', 'logo_url': 'assets/images/brands/sasol.png'},
+        {
+          'slug': 'astron-energy',
+          'name': 'Astron Energy',
+          'logo_url': 'assets/images/brands/astron-energy.png',
+        },
+        {
+          'slug': 'totalenergies',
+          'name': 'TotalEnergies',
+          'logo_url': 'assets/images/brands/totalenergies.png',
+        },
+        {
+          'slug': 'puma-energy',
+          'name': 'Puma Energy',
+          'logo_url': 'assets/images/brands/puma-energy.png',
+        },
+        {
+          'slug': 'vivo-energy',
+          'name': 'Vivo Energy',
+          'logo_url': 'assets/images/brands/vivo-energy.png',
+        },
+        {'slug': 'mulilo', 'name': 'Mulilo', 'logo_url': 'assets/images/brands/mulilo.png'},
+        {'slug': 'petrosa', 'name': 'PetroSA', 'logo_url': 'assets/images/brands/petrosa.png'},
+        {'slug': 'eskom', 'name': 'Eskom', 'logo_url': 'assets/images/brands/eskom.png'},
+        {
+          'slug': 'central-energy-fund',
+          'name': 'Central Energy Fund',
+          'logo_url': 'assets/images/brands/central-energy-fund.png',
+        },
+      ];
 
   Future<Map<String, dynamic>> login({
     required String phone,
@@ -1008,13 +1072,24 @@ class ApiClient {
       return _mockBrands.map((e) => RetailBrandItem.fromMap(e)).toList();
     }
 
-    final response = await _request(
-      method: 'GET',
-      path: '/virtual-cards/brands',
-    );
-    final data = _extractData(response.body);
-    final rows = _asList(data['brands'] ?? data['data'] ?? data);
-    return rows.map(RetailBrandItem.fromMap).toList();
+    try {
+      final response = await _request(
+        method: 'GET',
+        path: '/virtual-cards/brands',
+      );
+      final data = _extractData(response.body);
+      final rows = _asList(data['brands'] ?? data['data'] ?? data);
+      if (rows.isEmpty) {
+        // If the backend is running with a stale config cache (missing new
+        // config files), it may return an empty catalog.
+        return _fallbackBrands.map((e) => RetailBrandItem.fromMap(e)).toList();
+      }
+      return rows.map(RetailBrandItem.fromMap).toList();
+    } catch (_) {
+      // If the endpoint is missing (404) or temporarily unavailable, still
+      // render a usable catalog from packaged assets.
+      return _fallbackBrands.map((e) => RetailBrandItem.fromMap(e)).toList();
+    }
   }
 
   Future<VirtualCardItem> createVirtualCard({
