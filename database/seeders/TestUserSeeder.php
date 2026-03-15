@@ -72,7 +72,7 @@ class TestUserSeeder extends Seeder
                 'outstanding_balance' => 0,
                 'total_credit_used' => 0,
                 'total_repayments' => 0,
-                'currency' => 'KES',
+                'currency' => 'ZAR',
             ]);
             
             // Create credit limit based on score

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\LeaseController;
 use App\Http\Controllers\Api\FuelStationController;
 use App\Http\Controllers\Api\RepaymentController;
 use App\Http\Controllers\Api\CreditAssessmentController;
+use App\Http\Controllers\Api\VirtualCardController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\VoucherController;
 use App\Http\Controllers\Api\V1\StationController;
@@ -109,6 +110,18 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [FuelVoucherController::class, 'myVouchers']);
             Route::get('/{id}', [FuelVoucherController::class, 'show'])->whereNumber('id');
             Route::post('/{id}/cancel', [FuelVoucherController::class, 'cancel'])->whereNumber('id');
+        });
+
+        // Virtual Cards
+        Route::prefix('virtual-cards')->group(function () {
+            Route::get('/brands', [VirtualCardController::class, 'brands']);
+            Route::get('/', [VirtualCardController::class, 'index']);
+            Route::post('/', [VirtualCardController::class, 'store']);
+            Route::post('/{cardId}/reveal', [VirtualCardController::class, 'reveal'])->whereNumber('cardId');
+            Route::post('/{cardId}/freeze', [VirtualCardController::class, 'freeze'])->whereNumber('cardId');
+            Route::post('/{cardId}/unfreeze', [VirtualCardController::class, 'unfreeze'])->whereNumber('cardId');
+            Route::post('/{cardId}/close', [VirtualCardController::class, 'close'])->whereNumber('cardId');
+            Route::post('/{cardId}/allocate', [VirtualCardController::class, 'allocate'])->whereNumber('cardId');
         });
 
         // Leases (BNPL)

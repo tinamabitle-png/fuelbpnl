@@ -273,7 +273,7 @@ class UserController extends Controller
         $user->wallet()->create([
             'balance' => 0,
             'outstanding_balance' => 0,
-            'currency' => 'KES',
+            'currency' => 'ZAR',
         ]);
 
         // Create credit limit

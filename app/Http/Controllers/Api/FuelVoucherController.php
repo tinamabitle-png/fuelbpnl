@@ -80,8 +80,11 @@ class FuelVoucherController extends Controller
                 $user->wallet->increment('outstanding_balance', $request->amount);
                 $user->wallet->increment('total_credit_used', $request->amount);
             } else {
-                // Pay from wallet
-                $user->wallet->deductFunds($request->amount, 'Fuel voucher purchase');
+                // Wallet-funded vouchers reserve funds until redemption.
+                // Do not deduct from wallet balance here; redemption will perform the debit.
+                if (!$user->wallet || $user->wallet->available_balance < (float) $request->amount) {
+                    throw new \InvalidArgumentException('Insufficient available wallet balance');
+                }
             }
 
             // Calculate liters if not provided
@@ -112,6 +115,7 @@ class FuelVoucherController extends Controller
                 'user_id' => $user->id,
                 'fuel_station_id' => $request->fuel_station_id,
                 'lease_id' => $lease ? $lease->id : null,
+                'funding_source' => $request->payment_type === 'bnpl' ? 'bnpl' : 'wallet',
                 'amount' => $request->amount,
                 'liters' => $liters,
                 'fuel_type' => $request->fuel_type,
@@ -140,6 +144,7 @@ class FuelVoucherController extends Controller
                     'lease' => $lease,
                     'remaining_credit' => $user->available_credit,
                     'wallet_balance' => $user->wallet->balance,
+                    'wallet_available_balance' => $user->wallet->available_balance,
                 ]
             ]);
 

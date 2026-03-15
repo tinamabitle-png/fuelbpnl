@@ -24,6 +24,9 @@ class WalletController extends Controller
             'success' => true,
             'data' => [
                 'wallet' => $user->wallet,
+                'wallet_available_balance' => $user->wallet->available_balance,
+                'wallet_reserved_voucher_balance' => $user->wallet->reserved_voucher_balance,
+                'wallet_allocated_card_balance' => $user->wallet->allocated_card_balance,
                 'credit_limit' => $user->creditLimit,
                 'available_credit' => $user->available_credit,
                 'total_assets' => $user->wallet->balance + $user->available_credit,

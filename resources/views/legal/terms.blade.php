@@ -11,9 +11,7 @@
             $lastUpdated = 'March 11, 2026';
         @endphp
         <p class="text-sm text-slate-600">
-            Effective date: {{ $effectiveDate }}. Last updated: {{ $lastUpdated }}. These Terms are drafted for South African operations.
-            They support operational readiness and transparency and should be reviewed by suitably qualified legal and compliance advisors
-            before final go-live.
+            Effective date: {{ $effectiveDate }}. Last updated: {{ $lastUpdated }}.
         </p>
 
         <div class="space-y-4 text-sm text-slate-700">

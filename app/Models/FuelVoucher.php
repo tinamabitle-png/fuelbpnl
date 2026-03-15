@@ -18,6 +18,7 @@ class FuelVoucher extends Model
         'user_id',
         'fuel_station_id',
         'lease_id',
+        'funding_source',
         'amount',
         'redeemed_fuel_amount',
         'redeemed_airtime_amount',
@@ -167,6 +168,26 @@ class FuelVoucher extends Model
 
             if (!$voucher->is_redeemable) {
                 throw new \Exception('Voucher cannot be redeemed');
+            }
+
+            $isWalletFunded = ($voucher->funding_source === 'wallet')
+                || (empty($voucher->funding_source) && empty($voucher->lease_id));
+
+            if ($isWalletFunded) {
+                $wallet = Wallet::query()
+                    ->where('user_id', $voucher->user_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$wallet) {
+                    throw new \Exception('User wallet not found');
+                }
+
+                $wallet->deductFunds(
+                    (float) $voucher->amount,
+                    'Voucher redemption: ' . $voucher->code,
+                    ['fuel_voucher_id' => (int) $voucher->id, 'code' => (string) $voucher->code]
+                );
             }
 
             $station = FuelStation::whereKey($voucher->fuel_station_id)->lockForUpdate()->firstOrFail();

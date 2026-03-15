@@ -619,7 +619,7 @@ class ProfileController extends Controller
         // In production, fetch from database
         return [
             'language' => 'en',
-            'currency' => 'KES',
+            'currency' => 'ZAR',
             'theme' => 'light',
             'default_payment_method' => 'mpesa',
             'default_fuel_type' => 'petrol',

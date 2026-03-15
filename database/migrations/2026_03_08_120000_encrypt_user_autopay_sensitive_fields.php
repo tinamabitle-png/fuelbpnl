@@ -66,6 +66,7 @@ return new class extends Migration
     private function dropAutopayCheckConstraintsForMySql(): void
     {
         $database = (string) DB::getDatabaseName();
+        $isMariaDb = $this->isMariaDb();
 
         $constraints = DB::select(
             <<<'SQL'
@@ -95,8 +96,52 @@ return new class extends Migration
                 str_contains($clause, 'autopay_customer_code') ||
                 str_contains($clause, 'autopay_details')
             ) {
-                DB::statement("ALTER TABLE users DROP CHECK `{$name}`");
+                $escaped = str_replace('`', '``', $name);
+                $this->tryDropAutopayCheckConstraint($escaped, $isMariaDb);
             }
+        }
+    }
+
+    private function tryDropAutopayCheckConstraint(string $constraintName, bool $isMariaDb): void
+    {
+        $statements = $isMariaDb
+            ? [
+                // MariaDB commonly uses DROP CONSTRAINT for CHECK constraints.
+                "ALTER TABLE users DROP CONSTRAINT `{$constraintName}`",
+                // Some MariaDB variants accept DROP CHECK.
+                "ALTER TABLE users DROP CHECK `{$constraintName}`",
+            ]
+            : [
+                // MySQL 8 uses DROP CHECK.
+                "ALTER TABLE users DROP CHECK `{$constraintName}`",
+                // Fallback if a server expects DROP CONSTRAINT.
+                "ALTER TABLE users DROP CONSTRAINT `{$constraintName}`",
+            ];
+
+        foreach ($statements as $sql) {
+            try {
+                DB::statement($sql);
+                return;
+            } catch (\Illuminate\Database\QueryException $e) {
+                // MariaDB returns errno 1091 when the constraint doesn't exist.
+                $errno = (int) ($e->errorInfo[1] ?? 0);
+                // MariaDB may also return errno 1064 when a DROP syntax isn't supported.
+                if (in_array($errno, [1091, 1064], true)) {
+                    continue;
+                }
+                throw $e;
+            }
+        }
+    }
+
+    private function isMariaDb(): bool
+    {
+        try {
+            $row = DB::selectOne('SELECT VERSION() AS v');
+            $version = strtolower((string) ($row->v ?? ''));
+            return str_contains($version, 'mariadb');
+        } catch (\Throwable) {
+            return false;
         }
     }
 

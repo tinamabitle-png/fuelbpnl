@@ -4,6 +4,7 @@
         ['label' => 'Dashboard', 'route' => 'driver.dashboard', 'active' => 'driver.dashboard'],
         ['label' => 'My Vouchers', 'route' => 'driver.vouchers.index', 'active' => 'driver.vouchers.*'],
         ['label' => 'Apply', 'route' => 'driver.vouchers.create', 'active' => 'driver.vouchers.create'],
+        ['label' => 'Virtual Cards', 'route' => 'driver.virtual-cards.index', 'active' => 'driver.virtual-cards.*'],
         ['label' => 'Repayments', 'route' => 'driver.repayments.index', 'active' => 'driver.repayments.*'],
         ['label' => 'Profile', 'route' => 'driver.profile', 'active' => 'driver.profile*'],
     ];

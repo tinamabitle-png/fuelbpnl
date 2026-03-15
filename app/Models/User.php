@@ -7,12 +7,13 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\Crypt;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasRoles, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -94,6 +95,11 @@ class User extends Authenticatable
     public function vouchers()
     {
         return $this->hasMany(FuelVoucher::class);
+    }
+
+    public function virtualCards()
+    {
+        return $this->hasMany(VirtualCard::class);
     }
 
     public function ownedStations()
@@ -203,7 +209,7 @@ class User extends Authenticatable
             return false;
         }
 
-        if ($this->wallet->balance >= $amount) {
+        if ($this->wallet && $this->wallet->available_balance >= $amount) {
             return true;
         }
 

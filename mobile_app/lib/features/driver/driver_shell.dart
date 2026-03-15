@@ -16,6 +16,7 @@ import '../../core/logo_mark.dart';
 import '../../core/theme.dart';
 import '../../data/api_client.dart';
 import '../../data/models.dart';
+import 'virtual_cards_page.dart';
 
 class DriverShell extends StatefulWidget {
   const DriverShell({super.key, required this.api, required this.onLogout});
@@ -123,6 +124,9 @@ class _DriverShellState extends State<DriverShell> {
         api: widget.api,
         onOpenVouchers: () => setState(() => index = 1),
         onOpenApply: () => setState(() => index = 5),
+        onOpenVirtualCards: () {
+          _openVirtualCards();
+        },
       ),
       DriverVouchersPage(
         api: widget.api,
@@ -195,6 +199,15 @@ class _DriverShellState extends State<DriverShell> {
       bottomNavigationBar: _DriverBottomNav(
         selectedIndex: index,
         onTap: (v) => setState(() => index = v),
+      ),
+    );
+  }
+
+  Future<void> _openVirtualCards() async {
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => DriverVirtualCardsPage(api: widget.api),
       ),
     );
   }
@@ -276,11 +289,13 @@ class DriverHomePage extends StatefulWidget {
     required this.api,
     required this.onOpenVouchers,
     required this.onOpenApply,
+    required this.onOpenVirtualCards,
   });
 
   final ApiClient api;
   final VoidCallback onOpenVouchers;
   final VoidCallback onOpenApply;
+  final VoidCallback onOpenVirtualCards;
 
   @override
   State<DriverHomePage> createState() => _DriverHomePageState();
@@ -293,6 +308,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
   Map<String, dynamic> profile = {};
   List<VoucherItem> vouchers = [];
   List<RepaymentItem> repayments = [];
+  Map<String, dynamic> wallet = <String, dynamic>{};
 
   @override
   void initState() {
@@ -310,6 +326,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
     Map<String, dynamic> p = <String, dynamic>{};
     List<VoucherItem> v = <VoucherItem>[];
     List<RepaymentItem> r = <RepaymentItem>[];
+    Map<String, dynamic> w = <String, dynamic>{};
     var hadFailure = false;
 
     try {
@@ -327,12 +344,18 @@ class _DriverHomePageState extends State<DriverHomePage> {
     } catch (_) {
       hadFailure = true;
     }
+    try {
+      w = await widget.api.walletBalance();
+    } catch (_) {
+      hadFailure = true;
+    }
 
     if (!mounted) return;
     setState(() {
       profile = p;
       vouchers = v;
       repayments = r;
+      wallet = w;
       error = null;
       warning = hadFailure
           ? 'Some live data could not load. Showing available data.'
@@ -410,20 +433,76 @@ class _DriverHomePageState extends State<DriverHomePage> {
           const SizedBox(height: 12),
           _quickApplyCard(widget.onOpenApply),
           const SizedBox(height: 12),
-          _infoCard(
-            icon: Icons.account_balance_wallet_outlined,
-            title: 'Wallet Balance',
-            value: 'ZAR 0.00',
-            gradient: const LinearGradient(
-              colors: [Color(0xFF111827), Color(0xFF1F2937)],
-            ),
-          ),
+          _walletAndCardsCard(),
           const SizedBox(height: 12),
           _brandsCard(),
           const SizedBox(height: 12),
           _wisdomCard(),
           const SizedBox(height: 12),
           const FeedbackPanel(compact: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _walletAndCardsCard() {
+    final w =
+        (wallet['wallet'] as Map?)?.cast<String, dynamic>() ??
+        <String, dynamic>{};
+    final balance = double.tryParse('${w['balance'] ?? 0}') ?? 0.0;
+    final available =
+        double.tryParse('${wallet['wallet_available_balance'] ?? 0}') ?? 0.0;
+    final reserved =
+        double.tryParse('${wallet['wallet_reserved_voucher_balance'] ?? 0}') ??
+        0.0;
+    final allocated =
+        double.tryParse('${wallet['wallet_allocated_card_balance'] ?? 0}') ??
+        0.0;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF111827), Color(0xFF1F2937)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF334155)),
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.account_balance_wallet_outlined, color: Colors.white),
+              SizedBox(width: 10),
+              Text(
+                'Wallet & Virtual Cards',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Balance: ZAR ${balance.toStringAsFixed(2)}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Available: ZAR ${available.toStringAsFixed(2)} • Reserved: ZAR ${reserved.toStringAsFixed(2)} • Allocated: ZAR ${allocated.toStringAsFixed(2)}',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.75)),
+          ),
+          const SizedBox(height: 12),
+          FxButton(
+            label: 'Manage Virtual Cards',
+            onPressed: widget.onOpenVirtualCards,
+          ),
         ],
       ),
     );

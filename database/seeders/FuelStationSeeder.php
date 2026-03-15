@@ -26,7 +26,7 @@ class FuelStationSeeder extends Seeder
         $shellMerchant->wallet()->create([
             'balance' => 500000,
             'outstanding_balance' => 0,
-            'currency' => 'KES',
+            'currency' => 'ZAR',
         ]);
         
         $totalMerchant = User::create([
@@ -43,7 +43,7 @@ class FuelStationSeeder extends Seeder
         $totalMerchant->wallet()->create([
             'balance' => 500000,
             'outstanding_balance' => 0,
-            'currency' => 'KES',
+            'currency' => 'ZAR',
         ]);
         
         $kobilMerchant = User::create([
@@ -60,7 +60,7 @@ class FuelStationSeeder extends Seeder
         $kobilMerchant->wallet()->create([
             'balance' => 500000,
             'outstanding_balance' => 0,
-            'currency' => 'KES',
+            'currency' => 'ZAR',
         ]);
         
         // Create fuel stations

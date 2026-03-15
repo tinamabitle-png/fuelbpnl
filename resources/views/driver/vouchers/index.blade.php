@@ -136,8 +136,8 @@
                                 @if($voucher->status === 'issued')
                                     <form method="POST" action="{{ route('driver.vouchers.cancel', $voucher) }}" onsubmit="return confirm('Cancel this application? Future unpaid repayments for this application will be removed.');">
                                         @csrf
-                                        <button type="submit" class="text-xs px-3 py-1.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 font-semibold hover:bg-rose-100">
-                                            Cancel
+                                        <button type="submit" class="text-sm h-8 w-8 inline-flex items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700 font-semibold hover:bg-rose-100" aria-label="Cancel voucher">
+                                            ×
                                         </button>
                                     </form>
                                 @else

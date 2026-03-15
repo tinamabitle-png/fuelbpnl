@@ -24,6 +24,7 @@ use App\Http\Controllers\Employee\DashboardController as EmployeeDashboardContro
 use App\Http\Controllers\Employee\ApprovalController as EmployeeApprovalController;
 use App\Http\Controllers\Merchant\DashboardController as MerchantDashboardController;
 use App\Http\Controllers\Driver\DashboardController as DriverDashboardController;
+use App\Http\Controllers\Driver\VirtualCardController as DriverVirtualCardController;
 use App\Http\Controllers\Driver\BankStatementController as DriverBankStatementController;
 use App\Http\Controllers\Investor\InvestorDashboardController;
 use App\Http\Controllers\Admin\InvestorController as AdminInvestorController;
@@ -627,6 +628,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/vouchers/create', [DriverDashboardController::class, 'createVoucher'])->name('vouchers.create');
         Route::post('/vouchers', [DriverDashboardController::class, 'storeVoucher'])->name('vouchers.store');
         Route::post('/vouchers/{voucher}/cancel', [DriverDashboardController::class, 'cancelVoucher'])->name('vouchers.cancel');
+        Route::get('/virtual-cards', [DriverVirtualCardController::class, 'index'])->name('virtual-cards.index');
+        Route::post('/virtual-cards', [DriverVirtualCardController::class, 'store'])->name('virtual-cards.store');
+        Route::post('/virtual-cards/{card}/freeze', [DriverVirtualCardController::class, 'freeze'])->name('virtual-cards.freeze');
+        Route::post('/virtual-cards/{card}/unfreeze', [DriverVirtualCardController::class, 'unfreeze'])->name('virtual-cards.unfreeze');
+        Route::post('/virtual-cards/{card}/close', [DriverVirtualCardController::class, 'close'])->name('virtual-cards.close');
+        Route::post('/virtual-cards/{card}/allocate', [DriverVirtualCardController::class, 'allocate'])->name('virtual-cards.allocate');
+        Route::post('/virtual-cards/{card}/reveal', [DriverVirtualCardController::class, 'reveal'])->name('virtual-cards.reveal');
         Route::get('/repayments', [DriverDashboardController::class, 'repayments'])->name('repayments.index');
         Route::get('/repayments/upcoming/export-pdf', [DriverDashboardController::class, 'exportUpcomingRepaymentsPdf'])->name('repayments.upcoming.export-pdf');
         Route::get('/profile', [DriverDashboardController::class, 'profile'])->name('profile');

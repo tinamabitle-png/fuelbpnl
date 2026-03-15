@@ -100,6 +100,16 @@ return [
         'timeout' => env('OPENAI_TIMEOUT', 20),
     ],
 
+    'flutterwave' => [
+        'public_key' => env('FLUTTERWAVE_PUBLIC_KEY'),
+        'secret_key' => env('FLUTTERWAVE_SECRET_KEY'),
+        'encryption_key' => env('FLUTTERWAVE_ENCRYPTION_KEY'),
+        'merchant_id' => env('FLUTTERWAVE_MERCHANT_ID'),
+        'env' => env('FLUTTERWAVE_ENV', 'sandbox'),
+        'base_url' => env('FLUTTERWAVE_BASE_URL', 'https://api.flutterwave.com'),
+        'timeout' => env('FLUTTERWAVE_TIMEOUT', 20),
+    ],
+
     'redemption_geofence' => [
         'enabled' => env('REDEMPTION_GEOFENCE_ENABLED', false),
         'radius_meters' => env('REDEMPTION_GEOFENCE_RADIUS_METERS', 150),

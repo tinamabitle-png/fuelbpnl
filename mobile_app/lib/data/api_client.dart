@@ -112,6 +112,59 @@ class ApiClient {
     ),
   ];
 
+  static final List<Map<String, dynamic>> _mockVirtualCards =
+      <Map<String, dynamic>>[
+        {
+          'id': 1,
+          'label': 'Fuel Card',
+          'provider': 'flutterwave',
+          'currency': 'ZAR',
+          'brand': 'shell-sa',
+          'status': 'active',
+          'allocated_amount': 250.00,
+        },
+        {
+          'id': 2,
+          'label': 'Online',
+          'provider': 'flutterwave',
+          'currency': 'ZAR',
+          'brand': 'engen',
+          'status': 'frozen',
+          'allocated_amount': 0.00,
+        },
+      ];
+
+  static final List<Map<String, dynamic>> _mockBrands = <Map<String, dynamic>>[
+    {'slug': 'shell-sa', 'name': 'Shell', 'logo': 'images/brands/shell-sa.png'},
+    {
+      'slug': 'bp-southern-africa',
+      'name': 'BP',
+      'logo': 'images/brands/bp-southern-africa.png',
+    },
+    {'slug': 'engen', 'name': 'Engen', 'logo': 'images/brands/engen.png'},
+    {'slug': 'sasol', 'name': 'Sasol', 'logo': 'images/brands/sasol.png'},
+    {
+      'slug': 'astron-energy',
+      'name': 'Astron Energy',
+      'logo': 'images/brands/astron-energy.png',
+    },
+    {
+      'slug': 'totalenergies',
+      'name': 'TotalEnergies',
+      'logo': 'images/brands/totalenergies.png',
+    },
+    {
+      'slug': 'puma-energy',
+      'name': 'Puma Energy',
+      'logo': 'images/brands/puma-energy.png',
+    },
+    {
+      'slug': 'vivo-energy',
+      'name': 'Vivo Energy',
+      'logo': 'images/brands/vivo-energy.png',
+    },
+  ];
+
   Future<Map<String, dynamic>> login({
     required String phone,
     required String password,
@@ -923,6 +976,206 @@ class ApiClient {
     );
   }
 
+  Future<Map<String, dynamic>> walletBalance() async {
+    if (mockMode) {
+      return <String, dynamic>{
+        'wallet': {'balance': 1200.00, 'currency': 'ZAR'},
+        'wallet_available_balance': 700.00,
+        'wallet_reserved_voucher_balance': 300.00,
+        'wallet_allocated_card_balance': 200.00,
+      };
+    }
+
+    final response = await _request(method: 'GET', path: '/wallet/balance');
+    return _extractData(response.body);
+  }
+
+  Future<List<VirtualCardItem>> virtualCards() async {
+    if (mockMode) {
+      return _mockVirtualCards.map((e) => VirtualCardItem.fromMap(e)).toList();
+    }
+
+    final response = await _request(method: 'GET', path: '/virtual-cards');
+    final data = _extractData(response.body);
+    final rows = _asList(data['virtual_cards'] ?? data['data'] ?? data);
+    final list = rows.map(VirtualCardItem.fromMap).toList()
+      ..sort((a, b) => b.id.compareTo(a.id));
+    return list;
+  }
+
+  Future<List<RetailBrandItem>> virtualCardBrands() async {
+    if (mockMode) {
+      return _mockBrands.map((e) => RetailBrandItem.fromMap(e)).toList();
+    }
+
+    final response = await _request(
+      method: 'GET',
+      path: '/virtual-cards/brands',
+    );
+    final data = _extractData(response.body);
+    final rows = _asList(data['brands'] ?? data['data'] ?? data);
+    return rows.map(RetailBrandItem.fromMap).toList();
+  }
+
+  Future<VirtualCardItem> createVirtualCard({
+    required String brand,
+    String? label,
+  }) async {
+    if (mockMode) {
+      final openCount = _mockVirtualCards
+          .where((c) => (c['status'] ?? '').toString() != 'terminated')
+          .where(
+            (c) =>
+                ['active', 'frozen'].contains((c['status'] ?? '').toString()),
+          )
+          .length;
+      if (openCount >= 3) {
+        throw Exception('You can only have up to 3 virtual cards.');
+      }
+      final sameBrandOpen = _mockVirtualCards.any((c) {
+        final status = (c['status'] ?? '').toString();
+        return c['brand'] == brand &&
+            (status == 'active' || status == 'frozen');
+      });
+      if (sameBrandOpen) {
+        throw Exception(
+          'You already have an open virtual card for this brand.',
+        );
+      }
+      final id =
+          (_mockVirtualCards
+              .map((e) => int.tryParse('${e['id'] ?? 0}') ?? 0)
+              .fold<int>(0, (p, c) => c > p ? c : p)) +
+          1;
+      final card = <String, dynamic>{
+        'id': id,
+        'label': (label ?? '').trim().isEmpty ? null : label!.trim(),
+        'provider': 'flutterwave',
+        'currency': 'ZAR',
+        'brand': brand,
+        'status': 'active',
+        'allocated_amount': 0.00,
+      };
+      _mockVirtualCards.insert(0, card);
+      return VirtualCardItem.fromMap(card);
+    }
+
+    final response = await _request(
+      method: 'POST',
+      path: '/virtual-cards',
+      body: {'label': label, 'brand': brand},
+    );
+    final data = _extractData(response.body);
+    final card = Map<String, dynamic>.from(
+      (data['virtual_card'] as Map?)?.cast<String, dynamic>() ??
+          <String, dynamic>{},
+    );
+    return VirtualCardItem.fromMap(card);
+  }
+
+  Future<VirtualCardItem> freezeVirtualCard(int cardId) async {
+    if (mockMode) {
+      final i = _mockVirtualCards.indexWhere((e) => (e['id'] ?? 0) == cardId);
+      if (i < 0) throw Exception('Virtual card not found.');
+      _mockVirtualCards[i]['status'] = 'frozen';
+      return VirtualCardItem.fromMap(_mockVirtualCards[i]);
+    }
+
+    final response = await _request(
+      method: 'POST',
+      path: '/virtual-cards/$cardId/freeze',
+      body: {},
+    );
+    final data = _extractData(response.body);
+    return VirtualCardItem.fromMap(_asMap(data['virtual_card'] ?? data));
+  }
+
+  Future<VirtualCardItem> unfreezeVirtualCard(int cardId) async {
+    if (mockMode) {
+      final i = _mockVirtualCards.indexWhere((e) => (e['id'] ?? 0) == cardId);
+      if (i < 0) throw Exception('Virtual card not found.');
+      _mockVirtualCards[i]['status'] = 'active';
+      return VirtualCardItem.fromMap(_mockVirtualCards[i]);
+    }
+
+    final response = await _request(
+      method: 'POST',
+      path: '/virtual-cards/$cardId/unfreeze',
+      body: {},
+    );
+    final data = _extractData(response.body);
+    return VirtualCardItem.fromMap(_asMap(data['virtual_card'] ?? data));
+  }
+
+  Future<VirtualCardItem> closeVirtualCard(int cardId) async {
+    if (mockMode) {
+      final i = _mockVirtualCards.indexWhere((e) => (e['id'] ?? 0) == cardId);
+      if (i < 0) throw Exception('Virtual card not found.');
+      _mockVirtualCards[i]['status'] = 'terminated';
+      _mockVirtualCards[i]['allocated_amount'] = 0.00;
+      return VirtualCardItem.fromMap(_mockVirtualCards[i]);
+    }
+
+    final response = await _request(
+      method: 'POST',
+      path: '/virtual-cards/$cardId/close',
+      body: {},
+    );
+    final data = _extractData(response.body);
+    return VirtualCardItem.fromMap(_asMap(data['virtual_card'] ?? data));
+  }
+
+  Future<Map<String, dynamic>> allocateToVirtualCard({
+    required int cardId,
+    required double amount,
+  }) async {
+    if (mockMode) {
+      final i = _mockVirtualCards.indexWhere((e) => (e['id'] ?? 0) == cardId);
+      if (i < 0) throw Exception('Virtual card not found.');
+      final current =
+          double.tryParse('${_mockVirtualCards[i]['allocated_amount'] ?? 0}') ??
+          0;
+      _mockVirtualCards[i]['allocated_amount'] = current + amount;
+      return <String, dynamic>{
+        'virtual_card': _mockVirtualCards[i],
+        'wallet_available_balance': 0.0,
+      };
+    }
+
+    final response = await _request(
+      method: 'POST',
+      path: '/virtual-cards/$cardId/allocate',
+      body: {'amount': amount},
+    );
+    return _extractData(response.body);
+  }
+
+  Future<Map<String, dynamic>> revealVirtualCard(int cardId) async {
+    if (mockMode) {
+      final i = _mockVirtualCards.indexWhere((e) => (e['id'] ?? 0) == cardId);
+      if (i < 0) throw Exception('Virtual card not found.');
+      final last4 = (_mockVirtualCards[i]['allocated_amount'] != null)
+          ? ((_mockVirtualCards[i]['id'] ?? 0).toString().padLeft(4, '0'))
+          : '0000';
+      return <String, dynamic>{
+        'pan': '4000 1234 5678 $last4',
+        'masked_pan': '•••• •••• •••• $last4',
+        'last4': last4,
+        'cvv': '123',
+        'expiry_month': 12,
+        'expiry_year': DateTime.now().year + 3,
+        'card_scheme': 'visa',
+      };
+    }
+
+    final response = await _request(
+      method: 'POST',
+      path: '/virtual-cards/$cardId/reveal',
+      body: {},
+    );
+    return _extractData(response.body);
+  }
+
   Future<Map<String, dynamic>> initializePaystackRepayment(
     int repaymentId,
   ) async {
@@ -1178,6 +1431,13 @@ class ApiClient {
           .toList();
     }
     return const [];
+  }
+
+  Map<String, dynamic> _asMap(dynamic node) {
+    if (node is Map) {
+      return Map<String, dynamic>.from(node.cast<String, dynamic>());
+    }
+    return const <String, dynamic>{};
   }
 
   int _toInt(dynamic value) => int.tryParse('$value') ?? 0;

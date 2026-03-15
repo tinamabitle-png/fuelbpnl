@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\FuelVoucher;
+use App\Models\VirtualCard;
 
 class Wallet extends Model
 {
@@ -39,7 +41,44 @@ class Wallet extends Model
     // Business logic methods
     public function canAfford($amount)
     {
-        return $this->balance >= $amount;
+        return $this->available_balance >= $amount;
+    }
+
+    public function reservedVoucherBalance(): float
+    {
+        // Wallet-funded vouchers reserve funds until redeemed/cancelled/expired.
+        return (float) FuelVoucher::query()
+            ->where('user_id', $this->user_id)
+            ->where('funding_source', 'wallet')
+            ->whereIn('status', ['issued', 'approved'])
+            ->where('expires_at', '>', now())
+            ->sum('amount');
+    }
+
+    public function allocatedCardBalance(): float
+    {
+        return (float) VirtualCard::query()
+            ->where('user_id', $this->user_id)
+            ->whereIn('status', ['active', 'frozen'])
+            ->sum('allocated_amount');
+    }
+
+    public function getReservedVoucherBalanceAttribute(): float
+    {
+        return $this->reservedVoucherBalance();
+    }
+
+    public function getAllocatedCardBalanceAttribute(): float
+    {
+        return $this->allocatedCardBalance();
+    }
+
+    public function getAvailableBalanceAttribute(): float
+    {
+        $available = (float) $this->balance
+            - (float) $this->reserved_voucher_balance
+            - (float) $this->allocated_card_balance;
+        return max(0.0, $available);
     }
 
     public function hasAvailableCredit($amount)
