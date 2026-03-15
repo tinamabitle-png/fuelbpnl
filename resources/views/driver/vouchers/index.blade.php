@@ -249,7 +249,7 @@
     .card-id567 {
         width: 80px;
         height: 80px;
-        background: rgb(22, 22, 22);
+        background: transparent;
         color: white;
         border-radius: 1rem;
         padding: 0.6rem;
@@ -262,11 +262,58 @@
         user-select: none;
         outline: none;
         cursor: pointer;
+        overflow: hidden;
+        isolation: isolate;
+    }
+
+    .card-id567::before {
+        content: "";
+        position: absolute;
+        inset: -60%;
+        background:
+            linear-gradient(to bottom,
+                transparent,
+                transparent,
+                rgba(56, 189, 248, 0.95),
+                rgba(56, 189, 248, 0.95),
+                rgba(37, 99, 235, 0.95),
+                rgba(37, 99, 235, 0.95),
+                transparent,
+                transparent
+            ),
+            linear-gradient(to left,
+                transparent,
+                transparent,
+                rgba(56, 189, 248, 0.95),
+                rgba(56, 189, 248, 0.95),
+                rgba(37, 99, 235, 0.95),
+                rgba(37, 99, 235, 0.95),
+                transparent,
+                transparent
+            );
+        transform-origin: center;
+        animation: vcQrOutlineRotate 4.5s linear infinite;
+        z-index: 0;
+    }
+
+    .card-id567::after {
+        content: "";
+        position: absolute;
+        inset: 2px;
+        border-radius: calc(1rem - 2px);
+        background: rgb(22, 22, 22);
+        z-index: 1;
+        transition: 300ms ease;
     }
 
     .card-id567 svg path {
         transition: 300ms ease;
         opacity: 0;
+    }
+
+    .card-id567 > * {
+        position: relative;
+        z-index: 2;
     }
 
     .visa-mark {
@@ -322,12 +369,12 @@
 
     @media (hover: hover) {
         .card-id567:hover {
-            background-color: white;
+            background-color: transparent;
         }
     }
 
     .card-id567.is-open {
-        background-color: white;
+        background-color: transparent;
     }
 
     .card-id567:hover .visa-mark,
@@ -355,6 +402,11 @@
     .card-id567:hover svg path,
     .card-id567.is-open svg path {
         opacity: 1;
+    }
+
+    .card-id567:hover::after,
+    .card-id567.is-open::after {
+        background: #ffffff;
     }
 
 
@@ -398,6 +450,20 @@
 
         7% {
             transform: scale(0.97);
+        }
+    }
+
+    @keyframes vcQrOutlineRotate {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        50% {
+            transform: rotate(180deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
         }
     }
 
