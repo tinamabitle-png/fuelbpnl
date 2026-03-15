@@ -239,7 +239,10 @@ class FlutterwaveVirtualCardService
             'billing_address' => (string) ($billingFiltered['billing_address'] ?? config('services.flutterwave.virtual_cards_billing_address', 'Unknown')),
             'billing_city' => (string) ($billingFiltered['billing_city'] ?? config('services.flutterwave.virtual_cards_billing_city', 'Johannesburg')),
             'billing_state' => (string) ($billingFiltered['billing_state'] ?? config('services.flutterwave.virtual_cards_billing_state', 'Gauteng')),
+            // Flutterwave validations vary by account/product; provide common aliases.
             'billing_postal_code' => (string) ($billingFiltered['billing_postal_code'] ?? config('services.flutterwave.virtual_cards_billing_postal_code', '0001')),
+            'billing_zip' => (string) ($billingFiltered['billing_postal_code'] ?? config('services.flutterwave.virtual_cards_billing_postal_code', '0001')),
+            'billing_zip_code' => (string) ($billingFiltered['billing_postal_code'] ?? config('services.flutterwave.virtual_cards_billing_postal_code', '0001')),
             'billing_country' => (string) ($billingFiltered['billing_country'] ?? config('services.flutterwave.virtual_cards_billing_country', 'ZA')),
             'callback_url' => (string) ($billingFiltered['callback_url'] ?? config('services.flutterwave.virtual_cards_callback_url', config('app.url'))),
         ], Arr::only($billingFiltered, [
@@ -295,17 +298,42 @@ class FlutterwaveVirtualCardService
         if (!$response->ok()) {
             $json = $response->json();
             $message = is_array($json) ? (string) ($json['message'] ?? '') : '';
-            $errors = is_array($json) ? ($json['errors'] ?? $json['data']['errors'] ?? null) : null;
+            $errors = null;
+            if (is_array($json)) {
+                $errors = $json['errors'] ?? null;
+                if ($errors === null) {
+                    $errors = Arr::get($json, 'data.errors');
+                }
+                if ($errors === null) {
+                    $errors = Arr::get($json, 'data.data.errors');
+                }
+            }
 
             $details = '';
             if (is_array($errors)) {
                 // Render common error formats into a single line.
                 $flat = [];
-                foreach ($errors as $k => $v) {
-                    if (is_string($v)) {
-                        $flat[] = $k . ': ' . $v;
-                    } elseif (is_array($v)) {
-                        $flat[] = $k . ': ' . implode(', ', array_map('strval', $v));
+                $isList = array_keys($errors) === range(0, count($errors) - 1);
+                if ($isList) {
+                    foreach ($errors as $item) {
+                        if (!is_array($item)) {
+                            $flat[] = (string) $item;
+                            continue;
+                        }
+                        $field = (string) ($item['field'] ?? $item['name'] ?? $item['key'] ?? '');
+                        $msg = (string) ($item['message'] ?? $item['msg'] ?? $item['error'] ?? '');
+                        $msg = trim($msg) !== '' ? $msg : json_encode($item);
+                        $flat[] = ($field !== '' ? ($field . ': ') : '') . $msg;
+                    }
+                } else {
+                    foreach ($errors as $k => $v) {
+                        if (is_string($v)) {
+                            $flat[] = $k . ': ' . $v;
+                        } elseif (is_array($v)) {
+                            $flat[] = $k . ': ' . implode(', ', array_map('strval', $v));
+                        } else {
+                            $flat[] = $k . ': ' . (string) $v;
+                        }
                     }
                 }
                 $details = implode(' | ', array_filter($flat));
