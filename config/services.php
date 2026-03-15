@@ -123,6 +123,8 @@ return [
         'virtual_cards_date_of_birth' => env('FLUTTERWAVE_VIRTUAL_CARDS_DATE_OF_BIRTH'),
         'virtual_cards_email' => env('FLUTTERWAVE_VIRTUAL_CARDS_EMAIL'),
         'virtual_cards_phone' => env('FLUTTERWAVE_VIRTUAL_CARDS_PHONE'),
+        'virtual_cards_gender' => env('FLUTTERWAVE_VIRTUAL_CARDS_GENDER'),
+        'virtual_cards_title' => env('FLUTTERWAVE_VIRTUAL_CARDS_TITLE'),
     ],
 
     'redemption_geofence' => [

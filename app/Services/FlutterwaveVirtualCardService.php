@@ -174,11 +174,25 @@ class FlutterwaveVirtualCardService
             ?? config('services.flutterwave.virtual_cards_date_of_birth')
             ?? ''));
         $email = trim((string) ($billing['email'] ?? config('services.flutterwave.virtual_cards_email') ?? (string) ($user->email ?? '')));
-        $phone = trim((string) ($billing['phone'] ?? config('services.flutterwave.virtual_cards_phone') ?? (string) ($user->phone ?? '')));
+        $phone = trim((string) ($billing['phone_number']
+            ?? $billing['phone']
+            ?? config('services.flutterwave.virtual_cards_phone')
+            ?? (string) ($user->phone ?? '')));
+
+        $gender = trim((string) ($billing['gender']
+            ?? ($user->gender ?? null)
+            ?? config('services.flutterwave.virtual_cards_gender')
+            ?? ''));
+        $gender = $this->normalizeGender($gender);
+
+        $title = trim((string) ($billing['title']
+            ?? config('services.flutterwave.virtual_cards_title')
+            ?? $this->deriveTitleFromGender($gender)
+            ?? ''));
 
         // If Flutterwave requires identity fields, failing early makes the error actionable.
-        if ($firstName === '' || $lastName === '' || $dob === '') {
-            throw new \RuntimeException('Flutterwave card creation requires first_name, last_name, and date_of_birth. Complete the user profile (first/last name + DOB) or pass them in billing.');
+        if ($firstName === '' || $lastName === '' || $dob === '' || $phone === '' || $title === '' || $gender === '') {
+            throw new \RuntimeException('Flutterwave card creation requires first_name, last_name, date_of_birth, phone, title, and gender. Complete the user profile (names + DOB + phone + gender) or pass them in billing.');
         }
 
         $payload = array_merge([
@@ -196,7 +210,10 @@ class FlutterwaveVirtualCardService
             'last_name' => $lastName,
             'date_of_birth' => $dob,
             'email' => $email !== '' ? $email : null,
-            'phone_number' => $phone !== '' ? $phone : null,
+            'phone' => $phone,
+            'phone_number' => $phone,
+            'gender' => $gender,
+            'title' => $title,
         ], $billing);
 
         try {
@@ -254,6 +271,30 @@ class FlutterwaveVirtualCardService
             'card_scheme' => $scheme,
             'raw' => is_array($raw) ? $raw : [],
         ];
+    }
+
+    private function normalizeGender(string $gender): string
+    {
+        $g = strtolower(trim($gender));
+        if ($g === 'm' || $g === 'male' || $g === 'man') {
+            return 'male';
+        }
+        if ($g === 'f' || $g === 'female' || $g === 'woman') {
+            return 'female';
+        }
+        return $g;
+    }
+
+    private function deriveTitleFromGender(string $gender): ?string
+    {
+        $g = strtolower(trim($gender));
+        if ($g === 'male') {
+            return 'Mr';
+        }
+        if ($g === 'female') {
+            return 'Ms';
+        }
+        return null;
     }
 
     /**
