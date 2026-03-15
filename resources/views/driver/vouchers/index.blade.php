@@ -290,7 +290,7 @@
     .creator-points {
         width: 1.85rem;
         height: 1.7rem;
-        color: rgb(167 139 250);
+        color: var(--primary, #2563eb);
     }
 
     .blurry-splash {
