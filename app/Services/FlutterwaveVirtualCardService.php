@@ -158,7 +158,7 @@ class FlutterwaveVirtualCardService
             'billing_postal_code',
             'billing_country',
             'callback_url',
-            // Optional identity keys (only sent when enabled below)
+            // Identity keys (some Flutterwave accounts require these)
             'first_name',
             'last_name',
             'date_of_birth',
@@ -178,6 +178,45 @@ class FlutterwaveVirtualCardService
             }
             return true;
         });
+
+        // Flutterwave may enforce these fields. Always derive+send them so we don't depend on env toggles.
+        $parts = preg_split('/\s+/', $fullName) ?: [];
+        $derivedFirst = $parts[0] ?? 'Bwiser';
+        $derivedLast = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : 'User';
+
+        $firstName = trim((string) ($billingFiltered['first_name']
+            ?? ($user->first_name ?? null)
+            ?? config('services.flutterwave.virtual_cards_first_name')
+            ?? $derivedFirst));
+        $lastName = trim((string) ($billingFiltered['last_name']
+            ?? ($user->last_name ?? null)
+            ?? config('services.flutterwave.virtual_cards_last_name')
+            ?? $derivedLast));
+
+        $userDob = null;
+        if (!empty($user->date_of_birth)) {
+            try {
+                $userDob = $user->date_of_birth instanceof \Carbon\CarbonInterface
+                    ? $user->date_of_birth->toDateString()
+                    : (string) $user->date_of_birth;
+            } catch (\Throwable $e) {
+                $userDob = null;
+            }
+        }
+        $dob = trim((string) ($billingFiltered['date_of_birth']
+            ?? $userDob
+            ?? $this->parseSouthAfricanIdDob((string) ($user->id_number ?? ''))
+            ?? config('services.flutterwave.virtual_cards_date_of_birth')
+            ?? '1990-01-01'));
+        $dob = $this->sanitizeDob($dob) ?? '';
+
+        if ($firstName === '' || $lastName === '' || $dob === '') {
+            throw new \RuntimeException(
+                'Flutterwave card creation requires first_name, last_name, and date_of_birth. ' .
+                'Populate users.first_name/users.last_name/users.date_of_birth (run migrations/backfill), ' .
+                'or set FLUTTERWAVE_VIRTUAL_CARDS_FIRST_NAME/LAST_NAME/DATE_OF_BIRTH.'
+            );
+        }
 
         $payload = array_merge([
             'currency' => $currency,
@@ -203,76 +242,36 @@ class FlutterwaveVirtualCardService
             'callback_url',
         ]));
 
-        // Optional identity fields: only include if explicitly enabled (some accounts require it).
-        if ((bool) config('services.flutterwave.virtual_cards_include_identity', false)) {
-            $parts = preg_split('/\s+/', $fullName) ?: [];
-            $derivedFirst = $parts[0] ?? 'Bwiser';
-            $derivedLast = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : 'User';
+        // Required identity keys: send last so they cannot be overridden.
+        $payload['first_name'] = $firstName;
+        $payload['last_name'] = $lastName;
+        $payload['date_of_birth'] = $dob;
 
-            $firstName = trim((string) ($billingFiltered['first_name']
-                ?? ($user->first_name ?? null)
-                ?? config('services.flutterwave.virtual_cards_first_name')
-                ?? $derivedFirst));
-            $lastName = trim((string) ($billingFiltered['last_name']
-                ?? ($user->last_name ?? null)
-                ?? config('services.flutterwave.virtual_cards_last_name')
-                ?? $derivedLast));
-
-            $userDob = null;
-            if (!empty($user->date_of_birth)) {
-                try {
-                    $userDob = $user->date_of_birth instanceof \Carbon\CarbonInterface
-                        ? $user->date_of_birth->toDateString()
-                        : (string) $user->date_of_birth;
-                } catch (\Throwable $e) {
-                    $userDob = null;
-                }
-            }
-            $dob = trim((string) ($billingFiltered['date_of_birth']
-                ?? $userDob
-                ?? $this->parseSouthAfricanIdDob((string) ($user->id_number ?? ''))
-                ?? config('services.flutterwave.virtual_cards_date_of_birth')
-                ?? ''));
-
-            $email = trim((string) ($billingFiltered['email'] ?? config('services.flutterwave.virtual_cards_email') ?? (string) ($user->email ?? '')));
-            $phone = trim((string) ($billingFiltered['phone_number']
-                ?? $billingFiltered['phone']
-                ?? config('services.flutterwave.virtual_cards_phone')
-                ?? (string) ($user->phone ?? '')));
-
-            $gender = $this->normalizeGender(trim((string) ($billingFiltered['gender']
-                ?? ($user->gender ?? null)
-                ?? config('services.flutterwave.virtual_cards_gender')
-                ?? '')));
-            $title = trim((string) ($billingFiltered['title']
-                ?? config('services.flutterwave.virtual_cards_title')
-                ?? $this->deriveTitleFromGender($gender)
-                ?? ''));
-
-            // If identity fields are enabled, treat the required ones as mandatory and stop early with an actionable error.
-            if ($firstName === '' || $lastName === '' || $dob === '') {
-                throw new \RuntimeException(
-                    'Flutterwave card creation requires first_name, last_name, and date_of_birth. ' .
-                    'Set these on the user profile (users.first_name/users.last_name/users.date_of_birth), ' .
-                    'or provide FLUTTERWAVE_VIRTUAL_CARDS_FIRST_NAME/LAST_NAME/DATE_OF_BIRTH, ' .
-                    'or pass them in the billing payload.'
-                );
-            }
-
-            // Only include non-empty identity keys to avoid validation failures.
-            foreach ([
-                'first_name' => $firstName,
-                'last_name' => $lastName,
-                'date_of_birth' => $dob,
-                'email' => $email,
-                'phone_number' => $phone,
-                'gender' => $gender,
-                'title' => $title,
-            ] as $k => $v) {
-                if (is_string($v) && trim($v) !== '') {
-                    $payload[$k] = $v;
-                }
-            }
+        // Optional identity keys: include if non-empty (some accounts enforce these too).
+        $email = trim((string) ($billingFiltered['email'] ?? config('services.flutterwave.virtual_cards_email') ?? (string) ($user->email ?? '')));
+        if ($email !== '') {
+            $payload['email'] = $email;
+        }
+        $phone = trim((string) ($billingFiltered['phone_number']
+            ?? $billingFiltered['phone']
+            ?? config('services.flutterwave.virtual_cards_phone')
+            ?? (string) ($user->phone ?? '')));
+        if ($phone !== '') {
+            $payload['phone_number'] = $phone;
+        }
+        $gender = $this->normalizeGender(trim((string) ($billingFiltered['gender']
+            ?? ($user->gender ?? null)
+            ?? config('services.flutterwave.virtual_cards_gender')
+            ?? '')));
+        if ($gender !== '') {
+            $payload['gender'] = $gender;
+        }
+        $title = trim((string) ($billingFiltered['title']
+            ?? config('services.flutterwave.virtual_cards_title')
+            ?? $this->deriveTitleFromGender($gender)
+            ?? ''));
+        if ($title !== '') {
+            $payload['title'] = $title;
         }
 
         try {
@@ -388,6 +387,26 @@ class FlutterwaveVirtualCardService
             return 'Ms';
         }
         return null;
+    }
+
+    private function sanitizeDob(string $dob): ?string
+    {
+        $dob = trim($dob);
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dob)) {
+            return null;
+        }
+
+        try {
+            $c = \Carbon\Carbon::createFromFormat('Y-m-d', $dob);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if ($c->isFuture()) {
+            return null;
+        }
+
+        return $c->toDateString();
     }
 
     /**
