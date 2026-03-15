@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Carbon\Carbon;
 use Spatie\Permission\Models\Role;
 
 class RegisterController extends Controller
@@ -113,8 +114,16 @@ class RegisterController extends Controller
         $validated = $request->validate($rules);
 
         $user = DB::transaction(function () use ($request, $validated, $role) {
+            [$firstName, $lastName] = $this->splitName((string) $validated['name']);
+            $dob = $role === 'driver'
+                ? ($this->parseSouthAfricanIdDob((string) ($validated['id_number'] ?? '')) ?: null)
+                : null;
+
             $userPayload = [
                 'name' => $validated['name'],
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'date_of_birth' => $dob,
                 'phone' => $validated['phone'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
@@ -333,6 +342,49 @@ class RegisterController extends Controller
         }
 
         return $clean;
+    }
+
+    /**
+     * @return array{0:string,1:string}
+     */
+    private function splitName(string $name): array
+    {
+        $name = trim($name);
+        if ($name === '') {
+            return ['', ''];
+        }
+        $parts = preg_split('/\s+/', $name) ?: [];
+        $first = (string) ($parts[0] ?? '');
+        $last = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : '';
+        return [$first, $last];
+    }
+
+    private function parseSouthAfricanIdDob(string $idNumber): ?string
+    {
+        $idNumber = preg_replace('/\D+/', '', $idNumber) ?: '';
+        if (!preg_match('/^\d{13}$/', $idNumber)) {
+            return null;
+        }
+
+        $yy = (int) substr($idNumber, 0, 2);
+        $mm = (int) substr($idNumber, 2, 2);
+        $dd = (int) substr($idNumber, 4, 2);
+
+        $nowYY = (int) now()->format('y');
+        $century = $yy <= $nowYY ? 2000 : 1900;
+        $yyyy = $century + $yy;
+
+        try {
+            $dob = Carbon::createFromDate($yyyy, $mm, $dd);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if ($dob->isFuture()) {
+            return null;
+        }
+
+        return $dob->toDateString();
     }
 
     private function onlyExistingColumns(string $table, array $payload): array

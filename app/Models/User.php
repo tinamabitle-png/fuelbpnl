@@ -17,6 +17,9 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
+        'first_name',
+        'last_name',
+        'date_of_birth',
         'email',
         'google_sub',
         'phone',
@@ -75,6 +78,7 @@ class User extends Authenticatable
         'autopay_failures' => 'integer',
         'autopay_last_attempt_at' => 'datetime',
         'autopay_next_attempt_at' => 'datetime',
+        'date_of_birth' => 'date',
         'latitude' => 'float',
         'longitude' => 'float',
     ];

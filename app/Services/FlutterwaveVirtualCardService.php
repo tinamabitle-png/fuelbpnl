@@ -148,15 +148,37 @@ class FlutterwaveVirtualCardService
         $derivedFirst = $parts[0] ?? 'Bwiser';
         $derivedLast = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : 'User';
 
-        $firstName = trim((string) ($billing['first_name'] ?? config('services.flutterwave.virtual_cards_first_name') ?? $derivedFirst));
-        $lastName = trim((string) ($billing['last_name'] ?? config('services.flutterwave.virtual_cards_last_name') ?? $derivedLast));
-        $dob = trim((string) ($billing['date_of_birth'] ?? config('services.flutterwave.virtual_cards_date_of_birth') ?? ''));
+        $firstName = trim((string) ($billing['first_name']
+            ?? ($user->first_name ?? null)
+            ?? config('services.flutterwave.virtual_cards_first_name')
+            ?? $derivedFirst));
+        $lastName = trim((string) ($billing['last_name']
+            ?? ($user->last_name ?? null)
+            ?? config('services.flutterwave.virtual_cards_last_name')
+            ?? $derivedLast));
+
+        $userDob = null;
+        if (!empty($user->date_of_birth)) {
+            try {
+                $userDob = $user->date_of_birth instanceof \Carbon\CarbonInterface
+                    ? $user->date_of_birth->toDateString()
+                    : (string) $user->date_of_birth;
+            } catch (\Throwable $e) {
+                $userDob = null;
+            }
+        }
+
+        $dob = trim((string) ($billing['date_of_birth']
+            ?? $userDob
+            ?? $this->parseSouthAfricanIdDob((string) ($user->id_number ?? ''))
+            ?? config('services.flutterwave.virtual_cards_date_of_birth')
+            ?? ''));
         $email = trim((string) ($billing['email'] ?? config('services.flutterwave.virtual_cards_email') ?? (string) ($user->email ?? '')));
         $phone = trim((string) ($billing['phone'] ?? config('services.flutterwave.virtual_cards_phone') ?? (string) ($user->phone ?? '')));
 
         // If Flutterwave requires identity fields, failing early makes the error actionable.
         if ($firstName === '' || $lastName === '' || $dob === '') {
-            throw new \RuntimeException('Flutterwave card creation requires first_name, last_name, and date_of_birth. Set FLUTTERWAVE_VIRTUAL_CARDS_FIRST_NAME/LAST_NAME/DATE_OF_BIRTH or pass them in billing.');
+            throw new \RuntimeException('Flutterwave card creation requires first_name, last_name, and date_of_birth. Complete the user profile (first/last name + DOB) or pass them in billing.');
         }
 
         $payload = array_merge([
@@ -330,5 +352,33 @@ class FlutterwaveVirtualCardService
         }
 
         return [null, null];
+    }
+
+    private function parseSouthAfricanIdDob(string $idNumber): ?string
+    {
+        $idNumber = preg_replace('/\D+/', '', $idNumber) ?: '';
+        if (!preg_match('/^\d{13}$/', $idNumber)) {
+            return null;
+        }
+
+        $yy = (int) substr($idNumber, 0, 2);
+        $mm = (int) substr($idNumber, 2, 2);
+        $dd = (int) substr($idNumber, 4, 2);
+
+        $nowYY = (int) now()->format('y');
+        $century = $yy <= $nowYY ? 2000 : 1900;
+        $yyyy = $century + $yy;
+
+        try {
+            $dob = \Carbon\Carbon::createFromDate($yyyy, $mm, $dd);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if ($dob->isFuture()) {
+            return null;
+        }
+
+        return $dob->toDateString();
     }
 }
