@@ -218,6 +218,19 @@ class FlutterwaveVirtualCardService
             );
         }
 
+        $billingCountry = strtoupper(trim((string) ($billingFiltered['billing_country'] ?? config('services.flutterwave.virtual_cards_billing_country', 'ZA')))) ?: 'ZA';
+        $phone = trim((string) ($billingFiltered['phone_number']
+            ?? $billingFiltered['phone']
+            ?? (string) ($user->phone ?? '')
+            ?? (string) config('services.flutterwave.virtual_cards_phone', '')));
+        $phone = $this->normalizePhone($phone, $billingCountry);
+        if ($phone === '') {
+            throw new \RuntimeException(
+                'Flutterwave card creation requires phone. ' .
+                'Save a phone number on the user profile (users.phone) or set FLUTTERWAVE_VIRTUAL_CARDS_PHONE.'
+            );
+        }
+
         $payload = array_merge([
             'currency' => $currency,
             // Flutterwave examples use integer amounts; avoid floats.
@@ -252,13 +265,9 @@ class FlutterwaveVirtualCardService
         if ($email !== '') {
             $payload['email'] = $email;
         }
-        $phone = trim((string) ($billingFiltered['phone_number']
-            ?? $billingFiltered['phone']
-            ?? config('services.flutterwave.virtual_cards_phone')
-            ?? (string) ($user->phone ?? '')));
-        if ($phone !== '') {
-            $payload['phone_number'] = $phone;
-        }
+        // Phone is required on some Flutterwave accounts; always send it.
+        $payload['phone'] = $phone;
+        $payload['phone_number'] = $phone;
         $gender = $this->normalizeGender(trim((string) ($billingFiltered['gender']
             ?? ($user->gender ?? null)
             ?? config('services.flutterwave.virtual_cards_gender')
@@ -407,6 +416,47 @@ class FlutterwaveVirtualCardService
         }
 
         return $c->toDateString();
+    }
+
+    private function normalizePhone(string $phone, string $billingCountry = 'ZA'): string
+    {
+        $p = trim($phone);
+        if ($p === '') {
+            return '';
+        }
+
+        // Remove common formatting characters, keep leading '+' if present.
+        $p = preg_replace('/[()\s\-\.]+/', '', $p) ?? $p;
+
+        // Convert leading 00 to +
+        if (str_starts_with($p, '00')) {
+            $p = '+' . substr($p, 2);
+        }
+
+        // Best-effort ZA normalization.
+        if (strtoupper($billingCountry) === 'ZA') {
+            if (str_starts_with($p, '0') && preg_match('/^0\d{9}$/', $p)) {
+                $p = '+27' . substr($p, 1);
+            } elseif (preg_match('/^27\d{9}$/', $p)) {
+                $p = '+' . $p;
+            }
+        }
+
+        // If it still has no '+', keep digits only.
+        if (!str_starts_with($p, '+')) {
+            $p = preg_replace('/\D+/', '', $p) ?: $p;
+        } else {
+            $digits = preg_replace('/\D+/', '', substr($p, 1)) ?: '';
+            $p = $digits !== '' ? ('+' . $digits) : '';
+        }
+
+        // Minimal sanity check.
+        $digitsOnly = preg_replace('/\D+/', '', $p) ?: '';
+        if (strlen($digitsOnly) < 7) {
+            return '';
+        }
+
+        return $p;
     }
 
     /**
