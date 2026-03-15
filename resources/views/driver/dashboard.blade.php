@@ -1095,6 +1095,15 @@
         display: block;
     }
 
+    /* Keep PAN visible when opening the convert modal, without revealing CVV. */
+    .driver-vwallet-card.is-peeking .driver-vwallet-hidden {
+        display: none;
+    }
+
+    .driver-vwallet-card.is-peeking .driver-vwallet-full {
+        display: block;
+    }
+
     .driver-vwallet-pocket-front {
         position: absolute;
         bottom: 0;
@@ -2188,6 +2197,9 @@
 
         const close = () => {
             modal.classList.remove('is-open');
+            if (activeCardEl) {
+                activeCardEl.classList.remove('is-peeking');
+            }
             activeCardEl = null;
             if (errorBox) {
                 errorBox.classList.add('hidden');
@@ -2230,6 +2242,9 @@
 
         const open = (cardEl) => {
             activeCardEl = cardEl;
+            // Opening the modal ends :hover, so keep the PAN visible while the modal is open.
+            // This does not reveal CVV (that remains reveal-only).
+            activeCardEl.classList.add('is-peeking');
             const slug = cardEl.getAttribute('data-brand-slug') || '';
             const allocated = Number(cardEl.getAttribute('data-allocated') || '0') || 0;
             renderStations(slug);
