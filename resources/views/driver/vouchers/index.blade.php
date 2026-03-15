@@ -86,21 +86,6 @@
                                                 </svg>
                                             </div>
                                             <div class="blurry-splash"></div>
-                                            <p>
-                                                Hover for voucher<br>
-                                                <span class="bold-567">{{ $voucher->code }}</span>
-                                            </p>
-                                            <p class="really-small-text">
-                                                {{ ucfirst($voucher->fuel_type) }} • R {{ number_format((float) $voucher->amount, 2) }}
-                                            </p>
-                                        </div>
-
-                                        <div class="voucher-reveal-567" aria-hidden="true">
-                                            <div class="voucher-reveal-code">{{ $voucher->code }}</div>
-                                            <div class="voucher-reveal-meta">
-                                                {{ \Illuminate\Support\Str::limit((string) ($voucher->fuelStation?->name ?? 'Station'), 18) }}
-                                                • {{ optional($voucher->expires_at)->format('d M H:i') }}
-                                            </div>
                                         </div>
                                     </div>
                                 @else
@@ -335,16 +320,6 @@
         line-height: 1.1;
     }
 
-    .really-small-text {
-        text-align: center;
-        width: 100%;
-        position: absolute;
-        font-size: 8px;
-        margin-top: 22px;
-        opacity: 0.55;
-        left: 0;
-    }
-
     @media (hover: hover) {
         .card-id567:hover {
             background-color: white;
@@ -382,44 +357,6 @@
         opacity: 1;
     }
 
-    .voucher-reveal-567 {
-        position: absolute;
-        inset: 0;
-        display: grid;
-        place-items: end center;
-        padding-bottom: 8px;
-        opacity: 0;
-        transform: translateY(6px);
-        transition: 300ms ease;
-        pointer-events: none;
-    }
-
-    .card-id567:hover .voucher-reveal-567,
-    .card-id567.is-open .voucher-reveal-567 {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    .voucher-reveal-code {
-        color: #0f172a;
-        font-weight: 900;
-        letter-spacing: .08em;
-        font-size: 10px;
-        background: rgba(255, 255, 255, 0.88);
-        border: 1px solid rgba(15, 23, 42, 0.12);
-        border-radius: 999px;
-        padding: 4px 7px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-        margin-bottom: 4px;
-    }
-
-    .voucher-reveal-meta {
-        color: rgba(15, 23, 42, 0.78);
-        font-size: 9px;
-        font-weight: 600;
-        text-align: center;
-        padding: 0 8px;
-    }
 
     @media (max-width: 640px) {
         .card-id567 {
@@ -431,11 +368,6 @@
         .creator-points {
             width: 1.55rem;
             height: 1.4rem;
-        }
-
-        .really-small-text {
-            font-size: 7px;
-            margin-top: 18px;
         }
 
         .visa-mark {
