@@ -706,7 +706,7 @@
     .animated-button svg {
         position: absolute;
         width: 22px;
-        fill: #adff2f;
+        fill: #111827;
         z-index: 2;
         transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
     }
