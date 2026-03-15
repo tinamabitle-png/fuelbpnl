@@ -353,9 +353,11 @@ class RegisterController extends Controller
         if ($name === '') {
             return ['', ''];
         }
-        $parts = preg_split('/\s+/', $name) ?: [];
-        $first = (string) ($parts[0] ?? '');
-        $last = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : '';
+        // Normalize whitespace then explode by a single space (per request).
+        $name = preg_replace('/\s+/', ' ', $name) ?? $name;
+        $parts = explode(' ', $name);
+        $first = trim((string) ($parts[0] ?? ''));
+        $last = count($parts) > 1 ? trim(implode(' ', array_slice($parts, 1))) : '';
         return [$first, $last];
     }
 
