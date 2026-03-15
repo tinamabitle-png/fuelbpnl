@@ -24,7 +24,16 @@
         <div class="driver-header-actions flex flex-col items-start md:items-end gap-3">
            
             <div class="driver-header-cta flex flex-wrap gap-3 md:justify-end">
-                <a href="{{ route('driver.vouchers.create') }}" class="btn-primary px-4 py-2.5 rounded-xl text-sm font-semibold">Apply for Voucher</a>
+                <a href="{{ route('driver.vouchers.create') }}" class="animated-button driver-apply-voucher-btn">
+                    <svg viewBox="0 0 24 24" class="arr-2" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path>
+                    </svg>
+                    <span class="text">Apply for Voucher</span>
+                    <span class="circle" aria-hidden="true"></span>
+                    <svg viewBox="0 0 24 24" class="arr-1" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path>
+                    </svg>
+                </a>
                 <a href="{{ route('driver.repayments.index') }}" class="btn-ghost px-4 py-2.5 rounded-xl text-sm font-semibold">View Repayments</a>
                 <a href="{{ route('driver.bank-statements.create') }}" class="btn-ghost px-4 py-2.5 rounded-xl text-sm font-semibold">Upload Bank Statement</a>
                 <a href="{{ route('driver.profile') }}" class="btn-ghost px-4 py-2.5 rounded-xl text-sm font-semibold">Profile</a>
@@ -671,6 +680,91 @@
         align-items: flex-end;
         transition: transform 0.4s ease;
         user-select: none;
+    }
+
+    /* Apply for Voucher button (Uiverse animated-button) */
+    .animated-button {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 12px 22px;
+        border: 4px solid transparent;
+        font-size: 14px;
+        background-color: transparent;
+        border-radius: 999px;
+        font-weight: 700;
+        color: #adff2f; /* greenyellow */
+        box-shadow: 0 0 0 2px #adff2f;
+        cursor: pointer;
+        overflow: hidden;
+        text-decoration: none;
+        transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        white-space: nowrap;
+    }
+
+    .animated-button svg {
+        position: absolute;
+        width: 22px;
+        fill: #adff2f;
+        z-index: 2;
+        transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .animated-button .arr-1 { right: 14px; }
+    .animated-button .arr-2 { left: -25%; }
+
+    .animated-button .circle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 20px;
+        height: 20px;
+        background-color: #adff2f;
+        border-radius: 50%;
+        opacity: 0;
+        transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        z-index: 1;
+    }
+
+    .animated-button .text {
+        position: relative;
+        z-index: 2;
+        transform: translateX(-12px);
+        transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .animated-button:hover {
+        box-shadow: 0 0 0 12px transparent;
+        color: #212121;
+        border-radius: 12px;
+    }
+
+    .animated-button:hover .arr-1 { right: -25%; }
+    .animated-button:hover .arr-2 { left: 14px; }
+    .animated-button:hover .text { transform: translateX(12px); }
+    .animated-button:hover svg { fill: #212121; }
+
+    .animated-button:active {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 4px #adff2f;
+    }
+
+    .animated-button:hover .circle {
+        width: 220px;
+        height: 220px;
+        opacity: 1;
+    }
+
+    @media (max-width: 640px) {
+        .animated-button {
+            padding: 10px 18px;
+            font-size: 13px;
+        }
+        .animated-button svg {
+            width: 20px;
+        }
     }
 
     .driver-vwallet-hint {
