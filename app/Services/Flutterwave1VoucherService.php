@@ -123,5 +123,37 @@ class Flutterwave1VoucherService
         $ref = (string) (Arr::get($data, 'flw_ref') ?? Arr::get($data, 'reference') ?? Arr::get($data, 'id') ?? '');
         return trim($ref);
     }
-}
 
+    /**
+     * Extract the "change voucher" details (new PIN, remaining balance, expiry) from a successful charge response.
+     *
+     * @param array<string,mixed> $response
+     * @return array{amount:?float,pin:?string,serial:?string,expiry:?string}
+     */
+    public function extractChangeVoucher(array $response): array
+    {
+        $change = Arr::get($response, 'data.meta_data.change_voucher');
+        if (!is_array($change)) {
+            $change = [];
+        }
+
+        $amount = Arr::get($change, 'amount');
+        $amount = is_numeric($amount) ? (float) $amount : null;
+
+        $pin = Arr::get($change, 'pin');
+        $pin = is_string($pin) && trim($pin) !== '' ? trim($pin) : null;
+
+        $serial = Arr::get($change, 'serial');
+        $serial = is_string($serial) && trim($serial) !== '' ? trim($serial) : null;
+
+        $expiry = Arr::get($change, 'expiry');
+        $expiry = is_string($expiry) && trim($expiry) !== '' ? trim($expiry) : null;
+
+        return [
+            'amount' => $amount,
+            'pin' => $pin,
+            'serial' => $serial,
+            'expiry' => $expiry,
+        ];
+    }
+}

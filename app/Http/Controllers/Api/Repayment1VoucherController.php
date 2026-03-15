@@ -13,6 +13,33 @@ use Illuminate\Support\Str;
 
 class Repayment1VoucherController extends Controller
 {
+    private function normalizeZaVoucherPhone(string $phone): string
+    {
+        // Flutterwave 1Voucher docs show phone_number like "27xxxxxxxx7" (no '+').
+        $digits = preg_replace('/\D+/', '', $phone) ?: '';
+        if ($digits === '') {
+            return '';
+        }
+
+        // +27XXXXXXXXX -> 27XXXXXXXXX
+        if (str_starts_with($digits, '27') && strlen($digits) === 11) {
+            return $digits;
+        }
+
+        // 0XXXXXXXXX -> 27XXXXXXXXX
+        if (str_starts_with($digits, '0') && strlen($digits) === 10) {
+            return '27' . substr($digits, 1);
+        }
+
+        // If it's 9 digits (missing country code), assume ZA.
+        if (strlen($digits) === 9) {
+            return '27' . $digits;
+        }
+
+        // Fall back to sending digits only.
+        return $digits;
+    }
+
     /**
      * Pay the next N days of repayments (default 7) using Flutterwave 1Voucher.
      */
@@ -62,7 +89,7 @@ class Repayment1VoucherController extends Controller
         $amount = (float) $repayments->sum('amount');
         $currency = (string) config('services.flutterwave.one_voucher_currency', 'ZAR');
         $email = trim((string) ($user->email ?? ''));
-        $phone = trim((string) ($user->phone ?? ''));
+        $phone = $this->normalizeZaVoucherPhone((string) ($user->phone ?? ''));
         if ($email === '' || $phone === '') {
             return response()->json([
                 'success' => false,
@@ -111,11 +138,15 @@ class Repayment1VoucherController extends Controller
 
         $status = $flutterwave->extractStatus($charge);
         $flwRef = $flutterwave->extractFlwRef($charge);
+        $changeVoucher = $flutterwave->extractChangeVoucher($charge);
 
         $attempt->update([
             'flw_ref' => $flwRef !== '' ? $flwRef : null,
-            'provider_response' => $charge,
+            'provider_response' => ['charge' => $charge],
             'status' => in_array($status, ['successful', 'success'], true) ? 'successful' : 'failed',
+            'meta' => array_merge((array) ($attempt->meta ?? []), [
+                'change_voucher' => $changeVoucher,
+            ]),
         ]);
 
         if ($attempt->status !== 'successful') {
@@ -127,6 +158,49 @@ class Repayment1VoucherController extends Controller
                     'status' => $status,
                 ],
             ], 422);
+        }
+
+        // Confirmation: verify final status by reference before providing value.
+        try {
+            $verify = $flutterwave->verifyByReference($attempt->tx_ref);
+            $verifyStatus = $flutterwave->extractStatus($verify);
+            $verifyFlwRef = $flutterwave->extractFlwRef($verify);
+
+            $attempt->update([
+                'flw_ref' => $attempt->flw_ref ?: ($verifyFlwRef !== '' ? $verifyFlwRef : null),
+                'provider_response' => array_merge((array) ($attempt->provider_response ?? []), ['verify' => $verify]),
+            ]);
+
+            if (!in_array($verifyStatus, ['successful', 'success'], true)) {
+                $attempt->update(['status' => 'pending']);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment initiated. Pending confirmation.',
+                    'data' => [
+                        'tx_ref' => $attempt->tx_ref,
+                        'flw_ref' => $attempt->flw_ref,
+                        'status' => $verifyStatus,
+                        'change_voucher' => $changeVoucher,
+                    ],
+                ], 202);
+            }
+        } catch (\Throwable $e) {
+            // If verification is temporarily unavailable, avoid double-settling. Client can retry/confirm later.
+            $attempt->update([
+                'status' => 'pending',
+                'provider_response' => array_merge((array) ($attempt->provider_response ?? []), [
+                    'verify_error' => $e->getMessage(),
+                ]),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment initiated. Pending confirmation.',
+                'data' => [
+                    'tx_ref' => $attempt->tx_ref,
+                    'flw_ref' => $attempt->flw_ref,
+                    'change_voucher' => $changeVoucher,
+                ],
+            ], 202);
         }
 
         // Settle all included repayments idempotently.
@@ -164,6 +238,7 @@ class Repayment1VoucherController extends Controller
                 'amount' => (float) $attempt->amount,
                 'currency' => (string) $attempt->currency,
                 'repayments' => $paidRepayments,
+                'change_voucher' => $changeVoucher,
             ],
         ]);
     }
