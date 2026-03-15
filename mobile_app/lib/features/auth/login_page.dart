@@ -43,7 +43,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _ensureBaseUrl() async {
-    await _store.setBaseUrl('https://www.bwiser.co.za/api/v1');
+    await _store.ensureDefaultBaseUrl('https://www.bwiser.co.za/api/v1');
   }
 
   Future<void> login() async {

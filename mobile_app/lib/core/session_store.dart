@@ -44,7 +44,19 @@ class SessionStore {
   }
 
   Future<String> baseUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString(_baseUrlKey);
+    if (stored != null && stored.trim().isNotEmpty) {
+      return stored.trim();
+    }
     return 'https://www.bwiser.co.za/api/v1';
+  }
+
+  Future<void> ensureDefaultBaseUrl(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString(_baseUrlKey);
+    if (stored != null && stored.trim().isNotEmpty) return;
+    await prefs.setString(_baseUrlKey, value.trim());
   }
 
   Future<void> setBaseUrl(String value) async {
