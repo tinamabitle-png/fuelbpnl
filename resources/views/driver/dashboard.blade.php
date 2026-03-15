@@ -184,6 +184,137 @@
                 @endif
             </div>
 
+            <div class="glass rounded-2xl p-6 driver-vwallet">
+                <div class="flex items-center justify-between">
+                    <h2 class="brand-font text-xl text-slate-900">Virtual Cards</h2>
+                    <a href="{{ route('driver.virtual-cards.index') }}" class="text-sm text-blue-600 hover:text-blue-700">Manage</a>
+                </div>
+
+                @php
+                    $brandTheme = [
+                        'shell-sa' => ['bg' => '#0b1220', 'fg' => '#ffffff', 'accent' => '#f59e0b'],
+                        'bp-southern-africa' => ['bg' => '#052e16', 'fg' => '#e2e8f0', 'accent' => '#22c55e'],
+                        'engen' => ['bg' => '#1d4ed8', 'fg' => '#ffffff', 'accent' => '#93c5fd'],
+                        'sasol' => ['bg' => '#7c3aed', 'fg' => '#ffffff', 'accent' => '#e9d5ff'],
+                        'totalenergies' => ['bg' => '#111827', 'fg' => '#ffffff', 'accent' => '#60a5fa'],
+                        'astron-energy' => ['bg' => '#0f172a', 'fg' => '#ffffff', 'accent' => '#38bdf8'],
+                        'puma-energy' => ['bg' => '#7f1d1d', 'fg' => '#ffffff', 'accent' => '#fb7185'],
+                        'vivo-energy' => ['bg' => '#0f766e', 'fg' => '#ffffff', 'accent' => '#5eead4'],
+                        'mulilo' => ['bg' => '#334155', 'fg' => '#ffffff', 'accent' => '#fbbf24'],
+                        'petrosa' => ['bg' => '#1f2937', 'fg' => '#ffffff', 'accent' => '#a3e635'],
+                        'eskom' => ['bg' => '#0f172a', 'fg' => '#ffffff', 'accent' => '#fde047'],
+                        'central-energy-fund' => ['bg' => '#111827', 'fg' => '#ffffff', 'accent' => '#f97316'],
+                    ];
+                @endphp
+
+                <div class="driver-vwallet-wrap mt-4">
+                    @if($virtualCards->isNotEmpty())
+                        @php
+                            // Render oldest at the back, newest at the front.
+                            $cardsForPocket = $virtualCards->reverse()->values();
+                        @endphp
+                        <div class="driver-vwallet-pocket" role="group" aria-label="Virtual card wallet">
+                            <div class="driver-vwallet-back" aria-hidden="true"></div>
+
+                            @foreach($cardsForPocket as $card)
+                            @php
+                                $slug = (string) ($card->brand ?? 'generic');
+                                $theme = $brandTheme[$slug] ?? ['bg' => '#0b1220', 'fg' => '#ffffff', 'accent' => '#38bdf8'];
+                                $brandName = collect((array) config('retail_brands', []))
+                                    ->firstWhere('slug', $slug)['name'] ?? ($card->label ?: ucwords(str_replace('-', ' ', $slug)));
+                                $logoPath = public_path('images/brands/' . $slug . '.png');
+                                $logoUrl = is_file($logoPath) ? asset('images/brands/' . $slug . '.png') : null;
+                                $masked = trim((string) ($card->masked_pan ?? ''));
+                                $last4 = trim((string) ($card->last4 ?? ''));
+                                $panHint = $masked !== '' ? $masked : ($last4 !== '' ? ('**** ' . $last4) : '**** **** **** ****');
+                                $status = strtolower(trim((string) ($card->status ?? '')));
+                                $statusLabel = $status === 'frozen' ? 'Frozen' : ($status === 'active' ? 'Active' : ucfirst($status));
+                                $expiry = ($card->expiry_month && $card->expiry_year)
+                                    ? str_pad((string) $card->expiry_month, 2, '0', STR_PAD_LEFT) . '/' . substr((string) $card->expiry_year, -2)
+                                    : '--/--';
+                            @endphp
+	                            <div
+	                                class="driver-vwallet-card slot-{{ $loop->iteration }}"
+	                                data-card-id="{{ (int) $card->id }}"
+	                                data-reveal-url="{{ route('driver.virtual-cards.reveal', $card) }}"
+	                                data-csrf="{{ csrf_token() }}"
+	                                style="--card-bg: {{ $theme['bg'] }}; --card-fg: {{ $theme['fg'] }}; --card-accent: {{ $theme['accent'] }};"
+	                            >
+                                <div class="driver-vwallet-card-inner">
+                                    <div class="driver-vwallet-card-top">
+                                        <span class="driver-vwallet-brand">
+                                            @if($logoUrl)
+                                                <img src="{{ $logoUrl }}" alt="{{ $brandName }} logo" class="driver-vwallet-logo" loading="lazy">
+                                            @else
+                                                <span class="driver-vwallet-fallback-logo">{{ substr($brandName, 0, 1) }}</span>
+                                            @endif
+                                            <span class="driver-vwallet-brand-name">{{ $brandName }}</span>
+                                        </span>
+                                        <span class="driver-vwallet-chip" aria-hidden="true"></span>
+                                    </div>
+
+                                    <div class="driver-vwallet-card-bottom">
+                                        <div>
+                                            <span class="driver-vwallet-label">Status</span>
+                                            <span class="driver-vwallet-value">{{ $statusLabel }}</span>
+                                        </div>
+	                                        <div class="driver-vwallet-pan">
+	                                            <span class="driver-vwallet-hidden">{{ $last4 !== '' ? ('**** ' . $last4) : '**** ••••' }}</span>
+	                                            <span class="driver-vwallet-full" data-pan-fallback="{{ $panHint }}">{{ $panHint }}</span>
+	                                            <span class="driver-vwallet-exp" data-exp-fallback="{{ $expiry }}">EXP {{ $expiry }}</span>
+	                                            <span class="driver-vwallet-cvv" data-cvv-fallback="---">CVV ---</span>
+	                                        </div>
+	                                    </div>
+	
+	                                    <button type="button" class="driver-vwallet-reveal-btn" aria-label="Reveal card details">
+	                                        Reveal
+	                                    </button>
+	                                </div>
+	                            </div>
+                            @endforeach
+
+                            <div class="driver-vwallet-pocket-front" aria-hidden="true">
+                                <svg class="driver-vwallet-pocket-svg" viewBox="0 0 280 160" fill="none">
+                                    <path
+                                        d="M 0 20 C 0 10, 5 10, 10 10 C 20 10, 25 25, 40 25 L 240 25 C 255 25, 260 10, 270 10 C 275 10, 280 10, 280 20 L 280 120 C 280 155, 260 160, 240 160 L 40 160 C 20 160, 0 155, 0 120 Z"
+                                        fill="#1e341e"
+                                    ></path>
+                                    <path
+                                        d="M 8 22 C 8 16, 12 16, 15 16 C 23 16, 27 29, 40 29 L 240 29 C 253 29, 257 16, 265 16 C 268 16, 272 16, 272 22 L 272 120 C 272 150, 255 152, 240 152 L 40 152 C 25 152, 8 152, 8 120 Z"
+                                        stroke="#3d5635"
+                                        stroke-width="1.5"
+                                        stroke-dasharray="6 4"
+                                    ></path>
+                                </svg>
+                                <div class="driver-vwallet-pocket-content">
+                                    <div class="driver-vwallet-balance">
+                                        <div class="driver-vwallet-balance-stars">******</div>
+                                        <div class="driver-vwallet-balance-real">R {{ number_format((float) $virtualCardsAllocatedTotal, 2) }}</div>
+                                    </div>
+                                    <div class="driver-vwallet-subtitle">Allocated to cards</div>
+                                    <div class="driver-vwallet-eye" aria-hidden="true">
+                                        <svg class="driver-vwallet-eye-icon driver-vwallet-eye-slash" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                            <line x1="3" y1="3" x2="21" y2="21"></line>
+                                        </svg>
+                                        <svg class="driver-vwallet-eye-icon driver-vwallet-eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="driver-vwallet-hint">Hover to see balance</p>
+                    @else
+                        <div class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+                            No virtual cards yet. Create one to start spending.
+                        </div>
+                    @endif
+                </div>
+            </div>
+
             <div class="glass rounded-2xl p-6">
                 <div class="flex items-center justify-between">
                     <h2 class="brand-font text-xl text-slate-900">Recent Vouchers</h2>
@@ -426,6 +557,407 @@
     .driver-active-voucher-card-wrap {
         display: flex;
         align-items: stretch;
+    }
+
+    .driver-vwallet-wrap {
+        display: flex;
+        justify-content: center;
+    }
+
+    .driver-vwallet-pocket {
+        position: relative;
+        width: 280px;
+        height: 240px;
+        cursor: pointer;
+        perspective: 1000px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        transition: transform 0.4s ease;
+        user-select: none;
+    }
+
+    .driver-vwallet-hint {
+        margin-top: 0.75rem;
+        text-align: center;
+        font-style: italic;
+        color: #1d4ed8;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: underline;
+    }
+
+    @keyframes driverVwalletSlide {
+        from { transform: translateY(-90px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .driver-vwallet-back {
+        position: absolute;
+        bottom: 0;
+        width: 280px;
+        height: 200px;
+        background: #1e341e;
+        border-radius: 22px 22px 60px 60px;
+        z-index: 5;
+        box-shadow:
+            inset 0 25px 35px rgba(0, 0, 0, 0.4),
+            inset 0 5px 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .driver-vwallet-card {
+        position: absolute;
+        width: 260px;
+        height: 140px;
+        left: 10px;
+        border-radius: 16px;
+        padding: 18px;
+        color: var(--card-fg, #fff);
+        background: var(--card-bg, #0b1220);
+        box-shadow:
+            inset 0 1px 1px rgba(255, 255, 255, 0.24),
+            0 -4px 15px rgba(0, 0, 0, 0.1);
+        transition:
+            transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+            z-index 0s;
+        animation: driverVwalletSlide 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+        overflow: hidden;
+    }
+
+    .driver-vwallet-card::before {
+        content: "";
+        position: absolute;
+        inset: -40px;
+        background: radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--card-accent, #38bdf8) 30%, transparent), transparent 55%);
+        opacity: 0.8;
+        pointer-events: none;
+        transform: rotate(-6deg);
+    }
+
+    .driver-vwallet-card-inner {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+        z-index: 1;
+    }
+
+    .driver-vwallet-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        gap: 10px;
+    }
+
+    .driver-vwallet-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .driver-vwallet-brand-name {
+        font-weight: 800;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 170px;
+    }
+
+    .driver-vwallet-logo {
+        height: 22px;
+        width: 22px;
+        object-fit: contain;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 6px;
+        padding: 2px;
+    }
+
+    .driver-vwallet-fallback-logo {
+        height: 22px;
+        width: 22px;
+        display: grid;
+        place-content: center;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        font-weight: 900;
+        color: var(--card-fg, #fff);
+    }
+
+    .driver-vwallet-chip {
+        width: 32px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.16);
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        flex: 0 0 auto;
+    }
+
+    .driver-vwallet-card-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 12px;
+    }
+
+    .driver-vwallet-label {
+        font-size: 9px;
+        opacity: 0.75;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+        display: block;
+        letter-spacing: 1px;
+    }
+
+    .driver-vwallet-value {
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    .driver-vwallet-pan {
+        text-align: right;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        letter-spacing: 1px;
+    }
+
+    .driver-vwallet-hidden {
+        display: block;
+        font-size: 14px;
+    }
+
+    .driver-vwallet-full {
+        display: none;
+        font-size: 13px;
+    }
+
+    .driver-vwallet-exp {
+        display: block;
+        margin-top: 4px;
+        font-size: 10px;
+        opacity: 0.78;
+        font-family: inherit;
+        letter-spacing: 1px;
+    }
+
+    .driver-vwallet-cvv {
+        display: none;
+        margin-top: 2px;
+        font-size: 10px;
+        opacity: 0.82;
+        font-family: inherit;
+        letter-spacing: 1px;
+    }
+
+    .driver-vwallet-reveal-btn {
+        position: absolute;
+        right: 14px;
+        top: 14px;
+        z-index: 2;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(15, 23, 42, 0.22);
+        color: var(--card-fg, #fff);
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+        opacity: 0.9;
+    }
+
+    .driver-vwallet-reveal-btn:hover {
+        transform: translateY(-1px);
+        background: rgba(15, 23, 42, 0.32);
+        opacity: 1;
+    }
+
+    .driver-vwallet-reveal-btn[disabled] {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .driver-vwallet-pocket:hover {
+        transform: translateY(-5px);
+    }
+
+    .driver-vwallet-card.slot-1 {
+        bottom: 90px;
+        z-index: 10;
+        animation-delay: 0.1s;
+    }
+
+    .driver-vwallet-card.slot-2 {
+        bottom: 65px;
+        z-index: 20;
+        animation-delay: 0.2s;
+    }
+
+    .driver-vwallet-card.slot-3 {
+        bottom: 40px;
+        z-index: 30;
+        animation-delay: 0.3s;
+    }
+
+    .driver-vwallet-pocket:hover .driver-vwallet-card.slot-1 {
+        transform: translateY(-75px) rotate(-3deg);
+        z-index: 10;
+    }
+
+    .driver-vwallet-pocket:hover .driver-vwallet-card.slot-2 {
+        transform: translateY(-45px) rotate(2deg);
+        z-index: 20;
+    }
+
+    .driver-vwallet-pocket:hover .driver-vwallet-card.slot-3 {
+        transform: translateY(-10px);
+        z-index: 30;
+    }
+
+    .driver-vwallet-card:hover {
+        z-index: 100 !important;
+    }
+
+    .driver-vwallet-pocket:hover .driver-vwallet-card:hover {
+        transform: translateY(-60px) scale(1.05) rotate(0);
+    }
+
+    .driver-vwallet-card:hover .driver-vwallet-hidden {
+        display: none;
+    }
+
+    .driver-vwallet-card:hover .driver-vwallet-full {
+        display: block;
+    }
+
+    .driver-vwallet-card:hover .driver-vwallet-cvv {
+        display: block;
+    }
+
+    .driver-vwallet-card.is-revealed .driver-vwallet-hidden {
+        display: none;
+    }
+
+    .driver-vwallet-card.is-revealed .driver-vwallet-full {
+        display: block;
+    }
+
+    .driver-vwallet-card.is-revealed .driver-vwallet-cvv {
+        display: block;
+    }
+
+    .driver-vwallet-pocket-front {
+        position: absolute;
+        bottom: 0;
+        width: 280px;
+        height: 160px;
+        z-index: 40;
+        filter: drop-shadow(0 15px 25px rgba(20, 40, 20, 0.4));
+    }
+
+    .driver-vwallet-pocket-content {
+        position: absolute;
+        top: 45px;
+        width: 100%;
+        text-align: center;
+        z-index: 50;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        pointer-events: none;
+    }
+
+    .driver-vwallet-balance {
+        position: relative;
+        height: 24px;
+        width: 100%;
+    }
+
+    .driver-vwallet-balance-stars {
+        color: #839e7b;
+        font-size: 24px;
+        letter-spacing: 4px;
+        transition: 0.3s;
+    }
+
+    .driver-vwallet-balance-real {
+        color: #a7c59e;
+        font-size: 22px;
+        font-weight: 700;
+        opacity: 0;
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translate(-50%, 10px);
+        transition: 0.3s;
+        white-space: nowrap;
+    }
+
+    .driver-vwallet-subtitle {
+        color: #698263;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .driver-vwallet-eye {
+        margin-top: 6px;
+        height: 20px;
+        width: 20px;
+        position: relative;
+        opacity: 0.35;
+        transition: 0.3s;
+    }
+
+    .driver-vwallet-eye-icon {
+        position: absolute;
+        inset: 0;
+        stroke: #3be60b;
+        transition: 0.3s;
+    }
+
+    .driver-vwallet-eye-open {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    .driver-vwallet-pocket:hover .driver-vwallet-eye {
+        opacity: 1;
+    }
+
+    .driver-vwallet-pocket:hover .driver-vwallet-balance-stars {
+        opacity: 0;
+    }
+
+    .driver-vwallet-pocket:hover .driver-vwallet-balance-real {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+
+    .driver-vwallet-pocket:hover .driver-vwallet-eye-slash {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+
+    .driver-vwallet-pocket:hover .driver-vwallet-eye-open {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    @media (hover: none) {
+        .driver-vwallet-hint { display: none; }
+        .driver-vwallet-balance-stars { opacity: 0; }
+        .driver-vwallet-balance-real { opacity: 1; transform: translate(-50%, 0); }
+        .driver-vwallet-eye-slash { opacity: 0; }
+        .driver-vwallet-eye-open { opacity: 1; }
     }
 
     .driver-active-voucher-card {
@@ -1119,6 +1651,124 @@
     }
 </style>
 <script>
+    (function initDriverVirtualCardReveal() {
+        const cards = Array.from(
+            document.querySelectorAll('.driver-vwallet-card[data-reveal-url]')
+        );
+        if (!cards.length) return;
+        const csrfMeta = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') || '';
+
+        const hideTimeoutByCardId = new Map();
+
+        const formatExpiry = (month, year) => {
+            const m = Number(month);
+            const y = Number(year);
+            if (!Number.isFinite(m) || !Number.isFinite(y) || m <= 0 || y <= 0) {
+                return '--/--';
+            }
+            const mm = String(m).padStart(2, '0');
+            const yy = String(y).slice(-2);
+            return `${mm}/${yy}`;
+        };
+
+        const clearReveal = (cardEl) => {
+            cardEl.classList.remove('is-revealed');
+            const panEl = cardEl.querySelector('.driver-vwallet-full');
+            const expEl = cardEl.querySelector('.driver-vwallet-exp');
+            const cvvEl = cardEl.querySelector('.driver-vwallet-cvv');
+            if (panEl) {
+                panEl.textContent = panEl.getAttribute('data-pan-fallback') || '**** ••••';
+            }
+            if (expEl) {
+                const exp = expEl.getAttribute('data-exp-fallback') || '--/--';
+                expEl.textContent = `EXP ${exp}`;
+            }
+            if (cvvEl) {
+                const cvv = cvvEl.getAttribute('data-cvv-fallback') || '---';
+                cvvEl.textContent = `CVV ${cvv}`;
+            }
+            const btn = cardEl.querySelector('.driver-vwallet-reveal-btn');
+            if (btn) btn.textContent = 'Reveal';
+        };
+
+        const scheduleHide = (cardId, cardEl) => {
+            const existing = hideTimeoutByCardId.get(cardId);
+            if (existing) window.clearTimeout(existing);
+            hideTimeoutByCardId.set(
+                cardId,
+                window.setTimeout(() => clearReveal(cardEl), 15000)
+            );
+        };
+
+        cards.forEach((cardEl) => {
+            const btn = cardEl.querySelector('.driver-vwallet-reveal-btn');
+            if (!btn) return;
+
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+
+                const cardId = cardEl.getAttribute('data-card-id') || '';
+                if (!cardId) return;
+
+                if (cardEl.classList.contains('is-revealed')) {
+                    clearReveal(cardEl);
+                    return;
+                }
+
+                const url = cardEl.getAttribute('data-reveal-url') || '';
+                if (!url) return;
+                const csrf = csrfMeta || cardEl.getAttribute('data-csrf') || '';
+
+                btn.setAttribute('disabled', 'disabled');
+                btn.textContent = 'Revealing...';
+
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
+                        },
+                        body: JSON.stringify({}),
+                    });
+
+                    const payload = await res.json().catch(() => ({}));
+                    if (!res.ok || payload?.success !== true) {
+                        const msg = payload?.message || 'Could not reveal card details.';
+                        throw new Error(msg);
+                    }
+
+                    const data = payload?.data || {};
+                    const pan = String(data?.pan || '').trim();
+                    const exp = formatExpiry(data?.expiry_month, data?.expiry_year);
+                    const cvv = String(data?.cvv || '').trim() || '---';
+
+                    const panEl = cardEl.querySelector('.driver-vwallet-full');
+                    const expEl = cardEl.querySelector('.driver-vwallet-exp');
+                    const cvvEl = cardEl.querySelector('.driver-vwallet-cvv');
+
+                    if (panEl && pan) panEl.textContent = pan;
+                    if (expEl) expEl.textContent = `EXP ${exp}`;
+                    if (cvvEl) cvvEl.textContent = `CVV ${cvv}`;
+
+                    cardEl.classList.add('is-revealed');
+                    btn.textContent = 'Hide';
+                    scheduleHide(cardId, cardEl);
+                } catch (err) {
+                    btn.textContent = 'Reveal';
+                    const msg = err?.message || 'Could not reveal card details.';
+                    window.alert(msg);
+                } finally {
+                    btn.removeAttribute('disabled');
+                }
+            });
+        });
+    })();
+
     (function initDriverVoucherCard() {
         const card = document.getElementById('driverHoloCard');
         if (!card) return;

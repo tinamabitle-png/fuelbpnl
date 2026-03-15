@@ -9,6 +9,7 @@ use App\Models\FuelVoucher;
 use App\Models\Lease;
 use App\Models\Repayment;
 use App\Models\AuditLog;
+use App\Models\VirtualCard;
 use App\Services\AuditTrailService;
 use App\Services\DriverUnderwritingService;
 use App\Services\FuelPriceService;
@@ -43,6 +44,17 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $this->authorizeDriverPortal($user);
+
+        $virtualCards = $user->virtualCards()
+            ->open()
+            ->latest()
+            ->limit(3)
+            ->get();
+
+        $virtualCardsAllocatedTotal = (float) VirtualCard::query()
+            ->where('user_id', $user->id)
+            ->open()
+            ->sum('allocated_amount');
 
         $activeVoucherCount = FuelVoucher::where('user_id', $user->id)
             ->whereIn('status', ['approved', 'issued'])
@@ -94,6 +106,8 @@ class DashboardController extends Controller
             : null;
 
         return view('driver.dashboard', compact(
+            'virtualCards',
+            'virtualCardsAllocatedTotal',
             'activeVoucherCount',
             'pendingRepayments',
             'pendingRepaymentAmount',
