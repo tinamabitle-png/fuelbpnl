@@ -249,6 +249,16 @@ class FlutterwaveVirtualCardService
                 ?? $this->deriveTitleFromGender($gender)
                 ?? ''));
 
+            // If identity fields are enabled, treat the required ones as mandatory and stop early with an actionable error.
+            if ($firstName === '' || $lastName === '' || $dob === '') {
+                throw new \RuntimeException(
+                    'Flutterwave card creation requires first_name, last_name, and date_of_birth. ' .
+                    'Set these on the user profile (users.first_name/users.last_name/users.date_of_birth), ' .
+                    'or provide FLUTTERWAVE_VIRTUAL_CARDS_FIRST_NAME/LAST_NAME/DATE_OF_BIRTH, ' .
+                    'or pass them in the billing payload.'
+                );
+            }
+
             // Only include non-empty identity keys to avoid validation failures.
             foreach ([
                 'first_name' => $firstName,
