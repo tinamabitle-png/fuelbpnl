@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class FlutterwaveVirtualCardService
 {
@@ -143,61 +144,32 @@ class FlutterwaveVirtualCardService
         $baseUrl = rtrim((string) config('services.flutterwave.base_url', 'https://api.flutterwave.com'), '/');
         $timeout = (int) config('services.flutterwave.timeout', 20);
 
+        $currency = strtoupper(trim($currency)) ?: 'USD';
         $fullName = trim((string) ($user->name ?? 'Bwiser User')) ?: 'Bwiser User';
-        $parts = preg_split('/\s+/', $fullName) ?: [];
-        $derivedFirst = $parts[0] ?? 'Bwiser';
-        $derivedLast = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : 'User';
 
-        $firstName = trim((string) ($billing['first_name']
-            ?? ($user->first_name ?? null)
-            ?? config('services.flutterwave.virtual_cards_first_name')
-            ?? $derivedFirst));
-        $lastName = trim((string) ($billing['last_name']
-            ?? ($user->last_name ?? null)
-            ?? config('services.flutterwave.virtual_cards_last_name')
-            ?? $derivedLast));
-
-        $userDob = null;
-        if (!empty($user->date_of_birth)) {
-            try {
-                $userDob = $user->date_of_birth instanceof \Carbon\CarbonInterface
-                    ? $user->date_of_birth->toDateString()
-                    : (string) $user->date_of_birth;
-            } catch (\Throwable $e) {
-                $userDob = null;
-            }
-        }
-
-        $dob = trim((string) ($billing['date_of_birth']
-            ?? $userDob
-            ?? $this->parseSouthAfricanIdDob((string) ($user->id_number ?? ''))
-            ?? config('services.flutterwave.virtual_cards_date_of_birth')
-            ?? ''));
-        $email = trim((string) ($billing['email'] ?? config('services.flutterwave.virtual_cards_email') ?? (string) ($user->email ?? '')));
-        $phone = trim((string) ($billing['phone_number']
-            ?? $billing['phone']
-            ?? config('services.flutterwave.virtual_cards_phone')
-            ?? (string) ($user->phone ?? '')));
-
-        $gender = trim((string) ($billing['gender']
-            ?? ($user->gender ?? null)
-            ?? config('services.flutterwave.virtual_cards_gender')
-            ?? ''));
-        $gender = $this->normalizeGender($gender);
-
-        $title = trim((string) ($billing['title']
-            ?? config('services.flutterwave.virtual_cards_title')
-            ?? $this->deriveTitleFromGender($gender)
-            ?? ''));
-
-        // If Flutterwave requires identity fields, failing early makes the error actionable.
-        if ($firstName === '' || $lastName === '' || $dob === '' || $phone === '' || $title === '' || $gender === '') {
-            throw new \RuntimeException('Flutterwave card creation requires first_name, last_name, date_of_birth, phone, title, and gender. Complete the user profile (names + DOB + phone + gender) or pass them in billing.');
-        }
-
-        // Some callers pass a billing array that includes empty keys (e.g. gender => null),
-        // which would otherwise override our derived/required fields and trigger validation errors.
-        $billingFiltered = array_filter($billing, function ($value) {
+        // Keep only known keys, and drop null/empty values to avoid provider validation failures.
+        $allowedKeys = [
+            'currency',
+            'amount',
+            'billing_name',
+            'billing_address',
+            'billing_city',
+            'billing_state',
+            'billing_postal_code',
+            'billing_country',
+            'callback_url',
+            // Optional identity keys (only sent when enabled below)
+            'first_name',
+            'last_name',
+            'date_of_birth',
+            'email',
+            'phone',
+            'phone_number',
+            'gender',
+            'title',
+        ];
+        $billing = Arr::only($billing, $allowedKeys);
+        $billingFiltered = array_filter($billing, static function ($value) {
             if ($value === null) {
                 return false;
             }
@@ -209,25 +181,89 @@ class FlutterwaveVirtualCardService
 
         $payload = array_merge([
             'currency' => $currency,
-            'amount' => max(1.0, $amount),
+            // Flutterwave examples use integer amounts; avoid floats.
+            'amount' => max(1, (int) ceil($amount)),
             'billing_name' => $fullName,
-            'billing_address' => (string) ($billing['address'] ?? config('services.flutterwave.virtual_cards_billing_address', 'Unknown')),
-            'billing_city' => (string) ($billing['city'] ?? config('services.flutterwave.virtual_cards_billing_city', 'Johannesburg')),
-            'billing_state' => (string) ($billing['state'] ?? config('services.flutterwave.virtual_cards_billing_state', 'Gauteng')),
-            'billing_postal_code' => (string) ($billing['postal_code'] ?? config('services.flutterwave.virtual_cards_billing_postal_code', '0001')),
-            'billing_country' => (string) ($billing['country'] ?? config('services.flutterwave.virtual_cards_billing_country', 'ZA')),
-            'callback_url' => (string) ($billing['callback_url'] ?? config('services.flutterwave.virtual_cards_callback_url', config('app.url'))),
-        ], $billingFiltered);
+            'billing_address' => (string) ($billingFiltered['billing_address'] ?? config('services.flutterwave.virtual_cards_billing_address', 'Unknown')),
+            'billing_city' => (string) ($billingFiltered['billing_city'] ?? config('services.flutterwave.virtual_cards_billing_city', 'Johannesburg')),
+            'billing_state' => (string) ($billingFiltered['billing_state'] ?? config('services.flutterwave.virtual_cards_billing_state', 'Gauteng')),
+            'billing_postal_code' => (string) ($billingFiltered['billing_postal_code'] ?? config('services.flutterwave.virtual_cards_billing_postal_code', '0001')),
+            'billing_country' => (string) ($billingFiltered['billing_country'] ?? config('services.flutterwave.virtual_cards_billing_country', 'ZA')),
+            'callback_url' => (string) ($billingFiltered['callback_url'] ?? config('services.flutterwave.virtual_cards_callback_url', config('app.url'))),
+        ], Arr::only($billingFiltered, [
+            // Allow overriding these with known keys if provided.
+            'currency',
+            'amount',
+            'billing_name',
+            'billing_address',
+            'billing_city',
+            'billing_state',
+            'billing_postal_code',
+            'billing_country',
+            'callback_url',
+        ]));
 
-        // Force required identity fields last so they cannot be overridden by empty/null billing inputs.
-        $payload['first_name'] = $firstName;
-        $payload['last_name'] = $lastName;
-        $payload['date_of_birth'] = $dob;
-        $payload['email'] = $email !== '' ? $email : null;
-        $payload['phone'] = $phone;
-        $payload['phone_number'] = $phone;
-        $payload['gender'] = $gender;
-        $payload['title'] = $title;
+        // Optional identity fields: only include if explicitly enabled (some accounts require it).
+        if ((bool) config('services.flutterwave.virtual_cards_include_identity', false)) {
+            $parts = preg_split('/\s+/', $fullName) ?: [];
+            $derivedFirst = $parts[0] ?? 'Bwiser';
+            $derivedLast = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : 'User';
+
+            $firstName = trim((string) ($billingFiltered['first_name']
+                ?? ($user->first_name ?? null)
+                ?? config('services.flutterwave.virtual_cards_first_name')
+                ?? $derivedFirst));
+            $lastName = trim((string) ($billingFiltered['last_name']
+                ?? ($user->last_name ?? null)
+                ?? config('services.flutterwave.virtual_cards_last_name')
+                ?? $derivedLast));
+
+            $userDob = null;
+            if (!empty($user->date_of_birth)) {
+                try {
+                    $userDob = $user->date_of_birth instanceof \Carbon\CarbonInterface
+                        ? $user->date_of_birth->toDateString()
+                        : (string) $user->date_of_birth;
+                } catch (\Throwable $e) {
+                    $userDob = null;
+                }
+            }
+            $dob = trim((string) ($billingFiltered['date_of_birth']
+                ?? $userDob
+                ?? $this->parseSouthAfricanIdDob((string) ($user->id_number ?? ''))
+                ?? config('services.flutterwave.virtual_cards_date_of_birth')
+                ?? ''));
+
+            $email = trim((string) ($billingFiltered['email'] ?? config('services.flutterwave.virtual_cards_email') ?? (string) ($user->email ?? '')));
+            $phone = trim((string) ($billingFiltered['phone_number']
+                ?? $billingFiltered['phone']
+                ?? config('services.flutterwave.virtual_cards_phone')
+                ?? (string) ($user->phone ?? '')));
+
+            $gender = $this->normalizeGender(trim((string) ($billingFiltered['gender']
+                ?? ($user->gender ?? null)
+                ?? config('services.flutterwave.virtual_cards_gender')
+                ?? '')));
+            $title = trim((string) ($billingFiltered['title']
+                ?? config('services.flutterwave.virtual_cards_title')
+                ?? $this->deriveTitleFromGender($gender)
+                ?? ''));
+
+            // Only include non-empty identity keys to avoid validation failures.
+            foreach ([
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'date_of_birth' => $dob,
+                'email' => $email,
+                'phone_number' => $phone,
+                'gender' => $gender,
+                'title' => $title,
+            ] as $k => $v) {
+                if (is_string($v) && trim($v) !== '') {
+                    $payload[$k] = $v;
+                }
+            }
+        }
 
         try {
             $response = Http::timeout($timeout)
@@ -265,6 +301,15 @@ class FlutterwaveVirtualCardService
                 $out = trim((string) $response->body());
             }
             $out = $out !== '' ? $out : 'Flutterwave request failed.';
+
+            Log::warning('Flutterwave virtual card create failed', [
+                'status' => $response->status(),
+                'message' => $message,
+                'errors' => $errors,
+                'response_body' => is_string($response->body()) ? substr($response->body(), 0, 2000) : null,
+                'payload' => $this->redactPayloadForLog($payload),
+                'user_id' => $user->id,
+            ]);
 
             throw new \RuntimeException($out);
         }
@@ -333,6 +378,24 @@ class FlutterwaveVirtualCardService
             return 'Ms';
         }
         return null;
+    }
+
+    /**
+     * Do not leak PII into logs; keep enough context to debug provider validation issues.
+     *
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private function redactPayloadForLog(array $payload): array
+    {
+        $redacted = $payload;
+        foreach (['billing_address', 'email', 'date_of_birth', 'phone', 'phone_number'] as $key) {
+            if (array_key_exists($key, $redacted)) {
+                $val = $redacted[$key];
+                $redacted[$key] = is_string($val) && $val !== '' ? '[redacted]' : $val;
+            }
+        }
+        return $redacted;
     }
 
     /**
