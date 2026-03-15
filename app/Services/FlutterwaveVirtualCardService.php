@@ -143,16 +143,38 @@ class FlutterwaveVirtualCardService
         $baseUrl = rtrim((string) config('services.flutterwave.base_url', 'https://api.flutterwave.com'), '/');
         $timeout = (int) config('services.flutterwave.timeout', 20);
 
+        $fullName = trim((string) ($user->name ?? 'Bwiser User')) ?: 'Bwiser User';
+        $parts = preg_split('/\s+/', $fullName) ?: [];
+        $derivedFirst = $parts[0] ?? 'Bwiser';
+        $derivedLast = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : 'User';
+
+        $firstName = trim((string) ($billing['first_name'] ?? config('services.flutterwave.virtual_cards_first_name') ?? $derivedFirst));
+        $lastName = trim((string) ($billing['last_name'] ?? config('services.flutterwave.virtual_cards_last_name') ?? $derivedLast));
+        $dob = trim((string) ($billing['date_of_birth'] ?? config('services.flutterwave.virtual_cards_date_of_birth') ?? ''));
+        $email = trim((string) ($billing['email'] ?? config('services.flutterwave.virtual_cards_email') ?? (string) ($user->email ?? '')));
+        $phone = trim((string) ($billing['phone'] ?? config('services.flutterwave.virtual_cards_phone') ?? (string) ($user->phone ?? '')));
+
+        // If Flutterwave requires identity fields, failing early makes the error actionable.
+        if ($firstName === '' || $lastName === '' || $dob === '') {
+            throw new \RuntimeException('Flutterwave card creation requires first_name, last_name, and date_of_birth. Set FLUTTERWAVE_VIRTUAL_CARDS_FIRST_NAME/LAST_NAME/DATE_OF_BIRTH or pass them in billing.');
+        }
+
         $payload = array_merge([
             'currency' => $currency,
             'amount' => max(1.0, $amount),
-            'billing_name' => trim((string) ($user->name ?? 'Bwiser User')) ?: 'Bwiser User',
+            'billing_name' => $fullName,
             'billing_address' => (string) ($billing['address'] ?? config('services.flutterwave.virtual_cards_billing_address', 'Unknown')),
             'billing_city' => (string) ($billing['city'] ?? config('services.flutterwave.virtual_cards_billing_city', 'Johannesburg')),
             'billing_state' => (string) ($billing['state'] ?? config('services.flutterwave.virtual_cards_billing_state', 'Gauteng')),
             'billing_postal_code' => (string) ($billing['postal_code'] ?? config('services.flutterwave.virtual_cards_billing_postal_code', '0001')),
             'billing_country' => (string) ($billing['country'] ?? config('services.flutterwave.virtual_cards_billing_country', 'ZA')),
             'callback_url' => (string) ($billing['callback_url'] ?? config('services.flutterwave.virtual_cards_callback_url', config('app.url'))),
+            // Common identity fields some Flutterwave virtual card setups require.
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'date_of_birth' => $dob,
+            'email' => $email !== '' ? $email : null,
+            'phone_number' => $phone !== '' ? $phone : null,
         ], $billing);
 
         try {

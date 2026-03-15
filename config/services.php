@@ -117,6 +117,12 @@ return [
         'virtual_cards_billing_postal_code' => env('FLUTTERWAVE_VIRTUAL_CARDS_BILLING_POSTAL_CODE', '0001'),
         'virtual_cards_billing_country' => env('FLUTTERWAVE_VIRTUAL_CARDS_BILLING_COUNTRY', 'ZA'),
         'virtual_cards_callback_url' => env('FLUTTERWAVE_VIRTUAL_CARDS_CALLBACK_URL', env('APP_URL')),
+        // Some Flutterwave configurations require additional identity fields for card creation.
+        'virtual_cards_first_name' => env('FLUTTERWAVE_VIRTUAL_CARDS_FIRST_NAME'),
+        'virtual_cards_last_name' => env('FLUTTERWAVE_VIRTUAL_CARDS_LAST_NAME'),
+        'virtual_cards_date_of_birth' => env('FLUTTERWAVE_VIRTUAL_CARDS_DATE_OF_BIRTH'),
+        'virtual_cards_email' => env('FLUTTERWAVE_VIRTUAL_CARDS_EMAIL'),
+        'virtual_cards_phone' => env('FLUTTERWAVE_VIRTUAL_CARDS_PHONE'),
     ],
 
     'redemption_geofence' => [
