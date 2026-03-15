@@ -52,17 +52,32 @@ class FlutterwaveVirtualCardService
         $payload = $response->json();
         $data = Arr::get($payload, 'data', $payload);
 
-        $panRaw = (string) (Arr::get($data, 'card_pan')
-            ?? Arr::get($data, 'cardpan')
-            ?? Arr::get($data, 'card_number')
-            ?? Arr::get($data, 'cardpan')
-            ?? '');
+        $panRaw = (string) ($this->firstByPaths($data, [
+            'card_pan',
+            'cardpan',
+            'card_number',
+            'card.number',
+            'card.card_pan',
+            'card.cardpan',
+            'card_details.card_pan',
+            'card_details.card_number',
+        ]) ?? '');
         $pan = $this->formatPan($panRaw);
         if ($pan === '') {
             throw new \RuntimeException('Flutterwave response missing card PAN.');
         }
 
-        $cvvRaw = (string) (Arr::get($data, 'cvv') ?? Arr::get($data, 'card_cvv') ?? '');
+        $cvvRaw = (string) ($this->firstByPaths($data, [
+            'cvv',
+            'card_cvv',
+            'security_code',
+            'card.cvv',
+            'card.card_cvv',
+            'card.security_code',
+            'card_details.cvv',
+            'card_details.card_cvv',
+            'card_details.security_code',
+        ]) ?? '');
         $cvv = $this->sanitizeDigits($cvvRaw);
         $cvv = $cvv === '' ? null : $cvv;
 
@@ -81,6 +96,24 @@ class FlutterwaveVirtualCardService
             'expiry_year' => $expiryYear,
             'card_scheme' => $scheme,
         ];
+    }
+
+    /**
+     * @param mixed $data
+     * @param array<int, string> $paths
+     */
+    private function firstByPaths($data, array $paths): ?string
+    {
+        foreach ($paths as $path) {
+            $value = Arr::get($data, $path);
+            if (is_string($value) && trim($value) !== '') {
+                return $value;
+            }
+            if (is_numeric($value)) {
+                return (string) $value;
+            }
+        }
+        return null;
     }
 
     /**

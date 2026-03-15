@@ -2177,7 +2177,9 @@
                     const data = payload?.data || {};
                     const pan = String(data?.pan || '').trim();
                     const exp = formatExpiry(data?.expiry_month, data?.expiry_year);
-                    const cvv = String(data?.cvv || '').trim() || '---';
+                    const cvv = (data?.cvv === null || data?.cvv === undefined)
+                        ? null
+                        : (String(data?.cvv || '').trim() || null);
 
                     const panEl = cardEl.querySelector('.driver-vwallet-full');
                     const expEl = cardEl.querySelector('.driver-vwallet-exp');
@@ -2185,7 +2187,13 @@
 
                     if (panEl && pan) panEl.textContent = pan;
                     if (expEl) expEl.textContent = `EXP ${exp}`;
-                    if (cvvEl) cvvEl.textContent = `CVV ${cvv}`;
+                    if (cvvEl) cvvEl.textContent = `CVV ${cvv ?? 'N/A'}`;
+
+                    if (cvv === null && data?.message) {
+                        // Helpful for legacy placeholder cards or providers that do not return CVV.
+                        // Avoid spamming; only show on reveal clicks.
+                        window.alert(String(data.message));
+                    }
 
                     cardEl.classList.add('is-revealed');
                     btn.textContent = 'Hide';

@@ -29,6 +29,7 @@ class VirtualCardController extends Controller
                     'data' => [
                         'pan' => (string) ($revealed['pan'] ?? ''),
                         'cvv' => $revealed['cvv'] ?? null,
+                        'cvv_available' => !empty($revealed['cvv']),
                         'masked_pan' => (string) ($card->masked_pan ?? ''),
                         'last4' => (string) ($card->last4 ?? ''),
                         'expiry_month' => $revealed['expiry_month'] ?? ($card->expiry_month ?: null),
@@ -42,6 +43,23 @@ class VirtualCardController extends Controller
                     'message' => $e->getMessage() ?: 'Failed to reveal virtual card details.',
                 ], 502);
             }
+        }
+
+        if ($card->provider === 'flutterwave' && $providerCardId === '') {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'pan' => '',
+                    'cvv' => null,
+                    'cvv_available' => false,
+                    'masked_pan' => (string) ($card->masked_pan ?? ''),
+                    'last4' => (string) ($card->last4 ?? ''),
+                    'expiry_month' => (int) ($card->expiry_month ?? 0) ?: null,
+                    'expiry_year' => (int) ($card->expiry_year ?? 0) ?: null,
+                    'card_scheme' => (string) ($card->card_scheme ?? 'visa'),
+                    'message' => 'This card is not provisioned with Flutterwave yet. Create a new virtual card to get a real CVV.',
+                ],
+            ]);
         }
 
         $last4 = trim((string) ($card->last4 ?? ''));
