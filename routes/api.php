@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\FuelVoucherController;
 use App\Http\Controllers\Api\LeaseController;
 use App\Http\Controllers\Api\FuelStationController;
 use App\Http\Controllers\Api\RepaymentController;
+use App\Http\Controllers\Api\Repayment1VoucherController;
 use App\Http\Controllers\Api\CreditAssessmentController;
 use App\Http\Controllers\Api\VirtualCardController;
 use App\Http\Controllers\Api\V1\UserController;
@@ -139,6 +140,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/overdue', [RepaymentController::class, 'overdue']);
             Route::get('/history', [RepaymentController::class, 'history']);
             Route::post('/make-payment', [RepaymentController::class, 'makePayment']);
+            Route::post('/1voucher/week', [Repayment1VoucherController::class, 'payWeek']);
             Route::post('/{repayment}/paystack/initialize', [RepaymentController::class, 'initializePaystack'])->whereNumber('repayment');
             Route::post('/paystack/verify', [RepaymentController::class, 'verifyPaystack']);
             Route::post('/autopay/paystack/initialize', [RepaymentController::class, 'initializeAutopayPaystack']);

@@ -128,6 +128,9 @@ return [
         'virtual_cards_phone' => env('FLUTTERWAVE_VIRTUAL_CARDS_PHONE'),
         'virtual_cards_gender' => env('FLUTTERWAVE_VIRTUAL_CARDS_GENDER'),
         'virtual_cards_title' => env('FLUTTERWAVE_VIRTUAL_CARDS_TITLE'),
+
+        // 1Voucher (South Africa prepaid voucher payments)
+        'one_voucher_currency' => env('FLUTTERWAVE_1VOUCHER_CURRENCY', 'ZAR'),
     ],
 
     'redemption_geofence' => [
