@@ -195,6 +195,18 @@ class FlutterwaveVirtualCardService
             throw new \RuntimeException('Flutterwave card creation requires first_name, last_name, date_of_birth, phone, title, and gender. Complete the user profile (names + DOB + phone + gender) or pass them in billing.');
         }
 
+        // Some callers pass a billing array that includes empty keys (e.g. gender => null),
+        // which would otherwise override our derived/required fields and trigger validation errors.
+        $billingFiltered = array_filter($billing, function ($value) {
+            if ($value === null) {
+                return false;
+            }
+            if (is_string($value) && trim($value) === '') {
+                return false;
+            }
+            return true;
+        });
+
         $payload = array_merge([
             'currency' => $currency,
             'amount' => max(1.0, $amount),
@@ -205,16 +217,17 @@ class FlutterwaveVirtualCardService
             'billing_postal_code' => (string) ($billing['postal_code'] ?? config('services.flutterwave.virtual_cards_billing_postal_code', '0001')),
             'billing_country' => (string) ($billing['country'] ?? config('services.flutterwave.virtual_cards_billing_country', 'ZA')),
             'callback_url' => (string) ($billing['callback_url'] ?? config('services.flutterwave.virtual_cards_callback_url', config('app.url'))),
-            // Common identity fields some Flutterwave virtual card setups require.
-            'first_name' => $firstName,
-            'last_name' => $lastName,
-            'date_of_birth' => $dob,
-            'email' => $email !== '' ? $email : null,
-            'phone' => $phone,
-            'phone_number' => $phone,
-            'gender' => $gender,
-            'title' => $title,
-        ], $billing);
+        ], $billingFiltered);
+
+        // Force required identity fields last so they cannot be overridden by empty/null billing inputs.
+        $payload['first_name'] = $firstName;
+        $payload['last_name'] = $lastName;
+        $payload['date_of_birth'] = $dob;
+        $payload['email'] = $email !== '' ? $email : null;
+        $payload['phone'] = $phone;
+        $payload['phone_number'] = $phone;
+        $payload['gender'] = $gender;
+        $payload['title'] = $title;
 
         try {
             $response = Http::timeout($timeout)
@@ -226,9 +239,34 @@ class FlutterwaveVirtualCardService
         }
 
         if (!$response->ok()) {
-            $message = (string) ($response->json('message') ?? $response->body());
-            $message = trim($message) !== '' ? $message : 'Flutterwave request failed.';
-            throw new \RuntimeException($message);
+            $json = $response->json();
+            $message = is_array($json) ? (string) ($json['message'] ?? '') : '';
+            $errors = is_array($json) ? ($json['errors'] ?? $json['data']['errors'] ?? null) : null;
+
+            $details = '';
+            if (is_array($errors)) {
+                // Render common error formats into a single line.
+                $flat = [];
+                foreach ($errors as $k => $v) {
+                    if (is_string($v)) {
+                        $flat[] = $k . ': ' . $v;
+                    } elseif (is_array($v)) {
+                        $flat[] = $k . ': ' . implode(', ', array_map('strval', $v));
+                    }
+                }
+                $details = implode(' | ', array_filter($flat));
+            }
+
+            $out = trim($message);
+            if ($details !== '') {
+                $out = ($out !== '' ? $out . ' - ' : '') . $details;
+            }
+            if ($out === '') {
+                $out = trim((string) $response->body());
+            }
+            $out = $out !== '' ? $out : 'Flutterwave request failed.';
+
+            throw new \RuntimeException($out);
         }
 
         $raw = $response->json();
