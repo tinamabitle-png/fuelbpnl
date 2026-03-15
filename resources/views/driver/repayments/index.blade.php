@@ -40,6 +40,27 @@
         </div>
     </div>
 
+    <div class="mt-6 glass rounded-2xl p-6 overflow-hidden">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="h-12 w-28 rounded-xl bg-white/70 border border-slate-200 flex items-center justify-center overflow-hidden">
+                    <img
+                        src="{{ asset('images/1Voucher-Logo.webp') }}"
+                        alt="1Voucher"
+                        class="h-10 w-auto object-contain"
+                        loading="lazy"
+                    >
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-slate-500">New Payment Method</p>
+                    <h2 class="brand-font text-lg text-slate-900 mt-1">1Voucher Weekly Repayment Pay</h2>
+                    <p class="text-sm text-slate-600 mt-1">Pay all repayments due in the next 7 days using a prepaid 1Voucher PIN.</p>
+                </div>
+            </div>
+            <p class="text-xs text-slate-500">Available in the mobile app and API.</p>
+        </div>
+    </div>
+
     <div class="mt-6 glass rounded-2xl p-6">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>

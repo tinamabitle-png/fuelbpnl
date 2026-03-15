@@ -84,6 +84,29 @@
         </div>
     </div>
 
+    <div class="mt-6 glass rounded-2xl p-6 overflow-hidden">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="h-12 w-28 rounded-xl bg-white/70 border border-slate-200 flex items-center justify-center overflow-hidden">
+                    <img
+                        src="{{ asset('images/1Voucher-Logo.webp') }}"
+                        alt="1Voucher"
+                        class="h-10 w-auto object-contain"
+                        loading="lazy"
+                    >
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Prepaid Repayments</p>
+                    <h2 class="brand-font text-lg text-slate-900 mt-1">Pay a Full Week of Repayments With 1Voucher</h2>
+                    <p class="text-sm text-slate-600 mt-1">No card needed. Use a 1Voucher PIN to clear due repayments for the next 7 days.</p>
+                </div>
+            </div>
+            <a href="{{ route('driver.repayments.index') }}" class="px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800">
+                View Repayments
+            </a>
+        </div>
+    </div>
+
     @php
         $saBrands = [
             ['name' => 'Shell', 'slug' => 'shell-sa'],
