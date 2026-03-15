@@ -41,7 +41,14 @@ class FlutterwaveVirtualCardService
                 ->withToken($secretKey)
                 ->get($baseUrl . '/v3/virtual-cards/' . urlencode($providerCardId));
         } catch (ConnectionException $e) {
-            throw new \RuntimeException('Failed to connect to Flutterwave.');
+            Log::warning('Flutterwave reveal connection failed', [
+                'base_url' => $baseUrl,
+                'endpoint' => '/v3/virtual-cards/{id}',
+                'error' => $e->getMessage(),
+            ]);
+            $msg = trim((string) $e->getMessage());
+            $msg = $msg !== '' ? (': ' . $msg) : '';
+            throw new \RuntimeException('Failed to connect to Flutterwave' . $msg);
         }
 
         if (!$response->ok()) {
@@ -292,7 +299,14 @@ class FlutterwaveVirtualCardService
                 ->withToken($secretKey)
                 ->post($baseUrl . '/v3/virtual-cards', $payload);
         } catch (ConnectionException $e) {
-            throw new \RuntimeException('Failed to connect to Flutterwave.');
+            Log::warning('Flutterwave create connection failed', [
+                'base_url' => $baseUrl,
+                'endpoint' => '/v3/virtual-cards',
+                'error' => $e->getMessage(),
+            ]);
+            $msg = trim((string) $e->getMessage());
+            $msg = $msg !== '' ? (': ' . $msg) : '';
+            throw new \RuntimeException('Failed to connect to Flutterwave' . $msg);
         }
 
         if (!$response->ok()) {
@@ -535,7 +549,14 @@ class FlutterwaveVirtualCardService
                 ->withToken($secretKey)
                 ->post($baseUrl . '/v3/virtual-cards/' . urlencode($providerCardId) . '/fund', $payload);
         } catch (ConnectionException $e) {
-            throw new \RuntimeException('Failed to connect to Flutterwave.');
+            Log::warning('Flutterwave fund connection failed', [
+                'base_url' => $baseUrl,
+                'endpoint' => '/v3/virtual-cards/{id}/fund',
+                'error' => $e->getMessage(),
+            ]);
+            $msg = trim((string) $e->getMessage());
+            $msg = $msg !== '' ? (': ' . $msg) : '';
+            throw new \RuntimeException('Failed to connect to Flutterwave' . $msg);
         }
 
         if (!$response->ok()) {
