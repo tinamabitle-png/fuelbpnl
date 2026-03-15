@@ -694,7 +694,7 @@
         background-color: transparent;
         border-radius: 999px;
         font-weight: 700;
-        color: #adff2f; /* greenyellow */
+        color: #111827; /* keep text black */
         box-shadow: 0 0 0 2px #adff2f;
         cursor: pointer;
         overflow: hidden;
@@ -733,18 +733,19 @@
         z-index: 2;
         transform: translateX(-12px);
         transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        color: #111827;
     }
 
     .animated-button:hover {
         box-shadow: 0 0 0 12px transparent;
-        color: #212121;
+        color: #111827;
         border-radius: 12px;
     }
 
     .animated-button:hover .arr-1 { right: -25%; }
     .animated-button:hover .arr-2 { left: 14px; }
     .animated-button:hover .text { transform: translateX(12px); }
-    .animated-button:hover svg { fill: #212121; }
+    .animated-button:hover svg { fill: #111827; }
 
     .animated-button:active {
         transform: scale(0.95);
