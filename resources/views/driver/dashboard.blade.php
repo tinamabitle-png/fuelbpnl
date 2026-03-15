@@ -246,15 +246,16 @@
                                 <div class="driver-vwallet-card-inner">
                                     <div class="driver-vwallet-card-top">
                                         <span class="driver-vwallet-brand">
-                                            @if($logoUrl)
-                                                <img src="{{ $logoUrl }}" alt="{{ $brandName }} logo" class="driver-vwallet-logo" loading="lazy">
-                                            @else
-                                                <span class="driver-vwallet-fallback-logo">{{ substr($brandName, 0, 1) }}</span>
-                                            @endif
                                             <span class="driver-vwallet-brand-name">{{ $brandName }}</span>
                                         </span>
                                         <span class="driver-vwallet-top-actions" aria-label="Virtual card actions">
-                                            <span class="driver-vwallet-chip" aria-hidden="true"></span>
+                                            <span class="driver-vwallet-chip" aria-label="{{ $brandName }} card">
+                                                @if($logoUrl)
+                                                    <img src="{{ $logoUrl }}" alt="{{ $brandName }} logo" class="driver-vwallet-chip-logo" loading="lazy">
+                                                @else
+                                                    <span class="driver-vwallet-chip-fallback" aria-hidden="true">{{ substr($brandName, 0, 1) }}</span>
+                                                @endif
+                                            </span>
                                             <button type="button" class="driver-vwallet-reveal-btn" aria-label="Reveal card details">
                                                 Reveal
                                             </button>
@@ -791,6 +792,24 @@
         border-radius: 6px;
         border: 1px solid rgba(255, 255, 255, 0.12);
         flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+    }
+
+    .driver-vwallet-chip-logo {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 3px;
+        background: rgba(255, 255, 255, 0.92);
+    }
+
+    .driver-vwallet-chip-fallback {
+        font-size: 12px;
+        font-weight: 900;
+        color: var(--card-fg, #fff);
+        opacity: 0.95;
     }
 
     .driver-vwallet-top-actions {
