@@ -253,7 +253,15 @@
                                             @endif
                                             <span class="driver-vwallet-brand-name">{{ $brandName }}</span>
                                         </span>
-                                        <span class="driver-vwallet-chip" aria-hidden="true"></span>
+                                        <span class="driver-vwallet-top-actions" aria-label="Virtual card actions">
+                                            <span class="driver-vwallet-chip" aria-hidden="true"></span>
+                                            <button type="button" class="driver-vwallet-reveal-btn" aria-label="Reveal card details">
+                                                Reveal
+                                            </button>
+                                            <button type="button" class="driver-vwallet-convert-btn" aria-label="Convert allocation to voucher">
+                                                Convert
+                                            </button>
+                                        </span>
                                     </div>
 
                                     <div class="driver-vwallet-card-bottom">
@@ -268,13 +276,6 @@
 	                                            <span class="driver-vwallet-cvv" data-cvv-fallback="---">CVV ---</span>
 	                                        </div>
 	                                    </div>
-	
-	                                    <button type="button" class="driver-vwallet-reveal-btn" aria-label="Reveal card details">
-	                                        Reveal
-	                                    </button>
-	                                    <button type="button" class="driver-vwallet-convert-btn" aria-label="Convert allocation to voucher">
-	                                        Convert
-	                                    </button>
 	                                </div>
 	                            </div>
 	                            @endforeach
@@ -759,7 +760,7 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 170px;
+        max-width: 120px;
     }
 
     .driver-vwallet-logo {
@@ -789,6 +790,14 @@
         background: rgba(255, 255, 255, 0.16);
         border-radius: 6px;
         border: 1px solid rgba(255, 255, 255, 0.12);
+        flex: 0 0 auto;
+    }
+
+    .driver-vwallet-top-actions {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
         flex: 0 0 auto;
     }
 
@@ -847,17 +856,13 @@
         letter-spacing: 1px;
     }
 
-	    .driver-vwallet-reveal-btn {
-	        position: absolute;
-	        right: 14px;
-	        top: 14px;
-        z-index: 2;
+    .driver-vwallet-reveal-btn {
         border: 1px solid rgba(255, 255, 255, 0.18);
         background: rgba(15, 23, 42, 0.22);
         color: var(--card-fg, #fff);
-        padding: 6px 10px;
+        padding: 6px 9px;
         border-radius: 999px;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 800;
         letter-spacing: 0.06em;
         text-transform: uppercase;
@@ -873,43 +878,39 @@
         opacity: 1;
     }
 
-	    .driver-vwallet-reveal-btn[disabled] {
-	        opacity: 0.55;
-	        cursor: not-allowed;
-	        transform: none;
-	    }
+    .driver-vwallet-reveal-btn[disabled] {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+    }
 
-	    .driver-vwallet-convert-btn {
-	        position: absolute;
-	        right: 14px;
-	        top: 46px;
-	        z-index: 2;
-	        border: 1px solid rgba(255, 255, 255, 0.18);
-	        background: rgba(255, 255, 255, 0.12);
-	        color: var(--card-fg, #fff);
-	        padding: 6px 10px;
-	        border-radius: 999px;
-	        font-size: 11px;
-	        font-weight: 800;
-	        letter-spacing: 0.06em;
-	        text-transform: uppercase;
-	        cursor: pointer;
-	        backdrop-filter: blur(10px);
-	        transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
-	        opacity: 0.9;
-	    }
+    .driver-vwallet-convert-btn {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.12);
+        color: var(--card-fg, #fff);
+        padding: 6px 9px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+        opacity: 0.9;
+    }
 
-	    .driver-vwallet-convert-btn:hover {
-	        transform: translateY(-1px);
-	        background: rgba(255, 255, 255, 0.18);
-	        opacity: 1;
-	    }
+    .driver-vwallet-convert-btn:hover {
+        transform: translateY(-1px);
+        background: rgba(255, 255, 255, 0.18);
+        opacity: 1;
+    }
 
-	    .driver-vwallet-convert-btn[disabled] {
-	        opacity: 0.55;
-	        cursor: not-allowed;
-	        transform: none;
-	    }
+    .driver-vwallet-convert-btn[disabled] {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+    }
 
 	    .driver-vwallet-modal {
 	        position: fixed;
