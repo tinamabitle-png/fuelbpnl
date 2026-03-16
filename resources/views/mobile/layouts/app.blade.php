@@ -48,7 +48,7 @@
     <link rel="apple-touch-icon" href="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Goldman:wght@400;700&family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     @php
         $hasViteAssets = is_file(public_path('hot')) || is_file(public_path('build/manifest.json'));
     @endphp
@@ -70,6 +70,7 @@
             --accent: #38bdf8;
             --text-strong: #0f172a;
             --text-muted: #475569;
+            --title-font: "Goldman", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         body.mobile-shell {
@@ -95,7 +96,15 @@
         }
 
         .mobile-brand-font {
-            font-family: "Space Grotesk", sans-serif;
+            font-family: var(--title-font);
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5 {
+            font-family: var(--title-font);
         }
     </style>
 </head>
