@@ -69,23 +69,6 @@
         </div>
     </div>
 
-    <div class="glass rounded-2xl p-6 mt-8">
-        <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div class="max-w-xl">
-                <p class="text-xs uppercase tracking-[0.2em] text-blue-600">Platform Walkthrough</p>
-                <h2 class="brand-font text-2xl md:text-3xl text-slate-900 mt-2">See BWiser in action</h2>
-            </div>
-        </div>
-        <div class="video-embed mt-6">
-            <iframe
-                src="https://www.youtube.com/embed/ylHzYziQq2Y"
-                title="BWiser platform walkthrough"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowfullscreen>
-            </iframe>
-        </div>
-    </div>
-
 </section>
 <div id="cookieConsentBar" class="cookie-bar hidden" role="dialog" aria-live="polite" aria-label="Cookie consent">
     <div class="cookie-bar__inner">
@@ -283,26 +266,6 @@
     .trusted-ticker-edge--right {
         right: 0;
         background: linear-gradient(to left, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0));
-    }
-
-    .video-embed {
-        position: relative;
-        padding-bottom: 56.25%;
-        height: 0;
-        overflow: hidden;
-        border-radius: 1rem;
-        border: 1px solid #dbeafe;
-        background: radial-gradient(circle at 20% 20%, #eff6ff, #dbeafe 55%, #bfdbfe);
-        box-shadow: 0 16px 34px -26px rgba(37, 99, 235, 0.5);
-    }
-
-    .video-embed iframe {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        border: 0;
-        border-radius: 1rem;
     }
 
     .cookie-bar {
