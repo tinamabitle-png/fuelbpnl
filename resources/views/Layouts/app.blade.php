@@ -51,7 +51,7 @@
     <link rel="apple-touch-icon" href="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Goldman:wght@400;700&family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     @php
         $hasViteAssets = is_file(public_path('hot')) || is_file(public_path('build/manifest.json'));
@@ -62,6 +62,26 @@
         <script src="https://cdn.tailwindcss.com"></script>
     @endif
     <style>
+        @font-face {
+            font-family: "BBH Bartle";
+            src:
+                url("{{ asset('fonts/bbh-bartle/bbh-bartle-regular.woff2') }}") format("woff2"),
+                url("{{ asset('fonts/bbh-bartle/bbh-bartle-regular.woff') }}") format("woff");
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "BBH Bartle";
+            src:
+                url("{{ asset('fonts/bbh-bartle/bbh-bartle-bold.woff2') }}") format("woff2"),
+                url("{{ asset('fonts/bbh-bartle/bbh-bartle-bold.woff') }}") format("woff");
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+
         :root {
             --ink: #0f172a;
             --slate: #1f2937;
@@ -73,7 +93,7 @@
             --card: #ffffff;
             --glass: #ffffff;
             --line: rgba(226, 232, 240, 0.9);
-            --title-font: "Goldman", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --title-font: "BBH Bartle", "Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         * {

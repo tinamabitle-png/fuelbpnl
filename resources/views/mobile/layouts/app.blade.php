@@ -48,7 +48,7 @@
     <link rel="apple-touch-icon" href="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Goldman:wght@400;700&family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     @php
         $hasViteAssets = is_file(public_path('hot')) || is_file(public_path('build/manifest.json'));
     @endphp
@@ -58,6 +58,26 @@
         <script src="https://cdn.tailwindcss.com"></script>
     @endif
     <style>
+        @font-face {
+            font-family: "BBH Bartle";
+            src:
+                url("{{ asset('fonts/bbh-bartle/bbh-bartle-regular.woff2') }}") format("woff2"),
+                url("{{ asset('fonts/bbh-bartle/bbh-bartle-regular.woff') }}") format("woff");
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "BBH Bartle";
+            src:
+                url("{{ asset('fonts/bbh-bartle/bbh-bartle-bold.woff2') }}") format("woff2"),
+                url("{{ asset('fonts/bbh-bartle/bbh-bartle-bold.woff') }}") format("woff");
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+
         :root {
             --mobile-bg:
                 radial-gradient(900px 550px at 10% 0%, #eef2ff 0%, #f8fafc 58%),
@@ -70,7 +90,7 @@
             --accent: #38bdf8;
             --text-strong: #0f172a;
             --text-muted: #475569;
-            --title-font: "Goldman", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --title-font: "BBH Bartle", "Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         body.mobile-shell {
