@@ -35,28 +35,41 @@
                     </svg>
                 </a>
 
-                @php
-                    $quickLinks = [
-                        [
-                            'label' => 'Repayments',
-                            'route' => 'driver.repayments.index',
-                            'active' => 'driver.repayments.*',
-                            'svg' => 'M12 1a10 10 0 1 0 10 10A10 10 0 0 0 12 1Zm1 5a1 1 0 1 0-2 0v1.06a4 4 0 0 0 0 7.88V16a1 1 0 1 0 2 0v-1.06a4 4 0 0 0 0-7.88Z M12 9a2 2 0 0 1 1 3.73V9.27A2 2 0 0 1 12 9Zm-1 6.73V11.27a2 2 0 0 0 0 4.46Z',
-                        ],
-                        [
-                            'label' => 'Bank Statement',
-                            'route' => 'driver.bank-statements.create',
-                            'active' => 'driver.bank-statements.*',
-                            'svg' => 'M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 15a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z',
-                        ],
-                        [
-                            'label' => 'Profile',
-                            'route' => 'driver.profile',
-                            'active' => 'driver.profile*',
-                            'svg' => 'M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.01-8 4.5A1.5 1.5 0 0 0 5.5 20h13A1.5 1.5 0 0 0 20 18.5C20 16.01 16.42 14 12 14Z',
-                        ],
-                    ];
-                @endphp
+	                @php
+	                    $quickLinks = [
+	                        [
+	                            'label' => 'Repayments',
+	                            'route' => 'driver.repayments.index',
+	                            'active' => 'driver.repayments.*',
+	                            'icon' => '
+	                                <path d="M2.25 7.5A2.25 2.25 0 0 1 4.5 5.25h15A2.25 2.25 0 0 1 21.75 7.5v9A2.25 2.25 0 0 1 19.5 18.75h-15A2.25 2.25 0 0 1 2.25 16.5v-9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                                <path d="M2.25 9h19.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                                <path d="M6 15.75h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                            ',
+	                        ],
+	                        [
+	                            'label' => 'Bank Statement',
+	                            'route' => 'driver.bank-statements.create',
+	                            'active' => 'driver.bank-statements.*',
+	                            'icon' => '
+	                                <path d="M6 2.25h7.5L18 6.75v13.5A1.5 1.5 0 0 1 16.5 21.75H6A1.5 1.5 0 0 1 4.5 20.25V3.75A1.5 1.5 0 0 1 6 2.25Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                                <path d="M13.5 2.25V6.75H18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                                <path d="M12 18V11.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                                <path d="M8.25 14.25 12 10.5l3.75 3.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                            ',
+	                        ],
+	                        [
+	                            'label' => 'Profile',
+	                            'route' => 'driver.profile',
+	                            'active' => 'driver.profile*',
+	                            'icon' => '
+	                                <path d="M12 21.75a9.75 9.75 0 1 0-9.75-9.75 9.75 9.75 0 0 0 9.75 9.75Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                                <path d="M12 12a3.75 3.75 0 1 0-3.75-3.75A3.75 3.75 0 0 0 12 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                                <path d="M4.5 20.25a7.5 7.5 0 0 1 15 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                            ',
+	                        ],
+	                    ];
+	                @endphp
 
                 <nav
                     aria-label="Quick links"
@@ -74,13 +87,13 @@
                             class="group h-12 w-12 rounded-full grid place-items-center transition-transform duration-150 {{ $isActive ? 'text-fuchsia-600 -translate-y-1' : 'text-slate-700 opacity-80 hover:opacity-100 hover:text-fuchsia-600 hover:-translate-y-1' }}"
                             title="{{ $link['label'] }}"
                         >
-                            <span class="sr-only">{{ $link['label'] }}</span>
-                            <svg viewBox="0 0 24 24" fill="none" class="h-7 w-7" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                <path d="{{ $link['svg'] }}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                            </svg>
-                        </a>
-                    @endforeach
-                </nav>
+	                            <span class="sr-only">{{ $link['label'] }}</span>
+	                            <svg viewBox="0 0 24 24" fill="none" class="h-7 w-7" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+	                                {!! $link['icon'] !!}
+	                            </svg>
+	                        </a>
+	                    @endforeach
+	                </nav>
             </div>
         </div>
     </div>
