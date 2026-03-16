@@ -9,7 +9,7 @@
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Goldman:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     @php
@@ -26,33 +26,13 @@
     
     <!-- Custom Styles -->
     <style>
-        @font-face {
-            font-family: "BBH Bartle";
-            src:
-                url("{{ asset('fonts/bbh-bartle/bbh-bartle-regular.woff2') }}") format("woff2"),
-                url("{{ asset('fonts/bbh-bartle/bbh-bartle-regular.woff') }}") format("woff");
-            font-weight: 400;
-            font-style: normal;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: "BBH Bartle";
-            src:
-                url("{{ asset('fonts/bbh-bartle/bbh-bartle-bold.woff2') }}") format("woff2"),
-                url("{{ asset('fonts/bbh-bartle/bbh-bartle-bold.woff') }}") format("woff");
-            font-weight: 700;
-            font-style: normal;
-            font-display: swap;
-        }
-
         :root {
             --primary: #3b82f6;
             --primary-dark: #2563eb;
             --sidebar: #1f2937;
             --sidebar-hover: #374151;
             --sidebar-active: #111827;
-            --title-font: "BBH Bartle", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --title-font: "Goldman", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         
         * {
