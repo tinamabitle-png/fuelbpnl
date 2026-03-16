@@ -21,6 +21,8 @@ VPS_DIR="${VPS_DIR:-}"
 REMOTE_PHP="${REMOTE_PHP:-php}"
 REMOTE_COMPOSER="${REMOTE_COMPOSER:-composer}"
 SSH_OPTS="${SSH_OPTS:- -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 }"
+DEPLOY_KEY_PATH="${DEPLOY_KEY_PATH:-$HOME/.ssh/bwiser_deploy_ed25519}"
+INSTALL_KEY="false"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
@@ -33,8 +35,10 @@ while [[ $# -gt 0 ]]; do
     --dir) VPS_DIR="${2:-}"; shift 2;;
     --php) REMOTE_PHP="${2:-}"; shift 2;;
     --composer) REMOTE_COMPOSER="${2:-}"; shift 2;;
+    --key) DEPLOY_KEY_PATH="${2:-}"; shift 2;;
+    --install-key) INSTALL_KEY="true"; shift 1;;
     --help|-h)
-      sed -n '1,80p' "$0"
+      sed -n '1,140p' "$0"
       exit 0
       ;;
     *)
@@ -55,7 +59,51 @@ echo "Local: pushing ${REMOTE}/${BRANCH}..."
 git push "${REMOTE}" "${BRANCH}"
 
 TARGET="${VPS_USER}@${VPS_HOST}"
+
+# Ensure we have a local deploy key to use for SSH. If it's not installed on the VPS yet,
+# you can run with --install-key (it will prompt you for the VPS password interactively).
+if [[ ! -f "${DEPLOY_KEY_PATH}" ]]; then
+  echo "Local: creating SSH deploy key: ${DEPLOY_KEY_PATH}"
+  mkdir -p "$(dirname "${DEPLOY_KEY_PATH}")"
+  chmod 700 "$(dirname "${DEPLOY_KEY_PATH}")"
+  ssh-keygen -t ed25519 -N "" -f "${DEPLOY_KEY_PATH}" -C "bwiser-deploy" >/dev/null
+fi
+
+PUBKEY_PATH="${DEPLOY_KEY_PATH}.pub"
+[[ -f "${PUBKEY_PATH}" ]] || die "Missing public key: ${PUBKEY_PATH}"
+
+SSH_OPTS_KEYED="${SSH_OPTS} -i ${DEPLOY_KEY_PATH}"
+
 echo "Remote: deploying to ${TARGET} (branch: ${BRANCH})..."
+
+# Fast auth check (won't prompt). If it fails, offer key install guidance.
+if ! ssh ${SSH_OPTS_KEYED} -o BatchMode=yes "${TARGET}" "echo ok" >/dev/null 2>&1; then
+  if [[ "${INSTALL_KEY}" == "true" ]]; then
+    if command -v ssh-copy-id >/dev/null 2>&1; then
+      echo "Remote: installing SSH key via ssh-copy-id (you may be prompted for the VPS password)..."
+      ssh-copy-id -i "${PUBKEY_PATH}" ${SSH_OPTS} "${TARGET}"
+    else
+      echo "ssh-copy-id not found. Install the key manually by running this on your machine:"
+      echo
+      echo "  cat ${PUBKEY_PATH} | ssh ${SSH_OPTS} ${TARGET} 'mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys'"
+      echo
+      exit 21
+    fi
+  else
+    echo "Remote: SSH key auth is not set up for ${TARGET}."
+    echo "Run this to install the deploy key (recommended):"
+    echo
+    echo "  ./scripts/deploy_vps.sh --host ${VPS_HOST} --user ${VPS_USER} --install-key"
+    echo
+    echo "Or add this public key to ${TARGET}:~/.ssh/authorized_keys:"
+    echo
+    cat "${PUBKEY_PATH}"
+    echo
+    exit 20
+  fi
+fi
+
+# At this point key auth should work.
 
 remote_script='
 set -euo pipefail
@@ -135,5 +183,4 @@ echo "Caches..."
 echo "Deploy complete."
 '
 
-ssh ${SSH_OPTS} "${TARGET}" "bash -lc $(printf '%q' "${remote_script}")"
-
+ssh ${SSH_OPTS_KEYED} "${TARGET}" "bash -lc $(printf '%q' "${remote_script}")"
