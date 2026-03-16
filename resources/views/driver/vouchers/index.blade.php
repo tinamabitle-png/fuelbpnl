@@ -71,24 +71,26 @@
                         @endphp
                         <tr>
                             <td class="px-3 py-2.5 sm:px-4 sm:py-3 font-semibold text-slate-900 whitespace-nowrap">{{ $voucher->code }}</td>
-                            <td class="px-3 py-2.5 sm:px-4 sm:py-3">
-                                @if($isVirtualCardVoucher)
-                                    <div class="card-id567" tabindex="0" role="button" aria-label="Voucher {{ $voucher->code }} details">
-                                        <div class="visa-mark" aria-hidden="true">VISA</div>
-                                        <svg shape-rendering="crispEdges" viewBox="0 -0.5 29 29" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                            <path d="M0 0h7M8 0h2M14 0h1M16 0h5M22 0h7M0 1h1M6 1h1M13 1h1M17 1h2M22 1h1M28 1h1M0 2h1M2 2h3M6 2h1M8 2h1M11 2h4M18 2h1M20 2h1M22 2h1M24 2h3M28 2h1M0 3h1M2 3h3M6 3h1M8 3h2M11 3h1M13 3h1M15 3h5M22 3h1M24 3h3M28 3h1M0 4h1M2 4h3M6 4h1M8 4h4M13 4h1M15 4h1M19 4h1M22 4h1M24 4h3M28 4h1M0 5h1M6 5h1M9 5h1M12 5h2M17 5h4M22 5h1M28 5h1M0 6h7M8 6h1M10 6h1M12 6h1M14 6h1M16 6h1M18 6h1M20 6h1M22 6h7M9 7h1M11 7h1M15 7h6M0 8h4M6 8h1M8 8h1M13 8h2M17 8h3M21 8h1M24 8h3M28 8h1M2 9h1M4 9h2M7 9h1M9 9h1M14 9h1M16 9h1M19 9h2M22 9h3M28 9h1M0 10h5M6 10h1M8 10h1M13 10h1M16 10h1M18 10h1M20 10h1M22 10h3M26 10h2M1 11h1M3 11h2M7 11h1M11 11h4M16 11h1M18 11h1M20 11h5M28 11h1M1 12h3M5 12h2M9 12h1M11 12h1M13 12h5M19 12h1M25 12h2M0 13h2M3 13h3M8 13h1M10 13h2M14 13h1M16 13h2M19 13h2M22 13h2M26 13h3M0 14h1M2 14h1M4 14h3M9 14h2M12 14h1M14 14h1M16 14h1M19 14h3M23 14h2M26 14h3M0 15h2M3 15h2M8 15h1M12 15h1M14 15h3M20 15h1M22 15h3M27 15h1M0 16h1M2 16h3M6 16h1M10 16h2M18 16h1M20 16h2M24 16h2M27 16h1M1 17h2M4 17h1M7 17h3M12 17h1M14 17h2M18 17h1M20 17h2M23 17h1M25 17h3M0 18h1M3 18h1M6 18h1M8 18h5M15 18h2M23 18h1M26 18h1M2 19h4M12 19h1M14 19h1M16 19h2M19 19h3M26 19h1M1 20h1M3 20h1M6 20h7M14 20h2M17 20h10M8 21h3M12 21h1M18 21h1M20 21h1M24 21h5M0 22h7M9 22h6M19 22h2M22 22h1M24 22h2M27 22h1M0 23h1M6 23h1M9 23h1M13 23h3M18 23h1M20 23h1M24 23h2M27 23h1M0 24h1M2 24h3M6 24h1M10 24h1M12 24h1M14 24h4M20 24h5M26 24h3M0 25h1M2 25h3M6 25h1M8 25h1M11 25h2M15 25h2M19 25h3M24 25h2M28 25h1M0 26h1M2 26h3M6 26h1M8 26h1M10 26h2M13 26h1M21 26h1M23 26h1M26 26h1M28 26h1M0 27h1M6 27h1M8 27h1M11 27h1M14 27h1M16 27h1M18 27h3M23 27h1M25 27h1M27 27h1M0 28h7M8 28h1M14 28h3M19 28h2M25 28h1M27 28h1" stroke="#000000"></path>
-                                        </svg>
+	                            <td class="px-3 py-2.5 sm:px-4 sm:py-3">
+	                                @if($isVirtualCardVoucher)
+	                                    <div class="relative inline-flex items-center justify-center p-1.5 sm:p-2 rounded-xl border-2 border-slate-300 bg-white shadow-sm">
+	                                        <div class="card-id567" tabindex="0" role="button" aria-label="Voucher {{ $voucher->code }} details">
+	                                            <div class="visa-mark" aria-hidden="true">VISA</div>
+	                                            <svg shape-rendering="crispEdges" viewBox="0 -0.5 29 29" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+	                                                <path d="M0 0h7M8 0h2M14 0h1M16 0h5M22 0h7M0 1h1M6 1h1M13 1h1M17 1h2M22 1h1M28 1h1M0 2h1M2 2h3M6 2h1M8 2h1M11 2h4M18 2h1M20 2h1M22 2h1M24 2h3M28 2h1M0 3h1M2 3h3M6 3h1M8 3h2M11 3h1M13 3h1M15 3h5M22 3h1M24 3h3M28 3h1M0 4h1M2 4h3M6 4h1M8 4h4M13 4h1M15 4h1M19 4h1M22 4h1M24 4h3M28 4h1M0 5h1M6 5h1M9 5h1M12 5h2M17 5h4M22 5h1M28 5h1M0 6h7M8 6h1M10 6h1M12 6h1M14 6h1M16 6h1M18 6h1M20 6h1M22 6h7M9 7h1M11 7h1M15 7h6M0 8h4M6 8h1M8 8h1M13 8h2M17 8h3M21 8h1M24 8h3M28 8h1M2 9h1M4 9h2M7 9h1M9 9h1M14 9h1M16 9h1M19 9h2M22 9h3M28 9h1M0 10h5M6 10h1M8 10h1M13 10h1M16 10h1M18 10h1M20 10h1M22 10h3M26 10h2M1 11h1M3 11h2M7 11h1M11 11h4M16 11h1M18 11h1M20 11h5M28 11h1M1 12h3M5 12h2M9 12h1M11 12h1M13 12h5M19 12h1M25 12h2M0 13h2M3 13h3M8 13h1M10 13h2M14 13h1M16 13h2M19 13h2M22 13h2M26 13h3M0 14h1M2 14h1M4 14h3M9 14h2M12 14h1M14 14h1M16 14h1M19 14h3M23 14h2M26 14h3M0 15h2M3 15h2M8 15h1M12 15h1M14 15h3M20 15h1M22 15h3M27 15h1M0 16h1M2 16h3M6 16h1M10 16h2M18 16h1M20 16h2M24 16h2M27 16h1M1 17h2M4 17h1M7 17h3M12 17h1M14 17h2M18 17h1M20 17h2M23 17h1M25 17h3M0 18h1M3 18h1M6 18h1M8 18h5M15 18h2M23 18h1M26 18h1M2 19h4M12 19h1M14 19h1M16 19h2M19 19h3M26 19h1M1 20h1M3 20h1M6 20h7M14 20h2M17 20h10M8 21h3M12 21h1M18 21h1M20 21h1M24 21h5M0 22h7M9 22h6M19 22h2M22 22h1M24 22h2M27 22h1M0 23h1M6 23h1M9 23h1M13 23h3M18 23h1M20 23h1M24 23h2M27 23h1M0 24h1M2 24h3M6 24h1M10 24h1M12 24h1M14 24h4M20 24h5M26 24h3M0 25h1M2 25h3M6 25h1M8 25h1M11 25h2M15 25h2M19 25h3M24 25h2M28 25h1M0 26h1M2 26h3M6 26h1M8 26h1M10 26h2M13 26h1M21 26h1M23 26h1M26 26h1M28 26h1M0 27h1M6 27h1M8 27h1M11 27h1M14 27h1M16 27h1M18 27h3M23 27h1M25 27h1M27 27h1M0 28h7M8 28h1M14 28h3M19 28h2M25 28h1M27 28h1" stroke="#000000"></path>
+	                                            </svg>
 
-                                        <div class="prompt-id567">
-                                            <div class="token-container">
-                                                <svg viewBox="0 0 24 24" fill="none" class="creator-points" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                                    <path d="M19.4133 4.89862L14.5863 2.17544C12.9911 1.27485 11.0089 1.27485 9.41368 2.17544L4.58674 4.89862C2.99153 5.7992 2 7.47596 2 9.2763V14.7235C2 16.5238 2.99153 18.2014 4.58674 19.1012L9.41368 21.8252C10.2079 22.2734 11.105 22.5 12.0046 22.5C12.6952 22.5 13.3874 22.3657 14.0349 22.0954C14.2204 22.018 14.4059 21.9273 14.5872 21.8252L19.4141 19.1012C19.9765 18.7831 20.4655 18.3728 20.8651 17.8825C21.597 16.9894 22 15.8671 22 14.7243V9.27713C22 7.47678 21.0085 5.7992 19.4133 4.89862Z" fill="currentColor"></path>
-                                                </svg>
-                                            </div>
-                                            <div class="blurry-splash"></div>
-                                        </div>
-                                    </div>
-                                @else
+	                                            <div class="prompt-id567">
+	                                                <div class="token-container">
+	                                                    <svg viewBox="0 0 24 24" fill="none" class="creator-points" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+	                                                        <path d="M19.4133 4.89862L14.5863 2.17544C12.9911 1.27485 11.0089 1.27485 9.41368 2.17544L4.58674 4.89862C2.99153 5.7992 2 7.47596 2 9.2763V14.7235C2 16.5238 2.99153 18.2014 4.58674 19.1012L9.41368 21.8252C10.2079 22.2734 11.105 22.5 12.0046 22.5C12.6952 22.5 13.3874 22.3657 14.0349 22.0954C14.2204 22.018 14.4059 21.9273 14.5872 21.8252L19.4141 19.1012C19.9765 18.7831 20.4655 18.3728 20.8651 17.8825C21.597 16.9894 22 15.8671 22 14.7243V9.27713C22 7.47678 21.0085 5.7992 19.4133 4.89862Z" fill="currentColor"></path>
+	                                                    </svg>
+	                                                </div>
+	                                                <div class="blurry-splash"></div>
+	                                            </div>
+	                                        </div>
+	                                    </div>
+	                                @else
                                     @php
                                         $qrValue = $voucher->qr_code ?: $voucher->code;
                                         $qrImage = 'https://api.qrserver.com/v1/create-qr-code/?size=96x96&margin=8&ecc=H&format=png&data=' . urlencode($qrValue);
@@ -245,15 +247,16 @@
         stroke: #93c5fd;
     }
 
-	    /* Virtual-card created vouchers (interactive tile) */
-	    .card-id567 {
-	        width: 112px;
-	        height: 112px;
-        background: transparent;
-        color: white;
-        border-radius: 1rem;
-	        padding: 0.75rem;
-        position: relative;
+		    /* Virtual-card created vouchers (interactive tile) */
+		    .card-id567 {
+		        /* Match the normal voucher QR block (inner) so the outer border is identical */
+		        width: 64px;
+		        height: 64px;
+	        background: transparent;
+	        color: white;
+	        border-radius: 0.75rem;
+		        padding: 0.45rem;
+	        position: relative;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -296,15 +299,15 @@
         z-index: 0;
     }
 
-    .card-id567::after {
-        content: "";
-        position: absolute;
-        inset: 2px;
-        border-radius: calc(1rem - 2px);
-        background: rgb(22, 22, 22);
-        z-index: 1;
-        transition: 300ms ease;
-    }
+	    .card-id567::after {
+	        content: "";
+	        position: absolute;
+	        inset: 2px;
+	        border-radius: calc(0.75rem - 2px);
+	        background: rgb(22, 22, 22);
+	        z-index: 1;
+	        transition: 300ms ease;
+	    }
 
     .card-id567 svg path {
         transition: 300ms ease;
@@ -316,37 +319,37 @@
         z-index: 2;
     }
 
-	    .visa-mark {
-        position: absolute;
-	        top: 9px;
-	        right: 9px;
-        font-weight: 900;
-        letter-spacing: 0.12em;
-	        font-size: 10px;
-        color: rgba(255, 255, 255, 0.85);
-        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
-        transition: 300ms ease;
-        pointer-events: none;
-    }
+		    .visa-mark {
+	        position: absolute;
+		        top: 6px;
+		        right: 6px;
+	        font-weight: 900;
+	        letter-spacing: 0.12em;
+		        font-size: 8px;
+	        color: rgba(255, 255, 255, 0.85);
+	        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+	        transition: 300ms ease;
+	        pointer-events: none;
+	    }
 
     .bold-567 {
         font-weight: 800;
         letter-spacing: .06em;
     }
 
-	    .creator-points {
-	        width: 2.15rem;
-	        height: 1.95rem;
-	        color: var(--primary, #2563eb);
-	    }
+		    .creator-points {
+		        width: 1.55rem;
+		        height: 1.4rem;
+		        color: var(--primary, #2563eb);
+		    }
 
-	    .blurry-splash {
-        position: absolute;
-        inset: 0;
-	        width: 52px;
-        margin: 0 auto;
-	        height: 52px;
-        border-radius: 1rem;
+		    .blurry-splash {
+	        position: absolute;
+	        inset: 0;
+		        width: 44px;
+	        margin: 0 auto;
+		        height: 44px;
+	        border-radius: 1rem;
         z-index: -1;
         opacity: 0.7;
         filter: blur(15px);
@@ -358,14 +361,14 @@
         );
     }
 
-	    .prompt-id567 {
-        position: absolute;
-        color: rgb(173, 173, 173);
-        text-align: center;
-	        max-width: 140px;
-	        font-size: 11px;
-	        line-height: 1.1;
-	    }
+		    .prompt-id567 {
+	        position: absolute;
+	        color: rgb(173, 173, 173);
+	        text-align: center;
+		        max-width: 110px;
+		        font-size: 10px;
+		        line-height: 1.1;
+		    }
 
     @media (hover: hover) {
         .card-id567:hover {
@@ -410,24 +413,24 @@
     }
 
 
-	    @media (max-width: 640px) {
-	        .card-id567 {
-	            width: 92px;
-	            height: 92px;
-	            padding: 0.6rem;
-	        }
+		    @media (min-width: 640px) {
+		        .card-id567 {
+		            width: 80px;
+		            height: 80px;
+		            padding: 0.55rem;
+		        }
 
-	        .creator-points {
-	            width: 1.85rem;
-	            height: 1.65rem;
-	        }
+		        .creator-points {
+		            width: 1.75rem;
+		            height: 1.6rem;
+		        }
 
-	        .visa-mark {
-	            top: 7px;
-	            right: 7px;
-	            font-size: 9px;
-	        }
-	    }
+		        .visa-mark {
+		            top: 7px;
+		            right: 7px;
+		            font-size: 9px;
+		        }
+		    }
 
     @keyframes spinny-token-yayyy {
         0% {
