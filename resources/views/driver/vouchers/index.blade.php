@@ -247,12 +247,12 @@
 
 	    /* Virtual-card created vouchers (interactive tile) */
 	    .card-id567 {
-	        width: 128px;
-	        height: 128px;
+	        width: 112px;
+	        height: 112px;
         background: transparent;
         color: white;
         border-radius: 1rem;
-	        padding: 0.85rem;
+	        padding: 0.75rem;
         position: relative;
         display: flex;
         justify-content: center;
@@ -318,11 +318,11 @@
 
 	    .visa-mark {
         position: absolute;
-	        top: 10px;
-	        right: 10px;
+	        top: 9px;
+	        right: 9px;
         font-weight: 900;
         letter-spacing: 0.12em;
-	        font-size: 11px;
+	        font-size: 10px;
         color: rgba(255, 255, 255, 0.85);
         text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
         transition: 300ms ease;
@@ -335,17 +335,17 @@
     }
 
 	    .creator-points {
-	        width: 2.35rem;
-	        height: 2.1rem;
+	        width: 2.15rem;
+	        height: 1.95rem;
 	        color: var(--primary, #2563eb);
 	    }
 
 	    .blurry-splash {
         position: absolute;
         inset: 0;
-	        width: 58px;
+	        width: 52px;
         margin: 0 auto;
-	        height: 58px;
+	        height: 52px;
         border-radius: 1rem;
         z-index: -1;
         opacity: 0.7;
@@ -362,8 +362,8 @@
         position: absolute;
         color: rgb(173, 173, 173);
         text-align: center;
-	        max-width: 150px;
-	        font-size: 12px;
+	        max-width: 140px;
+	        font-size: 11px;
 	        line-height: 1.1;
 	    }
 
@@ -412,20 +412,20 @@
 
 	    @media (max-width: 640px) {
 	        .card-id567 {
-	            width: 104px;
-	            height: 104px;
-	            padding: 0.7rem;
+	            width: 92px;
+	            height: 92px;
+	            padding: 0.6rem;
 	        }
 
 	        .creator-points {
-	            width: 2.0rem;
-	            height: 1.8rem;
+	            width: 1.85rem;
+	            height: 1.65rem;
 	        }
 
 	        .visa-mark {
-	            top: 8px;
-	            right: 8px;
-	            font-size: 10px;
+	            top: 7px;
+	            right: 7px;
+	            font-size: 9px;
 	        }
 	    }
 
