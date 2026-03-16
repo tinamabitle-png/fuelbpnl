@@ -237,6 +237,9 @@ class FlutterwaveVirtualCardService
                 'Save a phone number on the user profile (users.phone) or set FLUTTERWAVE_VIRTUAL_CARDS_PHONE.'
             );
         }
+        // Some Flutterwave validations expect phone_number without '+' (digits only).
+        $phoneDigits = ltrim($phone, '+');
+        $phoneDigits = preg_replace('/\D+/', '', $phoneDigits) ?: $phoneDigits;
 
         $payload = array_merge([
             'currency' => $currency,
@@ -278,7 +281,7 @@ class FlutterwaveVirtualCardService
         $payload['email'] = $email;
         // Phone is required on some Flutterwave accounts; always send it.
         $payload['phone'] = $phone;
-        $payload['phone_number'] = $phone;
+        $payload['phone_number'] = $phoneDigits !== '' ? $phoneDigits : $phone;
         // Some accounts also require gender and title.
         $gender = $this->normalizeGender(trim((string) ($billingFiltered['gender']
             ?? ($user->gender ?? null)
