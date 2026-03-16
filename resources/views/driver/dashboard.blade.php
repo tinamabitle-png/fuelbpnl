@@ -34,9 +34,53 @@
                         <path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path>
                     </svg>
                 </a>
-                <a href="{{ route('driver.repayments.index') }}" class="btn-ghost px-4 py-2.5 rounded-xl text-sm font-semibold">View Repayments</a>
-                <a href="{{ route('driver.bank-statements.create') }}" class="btn-ghost px-4 py-2.5 rounded-xl text-sm font-semibold">Upload Bank Statement</a>
-                <a href="{{ route('driver.profile') }}" class="btn-ghost px-4 py-2.5 rounded-xl text-sm font-semibold">Profile</a>
+
+                @php
+                    $quickLinks = [
+                        [
+                            'label' => 'Repayments',
+                            'route' => 'driver.repayments.index',
+                            'active' => 'driver.repayments.*',
+                            'svg' => 'M12 1a10 10 0 1 0 10 10A10 10 0 0 0 12 1Zm1 5a1 1 0 1 0-2 0v1.06a4 4 0 0 0 0 7.88V16a1 1 0 1 0 2 0v-1.06a4 4 0 0 0 0-7.88Z M12 9a2 2 0 0 1 1 3.73V9.27A2 2 0 0 1 12 9Zm-1 6.73V11.27a2 2 0 0 0 0 4.46Z',
+                        ],
+                        [
+                            'label' => 'Bank Statement',
+                            'route' => 'driver.bank-statements.create',
+                            'active' => 'driver.bank-statements.*',
+                            'svg' => 'M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 15a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z',
+                        ],
+                        [
+                            'label' => 'Profile',
+                            'route' => 'driver.profile',
+                            'active' => 'driver.profile*',
+                            'svg' => 'M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.01-8 4.5A1.5 1.5 0 0 0 5.5 20h13A1.5 1.5 0 0 0 20 18.5C20 16.01 16.42 14 12 14Z',
+                        ],
+                    ];
+                @endphp
+
+                <nav
+                    aria-label="Quick links"
+                    class="h-16 w-[320px] rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-between px-2"
+                >
+                    @foreach($quickLinks as $link)
+                        @if(!Route::has($link['route']))
+                            @continue
+                        @endif
+                        @php
+                            $isActive = request()->routeIs($link['active']);
+                        @endphp
+                        <a
+                            href="{{ route($link['route']) }}"
+                            class="group h-12 w-12 rounded-full grid place-items-center transition-transform duration-150 {{ $isActive ? 'text-fuchsia-600 -translate-y-1' : 'text-slate-700 opacity-80 hover:opacity-100 hover:text-fuchsia-600 hover:-translate-y-1' }}"
+                            title="{{ $link['label'] }}"
+                        >
+                            <span class="sr-only">{{ $link['label'] }}</span>
+                            <svg viewBox="0 0 24 24" fill="none" class="h-7 w-7" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="{{ $link['svg'] }}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </a>
+                    @endforeach
+                </nav>
             </div>
         </div>
     </div>
