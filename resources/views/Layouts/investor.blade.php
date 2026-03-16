@@ -14,6 +14,17 @@
     <style>
         :root {
             --title-font: "Goldman", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --body-font: "Cal Sans", "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        @font-face {
+            font-family: "Cal Sans";
+            src:
+                url("{{ asset('fonts/cal-sans/cal-sans-semibold.woff2') }}") format("woff2"),
+                url("{{ asset('fonts/cal-sans/cal-sans-semibold.woff') }}") format("woff");
+            font-weight: 600;
+            font-style: normal;
+            font-display: swap;
         }
 
         h1,
@@ -22,6 +33,10 @@
         h4,
         h5 {
             font-family: var(--title-font);
+        }
+
+        body {
+            font-family: var(--body-font);
         }
     </style>
     @php

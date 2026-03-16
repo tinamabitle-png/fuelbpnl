@@ -26,6 +26,16 @@
     
     <!-- Custom Styles -->
     <style>
+        @font-face {
+            font-family: "Cal Sans";
+            src:
+                url("{{ asset('fonts/cal-sans/cal-sans-semibold.woff2') }}") format("woff2"),
+                url("{{ asset('fonts/cal-sans/cal-sans-semibold.woff') }}") format("woff");
+            font-weight: 600;
+            font-style: normal;
+            font-display: swap;
+        }
+
         :root {
             --primary: #3b82f6;
             --primary-dark: #2563eb;
@@ -33,10 +43,11 @@
             --sidebar-hover: #374151;
             --sidebar-active: #111827;
             --title-font: "Goldman", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --body-font: "Cal Sans", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         
         * {
-            font-family: 'Inter', sans-serif;
+            font-family: var(--body-font);
         }
 
         h1,

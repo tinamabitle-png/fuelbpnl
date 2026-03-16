@@ -58,6 +58,16 @@
         <script src="https://cdn.tailwindcss.com"></script>
     @endif
     <style>
+        @font-face {
+            font-family: "Cal Sans";
+            src:
+                url("{{ asset('fonts/cal-sans/cal-sans-semibold.woff2') }}") format("woff2"),
+                url("{{ asset('fonts/cal-sans/cal-sans-semibold.woff') }}") format("woff");
+            font-weight: 600;
+            font-style: normal;
+            font-display: swap;
+        }
+
         :root {
             --mobile-bg:
                 radial-gradient(900px 550px at 10% 0%, #eef2ff 0%, #f8fafc 58%),
@@ -71,6 +81,7 @@
             --text-strong: #0f172a;
             --text-muted: #475569;
             --title-font: "Goldman", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --body-font: "Cal Sans", "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         body.mobile-shell {
@@ -78,7 +89,7 @@
             min-height: 100svh;
             background: var(--mobile-bg);
             color: var(--text-strong);
-            font-family: "Outfit", sans-serif;
+            font-family: var(--body-font);
         }
 
         .mobile-card {

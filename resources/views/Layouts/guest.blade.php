@@ -59,12 +59,23 @@
         <script src="https://cdn.tailwindcss.com"></script>
     @endif
     <style>
+        @font-face {
+            font-family: "Cal Sans";
+            src:
+                url("{{ asset('fonts/cal-sans/cal-sans-semibold.woff2') }}") format("woff2"),
+                url("{{ asset('fonts/cal-sans/cal-sans-semibold.woff') }}") format("woff");
+            font-weight: 600;
+            font-style: normal;
+            font-display: swap;
+        }
+
         :root {
             --title-font: "Goldman", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --body-font: "Cal Sans", "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         * {
-            font-family: "Outfit", sans-serif;
+            font-family: var(--body-font);
         }
 
         h1,
