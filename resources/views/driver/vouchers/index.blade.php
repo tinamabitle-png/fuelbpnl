@@ -255,11 +255,11 @@
 	        background: transparent;
 	        color: white;
 	        border-radius: 0.75rem;
-		        padding: 0.45rem;
+		        padding: 0;
 	        position: relative;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+	        display: flex;
+	        justify-content: center;
+	        align-items: center;
         transition: 300ms ease;
         animation: 8s thumb-thumb infinite;
         user-select: none;
@@ -309,15 +309,21 @@
 	        transition: 300ms ease;
 	    }
 
-    .card-id567 svg path {
-        transition: 300ms ease;
-        opacity: 0;
-    }
+	    .card-id567 svg path {
+	        transition: 300ms ease;
+	        opacity: 0;
+	    }
 
-    .card-id567 > * {
-        position: relative;
-        z-index: 2;
-    }
+	    .card-id567 svg {
+	        width: 100%;
+	        height: 100%;
+	        display: block;
+	    }
+
+	    .card-id567 > * {
+	        position: relative;
+	        z-index: 2;
+	    }
 
 		    .visa-mark {
 	        position: absolute;
@@ -363,9 +369,12 @@
 
 		    .prompt-id567 {
 	        position: absolute;
+	        inset: 0;
 	        color: rgb(173, 173, 173);
 	        text-align: center;
-		        max-width: 110px;
+	        display: grid;
+	        place-items: center;
+		        max-width: none;
 		        font-size: 10px;
 		        line-height: 1.1;
 		    }
@@ -417,7 +426,7 @@
 		        .card-id567 {
 		            width: 80px;
 		            height: 80px;
-		            padding: 0.55rem;
+		            padding: 0;
 		        }
 
 		        .creator-points {
