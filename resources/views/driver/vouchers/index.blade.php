@@ -245,14 +245,14 @@
         stroke: #93c5fd;
     }
 
-    /* Virtual-card created vouchers (interactive tile) */
-    .card-id567 {
-        width: 80px;
-        height: 80px;
+	    /* Virtual-card created vouchers (interactive tile) */
+	    .card-id567 {
+	        width: 128px;
+	        height: 128px;
         background: transparent;
         color: white;
         border-radius: 1rem;
-        padding: 0.6rem;
+	        padding: 0.85rem;
         position: relative;
         display: flex;
         justify-content: center;
@@ -316,13 +316,13 @@
         z-index: 2;
     }
 
-    .visa-mark {
+	    .visa-mark {
         position: absolute;
-        top: 8px;
-        right: 8px;
+	        top: 10px;
+	        right: 10px;
         font-weight: 900;
         letter-spacing: 0.12em;
-        font-size: 9px;
+	        font-size: 11px;
         color: rgba(255, 255, 255, 0.85);
         text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
         transition: 300ms ease;
@@ -334,18 +334,18 @@
         letter-spacing: .06em;
     }
 
-    .creator-points {
-        width: 1.85rem;
-        height: 1.7rem;
-        color: var(--primary, #2563eb);
-    }
+	    .creator-points {
+	        width: 2.35rem;
+	        height: 2.1rem;
+	        color: var(--primary, #2563eb);
+	    }
 
-    .blurry-splash {
+	    .blurry-splash {
         position: absolute;
         inset: 0;
-        width: 44px;
+	        width: 58px;
         margin: 0 auto;
-        height: 44px;
+	        height: 58px;
         border-radius: 1rem;
         z-index: -1;
         opacity: 0.7;
@@ -358,14 +358,14 @@
         );
     }
 
-    .prompt-id567 {
+	    .prompt-id567 {
         position: absolute;
         color: rgb(173, 173, 173);
         text-align: center;
-        max-width: 110px;
-        font-size: 10px;
-        line-height: 1.1;
-    }
+	        max-width: 150px;
+	        font-size: 12px;
+	        line-height: 1.1;
+	    }
 
     @media (hover: hover) {
         .card-id567:hover {
@@ -410,24 +410,24 @@
     }
 
 
-    @media (max-width: 640px) {
-        .card-id567 {
-            width: 64px;
-            height: 64px;
-            padding: 0.45rem;
-        }
+	    @media (max-width: 640px) {
+	        .card-id567 {
+	            width: 104px;
+	            height: 104px;
+	            padding: 0.7rem;
+	        }
 
-        .creator-points {
-            width: 1.55rem;
-            height: 1.4rem;
-        }
+	        .creator-points {
+	            width: 2.0rem;
+	            height: 1.8rem;
+	        }
 
-        .visa-mark {
-            top: 6px;
-            right: 6px;
-            font-size: 8px;
-        }
-    }
+	        .visa-mark {
+	            top: 8px;
+	            right: 8px;
+	            font-size: 10px;
+	        }
+	    }
 
     @keyframes spinny-token-yayyy {
         0% {
