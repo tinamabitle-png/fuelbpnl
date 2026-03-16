@@ -162,7 +162,7 @@ class VirtualCardController extends Controller
 
             $card = $virtualCardService->createForUser($request->user(), [
                 'label' => $request->input('label'),
-                'currency' => (string) config('services.flutterwave.virtual_cards_currency', 'USD'),
+                'currency' => (string) config('services.flutterwave.virtual_cards_currency', 'ZAR'),
                 'provider' => 'flutterwave',
                 'brand' => $brand,
             ]);

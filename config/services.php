@@ -117,7 +117,8 @@ return [
         'virtual_cards_billing_postal_code' => env('FLUTTERWAVE_VIRTUAL_CARDS_BILLING_POSTAL_CODE', '0001'),
         'virtual_cards_billing_country' => env('FLUTTERWAVE_VIRTUAL_CARDS_BILLING_COUNTRY', 'ZA'),
         'virtual_cards_callback_url' => env('FLUTTERWAVE_VIRTUAL_CARDS_CALLBACK_URL', env('APP_URL')),
-        'virtual_cards_currency' => env('FLUTTERWAVE_VIRTUAL_CARDS_CURRENCY', 'USD'),
+        // Most BWiser customers are in South Africa; default to ZAR to match ZA billing.
+        'virtual_cards_currency' => env('FLUTTERWAVE_VIRTUAL_CARDS_CURRENCY', 'ZAR'),
         // If your Flutterwave account requires extra identity fields, enable this and set the related envs.
         'virtual_cards_include_identity' => env('FLUTTERWAVE_VIRTUAL_CARDS_INCLUDE_IDENTITY', false),
         // Some Flutterwave configurations require additional identity fields for card creation.
