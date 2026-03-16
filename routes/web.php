@@ -25,6 +25,7 @@ use App\Http\Controllers\Employee\ApprovalController as EmployeeApprovalControll
 use App\Http\Controllers\Merchant\DashboardController as MerchantDashboardController;
 use App\Http\Controllers\Driver\DashboardController as DriverDashboardController;
 use App\Http\Controllers\Driver\VirtualCardController as DriverVirtualCardController;
+use App\Http\Controllers\Driver\Repayment1VoucherController as DriverRepayment1VoucherController;
 use App\Http\Controllers\Driver\BankStatementController as DriverBankStatementController;
 use App\Http\Controllers\Investor\InvestorDashboardController;
 use App\Http\Controllers\Admin\InvestorController as AdminInvestorController;
@@ -638,6 +639,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/virtual-cards/{card}/convert-to-voucher', [DriverVirtualCardController::class, 'convertToVoucher'])->name('virtual-cards.convert-to-voucher');
         Route::get('/repayments', [DriverDashboardController::class, 'repayments'])->name('repayments.index');
         Route::get('/repayments/upcoming/export-pdf', [DriverDashboardController::class, 'exportUpcomingRepaymentsPdf'])->name('repayments.upcoming.export-pdf');
+        Route::post('/repayments/1voucher/week', [DriverRepayment1VoucherController::class, 'payWeek'])->name('repayments.1voucher.week');
         Route::get('/profile', [DriverDashboardController::class, 'profile'])->name('profile');
         Route::get('/bank-statements/upload', [DriverBankStatementController::class, 'create'])->name('bank-statements.create');
         Route::post('/bank-statements', [DriverBankStatementController::class, 'store'])->name('bank-statements.store');

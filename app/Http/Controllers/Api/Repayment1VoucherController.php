@@ -242,4 +242,114 @@ class Repayment1VoucherController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Confirm a pending 1Voucher weekly payment by tx_ref, then settle repayments if successful.
+     */
+    public function confirm(Request $request, Flutterwave1VoucherService $flutterwave, RepaymentSettlementService $settler)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'tx_ref' => 'required|string|max:80',
+        ]);
+
+        $txRef = (string) $validated['tx_ref'];
+
+        /** @var RepaymentPaymentAttempt|null $attempt */
+        $attempt = RepaymentPaymentAttempt::query()
+            ->where('user_id', $user->id)
+            ->where('tx_ref', $txRef)
+            ->first();
+
+        if (!$attempt) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment attempt not found.',
+            ], 404);
+        }
+
+        if ((string) $attempt->status === 'successful') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment already confirmed.',
+                'data' => [
+                    'tx_ref' => $attempt->tx_ref,
+                    'flw_ref' => $attempt->flw_ref,
+                    'status' => $attempt->status,
+                ],
+            ]);
+        }
+
+        try {
+            $verify = $flutterwave->verifyByReference($attempt->tx_ref);
+            $verifyStatus = $flutterwave->extractStatus($verify);
+            $verifyFlwRef = $flutterwave->extractFlwRef($verify);
+
+            $attempt->update([
+                'flw_ref' => $attempt->flw_ref ?: ($verifyFlwRef !== '' ? $verifyFlwRef : null),
+                'provider_response' => array_merge((array) ($attempt->provider_response ?? []), ['verify' => $verify]),
+            ]);
+
+            if (!in_array($verifyStatus, ['successful', 'success'], true)) {
+                $attempt->update(['status' => 'pending']);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment not successful yet.',
+                    'data' => [
+                        'tx_ref' => $attempt->tx_ref,
+                        'flw_ref' => $attempt->flw_ref,
+                        'status' => $verifyStatus,
+                    ],
+                ], 202);
+            }
+        } catch (\Throwable $e) {
+            $attempt->update([
+                'status' => 'pending',
+                'provider_response' => array_merge((array) ($attempt->provider_response ?? []), [
+                    'verify_error' => $e->getMessage(),
+                ]),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Verification failed. Try again.',
+                'data' => [
+                    'tx_ref' => $attempt->tx_ref,
+                ],
+            ], 202);
+        }
+
+        // Settle now that verification is successful.
+        $reference = $attempt->flw_ref ?: $attempt->tx_ref;
+        DB::transaction(function () use ($attempt, $settler, $reference) {
+            $lockedAttempt = RepaymentPaymentAttempt::whereKey($attempt->id)->lockForUpdate()->firstOrFail();
+            if ((string) $lockedAttempt->status === 'successful') {
+                return;
+            }
+
+            $repayments = Repayment::query()
+                ->where('user_id', $lockedAttempt->user_id)
+                ->whereIn('id', (array) $lockedAttempt->repayment_ids)
+                ->get();
+
+            foreach ($repayments as $repayment) {
+                $settler->settleRepayment($repayment, 'flutterwave_1voucher', $reference, [
+                    'tx_ref' => (string) $lockedAttempt->tx_ref,
+                    'flw_ref' => (string) ($lockedAttempt->flw_ref ?? ''),
+                ]);
+            }
+
+            $lockedAttempt->update(['status' => 'successful']);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment confirmed and repayments settled.',
+            'data' => [
+                'tx_ref' => $attempt->tx_ref,
+                'flw_ref' => $attempt->flw_ref,
+                'status' => 'successful',
+            ],
+        ]);
+    }
 }

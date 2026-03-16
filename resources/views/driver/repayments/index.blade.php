@@ -57,7 +57,25 @@
                     <p class="text-sm text-slate-600 mt-1">Pay all repayments due in the next 7 days using a prepaid 1Voucher PIN.</p>
                 </div>
             </div>
-            <p class="text-xs text-slate-500">Available in the mobile app and API.</p>
+            <form method="POST" action="{{ route('driver.repayments.1voucher.week') }}" class="w-full md:w-auto">
+                @csrf
+                <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+                    <input
+                        type="password"
+                        name="pin"
+                        required
+                        autocomplete="off"
+                        inputmode="numeric"
+                        placeholder="Enter 1Voucher PIN"
+                        class="w-full sm:w-56 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
+                    >
+                    <input type="hidden" name="days" value="7">
+                    <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800">
+                        Pay Week
+                    </button>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-2">Your PIN is never stored. A new PIN will be issued after payment.</p>
+            </form>
         </div>
     </div>
 

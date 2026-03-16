@@ -141,6 +141,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/history', [RepaymentController::class, 'history']);
             Route::post('/make-payment', [RepaymentController::class, 'makePayment']);
             Route::post('/1voucher/week', [Repayment1VoucherController::class, 'payWeek']);
+            Route::post('/1voucher/confirm', [Repayment1VoucherController::class, 'confirm']);
             Route::post('/{repayment}/paystack/initialize', [RepaymentController::class, 'initializePaystack'])->whereNumber('repayment');
             Route::post('/paystack/verify', [RepaymentController::class, 'verifyPaystack']);
             Route::post('/autopay/paystack/initialize', [RepaymentController::class, 'initializeAutopayPaystack']);
