@@ -270,28 +270,29 @@ class FlutterwaveVirtualCardService
         $payload['last_name'] = $lastName;
         $payload['date_of_birth'] = $dob;
 
-        // Optional identity keys: include if non-empty (some accounts enforce these too).
+        // Email is required on many Flutterwave virtual-card setups.
         $email = trim((string) ($billingFiltered['email'] ?? config('services.flutterwave.virtual_cards_email') ?? (string) ($user->email ?? '')));
-        if ($email !== '') {
-            $payload['email'] = $email;
+        if ($email === '') {
+            throw new \RuntimeException('Flutterwave card creation requires email. Save an email on the user profile or set FLUTTERWAVE_VIRTUAL_CARDS_EMAIL.');
         }
+        $payload['email'] = $email;
         // Phone is required on some Flutterwave accounts; always send it.
         $payload['phone'] = $phone;
         $payload['phone_number'] = $phone;
+        // Some accounts also require gender and title.
         $gender = $this->normalizeGender(trim((string) ($billingFiltered['gender']
             ?? ($user->gender ?? null)
             ?? config('services.flutterwave.virtual_cards_gender')
-            ?? '')));
-        if ($gender !== '') {
-            $payload['gender'] = $gender;
-        }
+            ?? 'male')));
+        $gender = $gender !== '' ? $gender : 'male';
+        $payload['gender'] = $gender;
+
         $title = trim((string) ($billingFiltered['title']
             ?? config('services.flutterwave.virtual_cards_title')
             ?? $this->deriveTitleFromGender($gender)
-            ?? ''));
-        if ($title !== '') {
-            $payload['title'] = $title;
-        }
+            ?? 'Mr'));
+        $title = $title !== '' ? $title : 'Mr';
+        $payload['title'] = $title;
 
         try {
             $response = Http::timeout($timeout)
