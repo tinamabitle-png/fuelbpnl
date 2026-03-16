@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\SupportTicketReplyMail;
 use App\Models\SupportTicket;
 use App\Models\SupportTicketMessage;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SupportTicketController extends Controller
 {
@@ -80,8 +83,9 @@ class SupportTicketController extends Controller
 
         $admin = $request->user();
 
-        DB::transaction(function () use ($ticket, $validated, $admin) {
-            SupportTicketMessage::create([
+        /** @var SupportTicketMessage $created */
+        $created = DB::transaction(function () use ($ticket, $validated, $admin) {
+            $created = SupportTicketMessage::create([
                 'ticket_id' => $ticket->id,
                 'sender_user_id' => $admin->id,
                 'sender_role' => 'admin',
@@ -98,6 +102,25 @@ class SupportTicketController extends Controller
                 }
             }
             $ticket->save();
+
+            return $created;
+        });
+
+        // Notify ticket owner by email (best-effort; don't block UI on mail config issues).
+        DB::afterCommit(function () use ($ticket, $created) {
+            try {
+                $ticket->loadMissing('user:id,name,email');
+                $email = trim((string) ($ticket->user?->email ?? ''));
+                if ($email === '') {
+                    return;
+                }
+                Mail::to($email)->send(new SupportTicketReplyMail($ticket, $created));
+            } catch (\Throwable $e) {
+                Log::warning('Support ticket reply email failed', [
+                    'ticket_id' => $ticket->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         });
 
         return redirect()
@@ -122,4 +145,3 @@ class SupportTicketController extends Controller
         return back()->with('success', 'Ticket updated.');
     }
 }
-
