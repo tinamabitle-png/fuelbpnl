@@ -87,11 +87,11 @@
     <div class="mt-6 glass rounded-2xl p-6 overflow-hidden">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div class="flex items-center gap-4">
-                <div class="h-12 w-28 rounded-xl bg-white/70 border border-slate-200 flex items-center justify-center overflow-hidden">
+                <div class="h-24 w-56 rounded-xl bg-white/70 border border-slate-200 flex items-center justify-center overflow-hidden">
                     <img
                         src="{{ asset('images/1Voucher-Logo.webp') }}"
                         alt="1Voucher"
-                        class="h-10 w-auto object-contain"
+                        class="h-20 w-auto object-contain"
                         loading="lazy"
                     >
                 </div>
