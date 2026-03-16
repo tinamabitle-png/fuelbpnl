@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Admin\RepaymentOpsController as AdminRepaymentOpsController;
+use App\Http\Controllers\Admin\SupportTicketController as AdminSupportTicketController;
 use App\Http\Controllers\Employee\DashboardController as EmployeeDashboardController;
 use App\Http\Controllers\Employee\ApprovalController as EmployeeApprovalController;
 use App\Http\Controllers\Merchant\DashboardController as MerchantDashboardController;
@@ -216,6 +217,24 @@ Route::middleware(['auth'])->group(function () {
             abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(AdminRepaymentOpsController::class)->runDefaultChargesNow();
         })->name('repayments.ops.default-charges.run-now');
+
+        // ========== SUPPORT INBOX ==========
+        Route::get('/support/tickets', function () {
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
+            return app(AdminSupportTicketController::class)->index(request());
+        })->name('support.tickets.index');
+        Route::get('/support/tickets/{ticket}', function (\App\Models\SupportTicket $ticket) {
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
+            return app(AdminSupportTicketController::class)->show($ticket);
+        })->name('support.tickets.show');
+        Route::post('/support/tickets/{ticket}/reply', function (\App\Models\SupportTicket $ticket) {
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
+            return app(AdminSupportTicketController::class)->reply(request(), $ticket);
+        })->name('support.tickets.reply');
+        Route::post('/support/tickets/{ticket}/assign', function (\App\Models\SupportTicket $ticket) {
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
+            return app(AdminSupportTicketController::class)->assign(request(), $ticket);
+        })->name('support.tickets.assign');
         
         // ========== USERS ROUTES ==========
         Route::get('/users', function() {

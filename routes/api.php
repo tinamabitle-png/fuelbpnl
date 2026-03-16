@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\RepaymentController;
 use App\Http\Controllers\Api\Repayment1VoucherController;
 use App\Http\Controllers\Api\CreditAssessmentController;
 use App\Http\Controllers\Api\VirtualCardController;
+use App\Http\Controllers\Api\SupportTicketController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\VoucherController;
 use App\Http\Controllers\Api\V1\StationController;
@@ -132,6 +133,15 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}/repayment-schedule', [LeaseController::class, 'repaymentSchedule']);
             Route::post('/{id}/request-extension', [LeaseController::class, 'requestExtension']);
             Route::get('/statistics', [LeaseController::class, 'statistics']);
+        });
+
+        // Support Tickets
+        Route::prefix('support')->group(function () {
+            Route::get('/tickets', [SupportTicketController::class, 'index']);
+            Route::post('/tickets', [SupportTicketController::class, 'store']);
+            Route::get('/tickets/{ticketId}', [SupportTicketController::class, 'show'])->whereNumber('ticketId');
+            Route::post('/tickets/{ticketId}/messages', [SupportTicketController::class, 'message'])->whereNumber('ticketId');
+            Route::post('/tickets/{ticketId}/close', [SupportTicketController::class, 'close'])->whereNumber('ticketId');
         });
 
         // Repayments

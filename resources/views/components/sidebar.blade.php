@@ -45,6 +45,18 @@
                 </span>
             @endif
         </a>
+
+        <a href="{{ route('admin.support.tickets.index') }}"
+           class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white
+                  {{ request()->routeIs('admin.support.tickets.*') ? 'bg-gray-700' : '' }}">
+            <i class="fas fa-life-ring mr-3"></i>
+            Support Inbox
+            @if($open_tickets = \App\Models\SupportTicket::whereIn('status', ['open','pending'])->count())
+                <span class="ml-auto bg-indigo-500 text-white text-xs rounded-full px-2 py-1">
+                    {{ $open_tickets }}
+                </span>
+            @endif
+        </a>
         
         <a href="{{ route('admin.leases.index') }}" 
            class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white 
