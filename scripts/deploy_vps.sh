@@ -81,7 +81,8 @@ if ! ssh ${SSH_OPTS_KEYED} -o BatchMode=yes "${TARGET}" "echo ok" >/dev/null 2>&
   if [[ "${INSTALL_KEY}" == "true" ]]; then
     if command -v ssh-copy-id >/dev/null 2>&1; then
       echo "Remote: installing SSH key via ssh-copy-id (you may be prompted for the VPS password)..."
-      ssh-copy-id -i "${PUBKEY_PATH}" ${SSH_OPTS} "${TARGET}"
+      # XAMPP ships a non-standard `head` that can break ssh-copy-id on macOS if it's earlier in PATH.
+      env PATH="/usr/bin:/bin:/usr/sbin:/sbin" ssh-copy-id -i "${PUBKEY_PATH}" ${SSH_OPTS} "${TARGET}"
     else
       echo "ssh-copy-id not found. Install the key manually by running this on your machine:"
       echo
