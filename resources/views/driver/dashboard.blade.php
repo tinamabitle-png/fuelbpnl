@@ -170,7 +170,7 @@
         </div>
         <div class="glass rounded-2xl p-5">
             <p class="text-sm text-slate-500">Amount Due</p>
-            <p class="mt-2 text-2xl font-semibold text-slate-900">R {{ number_format($pendingRepaymentAmount, 2) }}</p>
+            <p class="mt-2 text-2xl font-semibold text-slate-900">-R {{ number_format(abs((float) $pendingRepaymentAmount), 2) }}</p>
         </div>
         <div class="glass rounded-2xl p-5">
             <p class="text-sm text-slate-500">Active Stations</p>
@@ -613,7 +613,7 @@
 	                            <p class="text-xs text-slate-600 mt-1">
 	                                @if(!empty($mostOverdue))
 	                                    Due {{ \Illuminate\Support\Carbon::parse($mostOverdue->due_date)->format('d M Y') }}
-	                                    • R {{ number_format((float) $mostOverdue->amount, 2) }}
+	                                    • -R {{ number_format(abs((float) $mostOverdue->amount), 2) }}
 	                                @endif
 	                            </p>
 	                        </div>
@@ -696,7 +696,7 @@
                     <div class="rounded-xl border px-4 py-3 {{ $isOverdue ? 'border-red-200 bg-red-50/70' : ($isDueToday ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200 bg-white') }}">
                         <div class="flex items-center justify-between">
                             <p class="text-sm font-medium text-slate-900">Due {{ \Illuminate\Support\Carbon::parse($repayment->due_date)->format('d M Y') }}</p>
-                            <p class="text-sm font-semibold {{ $isOverdue ? 'text-red-700' : ($isDueToday ? 'text-amber-700' : 'text-slate-900') }}">R {{ number_format((float) $repayment->amount, 2) }}</p>
+                            <p class="text-sm font-semibold {{ $isOverdue ? 'text-red-700' : ($isDueToday ? 'text-amber-700' : 'text-slate-900') }}">-R {{ number_format(abs((float) $repayment->amount), 2) }}</p>
                         </div>
                         <p class="text-xs mt-1 uppercase {{ $isOverdue ? 'text-red-700 font-semibold' : ($isDueToday ? 'text-amber-700 font-semibold' : 'text-slate-500') }}">
                             {{ $isOverdue ? 'OVERDUE' : ($isDueToday ? 'DUE TODAY' : $repayment->status) }}

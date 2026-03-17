@@ -32,11 +32,11 @@
         </div>
         <div class="glass rounded-2xl p-5">
             <p class="text-sm text-slate-500">Outstanding Amount</p>
-            <p class="text-2xl font-semibold text-slate-900 mt-2">R {{ number_format((float) $summary['pending_amount'], 2) }}</p>
+            <p class="text-2xl font-semibold text-slate-900 mt-2">-R {{ number_format(abs((float) $summary['pending_amount']), 2) }}</p>
         </div>
         <div class="glass rounded-2xl p-5">
             <p class="text-sm text-slate-500">Paid This Month</p>
-            <p class="text-2xl font-semibold text-slate-900 mt-2">R {{ number_format((float) $summary['paid_this_month'], 2) }}</p>
+            <p class="text-2xl font-semibold text-slate-900 mt-2">-R {{ number_format(abs((float) $summary['paid_this_month']), 2) }}</p>
         </div>
     </div>
 
@@ -49,7 +49,7 @@
                     <p class="text-sm text-slate-600 mt-1">
                         @if(!empty($mostOverdue))
                             Due {{ \Illuminate\Support\Carbon::parse($mostOverdue->due_date)->format('d M Y') }}
-                            • R {{ number_format((float) $mostOverdue->amount, 2) }}
+                            • -R {{ number_format(abs((float) $mostOverdue->amount), 2) }}
                         @endif
                     </p>
                 </div>
@@ -260,7 +260,7 @@
                 <div class="ethpay-text-box">
                     <p class="ethpay-text ethpay-head">Ethereum</p>
                     <span>Repayment Rail</span>
-                    <p class="ethpay-text ethpay-price">Outstanding: R {{ number_format((float) $summary['pending_amount'], 2) }}</p>
+                    <p class="ethpay-text ethpay-price">Outstanding: -R {{ number_format(abs((float) $summary['pending_amount']), 2) }}</p>
                 </div>
             </div>
 
@@ -298,7 +298,7 @@
                         @endphp
                         <tr>
                             <td class="px-4 py-3 text-slate-700">{{ \Illuminate\Support\Carbon::parse($repayment->due_date)->format('d M Y') }}</td>
-                            <td class="px-4 py-3 font-medium text-slate-900">R {{ number_format((float) $repayment->amount, 2) }}</td>
+                            <td class="px-4 py-3 font-medium text-slate-900">-R {{ number_format(abs((float) $repayment->amount), 2) }}</td>
                             <td class="px-4 py-3 text-slate-700">#{{ $repayment->lease_id }}</td>
                             <td class="px-4 py-3 text-slate-700">{{ $stationName }}</td>
                             <td class="px-4 py-3">
@@ -314,8 +314,8 @@
                                             ['repayment' => $repayment->id]
                                         );
                                         $shareText = sprintf(
-                                            'Please help me settle my Bwiser repayment of R %s for voucher %s due on %s.',
-                                            number_format((float) $repayment->amount, 2),
+                                            'Please help me settle my Bwiser repayment of -R %s for voucher %s due on %s.',
+                                            number_format(abs((float) $repayment->amount), 2),
                                             $voucherCode ?: ('#' . (string) $repayment->id),
                                             \Illuminate\Support\Carbon::parse($repayment->due_date)->format('d M Y')
                                         );
