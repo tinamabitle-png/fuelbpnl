@@ -364,7 +364,7 @@
 	                                            title="Pay via PayShap"
 	                                        >
 	                                            <span class="payshap-logo" aria-hidden="true">
-	                                                <span class="payshap-logo__word">payshap</span>
+	                                                <span class="payshap-logo__word"><span class="payshap-logo__pay">pay</span><span class="payshap-logo__shap">shap</span></span>
 	                                                <img
 	                                                    src="{{ asset('images/shap.png') }}"
 	                                                    alt=""
@@ -795,13 +795,20 @@
 
     .payshap-logo__word {
         color: var(--payshap-ink);
-        font-weight: 900;
         font-style: italic;
         font-size: 22px;
         letter-spacing: -0.02em;
         line-height: 1;
         text-transform: lowercase;
         white-space: nowrap;
+    }
+
+    .payshap-logo__pay {
+        font-weight: 500;
+    }
+
+    .payshap-logo__shap {
+        font-weight: 900;
     }
 
     .payshap-logo__mark {
