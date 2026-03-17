@@ -364,7 +364,7 @@
 	                                            title="Pay via PayShap"
 	                                        >
 	                                            <img
-	                                                src="{{ asset('images/payshap-logo.svg') }}"
+	                                                src="{{ asset('images/image.png') }}"
 	                                                alt=""
 	                                                class="payshap-chip__img"
 	                                                loading="lazy"
@@ -761,29 +761,30 @@
     }
 
     .payshap-chip {
-        width: 44px;
+        width: 86px;
         height: 44px;
         border-radius: 14px;
-        border: 1px solid rgba(14, 165, 233, 0.28);
-        background: linear-gradient(180deg, rgba(240, 249, 255, 0.9), rgba(224, 242, 254, 0.7));
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        background: rgba(255, 255, 255, 0.9);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 12px 24px -20px rgba(37, 99, 235, 0.45);
+        box-shadow: 0 12px 24px -22px rgba(15, 23, 42, 0.28);
         transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
     }
 
     .payshap-chip:hover {
         transform: translateY(-1px);
         border-color: rgba(37, 99, 235, 0.35);
-        box-shadow: 0 16px 28px -22px rgba(37, 99, 235, 0.55);
-        background: linear-gradient(180deg, rgba(224, 242, 254, 0.95), rgba(219, 234, 254, 0.85));
+        box-shadow: 0 16px 28px -24px rgba(37, 99, 235, 0.28);
+        background: #ffffff;
     }
 
     .payshap-chip__img {
-        width: 26px;
-        height: 26px;
+        width: 76px;
+        height: 34px;
         display: block;
+        object-fit: contain;
     }
 
     .pay-card,
