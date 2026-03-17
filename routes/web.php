@@ -3,6 +3,10 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Carbon\Carbon;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -35,7 +39,148 @@ use App\Support\Seo\SitemapBuilder;
 
 // ========== PUBLIC ROUTES ==========
 Route::get('/', function () {
-    return view('welcome');
+    $payload = Cache::remember('public:welcome:stats:v1', now()->addMinutes(10), function () {
+        $now = now();
+
+        $totals = [
+            'drivers' => 0,
+            'stations' => 0,
+            'vouchers' => 0,
+            'repayments' => 0,
+        ];
+
+        if (Schema::hasTable('users')) {
+            $totals['drivers'] = (int) DB::table('users')->count();
+        }
+
+        if (Schema::hasTable('fuel_stations')) {
+            $totals['stations'] = (int) DB::table('fuel_stations')->count();
+        }
+
+        if (Schema::hasTable('fuel_vouchers')) {
+            $totals['vouchers'] = (int) DB::table('fuel_vouchers')->count();
+        }
+
+        if (Schema::hasTable('repayments')) {
+            $totals['repayments'] = (int) DB::table('repayments')->count();
+        }
+
+        // Driver count using roles if available (Spatie Permission).
+        if (Schema::hasTable('model_has_roles') && Schema::hasTable('roles') && Schema::hasTable('users')) {
+            try {
+                $totals['drivers'] = (int) DB::table('model_has_roles')
+                    ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+                    ->where('roles.name', 'driver')
+                    ->where('model_has_roles.model_type', \App\Models\User::class)
+                    ->count();
+            } catch (\Throwable $e) {
+                // Fallback to total users count (already set above).
+            }
+        }
+
+        $voucherGrowth = [
+            'current' => 0,
+            'previous' => 0,
+            'pct' => 0,
+        ];
+        if (Schema::hasTable('fuel_vouchers')) {
+            $startCurrent = $now->copy()->subDays(30);
+            $startPrev = $now->copy()->subDays(60);
+            $endPrev = $now->copy()->subDays(30);
+
+            $voucherGrowth['current'] = (int) DB::table('fuel_vouchers')
+                ->where('created_at', '>=', $startCurrent)
+                ->count();
+            $voucherGrowth['previous'] = (int) DB::table('fuel_vouchers')
+                ->where('created_at', '>=', $startPrev)
+                ->where('created_at', '<', $endPrev)
+                ->count();
+
+            $prev = max(1, $voucherGrowth['previous']);
+            $voucherGrowth['pct'] = (int) round((($voucherGrowth['current'] - $voucherGrowth['previous']) / $prev) * 100);
+        }
+
+        $labels = [];
+        $monthKeys = [];
+        $cursor = $now->copy()->startOfMonth()->subMonths(11);
+        for ($i = 0; $i < 12; $i++) {
+            $labels[] = $cursor->format('M');
+            $monthKeys[] = $cursor->format('Y-m');
+            $cursor->addMonth();
+        }
+
+        $series = [
+            'labels' => $labels,
+            'months' => $monthKeys,
+            'vouchers' => array_fill(0, 12, 0),
+            'drivers' => array_fill(0, 12, 0),
+        ];
+
+        $driverNameExpr = null;
+        $connectionDriver = DB::connection()->getDriverName();
+        if ($connectionDriver === 'mysql') {
+            $driverNameExpr = "DATE_FORMAT(u.created_at, '%Y-%m')";
+        } elseif ($connectionDriver === 'sqlite') {
+            $driverNameExpr = "strftime('%Y-%m', u.created_at)";
+        } elseif ($connectionDriver === 'pgsql') {
+            $driverNameExpr = "to_char(u.created_at, 'YYYY-MM')";
+        }
+
+        $voucherExpr = null;
+        if ($connectionDriver === 'mysql') {
+            $voucherExpr = "DATE_FORMAT(created_at, '%Y-%m')";
+        } elseif ($connectionDriver === 'sqlite') {
+            $voucherExpr = "strftime('%Y-%m', created_at)";
+        } elseif ($connectionDriver === 'pgsql') {
+            $voucherExpr = "to_char(created_at, 'YYYY-MM')";
+        }
+
+        $rangeStart = Carbon::parse($monthKeys[0] . '-01')->startOfMonth();
+        $rangeEnd = $now->copy()->endOfMonth();
+
+        if ($voucherExpr && Schema::hasTable('fuel_vouchers')) {
+            $rows = DB::table('fuel_vouchers')
+                ->selectRaw($voucherExpr . " as ym, COUNT(*) as c")
+                ->whereBetween('created_at', [$rangeStart, $rangeEnd])
+                ->groupBy('ym')
+                ->pluck('c', 'ym')
+                ->toArray();
+            foreach ($monthKeys as $idx => $ym) {
+                $series['vouchers'][$idx] = (int) ($rows[$ym] ?? 0);
+            }
+        }
+
+        if ($driverNameExpr && Schema::hasTable('model_has_roles') && Schema::hasTable('roles') && Schema::hasTable('users')) {
+            try {
+                $rows = DB::table('model_has_roles as mhr')
+                    ->join('roles as r', 'r.id', '=', 'mhr.role_id')
+                    ->join('users as u', 'u.id', '=', 'mhr.model_id')
+                    ->where('r.name', 'driver')
+                    ->where('mhr.model_type', \App\Models\User::class)
+                    ->whereBetween('u.created_at', [$rangeStart, $rangeEnd])
+                    ->selectRaw($driverNameExpr . " as ym, COUNT(*) as c")
+                    ->groupBy('ym')
+                    ->pluck('c', 'ym')
+                    ->toArray();
+                foreach ($monthKeys as $idx => $ym) {
+                    $series['drivers'][$idx] = (int) ($rows[$ym] ?? 0);
+                }
+            } catch (\Throwable $e) {
+                // leave zeros
+            }
+        }
+
+        return [
+            'totals' => $totals,
+            'voucher_growth' => $voucherGrowth,
+            'series' => $series,
+            'generated_at' => $now->toIso8601String(),
+        ];
+    });
+
+    return view('welcome', [
+        'welcomeStats' => $payload,
+    ]);
 });
 
 Route::get('/sitemap.xml', function () {

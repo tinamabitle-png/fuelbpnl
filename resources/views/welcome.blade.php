@@ -69,6 +69,77 @@
         </div>
     </div>
 
+    @php
+        $stats = (array) ($welcomeStats ?? []);
+        $totals = (array) ($stats['totals'] ?? []);
+        $growth = (array) ($stats['voucher_growth'] ?? []);
+        $series = (array) ($stats['series'] ?? []);
+        $totalVouchers = (int) ($totals['vouchers'] ?? 0);
+        $voucherPct = (int) ($growth['pct'] ?? 0);
+        $voucherPctAbs = abs($voucherPct);
+        $voucherUp = $voucherPct >= 0;
+    @endphp
+    <div class="glass rounded-2xl p-6 mt-8 overflow-hidden">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+                <p class="text-xs uppercase tracking-[0.2em] text-blue-600">Site Stats</p>
+                <h3 class="brand-font leading-5 text-base md:text-xl font-bold text-slate-900 mt-2">Operations Overview</h3>
+                <p class="text-sm text-slate-600 mt-1">Live snapshot of platform activity (cached, updates every few minutes).</p>
+            </div>
+            <div class="flex items-center justify-between lg:justify-start mt-2 md:mt-4 lg:mt-0">
+                <div class="flex items-center">
+                    <button type="button" class="welcome-stats-btn welcome-stats-btn--ghost" data-series="drivers">Drivers</button>
+                    <button type="button" class="welcome-stats-btn welcome-stats-btn--active" data-series="vouchers">Vouchers</button>
+                </div>
+                <div class="lg:ml-6">
+                    <div class="bg-slate-100 ease-in duration-150 hover:bg-slate-200 pb-2 pt-1 px-3 rounded-sm">
+                        <span class="text-xs text-slate-600">Last 12 months</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Total vouchers</p>
+                <div class="flex items-end mt-3">
+                    <h3 class="text-blue-600 leading-5 text-xl md:text-3xl font-semibold">{{ number_format($totalVouchers) }}</h3>
+                    <div class="flex items-center md:ml-4 ml-2 {{ $voucherUp ? 'text-emerald-700' : 'text-rose-700' }}">
+                        <p class="text-xs md:text-base font-semibold">{{ $voucherUp ? '+' : '-' }}{{ $voucherPctAbs }}%</p>
+                        <svg role="img" class="ml-1" aria-label="trend" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M6 2.5V9.5" stroke="currentColor" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M8 4.5L6 2.5" stroke="currentColor" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M4 4.5L6 2.5" stroke="currentColor" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mt-2">30-day change vs previous 30 days.</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Drivers</p>
+                <p class="text-2xl md:text-3xl font-semibold text-slate-900 mt-3">{{ number_format((int) ($totals['drivers'] ?? 0)) }}</p>
+                <p class="text-xs text-slate-500 mt-2">Registered drivers on the network.</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Stations</p>
+                <p class="text-2xl md:text-3xl font-semibold text-slate-900 mt-3">{{ number_format((int) ($totals['stations'] ?? 0)) }}</p>
+                <p class="text-xs text-slate-500 mt-2">Fuel stations available for redemption.</p>
+            </div>
+        </div>
+
+        <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
+            <canvas
+                id="welcomeStatsChart"
+                height="120"
+                role="img"
+                aria-label="Activity chart"
+                data-labels='@json((array) ($series["labels"] ?? []))'
+                data-series-vouchers='@json((array) ($series["vouchers"] ?? []))'
+                data-series-drivers='@json((array) ($series["drivers"] ?? []))'
+            ></canvas>
+        </div>
+    </div>
+
 </section>
 <div id="cookieConsentBar" class="cookie-bar hidden" role="dialog" aria-live="polite" aria-label="Cookie consent">
     <div class="cookie-bar__inner">
@@ -177,6 +248,36 @@
 
     .playstore-button .text-2 {
         font-weight: 600;
+    }
+
+    .welcome-stats-btn {
+        appearance: none;
+        border: 1px solid rgba(148, 163, 184, 0.55);
+        background: #ffffff;
+        color: #334155;
+        padding: 0.55rem 0.9rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+    }
+
+    .welcome-stats-btn + .welcome-stats-btn {
+        margin-left: 0.5rem;
+    }
+
+    .welcome-stats-btn--ghost:hover {
+        border-color: rgba(37, 99, 235, 0.5);
+        background: rgba(239, 246, 255, 0.85);
+        transform: translateY(-1px);
+    }
+
+    .welcome-stats-btn--active {
+        border-color: rgba(29, 78, 216, 0.95);
+        background: linear-gradient(120deg, #1d4ed8, #2563eb);
+        color: #ffffff;
+        box-shadow: 0 14px 26px -18px rgba(37, 99, 235, 0.55);
     }
 
     @keyframes rotate {
@@ -390,3 +491,87 @@
     })();
 </script>
 @endsection
+
+@push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+    <script>
+        (function initWelcomeStatsChart() {
+            const canvas = document.getElementById('welcomeStatsChart');
+            if (!canvas || typeof Chart === 'undefined') return;
+
+            const labels = JSON.parse(canvas.getAttribute('data-labels') || '[]');
+            const vouchers = JSON.parse(canvas.getAttribute('data-series-vouchers') || '[]');
+            const drivers = JSON.parse(canvas.getAttribute('data-series-drivers') || '[]');
+
+            const seriesMap = {
+                vouchers: { label: 'Vouchers', color: '#2563eb', points: vouchers },
+                drivers: { label: 'Drivers', color: '#0f766e', points: drivers },
+            };
+
+            let activeKey = 'vouchers';
+            const ctx = canvas.getContext('2d');
+            const makeDataset = (key) => {
+                const s = seriesMap[key] || seriesMap.vouchers;
+                return {
+                    label: s.label,
+                    borderColor: s.color,
+                    pointBackgroundColor: s.color,
+                    data: Array.isArray(s.points) ? s.points : [],
+                    fill: false,
+                    borderWidth: 3,
+                    pointBorderWidth: 4,
+                    pointHoverRadius: 6,
+                    pointHoverBorderWidth: 8,
+                    pointHoverBorderColor: 'rgba(37, 99, 235, 0.18)',
+                    tension: 0.35,
+                };
+            };
+
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [makeDataset(activeKey)],
+                },
+                options: {
+                    legend: { display: false },
+                    tooltips: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    hover: {
+                        mode: 'nearest',
+                        intersect: true,
+                    },
+                    scales: {
+                        yAxes: [{
+                            gridLines: { display: false },
+                            ticks: { beginAtZero: true },
+                        }],
+                        xAxes: [{
+                            gridLines: { display: false },
+                        }],
+                    },
+                },
+            });
+
+            const buttons = Array.from(document.querySelectorAll('.welcome-stats-btn[data-series]'));
+            const setActive = (key) => {
+                activeKey = key in seriesMap ? key : 'vouchers';
+                buttons.forEach((btn) => {
+                    const isActive = btn.getAttribute('data-series') === activeKey;
+                    btn.classList.toggle('welcome-stats-btn--active', isActive);
+                    btn.classList.toggle('welcome-stats-btn--ghost', !isActive);
+                });
+                chart.data.datasets = [makeDataset(activeKey)];
+                chart.update();
+            };
+
+            buttons.forEach((btn) => {
+                btn.addEventListener('click', () => setActive(btn.getAttribute('data-series') || 'vouchers'));
+            });
+
+            setActive(activeKey);
+        })();
+    </script>
+@endpush
