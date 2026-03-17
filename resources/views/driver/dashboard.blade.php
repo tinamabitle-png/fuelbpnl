@@ -562,12 +562,20 @@
         </div>
 
 	        <div class="glass rounded-2xl p-6">
-	            <div class="flex items-center justify-between">
-	                <h2 class="brand-font text-xl text-slate-900">Upcoming Repayments</h2>
-	                <div class="flex items-center gap-2">
-	                    <a href="{{ route('driver.repayments.index') }}" class="text-sm text-blue-600 hover:text-blue-700">Open repayments</a>
-	                    <a href="{{ route('driver.repayments.upcoming.export-pdf') }}" class="download-button" title="Export upcoming repayments to PDF">
-                        <span class="docs">
+		            <div class="flex items-center justify-between">
+		                <h2 class="brand-font text-xl text-slate-900">Upcoming Repayments</h2>
+		                <div class="flex items-center gap-2">
+		                    <a
+		                        href="{{ route('driver.repayments.index') }}"
+		                        class="payshap-ad-chip"
+		                        aria-label="PayShap Instant EFT"
+		                        title="PayShap Instant EFT"
+		                    >
+		                        <img src="{{ asset('images/image.png') }}" alt="" class="payshap-ad-chip__img" loading="lazy" aria-hidden="true">
+		                    </a>
+		                    <a href="{{ route('driver.repayments.index') }}" class="text-sm text-blue-600 hover:text-blue-700">Open repayments</a>
+		                    <a href="{{ route('driver.repayments.upcoming.export-pdf') }}" class="download-button" title="Export upcoming repayments to PDF">
+	                        <span class="docs">
                             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                 <polyline points="14 2 14 8 20 8"></polyline>
@@ -1972,6 +1980,33 @@
 	        margin-top: 0.5rem;
 	        font-size: 0.72rem;
 	        color: rgba(239, 246, 255, 0.92);
+	    }
+
+	    .payshap-ad-chip {
+	        width: 144px;
+	        height: 72px;
+	        border-radius: 21px;
+	        border: none;
+	        background: rgba(255, 255, 255, 0.9);
+	        display: inline-flex;
+	        align-items: center;
+	        justify-content: center;
+	        box-shadow: 0 12px 24px -22px rgba(15, 23, 42, 0.28);
+	        transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+	        text-decoration: none;
+	    }
+
+	    .payshap-ad-chip:hover {
+	        transform: translateY(-1px);
+	        box-shadow: 0 16px 28px -24px rgba(37, 99, 235, 0.28);
+	        background: #ffffff;
+	    }
+
+	    .payshap-ad-chip__img {
+	        width: 126px;
+	        height: 57px;
+	        display: block;
+	        object-fit: contain;
 	    }
 
 	    .dashboard-overdue-clock-wrap {
