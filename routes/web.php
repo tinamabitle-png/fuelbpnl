@@ -31,6 +31,7 @@ use App\Http\Controllers\Merchant\DashboardController as MerchantDashboardContro
 use App\Http\Controllers\Driver\DashboardController as DriverDashboardController;
 use App\Http\Controllers\Driver\VirtualCardController as DriverVirtualCardController;
 use App\Http\Controllers\Driver\Repayment1VoucherController as DriverRepayment1VoucherController;
+use App\Http\Controllers\Driver\RepaymentPayShapController as DriverRepaymentPayShapController;
 use App\Http\Controllers\Driver\BankStatementController as DriverBankStatementController;
 use App\Http\Controllers\Investor\InvestorDashboardController;
 use App\Http\Controllers\Admin\InvestorController as AdminInvestorController;
@@ -815,6 +816,12 @@ Route::middleware(['auth'])->group(function () {
         ->name('driver.repayments.pay-now');
     Route::get('/driver/repayments/paystack/callback', [DriverDashboardController::class, 'payRepaymentCallback'])
         ->name('driver.repayments.paystack.callback');
+    Route::get('/driver/repayments/{repayment}/payshap', [DriverRepaymentPayShapController::class, 'show'])
+        ->name('driver.repayments.payshap.show');
+    Route::post('/driver/repayments/{repayment}/payshap/init', [DriverRepaymentPayShapController::class, 'init'])
+        ->name('driver.repayments.payshap.init');
+    Route::get('/driver/repayments/payshap/return', [DriverRepaymentPayShapController::class, 'handleReturn'])
+        ->name('driver.repayments.payshap.return');
     Route::post('/driver/repayments/autopay/toggle', [DriverDashboardController::class, 'toggleAutopayDaily'])
         ->name('driver.repayments.autopay.toggle');
 

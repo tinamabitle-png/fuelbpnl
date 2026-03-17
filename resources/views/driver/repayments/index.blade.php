@@ -321,9 +321,9 @@
                                         );
                                         $shareTextWithUrl = $shareText . ' ' . $requestUrl;
                                     @endphp
-                                    <div class="flex flex-wrap gap-2">
-                                        <a href="{{ route('driver.repayments.pay-now', $repayment, false) }}" class="pay-btn">
-                                            <span class="btn-text">Pay Now</span>
+	                                    <div class="flex flex-wrap gap-2">
+	                                        <a href="{{ route('driver.repayments.pay-now', $repayment, false) }}" class="pay-btn">
+	                                            <span class="btn-text">Pay Now</span>
                                             <div class="icon-container">
                                                 <svg viewBox="0 0 24 24" class="icon card-icon">
                                                     <path
@@ -356,11 +356,15 @@
                                                     ></path>
                                                 </svg>
                                             </div>
-                                        </a>
-                                        <button type="button" class="px-3 py-2 rounded-lg text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 cursor-not-allowed" title="Ethereum repayments coming soon" disabled>
-                                            <i class="fab fa-ethereum mr-1"></i> ETH (Soon)
-                                        </button>
-                                    </div>
+	                                        </a>
+	                                        <a href="{{ route('driver.repayments.payshap.show', $repayment) }}"
+                                               class="px-3 py-2 rounded-lg text-xs font-semibold bg-sky-100 text-sky-800 border border-sky-200 hover:bg-sky-200">
+	                                            PayShap
+	                                        </a>
+	                                        <button type="button" class="px-3 py-2 rounded-lg text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 cursor-not-allowed" title="Ethereum repayments coming soon" disabled>
+	                                            <i class="fab fa-ethereum mr-1"></i> ETH (Soon)
+	                                        </button>
+	                                    </div>
                                     <div class="mt-2">
                                         <a href="https://wa.me/?text={{ urlencode($shareTextWithUrl) }}" target="_blank" rel="noopener" class="pay-for-me-btn">
                                             <span class="pay-for-me-btn-label">Pay for me</span>

@@ -44,6 +44,15 @@ return [
         'timeout' => env('PAYSTACK_TIMEOUT', 15),
     ],
 
+    'peach' => [
+        'enabled' => env('PEACH_ENABLED', false),
+        'base_url' => env('PEACH_BASE_URL', 'https://testapi-v2.peachpayments.com'),
+        'entity_id' => env('PEACH_ENTITY_ID'),
+        'user_id' => env('PEACH_USER_ID'),
+        'password' => env('PEACH_PASSWORD'),
+        'timeout' => env('PEACH_TIMEOUT', 20),
+    ],
+
     'rapidpay' => [
         'base_url' => env('RAPIDPAY_BASE_URL', 'https://api.sandbox.rapidpaycollect.co.za'),
         'username' => env('RAPIDPAY_USERNAME'),
