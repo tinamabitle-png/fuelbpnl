@@ -40,6 +40,59 @@
         </div>
     </div>
 
+    @if(!empty($overdueSeconds) && (int) $overdueSeconds > 0)
+        <div class="mt-6 glass rounded-2xl p-6 overflow-hidden">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-rose-600">Overdue</p>
+                    <h2 class="brand-font text-xl text-slate-900 mt-1">Most overdue repayment</h2>
+                    <p class="text-sm text-slate-600 mt-1">
+                        @if(!empty($mostOverdue))
+                            Due {{ \Illuminate\Support\Carbon::parse($mostOverdue->due_date)->format('d M Y') }}
+                            • R {{ number_format((float) $mostOverdue->amount, 2) }}
+                        @endif
+                    </p>
+                </div>
+
+                <div class="overdue-clock-wrap">
+                    <div class="overdue-clock" data-overdue-seconds="{{ (int) $overdueSeconds }}" aria-label="00:00:00:00">
+                        <div class="clock__block clock__block--delay2" aria-hidden="true" data-time-group>
+                            <div class="clock__digit-group">
+                                <div class="clock__digits" data-time="a">00</div>
+                                <div class="clock__digits" data-time="b">00</div>
+                            </div>
+                            <div class="clock__label">Days</div>
+                        </div>
+                        <div class="clock__colon" aria-hidden="true"></div>
+                        <div class="clock__block clock__block--delay1" aria-hidden="true" data-time-group>
+                            <div class="clock__digit-group">
+                                <div class="clock__digits" data-time="a">00</div>
+                                <div class="clock__digits" data-time="b">00</div>
+                            </div>
+                            <div class="clock__label">Hours</div>
+                        </div>
+                        <div class="clock__colon" aria-hidden="true"></div>
+                        <div class="clock__block" aria-hidden="true" data-time-group>
+                            <div class="clock__digit-group">
+                                <div class="clock__digits" data-time="a">00</div>
+                                <div class="clock__digits" data-time="b">00</div>
+                            </div>
+                            <div class="clock__label">Mins</div>
+                        </div>
+                        <div class="clock__colon" aria-hidden="true"></div>
+                        <div class="clock__block clock__block--delay2" aria-hidden="true" data-time-group>
+                            <div class="clock__digit-group">
+                                <div class="clock__digits" data-time="a">00</div>
+                                <div class="clock__digits" data-time="b">00</div>
+                            </div>
+                            <div class="clock__label">Secs</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="mt-6 glass rounded-2xl p-6 overflow-hidden">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div class="flex items-center gap-4">
@@ -364,6 +417,143 @@
 </section>
 
 <style>
+    .overdue-clock-wrap {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .overdue-clock {
+        display: flex;
+        flex-direction: column;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .overdue-clock .clock__block {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        border-radius: 0.9rem;
+        box-shadow: 0 18px 40px -30px rgba(15, 23, 42, 0.35);
+        font-size: 2.2rem;
+        line-height: 1.6;
+        overflow: hidden;
+        text-align: center;
+        width: 6.5rem;
+        height: 6.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .overdue-clock .clock__digit-group {
+        display: flex;
+        flex-direction: column-reverse;
+        width: 100%;
+        height: 3.5rem;
+    }
+
+    .overdue-clock .clock__digits {
+        width: 100%;
+        height: 100%;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .overdue-clock .clock__label {
+        margin-top: 0.15rem;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+
+    .overdue-clock .clock__colon {
+        display: none;
+        font-size: 2em;
+        opacity: 0.4;
+        position: relative;
+        width: 0.75rem;
+        height: 6.5rem;
+        color: #0f172a;
+    }
+
+    .overdue-clock .clock__colon:before,
+    .overdue-clock .clock__colon:after {
+        background-color: currentColor;
+        border-radius: 50%;
+        content: "";
+        display: block;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0.35rem;
+        height: 0.35rem;
+        transform: translate(-50%, -50%);
+        opacity: 0.35;
+    }
+
+    .overdue-clock .clock__colon:before {
+        margin-top: -0.9rem;
+    }
+
+    .overdue-clock .clock__colon:after {
+        margin-top: 0.9rem;
+    }
+
+    .overdue-clock .clock__block--bounce {
+        animation: overdue-bounce 0.75s;
+    }
+
+    .overdue-clock .clock__block--bounce .clock__digit-group {
+        animation: overdue-roll 0.75s ease-in-out forwards;
+        transform: translateY(-50%);
+    }
+
+    .overdue-clock .clock__block--delay1,
+    .overdue-clock .clock__block--delay1 .clock__digit-group {
+        animation-delay: 0.1s;
+    }
+
+    .overdue-clock .clock__block--delay2,
+    .overdue-clock .clock__block--delay2 .clock__digit-group {
+        animation-delay: 0.2s;
+    }
+
+    @media (min-width: 768px) {
+        .overdue-clock {
+            flex-direction: row;
+            align-items: stretch;
+        }
+
+        .overdue-clock .clock__colon {
+            display: block;
+        }
+    }
+
+    @keyframes overdue-bounce {
+        from,
+        to {
+            animation-timing-function: ease-in;
+            transform: translateY(0);
+        }
+        50% {
+            animation-timing-function: ease-out;
+            transform: translateY(10%);
+        }
+    }
+
+    @keyframes overdue-roll {
+        from {
+            transform: translateY(-50%);
+        }
+        to {
+            transform: translateY(0);
+        }
+    }
+
     .ethpay-card {
         width: 195px;
         height: 285px;
@@ -862,4 +1052,87 @@
         }
     }
 </style>
+
+@if(!empty($overdueSeconds) && (int) $overdueSeconds > 0)
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            const els = document.querySelectorAll(".overdue-clock[data-overdue-seconds]");
+            els.forEach((el) => new BwOverdueClock(el));
+        });
+
+        class BwOverdueClock {
+            constructor(el) {
+                this.el = el;
+                this.time = { a: [], b: [] };
+                this.rollClass = "clock__block--bounce";
+                this.digitsTimeout = null;
+                this.rollTimeout = null;
+
+                this.baseSeconds = parseInt(el.getAttribute("data-overdue-seconds") || "0", 10) || 0;
+                this.startedAt = Date.now();
+                this.loop();
+            }
+
+            loop() {
+                this.updateTime();
+                this.displayTime();
+                this.animateDigits();
+                this.tick();
+            }
+
+            tick() {
+                clearTimeout(this.digitsTimeout);
+                this.digitsTimeout = setTimeout(this.loop.bind(this), 1000);
+            }
+
+            animateDigits() {
+                const groups = this.el.querySelectorAll("[data-time-group]");
+                Array.from(groups).forEach((group, i) => {
+                    const { a, b } = this.time;
+                    if (a[i] !== b[i]) group.classList.add(this.rollClass);
+                });
+
+                clearTimeout(this.rollTimeout);
+                this.rollTimeout = setTimeout(() => this.removeAnimations(), 900);
+            }
+
+            removeAnimations() {
+                const groups = this.el.querySelectorAll("[data-time-group]");
+                Array.from(groups).forEach((group) => group.classList.remove(this.rollClass));
+            }
+
+            displayTime() {
+                const timeDigits = [...this.time.b];
+                this.el.ariaLabel = timeDigits.join(":");
+
+                Object.keys(this.time).forEach((letter) => {
+                    const letterEls = this.el.querySelectorAll(`[data-time="${letter}"]`);
+                    Array.from(letterEls).forEach((el, i) => {
+                        el.textContent = this.time[letter][i];
+                    });
+                });
+            }
+
+            updateTime() {
+                const elapsedSeconds = Math.floor((Date.now() - this.startedAt) / 1000);
+                const total = Math.max(0, this.baseSeconds + elapsedSeconds);
+
+                const days = Math.floor(total / 86400);
+                const hours = Math.floor((total % 86400) / 3600);
+                const mins = Math.floor((total % 3600) / 60);
+                const secs = Math.floor(total % 60);
+
+                const dd = String(days).padStart(2, "0");
+                const hh = String(hours).padStart(2, "0");
+                const mm = String(mins).padStart(2, "0");
+                const ss = String(secs).padStart(2, "0");
+
+                this.time.a = [...this.time.b];
+                this.time.b = [dd, hh, mm, ss];
+                if (!this.time.a.length) this.time.a = [...this.time.b];
+            }
+        }
+    </script>
+@endif
+
 @endsection

@@ -514,6 +514,24 @@ class DashboardController extends Controller
         $user = Auth::user();
         $this->authorizeDriverPortal($user);
 
+        $mostOverdue = Repayment::visibleInSystem()
+            ->where('user_id', $user->id)
+            ->where('status', 'overdue')
+            ->whereNotNull('due_date')
+            ->orderBy('due_date')
+            ->first();
+        $overdueSeconds = 0;
+        if ($mostOverdue && $mostOverdue->due_date) {
+            try {
+                $due = \Illuminate\Support\Carbon::parse($mostOverdue->due_date);
+                if ($due->isPast()) {
+                    $overdueSeconds = (int) now()->diffInSeconds($due);
+                }
+            } catch (\Throwable $e) {
+                $overdueSeconds = 0;
+            }
+        }
+
         $repayments = Repayment::visibleInSystem()->with(['lease.vouchers.fuelStation'])
             ->where('user_id', $user->id)
             ->orderByRaw("FIELD(status, 'overdue','pending','paid','defaulted')")
@@ -572,7 +590,7 @@ class DashboardController extends Controller
             ->limit(12)
             ->get();
 
-        return view('driver.repayments.index', compact('repayments', 'summary', 'autopay', 'autopayEvents'));
+        return view('driver.repayments.index', compact('repayments', 'summary', 'autopay', 'autopayEvents', 'mostOverdue', 'overdueSeconds'));
     }
 
     public function profile()
