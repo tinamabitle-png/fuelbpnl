@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -27,12 +28,20 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
+        $request->merge([
+            'phone' => $this->normalizeSouthAfricanPhone((string) $request->input('phone')),
+            'email' => $request->filled('email') ? strtolower((string) $request->input('email')) : null,
+        ]);
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'phone' => 'required|string|unique:users',
-            'email' => 'nullable|email|unique:users',
+            'phone' => ['required', 'regex:/^\\+27[6-8][0-9]{8}$/', 'unique:users,phone'],
+            'email' => ['required', 'email', 'unique:users,email'],
             'password' => 'required|string|min:8|confirmed',
             'role' => 'nullable|in:driver,merchant',
+            'id_number' => ['nullable', 'digits:13', 'unique:users,id_number'],
+            'date_of_birth' => ['nullable', 'date_format:Y-m-d'],
+            'gender' => ['nullable', 'in:male,female,other'],
             'device_id' => 'required|string',
             'device_name' => 'required|string',
             'device_type' => 'required|in:android,ios,web',
@@ -48,14 +57,33 @@ class AuthController extends Controller
 
         $role = (string) $request->input('role', 'driver');
 
+        [$firstName, $lastName] = $this->splitName((string) $request->input('name'));
+        $dob = trim((string) $request->input('date_of_birth', ''));
+        if ($dob === '') {
+            $dob = (string) ($this->parseSouthAfricanIdDob((string) $request->input('id_number', '')) ?: '');
+        }
+        if ($dob === '') {
+            $dob = (string) config('services.flutterwave.virtual_cards_date_of_birth', '1990-01-01');
+        }
+
+        $gender = $this->normalizeGender((string) $request->input('gender', ''));
+        if ($gender === '') {
+            $gender = 'male';
+        }
+
         // Generate OTP for verification
         $otp = Otp::generate($request->phone, 'registration');
 
         // Create user (inactive until verified)
         $user = User::create([
             'name' => $request->name,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'date_of_birth' => $dob,
+            'gender' => $gender,
             'phone' => $request->phone,
             'email' => $request->email,
+            'id_number' => $request->input('id_number'),
             'password' => Hash::make($request->password),
             'device_fingerprint' => $request->device_id,
             'status' => 'pending', // Will be activated after OTP verification
@@ -698,5 +726,82 @@ class AuthController extends Controller
         /** @var AfricasTalkingSmsService $sms */
         $sms = app(AfricasTalkingSmsService::class);
         return $sms->sendOtp((string) $phone, (string) $message);
+    }
+
+    private function normalizeSouthAfricanPhone(string $phone): string
+    {
+        $clean = trim($phone);
+        $clean = preg_replace('/[^\\d+]/', '', $clean) ?? $clean;
+
+        if (substr($clean, 0, 3) === '+27') {
+            return $clean;
+        }
+
+        if (substr($clean, 0, 2) === '27') {
+            return '+' . $clean;
+        }
+
+        if (substr($clean, 0, 1) === '0') {
+            return '+27' . substr($clean, 1);
+        }
+
+        return $clean;
+    }
+
+    /**
+     * @return array{0:string,1:string}
+     */
+    private function splitName(string $name): array
+    {
+        $name = trim($name);
+        if ($name === '') {
+            return ['', ''];
+        }
+
+        $name = preg_replace('/\\s+/', ' ', $name) ?? $name;
+        $parts = explode(' ', $name);
+        $first = trim((string) ($parts[0] ?? ''));
+        $last = count($parts) > 1 ? trim(implode(' ', array_slice($parts, 1))) : '';
+
+        return [$first, $last];
+    }
+
+    private function normalizeGender(string $gender): string
+    {
+        $g = strtolower(trim($gender));
+        if ($g === 'm') $g = 'male';
+        if ($g === 'f') $g = 'female';
+        if (in_array($g, ['male', 'female', 'other'], true)) {
+            return $g;
+        }
+        return '';
+    }
+
+    private function parseSouthAfricanIdDob(string $idNumber): ?string
+    {
+        $idNumber = preg_replace('/\\D+/', '', $idNumber) ?: '';
+        if (!preg_match('/^\\d{13}$/', $idNumber)) {
+            return null;
+        }
+
+        $yy = (int) substr($idNumber, 0, 2);
+        $mm = (int) substr($idNumber, 2, 2);
+        $dd = (int) substr($idNumber, 4, 2);
+
+        $nowYY = (int) now()->format('y');
+        $century = $yy <= $nowYY ? 2000 : 1900;
+        $yyyy = $century + $yy;
+
+        try {
+            $dob = Carbon::createFromDate($yyyy, $mm, $dd);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if ($dob->isFuture()) {
+            return null;
+        }
+
+        return $dob->toDateString();
     }
 }

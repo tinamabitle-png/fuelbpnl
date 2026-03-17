@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 
 class RegisterController extends Controller
@@ -115,15 +116,24 @@ class RegisterController extends Controller
 
         $user = DB::transaction(function () use ($request, $validated, $role) {
             [$firstName, $lastName] = $this->splitName((string) $validated['name']);
-            $dob = $role === 'driver'
-                ? ($this->parseSouthAfricanIdDob((string) ($validated['id_number'] ?? '')) ?: null)
-                : null;
+            $dob = null;
+            if ($role === 'driver') {
+                $dob = $this->parseSouthAfricanIdDob((string) ($validated['id_number'] ?? ''));
+                if ($dob === null) {
+                    throw ValidationException::withMessages([
+                        'id_number' => 'Invalid South African ID number (date of birth could not be derived).',
+                    ]);
+                }
+            } else {
+                $dob = trim((string) config('services.flutterwave.virtual_cards_date_of_birth', '')) ?: null;
+            }
 
             $userPayload = [
                 'name' => $validated['name'],
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'date_of_birth' => $dob,
+                'gender' => 'male',
                 'phone' => $validated['phone'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
