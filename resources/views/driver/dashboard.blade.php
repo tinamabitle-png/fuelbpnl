@@ -573,7 +573,13 @@
 		                    >
 		                        <span class="payshap-logo" aria-hidden="true">
 		                            <span class="payshap-logo__word">payshap</span>
-		                            <span class="payshap-logo__dots"></span>
+		                            <img
+		                                src="{{ asset('images/shap.png') }}"
+		                                alt=""
+		                                class="payshap-logo__mark"
+		                                loading="lazy"
+		                                aria-hidden="true"
+		                            >
 		                        </span>
 		                        <span class="payshap-logo__tagline" aria-hidden="true">Faster payments made easy. iMali manje</span>
 		                    </a>
@@ -2027,30 +2033,16 @@
 	        white-space: nowrap;
 	    }
 
-	    .payshap-logo__dots {
-	        position: relative;
-	        width: 20px;
-	        height: 16px;
-	        flex: 0 0 auto;
+	    .payshap-logo__mark {
+	        width: 18px;
+	        height: 18px;
+	        border-radius: 6px;
+	        display: block;
+	        object-fit: cover;
+	        box-shadow: 0 6px 12px -10px rgba(2, 6, 23, 0.55);
 	        transform: translateY(-1px);
-	    }
-
-	    .payshap-logo__dots::before {
-	        content: "";
-	        position: absolute;
-	        width: 4px;
-	        height: 4px;
-	        border-radius: 9999px;
-	        background: var(--payshap-ink);
-	        top: 1px;
-	        left: 1px;
-	        box-shadow:
-	            7px 0 0 var(--payshap-ink),
-	            14px 3px 0 var(--payshap-ink),
-	            7px 6px 0 var(--payshap-ink),
-	            0 9px 0 var(--payshap-ink),
-	            7px 9px 0 var(--payshap-ink),
-	            14px 9px 0 var(--payshap-ink);
+	        flex: 0 0 auto;
+	        background: rgba(255, 255, 255, 0.08);
 	    }
 
 	    .payshap-logo__tagline {
