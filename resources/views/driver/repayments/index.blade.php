@@ -764,17 +764,17 @@
     }
 
     .payshap-chip {
-        width: 144px;
-        height: 72px;
-        border-radius: 21px;
+        width: 132px;
+        height: 48px;
+        border-radius: 16px;
         border: none;
-        background: #ff4a00;
+        background: rgba(255, 255, 255, 0.92);
         display: inline-flex;
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
         justify-content: center;
-        padding: 9px 12px 8px;
-        gap: 3px;
+        padding: 8px 10px;
+        gap: 8px;
         box-shadow: 0 12px 24px -22px rgba(15, 23, 42, 0.28);
         transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
         text-decoration: none;
@@ -783,7 +783,7 @@
     .payshap-chip:hover {
         transform: translateY(-1px);
         box-shadow: 0 16px 28px -24px rgba(37, 99, 235, 0.22);
-        background: #ff5a1a;
+        background: #ffffff;
     }
 
     .payshap-logo {
@@ -805,13 +805,13 @@
     }
 
     .payshap-logo__mark {
-        width: 16px;
-        height: 16px;
+        width: 22px;
+        height: 22px;
         border-radius: 6px;
         display: block;
         object-fit: cover;
         box-shadow: 0 6px 12px -10px rgba(2, 6, 23, 0.55);
-        transform: translateY(-1px);
+        transform: translateY(-0.5px);
         flex: 0 0 auto;
         background: rgba(255, 255, 255, 0.08);
     }
