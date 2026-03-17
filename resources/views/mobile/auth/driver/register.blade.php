@@ -19,18 +19,14 @@
 
             <form method="POST" action="{{ route('register.driver.store') }}" enctype="multipart/form-data" class="mt-4 space-y-3">
                 @csrf
-                <div>
-                    <label class="block text-xs font-medium text-slate-700">Full Name</label>
-                    <input id="m_driver_full_name" name="name" type="text" value="{{ old('name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
-                </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-xs font-medium text-slate-700">First Name</label>
-                        <input id="m_driver_first_name" name="first_name" type="text" value="{{ old('first_name') }}" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+                        <input id="m_driver_first_name" name="first_name" type="text" value="{{ old('first_name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-700">Last Name</label>
-                        <input id="m_driver_last_name" name="last_name" type="text" value="{{ old('last_name') }}" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+                        <input id="m_driver_last_name" name="last_name" type="text" value="{{ old('last_name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
@@ -149,20 +145,8 @@ if (platformSelect) {
 }
 
 (function initIdentityFields() {
-    const fullNameEl = document.getElementById('m_driver_full_name');
-    const firstEl = document.getElementById('m_driver_first_name');
-    const lastEl = document.getElementById('m_driver_last_name');
     const idEl = document.getElementById('m_driver_id_number');
     const dobEl = document.getElementById('m_driver_dob');
-
-    const splitName = (fullName) => {
-        const normalized = String(fullName || '').trim().replace(/\s+/g, ' ');
-        if (!normalized) return { first: '', last: '' };
-        const parts = normalized.split(' ');
-        const first = (parts[0] || '').trim();
-        const last = parts.length > 1 ? parts.slice(1).join(' ').trim() : '';
-        return { first, last };
-    };
 
     const deriveDobFromSaId = (raw) => {
         const digits = String(raw || '').replace(/\D+/g, '');
@@ -180,17 +164,6 @@ if (platformSelect) {
         if (dt.getTime() > now.getTime()) return '';
         return `${String(yyyy).padStart(4, '0')}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
     };
-
-    if (fullNameEl && firstEl && lastEl) {
-        const maybeFill = () => {
-            const { first, last } = splitName(fullNameEl.value);
-            if (!String(firstEl.value || '').trim() && first) firstEl.value = first;
-            if (!String(lastEl.value || '').trim() && last) lastEl.value = last;
-        };
-        fullNameEl.addEventListener('blur', maybeFill);
-        fullNameEl.addEventListener('change', maybeFill);
-        maybeFill();
-    }
 
     if (idEl && dobEl) {
         const syncDob = () => {

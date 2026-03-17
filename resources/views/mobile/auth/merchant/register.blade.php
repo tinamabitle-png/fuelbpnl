@@ -19,18 +19,17 @@
 
             <form method="POST" action="{{ route('register.merchant.store') }}" enctype="multipart/form-data" class="mt-4 space-y-3">
                 @csrf
-	                <div>
-	                    <label class="block text-xs font-medium text-slate-700">Business / Contact Name</label>
-	                    <input name="name" type="text" value="{{ old('name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+	                <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+	                    We use your first and last name for contact details.
 	                </div>
 	                <div class="grid grid-cols-2 gap-2">
 	                    <div>
 	                        <label class="block text-xs font-medium text-slate-700">First Name</label>
-	                        <input name="first_name" type="text" value="{{ old('first_name') }}" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+	                        <input name="first_name" type="text" value="{{ old('first_name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
 	                    </div>
 	                    <div>
 	                        <label class="block text-xs font-medium text-slate-700">Last Name</label>
-	                        <input name="last_name" type="text" value="{{ old('last_name') }}" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+	                        <input name="last_name" type="text" value="{{ old('last_name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
 	                    </div>
 	                </div>
 	                <div class="grid grid-cols-2 gap-2">

@@ -13,20 +13,15 @@
 
 	            <form method="POST" action="{{ route('register.driver.store') }}" enctype="multipart/form-data" class="mt-6 space-y-4">
 	                @csrf
-	                <div>
-	                    <label class="block text-sm font-medium text-slate-700">Full Name</label>
-	                    <input id="driver_full_name" name="name" type="text" value="{{ old('name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
-	                    @error('name')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
-	                </div>
 	                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 	                    <div>
 	                        <label class="block text-sm font-medium text-slate-700">First Name</label>
-	                        <input id="driver_first_name" name="first_name" type="text" value="{{ old('first_name') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" autocomplete="given-name">
+	                        <input id="driver_first_name" name="first_name" type="text" value="{{ old('first_name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" autocomplete="given-name">
 	                        @error('first_name')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
 	                    </div>
 	                    <div>
 	                        <label class="block text-sm font-medium text-slate-700">Last Name</label>
-	                        <input id="driver_last_name" name="last_name" type="text" value="{{ old('last_name') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" autocomplete="family-name">
+	                        <input id="driver_last_name" name="last_name" type="text" value="{{ old('last_name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" autocomplete="family-name">
 	                        @error('last_name')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
 	                    </div>
 	                </div>
@@ -238,20 +233,8 @@ const togglePlatformOther = () => {
 	}
 
 	(function initIdentityFields() {
-	    const fullNameEl = document.getElementById('driver_full_name');
-	    const firstEl = document.getElementById('driver_first_name');
-	    const lastEl = document.getElementById('driver_last_name');
 	    const idEl = document.getElementById('driver_id_number');
 	    const dobEl = document.getElementById('driver_dob');
-
-	    const splitName = (fullName) => {
-	        const normalized = String(fullName || '').trim().replace(/\s+/g, ' ');
-	        if (!normalized) return { first: '', last: '' };
-	        const parts = normalized.split(' ');
-	        const first = (parts[0] || '').trim();
-	        const last = parts.length > 1 ? parts.slice(1).join(' ').trim() : '';
-	        return { first, last };
-	    };
 
 	    const deriveDobFromSaId = (raw) => {
 	        const digits = String(raw || '').replace(/\D+/g, '');
@@ -269,16 +252,6 @@ const togglePlatformOther = () => {
 	        if (dt.getTime() > now.getTime()) return '';
 	        return `${String(yyyy).padStart(4, '0')}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
 	    };
-
-	    if (fullNameEl && firstEl && lastEl) {
-	        const maybeFill = () => {
-	            const { first, last } = splitName(fullNameEl.value);
-	            if (!String(firstEl.value || '').trim() && first) firstEl.value = first;
-	            if (!String(lastEl.value || '').trim() && last) lastEl.value = last;
-	        };
-	        fullNameEl.addEventListener('blur', maybeFill);
-	        fullNameEl.addEventListener('change', maybeFill);
-	    }
 
 	    if (idEl && dobEl) {
 	        const syncDob = () => {

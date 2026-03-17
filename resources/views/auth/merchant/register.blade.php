@@ -15,18 +15,17 @@
                 @csrf
                 <div>
                     <label class="block text-sm font-medium text-slate-700">Business / Contact Name</label>
-                    <input id="merchant_full_name" name="name" type="text" value="{{ old('name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
-                    @error('name')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                    <p class="text-xs text-slate-500 mt-1">We use your first and last name for contact details.</p>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-sm font-medium text-slate-700">First Name</label>
-                        <input id="merchant_first_name" name="first_name" type="text" value="{{ old('first_name') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" autocomplete="given-name">
+                        <input id="merchant_first_name" name="first_name" type="text" value="{{ old('first_name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" autocomplete="given-name">
                         @error('first_name')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700">Last Name</label>
-                        <input id="merchant_last_name" name="last_name" type="text" value="{{ old('last_name') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" autocomplete="family-name">
+                        <input id="merchant_last_name" name="last_name" type="text" value="{{ old('last_name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" autocomplete="family-name">
                         @error('last_name')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
@@ -220,31 +219,6 @@ document.querySelectorAll('.file-drop').forEach((dropZone) => {
         updateName(files);
 	});
 });
-
-(function initIdentityFields() {
-    const fullNameEl = document.getElementById('merchant_full_name');
-    const firstEl = document.getElementById('merchant_first_name');
-    const lastEl = document.getElementById('merchant_last_name');
-    if (!fullNameEl || !firstEl || !lastEl) return;
-
-    const splitName = (fullName) => {
-        const normalized = String(fullName || '').trim().replace(/\s+/g, ' ');
-        if (!normalized) return { first: '', last: '' };
-        const parts = normalized.split(' ');
-        const first = (parts[0] || '').trim();
-        const last = parts.length > 1 ? parts.slice(1).join(' ').trim() : '';
-        return { first, last };
-    };
-
-    const maybeFill = () => {
-        const { first, last } = splitName(fullNameEl.value);
-        if (!String(firstEl.value || '').trim() && first) firstEl.value = first;
-        if (!String(lastEl.value || '').trim() && last) lastEl.value = last;
-    };
-
-    fullNameEl.addEventListener('blur', maybeFill);
-    fullNameEl.addEventListener('change', maybeFill);
-})();
 
 const franchiseInput = document.getElementById('franchise_id');
 const franchiseChips = Array.from(document.querySelectorAll('.franchise-chip'));

@@ -34,9 +34,9 @@ class AuthController extends Controller
         ]);
 
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'first_name' => 'nullable|string|max:120',
-            'last_name' => 'nullable|string|max:120',
+            'name' => 'required_without:first_name,last_name|string|max:255',
+            'first_name' => 'required_without:name|nullable|string|max:120',
+            'last_name' => 'required_without:name|nullable|string|max:120',
             'phone' => ['required', 'regex:/^\\+27[6-8][0-9]{8}$/', 'unique:users,phone'],
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => 'required|string|min:8|confirmed',
@@ -59,9 +59,14 @@ class AuthController extends Controller
 
         $role = (string) $request->input('role', 'driver');
 
-        [$derivedFirst, $derivedLast] = $this->splitName((string) $request->input('name'));
+        $rawName = (string) $request->input('name', '');
+        [$derivedFirst, $derivedLast] = $this->splitName($rawName);
         $firstName = trim((string) $request->input('first_name', '')) ?: $derivedFirst;
         $lastName = trim((string) $request->input('last_name', '')) ?: $derivedLast;
+        $fullName = trim($firstName . ' ' . $lastName);
+        if ($fullName === '') {
+            $fullName = trim($rawName) ?: 'Bwiser User';
+        }
         $dob = trim((string) $request->input('date_of_birth', ''));
         if ($dob === '') {
             $dob = (string) ($this->parseSouthAfricanIdDob((string) $request->input('id_number', '')) ?: '');
@@ -80,7 +85,7 @@ class AuthController extends Controller
 
         // Create user (inactive until verified)
         $user = User::create([
-            'name' => $request->name,
+            'name' => $fullName,
             'first_name' => $firstName,
             'last_name' => $lastName,
             'date_of_birth' => $dob,

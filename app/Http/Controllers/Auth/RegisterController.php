@@ -73,9 +73,9 @@ class RegisterController extends Controller
         ]);
 
         $rules = [
-            'name' => ['required', 'string', 'max:255'],
-            'first_name' => ['nullable', 'string', 'max:120'],
-            'last_name' => ['nullable', 'string', 'max:120'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'first_name' => ['required_without:name', 'string', 'max:120'],
+            'last_name' => ['required_without:name', 'string', 'max:120'],
             'gender' => ['nullable', Rule::in(['male', 'female', 'other'])],
             'date_of_birth' => ['nullable', 'date_format:Y-m-d'],
             'phone' => ['required', 'regex:/^\+27[6-8][0-9]{8}$/', Rule::unique('users', 'phone')],
@@ -119,9 +119,16 @@ class RegisterController extends Controller
         $validated = $request->validate($rules);
 
         $user = DB::transaction(function () use ($request, $validated, $role) {
-            [$derivedFirst, $derivedLast] = $this->splitName((string) $validated['name']);
+            [$derivedFirst, $derivedLast] = $this->splitName((string) ($validated['name'] ?? ''));
             $firstName = trim((string) ($validated['first_name'] ?? '')) ?: $derivedFirst;
             $lastName = trim((string) ($validated['last_name'] ?? '')) ?: $derivedLast;
+            $fullName = trim($firstName . ' ' . $lastName);
+            if ($fullName === '') {
+                throw ValidationException::withMessages([
+                    'first_name' => 'First name is required.',
+                    'last_name' => 'Last name is required.',
+                ]);
+            }
 
             $gender = strtolower(trim((string) ($validated['gender'] ?? ''))) ?: 'male';
             if (!in_array($gender, ['male', 'female', 'other'], true)) {
@@ -151,7 +158,7 @@ class RegisterController extends Controller
             }
 
             $userPayload = [
-                'name' => $validated['name'],
+                'name' => $fullName,
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'date_of_birth' => $dob,

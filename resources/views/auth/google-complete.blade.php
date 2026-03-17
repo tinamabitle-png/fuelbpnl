@@ -34,9 +34,7 @@
             @endif
 
             <div>
-                <label class="block text-sm font-medium text-slate-700">Full Name</label>
-                <input id="google_full_name" name="name" type="text" value="{{ old('name', $existingUser->name ?? $pending['name'] ?? '') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
-                @error('name')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                <p class="text-xs text-slate-500">We use your first and last name for account records.</p>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -221,9 +219,6 @@
         const merchantFields = document.getElementById('merchantFields');
         const platformSelect = document.getElementById('driver_platform');
         const platformOtherWrap = document.getElementById('driver_platform_other_wrap');
-        const fullNameEl = document.getElementById('google_full_name');
-        const firstEl = document.getElementById('google_first_name');
-        const lastEl = document.getElementById('google_last_name');
         const idEl = document.getElementById('google_id_number');
         const dobEl = document.getElementById('google_dob');
 
@@ -243,15 +238,6 @@
             platformOtherWrap.classList.toggle('hidden', platformSelect.value !== 'other');
         }
 
-        const splitName = (fullName) => {
-            const normalized = String(fullName || '').trim().replace(/\s+/g, ' ');
-            if (!normalized) return { first: '', last: '' };
-            const parts = normalized.split(' ');
-            const first = (parts[0] || '').trim();
-            const last = parts.length > 1 ? parts.slice(1).join(' ').trim() : '';
-            return { first, last };
-        };
-
         const deriveDobFromSaId = (raw) => {
             const digits = String(raw || '').replace(/\D+/g, '');
             if (!/^\d{13}$/.test(digits)) return '';
@@ -269,13 +255,6 @@
             return `${String(yyyy).padStart(4, '0')}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
         };
 
-        const syncNameParts = () => {
-            if (!fullNameEl || !firstEl || !lastEl) return;
-            const { first, last } = splitName(fullNameEl.value);
-            if (!String(firstEl.value || '').trim() && first) firstEl.value = first;
-            if (!String(lastEl.value || '').trim() && last) lastEl.value = last;
-        };
-
         const syncDobFromId = () => {
             const role = roleInput ? roleInput.value : @json($lockedRole);
             if (role !== 'driver') return;
@@ -286,17 +265,12 @@
 
         if (roleInput) roleInput.addEventListener('change', toggleRole);
         if (platformSelect) platformSelect.addEventListener('change', togglePlatformOther);
-        if (fullNameEl) {
-            fullNameEl.addEventListener('blur', syncNameParts);
-            fullNameEl.addEventListener('change', syncNameParts);
-        }
         if (idEl) {
             idEl.addEventListener('input', syncDobFromId);
             idEl.addEventListener('blur', syncDobFromId);
         }
         toggleRole();
         togglePlatformOther();
-        syncNameParts();
         syncDobFromId();
     })();
 </script>
