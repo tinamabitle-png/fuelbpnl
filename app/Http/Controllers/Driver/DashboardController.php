@@ -46,16 +46,20 @@ class DashboardController extends Controller
         $user = Auth::user();
         $this->authorizeDriverPortal($user);
 
+        // The dashboard treats a repayment as "overdue" if its due_date is in the past,
+        // even if the row's status hasn't been flipped to "overdue" yet.
         $mostOverdue = Repayment::visibleInSystem()
             ->where('user_id', $user->id)
-            ->where('status', 'overdue')
+            ->whereIn('status', ['pending', 'overdue'])
             ->whereNotNull('due_date')
+            ->where('due_date', '<', now()->startOfDay())
             ->orderBy('due_date')
             ->first();
         $overdueSeconds = 0;
         if ($mostOverdue && $mostOverdue->due_date) {
             try {
-                $due = \Illuminate\Support\Carbon::parse($mostOverdue->due_date);
+                // Count overdue duration from the end of the due day (matches "due end of day" logic elsewhere).
+                $due = \Illuminate\Support\Carbon::parse($mostOverdue->due_date)->endOfDay();
                 if ($due->isPast()) {
                     $overdueSeconds = (int) now()->diffInSeconds($due);
                 }
