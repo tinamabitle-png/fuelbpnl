@@ -363,13 +363,11 @@
 	                                            aria-label="Pay via PayShap"
 	                                            title="Pay via PayShap"
 	                                        >
-	                                            <img
-	                                                src="{{ asset('images/image.png') }}"
-	                                                alt=""
-	                                                class="payshap-chip__img"
-	                                                loading="lazy"
-	                                                aria-hidden="true"
-	                                            >
+	                                            <span class="payshap-logo" aria-hidden="true">
+	                                                <span class="payshap-logo__word">payshap</span>
+	                                                <span class="payshap-logo__dots"></span>
+	                                            </span>
+	                                            <span class="payshap-logo__tagline" aria-hidden="true">Faster payments made easy. iMali manje</span>
 	                                        </a>
 	                                        <button type="button" class="px-3 py-2 rounded-lg text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 cursor-not-allowed" title="Ethereum repayments coming soon" disabled>
 	                                            <i class="fab fa-ethereum mr-1"></i> ETH (Soon)
@@ -765,25 +763,75 @@
         height: 72px;
         border-radius: 21px;
         border: none;
-        background: rgba(255, 255, 255, 0.9);
+        background: #ff4a00;
         display: inline-flex;
-        align-items: center;
+        flex-direction: column;
+        align-items: flex-start;
         justify-content: center;
+        padding: 10px 14px 9px;
+        gap: 4px;
         box-shadow: 0 12px 24px -22px rgba(15, 23, 42, 0.28);
         transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+        text-decoration: none;
     }
 
     .payshap-chip:hover {
         transform: translateY(-1px);
-        box-shadow: 0 16px 28px -24px rgba(37, 99, 235, 0.28);
-        background: #ffffff;
+        box-shadow: 0 16px 28px -24px rgba(37, 99, 235, 0.22);
+        background: #ff5a1a;
     }
 
-    .payshap-chip__img {
-        width: 126px;
-        height: 57px;
-        display: block;
-        object-fit: contain;
+    .payshap-logo {
+        --payshap-ink: #160b63;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .payshap-logo__word {
+        color: var(--payshap-ink);
+        font-weight: 900;
+        font-style: italic;
+        font-size: 26px;
+        letter-spacing: -0.02em;
+        line-height: 1;
+        text-transform: lowercase;
+        white-space: nowrap;
+    }
+
+    .payshap-logo__dots {
+        position: relative;
+        width: 20px;
+        height: 16px;
+        flex: 0 0 auto;
+        transform: translateY(-1px);
+    }
+
+    .payshap-logo__dots::before {
+        content: "";
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        border-radius: 9999px;
+        background: var(--payshap-ink);
+        top: 1px;
+        left: 1px;
+        box-shadow:
+            7px 0 0 var(--payshap-ink),
+            14px 3px 0 var(--payshap-ink),
+            7px 6px 0 var(--payshap-ink),
+            0 9px 0 var(--payshap-ink),
+            7px 9px 0 var(--payshap-ink),
+            14px 9px 0 var(--payshap-ink);
+    }
+
+    .payshap-logo__tagline {
+        color: rgba(22, 11, 99, 0.92);
+        font-size: 8.5px;
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.01em;
+        white-space: nowrap;
     }
 
     .pay-card,
