@@ -357,9 +357,19 @@
                                                 </svg>
                                             </div>
 	                                        </a>
-	                                        <a href="{{ route('driver.repayments.payshap.show', $repayment) }}"
-                                               class="px-3 py-2 rounded-lg text-xs font-semibold bg-sky-100 text-sky-800 border border-sky-200 hover:bg-sky-200">
-	                                            PayShap
+	                                        <a
+	                                            href="{{ route('driver.repayments.payshap.show', $repayment) }}"
+	                                            class="payshap-chip"
+	                                            aria-label="Pay via PayShap"
+	                                            title="Pay via PayShap"
+	                                        >
+	                                            <img
+	                                                src="{{ asset('images/payshap-logo.svg') }}"
+	                                                alt=""
+	                                                class="payshap-chip__img"
+	                                                loading="lazy"
+	                                                aria-hidden="true"
+	                                            >
 	                                        </a>
 	                                        <button type="button" class="px-3 py-2 rounded-lg text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 cursor-not-allowed" title="Ethereum repayments coming soon" disabled>
 	                                            <i class="fab fa-ethereum mr-1"></i> ETH (Soon)
@@ -748,6 +758,32 @@
     .pay-btn .btn-text {
         font-weight: 600;
         font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .payshap-chip {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        border: 1px solid rgba(14, 165, 233, 0.28);
+        background: linear-gradient(180deg, rgba(240, 249, 255, 0.9), rgba(224, 242, 254, 0.7));
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12px 24px -20px rgba(37, 99, 235, 0.45);
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .payshap-chip:hover {
+        transform: translateY(-1px);
+        border-color: rgba(37, 99, 235, 0.35);
+        box-shadow: 0 16px 28px -22px rgba(37, 99, 235, 0.55);
+        background: linear-gradient(180deg, rgba(224, 242, 254, 0.95), rgba(219, 234, 254, 0.85));
+    }
+
+    .payshap-chip__img {
+        width: 26px;
+        height: 26px;
+        display: block;
     }
 
     .pay-card,
