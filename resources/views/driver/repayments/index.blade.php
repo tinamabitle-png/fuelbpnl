@@ -764,7 +764,7 @@
         width: 86px;
         height: 44px;
         border-radius: 14px;
-        border: 1px solid rgba(148, 163, 184, 0.35);
+        border: none;
         background: rgba(255, 255, 255, 0.9);
         display: inline-flex;
         align-items: center;
@@ -775,7 +775,6 @@
 
     .payshap-chip:hover {
         transform: translateY(-1px);
-        border-color: rgba(37, 99, 235, 0.35);
         box-shadow: 0 16px 28px -24px rgba(37, 99, 235, 0.28);
         background: #ffffff;
     }
