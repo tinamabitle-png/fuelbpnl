@@ -761,9 +761,9 @@
     }
 
     .payshap-chip {
-        width: 96px;
-        height: 48px;
-        border-radius: 14px;
+        width: 144px;
+        height: 72px;
+        border-radius: 21px;
         border: none;
         background: rgba(255, 255, 255, 0.9);
         display: inline-flex;
@@ -780,8 +780,8 @@
     }
 
     .payshap-chip__img {
-        width: 84px;
-        height: 38px;
+        width: 126px;
+        height: 57px;
         display: block;
         object-fit: contain;
     }
