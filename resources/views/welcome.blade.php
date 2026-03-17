@@ -84,7 +84,6 @@
             <div>
                 <p class="text-xs uppercase tracking-[0.2em] text-blue-600">Site Stats</p>
                 <h3 class="brand-font leading-5 text-base md:text-xl font-bold text-slate-900 mt-2">Operations Overview</h3>
-                <p class="text-sm text-slate-600 mt-1">Live snapshot of platform activity (cached, updates every few minutes).</p>
             </div>
             <div class="flex items-center justify-between lg:justify-start mt-2 md:mt-4 lg:mt-0">
                 <div class="flex items-center">
@@ -493,85 +492,100 @@
 @endsection
 
 @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+    @php
+        $chartLocal = 'vendor/chart.js/Chart.min.js';
+        $chartLocalPath = public_path($chartLocal);
+        $chartSrc = is_file($chartLocalPath)
+            ? asset($chartLocal).'?v='.filemtime($chartLocalPath)
+            : 'https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js';
+    @endphp
+    <script src="{{ $chartSrc }}"></script>
     <script>
         (function initWelcomeStatsChart() {
-            const canvas = document.getElementById('welcomeStatsChart');
-            if (!canvas || typeof Chart === 'undefined') return;
+            const boot = () => {
+                const canvas = document.getElementById('welcomeStatsChart');
+                if (!canvas || typeof Chart === 'undefined') return;
 
-            const labels = JSON.parse(canvas.getAttribute('data-labels') || '[]');
-            const vouchers = JSON.parse(canvas.getAttribute('data-series-vouchers') || '[]');
-            const drivers = JSON.parse(canvas.getAttribute('data-series-drivers') || '[]');
+                const labels = JSON.parse(canvas.getAttribute('data-labels') || '[]');
+                const vouchers = JSON.parse(canvas.getAttribute('data-series-vouchers') || '[]');
+                const drivers = JSON.parse(canvas.getAttribute('data-series-drivers') || '[]');
 
-            const seriesMap = {
-                vouchers: { label: 'Vouchers', color: '#2563eb', points: vouchers },
-                drivers: { label: 'Drivers', color: '#0f766e', points: drivers },
-            };
-
-            let activeKey = 'vouchers';
-            const ctx = canvas.getContext('2d');
-            const makeDataset = (key) => {
-                const s = seriesMap[key] || seriesMap.vouchers;
-                return {
-                    label: s.label,
-                    borderColor: s.color,
-                    pointBackgroundColor: s.color,
-                    data: Array.isArray(s.points) ? s.points : [],
-                    fill: false,
-                    borderWidth: 3,
-                    pointBorderWidth: 4,
-                    pointHoverRadius: 6,
-                    pointHoverBorderWidth: 8,
-                    pointHoverBorderColor: 'rgba(37, 99, 235, 0.18)',
-                    tension: 0.35,
+                const seriesMap = {
+                    vouchers: { label: 'Vouchers', color: '#2563eb', points: vouchers },
+                    drivers: { label: 'Drivers', color: '#0f766e', points: drivers },
                 };
-            };
 
-            const chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels,
-                    datasets: [makeDataset(activeKey)],
-                },
-                options: {
-                    legend: { display: false },
-                    tooltips: {
-                        mode: 'index',
-                        intersect: false,
-                    },
-                    hover: {
-                        mode: 'nearest',
-                        intersect: true,
-                    },
-                    scales: {
-                        yAxes: [{
-                            gridLines: { display: false },
-                            ticks: { beginAtZero: true },
-                        }],
-                        xAxes: [{
-                            gridLines: { display: false },
-                        }],
-                    },
-                },
-            });
+                let activeKey = 'vouchers';
+                const ctx = canvas.getContext('2d');
+                const makeDataset = (key) => {
+                    const s = seriesMap[key] || seriesMap.vouchers;
+                    return {
+                        label: s.label,
+                        borderColor: s.color,
+                        pointBackgroundColor: s.color,
+                        data: Array.isArray(s.points) ? s.points : [],
+                        fill: false,
+                        borderWidth: 3,
+                        pointBorderWidth: 4,
+                        pointHoverRadius: 6,
+                        pointHoverBorderWidth: 8,
+                        pointHoverBorderColor: 'rgba(37, 99, 235, 0.18)',
+                        tension: 0.35,
+                    };
+                };
 
-            const buttons = Array.from(document.querySelectorAll('.welcome-stats-btn[data-series]'));
-            const setActive = (key) => {
-                activeKey = key in seriesMap ? key : 'vouchers';
-                buttons.forEach((btn) => {
-                    const isActive = btn.getAttribute('data-series') === activeKey;
-                    btn.classList.toggle('welcome-stats-btn--active', isActive);
-                    btn.classList.toggle('welcome-stats-btn--ghost', !isActive);
+                const chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [makeDataset(activeKey)],
+                    },
+                    options: {
+                        legend: { display: false },
+                        tooltips: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        hover: {
+                            mode: 'nearest',
+                            intersect: true,
+                        },
+                        scales: {
+                            yAxes: [{
+                                gridLines: { display: false },
+                                ticks: { beginAtZero: true },
+                            }],
+                            xAxes: [{
+                                gridLines: { display: false },
+                            }],
+                        },
+                    },
                 });
-                chart.data.datasets = [makeDataset(activeKey)];
-                chart.update();
+
+                const buttons = Array.from(document.querySelectorAll('.welcome-stats-btn[data-series]'));
+                const setActive = (key) => {
+                    activeKey = key in seriesMap ? key : 'vouchers';
+                    buttons.forEach((btn) => {
+                        const isActive = btn.getAttribute('data-series') === activeKey;
+                        btn.classList.toggle('welcome-stats-btn--active', isActive);
+                        btn.classList.toggle('welcome-stats-btn--ghost', !isActive);
+                    });
+                    chart.data.datasets = [makeDataset(activeKey)];
+                    chart.update();
+                };
+
+                buttons.forEach((btn) => {
+                    btn.addEventListener('click', () => setActive(btn.getAttribute('data-series') || 'vouchers'));
+                });
+
+                setActive(activeKey);
             };
 
-            buttons.forEach((btn) => {
-                btn.addEventListener('click', () => setActive(btn.getAttribute('data-series') || 'vouchers'));
-            });
-
-            setActive(activeKey);
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', boot);
+            } else {
+                boot();
+            }
         })();
     </script>
 @endpush
