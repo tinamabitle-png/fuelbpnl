@@ -35,6 +35,8 @@ class AuthController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'first_name' => 'nullable|string|max:120',
+            'last_name' => 'nullable|string|max:120',
             'phone' => ['required', 'regex:/^\\+27[6-8][0-9]{8}$/', 'unique:users,phone'],
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => 'required|string|min:8|confirmed',
@@ -57,7 +59,9 @@ class AuthController extends Controller
 
         $role = (string) $request->input('role', 'driver');
 
-        [$firstName, $lastName] = $this->splitName((string) $request->input('name'));
+        [$derivedFirst, $derivedLast] = $this->splitName((string) $request->input('name'));
+        $firstName = trim((string) $request->input('first_name', '')) ?: $derivedFirst;
+        $lastName = trim((string) $request->input('last_name', '')) ?: $derivedLast;
         $dob = trim((string) $request->input('date_of_birth', ''));
         if ($dob === '') {
             $dob = (string) ($this->parseSouthAfricanIdDob((string) $request->input('id_number', '')) ?: '');

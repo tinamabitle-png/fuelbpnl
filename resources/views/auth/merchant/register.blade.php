@@ -15,8 +15,37 @@
                 @csrf
                 <div>
                     <label class="block text-sm font-medium text-slate-700">Business / Contact Name</label>
-                    <input name="name" type="text" value="{{ old('name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                    <input id="merchant_full_name" name="name" type="text" value="{{ old('name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
                     @error('name')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">First Name</label>
+                        <input id="merchant_first_name" name="first_name" type="text" value="{{ old('first_name') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" autocomplete="given-name">
+                        @error('first_name')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Last Name</label>
+                        <input id="merchant_last_name" name="last_name" type="text" value="{{ old('last_name') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" autocomplete="family-name">
+                        @error('last_name')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Gender</label>
+                        <select id="merchant_gender" name="gender" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                            <option value="">Select</option>
+                            <option value="male" @selected(old('gender', 'male') === 'male')>Male</option>
+                            <option value="female" @selected(old('gender') === 'female')>Female</option>
+                            <option value="other" @selected(old('gender') === 'other')>Other</option>
+                        </select>
+                        @error('gender')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Date of Birth</label>
+                        <input id="merchant_dob" name="date_of_birth" type="date" value="{{ old('date_of_birth') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                        @error('date_of_birth')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700">Phone (South Africa)</label>
@@ -189,8 +218,33 @@ document.querySelectorAll('.file-drop').forEach((dropZone) => {
         if (!files || !files.length) return;
         input.files = files;
         updateName(files);
-    });
+	});
 });
+
+(function initIdentityFields() {
+    const fullNameEl = document.getElementById('merchant_full_name');
+    const firstEl = document.getElementById('merchant_first_name');
+    const lastEl = document.getElementById('merchant_last_name');
+    if (!fullNameEl || !firstEl || !lastEl) return;
+
+    const splitName = (fullName) => {
+        const normalized = String(fullName || '').trim().replace(/\s+/g, ' ');
+        if (!normalized) return { first: '', last: '' };
+        const parts = normalized.split(' ');
+        const first = (parts[0] || '').trim();
+        const last = parts.length > 1 ? parts.slice(1).join(' ').trim() : '';
+        return { first, last };
+    };
+
+    const maybeFill = () => {
+        const { first, last } = splitName(fullNameEl.value);
+        if (!String(firstEl.value || '').trim() && first) firstEl.value = first;
+        if (!String(lastEl.value || '').trim() && last) lastEl.value = last;
+    };
+
+    fullNameEl.addEventListener('blur', maybeFill);
+    fullNameEl.addEventListener('change', maybeFill);
+})();
 
 const franchiseInput = document.getElementById('franchise_id');
 const franchiseChips = Array.from(document.querySelectorAll('.franchise-chip'));

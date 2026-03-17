@@ -35,8 +35,37 @@
 
             <div>
                 <label class="block text-sm font-medium text-slate-700">Full Name</label>
-                <input name="name" type="text" value="{{ old('name', $existingUser->name ?? $pending['name'] ?? '') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                <input id="google_full_name" name="name" type="text" value="{{ old('name', $existingUser->name ?? $pending['name'] ?? '') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
                 @error('name')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">First Name</label>
+                    <input id="google_first_name" name="first_name" type="text" value="{{ old('first_name', $existingUser->first_name ?? '') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" autocomplete="given-name">
+                    @error('first_name')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Last Name</label>
+                    <input id="google_last_name" name="last_name" type="text" value="{{ old('last_name', $existingUser->last_name ?? '') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" autocomplete="family-name">
+                    @error('last_name')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Gender</label>
+                    <select id="google_gender" name="gender" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                        <option value="">Select</option>
+                        <option value="male" @selected(old('gender', $existingUser->gender ?? 'male') === 'male')>Male</option>
+                        <option value="female" @selected(old('gender', $existingUser->gender ?? '') === 'female')>Female</option>
+                        <option value="other" @selected(old('gender', $existingUser->gender ?? '') === 'other')>Other</option>
+                    </select>
+                    @error('gender')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Date of Birth</label>
+                    <input id="google_dob" name="date_of_birth" type="date" value="{{ old('date_of_birth', optional($existingUser->date_of_birth ?? null)->format('Y-m-d')) }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+                    @error('date_of_birth')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                </div>
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700">Phone (South Africa)</label>
@@ -47,7 +76,7 @@
             <div id="driverFields" class="space-y-4 {{ (old('role', $lockedRole) === 'driver') ? '' : 'hidden' }}">
                 <div>
                     <label class="block text-sm font-medium text-slate-700">South African ID Number</label>
-                    <input name="id_number" type="text" value="{{ old('id_number', $existingUser->id_number ?? '') }}" maxlength="13" pattern="[0-9]{13}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="13 digits">
+                    <input id="google_id_number" name="id_number" type="text" value="{{ old('id_number', $existingUser->id_number ?? '') }}" maxlength="13" pattern="[0-9]{13}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="13 digits">
                     @error('id_number')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
@@ -192,11 +221,21 @@
         const merchantFields = document.getElementById('merchantFields');
         const platformSelect = document.getElementById('driver_platform');
         const platformOtherWrap = document.getElementById('driver_platform_other_wrap');
+        const fullNameEl = document.getElementById('google_full_name');
+        const firstEl = document.getElementById('google_first_name');
+        const lastEl = document.getElementById('google_last_name');
+        const idEl = document.getElementById('google_id_number');
+        const dobEl = document.getElementById('google_dob');
 
         function toggleRole() {
             const role = roleInput ? roleInput.value : @json($lockedRole);
             if (driverFields) driverFields.classList.toggle('hidden', role !== 'driver');
             if (merchantFields) merchantFields.classList.toggle('hidden', role !== 'merchant');
+            if (dobEl) {
+                dobEl.readOnly = role === 'driver';
+                dobEl.classList.toggle('bg-slate-50', role === 'driver');
+            }
+            if (role === 'driver') syncDobFromId();
         }
 
         function togglePlatformOther() {
@@ -204,11 +243,61 @@
             platformOtherWrap.classList.toggle('hidden', platformSelect.value !== 'other');
         }
 
+        const splitName = (fullName) => {
+            const normalized = String(fullName || '').trim().replace(/\s+/g, ' ');
+            if (!normalized) return { first: '', last: '' };
+            const parts = normalized.split(' ');
+            const first = (parts[0] || '').trim();
+            const last = parts.length > 1 ? parts.slice(1).join(' ').trim() : '';
+            return { first, last };
+        };
+
+        const deriveDobFromSaId = (raw) => {
+            const digits = String(raw || '').replace(/\D+/g, '');
+            if (!/^\d{13}$/.test(digits)) return '';
+            const yy = Number(digits.slice(0, 2));
+            const mm = Number(digits.slice(2, 4));
+            const dd = Number(digits.slice(4, 6));
+            if (!yy || !mm || !dd) return '';
+            const now = new Date();
+            const nowYY = Number(String(now.getFullYear()).slice(-2));
+            const yyyy = (yy <= nowYY ? 2000 : 1900) + yy;
+            const dt = new Date(yyyy, mm - 1, dd);
+            if (Number.isNaN(dt.getTime())) return '';
+            if (dt.getFullYear() !== yyyy || dt.getMonth() !== (mm - 1) || dt.getDate() !== dd) return '';
+            if (dt.getTime() > now.getTime()) return '';
+            return `${String(yyyy).padStart(4, '0')}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+        };
+
+        const syncNameParts = () => {
+            if (!fullNameEl || !firstEl || !lastEl) return;
+            const { first, last } = splitName(fullNameEl.value);
+            if (!String(firstEl.value || '').trim() && first) firstEl.value = first;
+            if (!String(lastEl.value || '').trim() && last) lastEl.value = last;
+        };
+
+        const syncDobFromId = () => {
+            const role = roleInput ? roleInput.value : @json($lockedRole);
+            if (role !== 'driver') return;
+            if (!idEl || !dobEl) return;
+            const derived = deriveDobFromSaId(idEl.value);
+            if (derived) dobEl.value = derived;
+        };
+
         if (roleInput) roleInput.addEventListener('change', toggleRole);
         if (platformSelect) platformSelect.addEventListener('change', togglePlatformOther);
+        if (fullNameEl) {
+            fullNameEl.addEventListener('blur', syncNameParts);
+            fullNameEl.addEventListener('change', syncNameParts);
+        }
+        if (idEl) {
+            idEl.addEventListener('input', syncDobFromId);
+            idEl.addEventListener('blur', syncDobFromId);
+        }
         toggleRole();
         togglePlatformOther();
+        syncNameParts();
+        syncDobFromId();
     })();
 </script>
 @endsection
-

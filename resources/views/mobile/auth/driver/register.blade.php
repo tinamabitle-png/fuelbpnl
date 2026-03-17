@@ -21,7 +21,32 @@
                 @csrf
                 <div>
                     <label class="block text-xs font-medium text-slate-700">Full Name</label>
-                    <input name="name" type="text" value="{{ old('name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+                    <input id="m_driver_full_name" name="name" type="text" value="{{ old('name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700">First Name</label>
+                        <input id="m_driver_first_name" name="first_name" type="text" value="{{ old('first_name') }}" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700">Last Name</label>
+                        <input id="m_driver_last_name" name="last_name" type="text" value="{{ old('last_name') }}" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700">Gender</label>
+                        <select id="m_driver_gender" name="gender" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+                            <option value="">Select</option>
+                            <option value="male" @selected(old('gender', 'male') === 'male')>Male</option>
+                            <option value="female" @selected(old('gender') === 'female')>Female</option>
+                            <option value="other" @selected(old('gender') === 'other')>Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700">Date of Birth</label>
+                        <input id="m_driver_dob" name="date_of_birth" type="date" value="{{ old('date_of_birth') }}" readonly class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-700">Phone (South Africa)</label>
@@ -33,7 +58,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-700">ID Number (13 digits)</label>
-                    <input name="id_number" type="text" value="{{ old('id_number') }}" required maxlength="13" pattern="[0-9]{13}" placeholder="13 digits" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+                    <input id="m_driver_id_number" name="id_number" type="text" value="{{ old('id_number') }}" required maxlength="13" pattern="[0-9]{13}" placeholder="13 digits" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-700">Home Address</label>
@@ -122,5 +147,60 @@ if (platformSelect) {
     platformSelect.addEventListener('change', toggleOther);
     toggleOther();
 }
+
+(function initIdentityFields() {
+    const fullNameEl = document.getElementById('m_driver_full_name');
+    const firstEl = document.getElementById('m_driver_first_name');
+    const lastEl = document.getElementById('m_driver_last_name');
+    const idEl = document.getElementById('m_driver_id_number');
+    const dobEl = document.getElementById('m_driver_dob');
+
+    const splitName = (fullName) => {
+        const normalized = String(fullName || '').trim().replace(/\s+/g, ' ');
+        if (!normalized) return { first: '', last: '' };
+        const parts = normalized.split(' ');
+        const first = (parts[0] || '').trim();
+        const last = parts.length > 1 ? parts.slice(1).join(' ').trim() : '';
+        return { first, last };
+    };
+
+    const deriveDobFromSaId = (raw) => {
+        const digits = String(raw || '').replace(/\D+/g, '');
+        if (!/^\d{13}$/.test(digits)) return '';
+        const yy = Number(digits.slice(0, 2));
+        const mm = Number(digits.slice(2, 4));
+        const dd = Number(digits.slice(4, 6));
+        if (!yy || !mm || !dd) return '';
+        const now = new Date();
+        const nowYY = Number(String(now.getFullYear()).slice(-2));
+        const yyyy = (yy <= nowYY ? 2000 : 1900) + yy;
+        const dt = new Date(yyyy, mm - 1, dd);
+        if (Number.isNaN(dt.getTime())) return '';
+        if (dt.getFullYear() !== yyyy || dt.getMonth() !== (mm - 1) || dt.getDate() !== dd) return '';
+        if (dt.getTime() > now.getTime()) return '';
+        return `${String(yyyy).padStart(4, '0')}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+    };
+
+    if (fullNameEl && firstEl && lastEl) {
+        const maybeFill = () => {
+            const { first, last } = splitName(fullNameEl.value);
+            if (!String(firstEl.value || '').trim() && first) firstEl.value = first;
+            if (!String(lastEl.value || '').trim() && last) lastEl.value = last;
+        };
+        fullNameEl.addEventListener('blur', maybeFill);
+        fullNameEl.addEventListener('change', maybeFill);
+        maybeFill();
+    }
+
+    if (idEl && dobEl) {
+        const syncDob = () => {
+            const derived = deriveDobFromSaId(idEl.value);
+            if (derived) dobEl.value = derived;
+        };
+        idEl.addEventListener('input', syncDob);
+        idEl.addEventListener('blur', syncDob);
+        syncDob();
+    }
+})();
 </script>
 @endsection

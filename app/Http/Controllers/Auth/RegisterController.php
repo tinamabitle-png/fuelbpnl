@@ -74,6 +74,10 @@ class RegisterController extends Controller
 
         $rules = [
             'name' => ['required', 'string', 'max:255'],
+            'first_name' => ['nullable', 'string', 'max:120'],
+            'last_name' => ['nullable', 'string', 'max:120'],
+            'gender' => ['nullable', Rule::in(['male', 'female', 'other'])],
+            'date_of_birth' => ['nullable', 'date_format:Y-m-d'],
             'phone' => ['required', 'regex:/^\+27[6-8][0-9]{8}$/', Rule::unique('users', 'phone')],
             'email' => ['required', 'email', Rule::unique('users', 'email')],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
@@ -115,17 +119,35 @@ class RegisterController extends Controller
         $validated = $request->validate($rules);
 
         $user = DB::transaction(function () use ($request, $validated, $role) {
-            [$firstName, $lastName] = $this->splitName((string) $validated['name']);
+            [$derivedFirst, $derivedLast] = $this->splitName((string) $validated['name']);
+            $firstName = trim((string) ($validated['first_name'] ?? '')) ?: $derivedFirst;
+            $lastName = trim((string) ($validated['last_name'] ?? '')) ?: $derivedLast;
+
+            $gender = strtolower(trim((string) ($validated['gender'] ?? ''))) ?: 'male';
+            if (!in_array($gender, ['male', 'female', 'other'], true)) {
+                $gender = 'male';
+            }
+
             $dob = null;
             if ($role === 'driver') {
-                $dob = $this->parseSouthAfricanIdDob((string) ($validated['id_number'] ?? ''));
-                if ($dob === null) {
+                $derivedDob = $this->parseSouthAfricanIdDob((string) ($validated['id_number'] ?? ''));
+                $providedDob = trim((string) ($validated['date_of_birth'] ?? '')) ?: null;
+                if ($derivedDob === null) {
                     throw ValidationException::withMessages([
                         'id_number' => 'Invalid South African ID number (date of birth could not be derived).',
                     ]);
                 }
+                if ($providedDob !== null && $providedDob !== $derivedDob) {
+                    throw ValidationException::withMessages([
+                        'date_of_birth' => 'Date of birth must match the ID number.',
+                    ]);
+                }
+                $dob = $derivedDob;
             } else {
-                $dob = trim((string) config('services.flutterwave.virtual_cards_date_of_birth', '')) ?: null;
+                $dob = trim((string) ($validated['date_of_birth'] ?? '')) ?: null;
+                if ($dob === null) {
+                    $dob = trim((string) config('services.flutterwave.virtual_cards_date_of_birth', '')) ?: null;
+                }
             }
 
             $userPayload = [
@@ -133,7 +155,7 @@ class RegisterController extends Controller
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'date_of_birth' => $dob,
-                'gender' => 'male',
+                'gender' => $gender,
                 'phone' => $validated['phone'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),

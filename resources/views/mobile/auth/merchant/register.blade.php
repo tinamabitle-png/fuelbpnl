@@ -19,10 +19,35 @@
 
             <form method="POST" action="{{ route('register.merchant.store') }}" enctype="multipart/form-data" class="mt-4 space-y-3">
                 @csrf
-                <div>
-                    <label class="block text-xs font-medium text-slate-700">Business / Contact Name</label>
-                    <input name="name" type="text" value="{{ old('name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
-                </div>
+	                <div>
+	                    <label class="block text-xs font-medium text-slate-700">Business / Contact Name</label>
+	                    <input name="name" type="text" value="{{ old('name') }}" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+	                </div>
+	                <div class="grid grid-cols-2 gap-2">
+	                    <div>
+	                        <label class="block text-xs font-medium text-slate-700">First Name</label>
+	                        <input name="first_name" type="text" value="{{ old('first_name') }}" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+	                    </div>
+	                    <div>
+	                        <label class="block text-xs font-medium text-slate-700">Last Name</label>
+	                        <input name="last_name" type="text" value="{{ old('last_name') }}" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+	                    </div>
+	                </div>
+	                <div class="grid grid-cols-2 gap-2">
+	                    <div>
+	                        <label class="block text-xs font-medium text-slate-700">Gender</label>
+	                        <select name="gender" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+	                            <option value="">Select</option>
+	                            <option value="male" @selected(old('gender', 'male') === 'male')>Male</option>
+	                            <option value="female" @selected(old('gender') === 'female')>Female</option>
+	                            <option value="other" @selected(old('gender') === 'other')>Other</option>
+	                        </select>
+	                    </div>
+	                    <div>
+	                        <label class="block text-xs font-medium text-slate-700">Date of Birth</label>
+	                        <input name="date_of_birth" type="date" value="{{ old('date_of_birth') }}" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
+	                    </div>
+	                </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-700">Phone (South Africa)</label>
                     <input name="phone" type="tel" value="{{ old('phone') }}" required inputmode="tel" autocomplete="tel" pattern="^(\+27|27|0)[6-8][0-9]{8}$" placeholder="+27XXXXXXXXX or 0XXXXXXXXX" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
