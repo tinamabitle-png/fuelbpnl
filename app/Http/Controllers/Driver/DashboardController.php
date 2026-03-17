@@ -46,27 +46,8 @@ class DashboardController extends Controller
         $user = Auth::user();
         $this->authorizeDriverPortal($user);
 
-        // The dashboard treats a repayment as "overdue" if its due_date is in the past,
-        // even if the row's status hasn't been flipped to "overdue" yet.
-        $mostOverdue = Repayment::visibleInSystem()
-            ->where('user_id', $user->id)
-            ->whereIn('status', ['pending', 'overdue'])
-            ->whereNotNull('due_date')
-            ->where('due_date', '<', now()->startOfDay())
-            ->orderBy('due_date')
-            ->first();
+        $mostOverdue = null;
         $overdueSeconds = 0;
-        if ($mostOverdue && $mostOverdue->due_date) {
-            try {
-                // Count overdue duration from the end of the due day (matches "due end of day" logic elsewhere).
-                $due = \Illuminate\Support\Carbon::parse($mostOverdue->due_date)->endOfDay();
-                if ($due->isPast()) {
-                    $overdueSeconds = (int) now()->diffInSeconds($due);
-                }
-            } catch (\Throwable $e) {
-                $overdueSeconds = 0;
-            }
-        }
 
         $virtualCards = $user->virtualCards()
             ->open()
@@ -159,6 +140,34 @@ class DashboardController extends Controller
             ->orderBy('due_date')
             ->limit(8)
             ->get();
+
+        // Determine the oldest overdue repayment using the same logic the dashboard uses for highlighting:
+        // due_date is in the past and not today (end-of-day cutoff).
+        $mostOverdue = $upcomingRepayments
+            ->filter(function ($repayment) {
+                if (empty($repayment->due_date)) {
+                    return false;
+                }
+                try {
+                    $dueDate = \Illuminate\Support\Carbon::parse($repayment->due_date);
+                    return $dueDate->isPast() && !$dueDate->isToday() && (string) $repayment->status !== 'paid';
+                } catch (\Throwable $e) {
+                    return false;
+                }
+            })
+            ->sortBy('due_date')
+            ->first();
+
+        if ($mostOverdue && $mostOverdue->due_date) {
+            try {
+                $due = \Illuminate\Support\Carbon::parse($mostOverdue->due_date)->endOfDay();
+                if ($due->isPast()) {
+                    $overdueSeconds = (int) now()->diffInSeconds($due);
+                }
+            } catch (\Throwable $e) {
+                $overdueSeconds = 0;
+            }
+        }
 
         $nextRepayment = $upcomingRepayments->first(function ($repayment) {
             return !empty($repayment->due_date);
