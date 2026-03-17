@@ -561,12 +561,12 @@
             </div>
         </div>
 
-        <div class="glass rounded-2xl p-6">
-            <div class="flex items-center justify-between">
-                <h2 class="brand-font text-xl text-slate-900">Upcoming Repayments</h2>
-                <div class="flex items-center gap-2">
-                    <a href="{{ route('driver.repayments.index') }}" class="text-sm text-blue-600 hover:text-blue-700">Open repayments</a>
-                    <a href="{{ route('driver.repayments.upcoming.export-pdf') }}" class="download-button" title="Export upcoming repayments to PDF">
+	        <div class="glass rounded-2xl p-6">
+	            <div class="flex items-center justify-between">
+	                <h2 class="brand-font text-xl text-slate-900">Upcoming Repayments</h2>
+	                <div class="flex items-center gap-2">
+	                    <a href="{{ route('driver.repayments.index') }}" class="text-sm text-blue-600 hover:text-blue-700">Open repayments</a>
+	                    <a href="{{ route('driver.repayments.upcoming.export-pdf') }}" class="download-button" title="Export upcoming repayments to PDF">
                         <span class="docs">
                             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -584,13 +584,65 @@
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
                         </span>
-                    </a>
-                </div>
-            </div>
-            @if($nextRepaymentCountdownTarget)
-                <div class="next-repayment-clock-wrap mt-4">
-                    <div class="clock-container next-repayment-clock" data-target-ms="{{ $nextRepaymentCountdownTarget }}">
-                        <div class="clock-col">
+	                    </a>
+	                </div>
+	            </div>
+	            @if(!empty($overdueSeconds) && (int) $overdueSeconds > 0)
+	                <div class="mt-4 rounded-xl border border-rose-200 bg-rose-50/70 px-4 py-4 overflow-hidden">
+	                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+	                        <div>
+	                            <p class="text-xs uppercase tracking-[0.2em] text-rose-700">Overdue</p>
+	                            <p class="text-sm font-semibold text-slate-900 mt-1">Oldest overdue repayment</p>
+	                            <p class="text-xs text-slate-600 mt-1">
+	                                @if(!empty($mostOverdue))
+	                                    Due {{ \Illuminate\Support\Carbon::parse($mostOverdue->due_date)->format('d M Y') }}
+	                                    • R {{ number_format((float) $mostOverdue->amount, 2) }}
+	                                @endif
+	                            </p>
+	                        </div>
+
+	                        <div class="dashboard-overdue-clock-wrap">
+	                            <div class="dashboard-overdue-clock" data-overdue-seconds="{{ (int) $overdueSeconds }}" aria-label="00:00:00:00">
+	                                <div class="clock__block clock__block--delay2" aria-hidden="true" data-time-group>
+	                                    <div class="clock__digit-group">
+	                                        <div class="clock__digits" data-time="a">00</div>
+	                                        <div class="clock__digits" data-time="b">00</div>
+	                                    </div>
+	                                    <div class="clock__label">Days</div>
+	                                </div>
+	                                <div class="clock__colon" aria-hidden="true"></div>
+	                                <div class="clock__block clock__block--delay1" aria-hidden="true" data-time-group>
+	                                    <div class="clock__digit-group">
+	                                        <div class="clock__digits" data-time="a">00</div>
+	                                        <div class="clock__digits" data-time="b">00</div>
+	                                    </div>
+	                                    <div class="clock__label">Hours</div>
+	                                </div>
+	                                <div class="clock__colon" aria-hidden="true"></div>
+	                                <div class="clock__block" aria-hidden="true" data-time-group>
+	                                    <div class="clock__digit-group">
+	                                        <div class="clock__digits" data-time="a">00</div>
+	                                        <div class="clock__digits" data-time="b">00</div>
+	                                    </div>
+	                                    <div class="clock__label">Mins</div>
+	                                </div>
+	                                <div class="clock__colon" aria-hidden="true"></div>
+	                                <div class="clock__block clock__block--delay2" aria-hidden="true" data-time-group>
+	                                    <div class="clock__digit-group">
+	                                        <div class="clock__digits" data-time="a">00</div>
+	                                        <div class="clock__digits" data-time="b">00</div>
+	                                    </div>
+	                                    <div class="clock__label">Secs</div>
+	                                </div>
+	                            </div>
+	                        </div>
+	                    </div>
+	                </div>
+	            @endif
+	            @if($nextRepaymentCountdownTarget)
+	                <div class="next-repayment-clock-wrap mt-4">
+	                    <div class="clock-container next-repayment-clock" data-target-ms="{{ $nextRepaymentCountdownTarget }}">
+	                        <div class="clock-col">
                             <p class="clock-day clock-timer"></p>
                             <p class="clock-label">Days</p>
                         </div>
@@ -1916,16 +1968,154 @@
         color: rgba(255, 255, 255, 0.75);
     }
 
-    .next-repayment-hint {
-        margin-top: 0.5rem;
-        font-size: 0.72rem;
-        color: rgba(239, 246, 255, 0.92);
-    }
+	    .next-repayment-hint {
+	        margin-top: 0.5rem;
+	        font-size: 0.72rem;
+	        color: rgba(239, 246, 255, 0.92);
+	    }
 
-    .download-button {
-        position: relative;
-        border-width: 0;
-        color: #fff;
+	    .dashboard-overdue-clock-wrap {
+	        display: flex;
+	        justify-content: flex-end;
+	    }
+
+	    .dashboard-overdue-clock {
+	        display: flex;
+	        flex-direction: row;
+	        flex-wrap: wrap;
+	        align-items: center;
+	        gap: 10px;
+	    }
+
+	    .dashboard-overdue-clock .clock__block {
+	        background: rgba(255, 255, 255, 0.8);
+	        border: 1px solid rgba(251, 113, 133, 0.28);
+	        border-radius: 14px;
+	        box-shadow: 0 14px 34px -22px rgba(225, 29, 72, 0.35);
+	        overflow: hidden;
+	        text-align: center;
+	        width: 84px;
+	        height: 84px;
+	        transition: background-color 0.3s, box-shadow 0.3s;
+	    }
+
+	    .dashboard-overdue-clock .clock__digit-group {
+	        display: flex;
+	        flex-direction: column-reverse;
+	        height: 58px;
+	        justify-content: flex-start;
+	    }
+
+	    .dashboard-overdue-clock .clock__digits {
+	        display: grid;
+	        place-items: center;
+	        width: 100%;
+	        height: 58px;
+	        font-size: 28px;
+	        line-height: 1;
+	        font-weight: 800;
+	        color: rgba(15, 23, 42, 0.92);
+	        letter-spacing: 0.04em;
+	    }
+
+	    .dashboard-overdue-clock .clock__label {
+	        font-size: 10px;
+	        font-weight: 700;
+	        letter-spacing: 0.12em;
+	        text-transform: uppercase;
+	        color: rgba(190, 18, 60, 0.9);
+	        padding: 6px 6px 8px;
+	        border-top: 1px solid rgba(251, 113, 133, 0.24);
+	        background: rgba(251, 113, 133, 0.06);
+	    }
+
+	    .dashboard-overdue-clock .clock__colon {
+	        display: none;
+	        font-size: 2em;
+	        opacity: 0.5;
+	        position: relative;
+	    }
+
+	    .dashboard-overdue-clock .clock__colon:before,
+	    .dashboard-overdue-clock .clock__colon:after {
+	        background-color: currentColor;
+	        border-radius: 50%;
+	        content: "";
+	        display: block;
+	        position: absolute;
+	        top: -0.05em;
+	        left: -0.05em;
+	        width: 0.1em;
+	        height: 0.1em;
+	        transition: background-color 0.3s;
+	    }
+
+	    .dashboard-overdue-clock .clock__colon:before { transform: translateY(-200%); }
+	    .dashboard-overdue-clock .clock__colon:after { transform: translateY(200%); }
+
+	    .dashboard-overdue-clock .clock__block--bounce {
+	        animation: dashboardOverdueBounce 0.75s;
+	    }
+
+	    .dashboard-overdue-clock .clock__block--bounce .clock__digit-group {
+	        animation: dashboardOverdueRoll 0.75s ease-in-out forwards;
+	        transform: translateY(-50%);
+	    }
+
+	    .dashboard-overdue-clock .clock__block--delay1,
+	    .dashboard-overdue-clock .clock__block--delay1 .clock__digit-group { animation-delay: 0.1s; }
+
+	    .dashboard-overdue-clock .clock__block--delay2,
+	    .dashboard-overdue-clock .clock__block--delay2 .clock__digit-group { animation-delay: 0.2s; }
+
+	    @media (min-width: 640px) {
+	        .dashboard-overdue-clock .clock__colon {
+	            display: inherit;
+	        }
+	    }
+
+	    @media (max-width: 420px) {
+	        .dashboard-overdue-clock {
+	            justify-content: flex-start;
+	            width: 100%;
+	        }
+
+	        .dashboard-overdue-clock .clock__block {
+	            width: 74px;
+	            height: 74px;
+	        }
+
+	        .dashboard-overdue-clock .clock__digits {
+	            height: 52px;
+	            font-size: 24px;
+	        }
+
+	        .dashboard-overdue-clock .clock__digit-group {
+	            height: 52px;
+	        }
+	    }
+
+	    @keyframes dashboardOverdueBounce {
+	        from,
+	        to {
+	            animation-timing-function: ease-in;
+	            transform: translateY(0);
+	        }
+	        50% {
+	            animation-timing-function: ease-out;
+	            transform: translateY(12%);
+	        }
+	    }
+
+	    @keyframes dashboardOverdueRoll {
+	        from { transform: translateY(-50%); }
+	        to { transform: translateY(0); }
+	    }
+
+	    .download-button {
+	        position: relative;
+	        border-width: 0;
+	        color: #fff;
         font-size: 0.78rem;
         font-weight: 600;
         cursor: pointer;
@@ -2613,9 +2803,9 @@
         });
     })();
 
-    (function initNextRepaymentCountdown() {
-        const clock = document.querySelector('.next-repayment-clock');
-        if (!clock) return;
+	    (function initNextRepaymentCountdown() {
+	        const clock = document.querySelector('.next-repayment-clock');
+	        if (!clock) return;
 
         const hint = document.getElementById('nextRepaymentHint');
         const targetMs = Number(clock.dataset.targetMs || 0);
@@ -2650,9 +2840,85 @@
             }
         };
 
-        render();
-        window.setInterval(render, 1000);
-    })();
+	        render();
+	        window.setInterval(render, 1000);
+	    })();
 
-</script>
-@endsection
+	    (function initDashboardOverdueClock() {
+	        const els = document.querySelectorAll(".dashboard-overdue-clock[data-overdue-seconds]");
+	        if (!els.length) return;
+	        els.forEach((el) => new BwDashboardOverdueClock(el));
+
+	        const pad2 = (value) => String(Math.max(0, value)).padStart(2, "0");
+
+	        class BwDashboardOverdueClock {
+	            constructor(el) {
+	                this.el = el;
+	                this.time = { a: [], b: [] };
+	                this.rollClass = "clock__block--bounce";
+	                this.digitsTimeout = null;
+	                this.rollTimeout = null;
+
+	                this.baseSeconds = parseInt(el.getAttribute("data-overdue-seconds") || "0", 10) || 0;
+	                this.startedAt = Date.now();
+	                this.loop();
+	            }
+
+	            loop() {
+	                this.updateTime();
+	                this.displayTime();
+	                this.animateDigits();
+	                this.tick();
+	            }
+
+	            tick() {
+	                clearTimeout(this.digitsTimeout);
+	                this.digitsTimeout = setTimeout(this.loop.bind(this), 1000);
+	            }
+
+	            animateDigits() {
+	                const groups = this.el.querySelectorAll("[data-time-group]");
+	                Array.from(groups).forEach((group, i) => {
+	                    const { a, b } = this.time;
+	                    if (a[i] !== b[i]) group.classList.add(this.rollClass);
+	                });
+
+	                clearTimeout(this.rollTimeout);
+	                this.rollTimeout = setTimeout(() => this.removeAnimations(), 900);
+	            }
+
+	            removeAnimations() {
+	                const groups = this.el.querySelectorAll("[data-time-group]");
+	                Array.from(groups).forEach((group) => group.classList.remove(this.rollClass));
+	            }
+
+	            displayTime() {
+	                const timeDigits = [...this.time.b];
+	                this.el.ariaLabel = timeDigits.join(":");
+
+	                Object.keys(this.time).forEach((letter) => {
+	                    const letterEls = this.el.querySelectorAll(`[data-time="${letter}"]`);
+	                    Array.from(letterEls).forEach((node, i) => {
+	                        node.textContent = this.time[letter][i];
+	                    });
+	                });
+	            }
+
+	            updateTime() {
+	                const elapsedSeconds = Math.floor((Date.now() - this.startedAt) / 1000);
+	                const total = Math.max(0, this.baseSeconds + elapsedSeconds);
+
+	                const days = Math.floor(total / 86400);
+	                const hours = Math.floor((total % 86400) / 3600);
+	                const mins = Math.floor((total % 3600) / 60);
+	                const secs = Math.floor(total % 60);
+
+	                this.time.a = [...this.time.b];
+	                this.time.b = [pad2(days), pad2(hours), pad2(mins), pad2(secs)];
+	                if (!this.time.a.length) this.time.a = [...this.time.b];
+	            }
+	        }
+	    })();
+
+	</script>
+	@endsection
