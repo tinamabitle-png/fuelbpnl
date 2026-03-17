@@ -773,8 +773,8 @@
         flex-direction: column;
         align-items: flex-start;
         justify-content: center;
-        padding: 10px 14px 9px;
-        gap: 4px;
+        padding: 9px 12px 8px;
+        gap: 3px;
         box-shadow: 0 12px 24px -22px rgba(15, 23, 42, 0.28);
         transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
         text-decoration: none;
@@ -797,7 +797,7 @@
         color: var(--payshap-ink);
         font-weight: 900;
         font-style: italic;
-        font-size: 26px;
+        font-size: 22px;
         letter-spacing: -0.02em;
         line-height: 1;
         text-transform: lowercase;
@@ -805,8 +805,8 @@
     }
 
     .payshap-logo__mark {
-        width: 18px;
-        height: 18px;
+        width: 16px;
+        height: 16px;
         border-radius: 6px;
         display: block;
         object-fit: cover;
