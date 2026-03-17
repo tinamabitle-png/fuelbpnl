@@ -581,7 +581,6 @@
 		                                aria-hidden="true"
 		                            >
 		                        </span>
-		                        <span class="payshap-logo__tagline" aria-hidden="true">Faster payments made easy. iMali manje</span>
 		                    </a>
 		                    <a href="{{ route('driver.repayments.index') }}" class="text-sm text-blue-600 hover:text-blue-700">Open repayments</a>
 		                    <a href="{{ route('driver.repayments.upcoming.export-pdf') }}" class="download-button" title="Export upcoming repayments to PDF">
@@ -2043,15 +2042,6 @@
 	        transform: translateY(-1px);
 	        flex: 0 0 auto;
 	        background: rgba(255, 255, 255, 0.08);
-	    }
-
-	    .payshap-logo__tagline {
-	        color: rgba(22, 11, 99, 0.92);
-	        font-size: 8.5px;
-	        font-weight: 700;
-	        line-height: 1.1;
-	        letter-spacing: -0.01em;
-	        white-space: nowrap;
 	    }
 
 	    .dashboard-overdue-clock-wrap {

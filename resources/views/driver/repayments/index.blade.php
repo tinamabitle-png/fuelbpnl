@@ -373,7 +373,6 @@
 	                                                    aria-hidden="true"
 	                                                >
 	                                            </span>
-	                                            <span class="payshap-logo__tagline" aria-hidden="true">Faster payments made easy. iMali manje</span>
 	                                        </a>
 	                                        <button type="button" class="px-3 py-2 rounded-lg text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 cursor-not-allowed" title="Ethereum repayments coming soon" disabled>
 	                                            <i class="fab fa-ethereum mr-1"></i> ETH (Soon)
@@ -815,15 +814,6 @@
         transform: translateY(-1px);
         flex: 0 0 auto;
         background: rgba(255, 255, 255, 0.08);
-    }
-
-    .payshap-logo__tagline {
-        color: rgba(22, 11, 99, 0.92);
-        font-size: 8.5px;
-        font-weight: 700;
-        line-height: 1.1;
-        letter-spacing: -0.01em;
-        white-space: nowrap;
     }
 
     .pay-card,
