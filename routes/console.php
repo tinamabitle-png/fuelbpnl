@@ -28,3 +28,10 @@ Schedule::command('repayments:apply-default-charges --limit=500')
     ->withoutOverlapping()
     ->onOneServer()
     ->name('repayments-default-charges');
+
+Schedule::command('luno:poll-repayment-payments --limit=250')
+    ->everyTwoMinutes()
+    ->timezone('Africa/Johannesburg')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->name('luno-poll-repayment-payments');

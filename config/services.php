@@ -62,6 +62,14 @@ return [
         'collection_path' => env('RAPIDPAY_COLLECTION_PATH', '/mandates/collect'),
     ],
 
+    'luno' => [
+        'enabled' => env('LUNO_ENABLED', false),
+        'base_url' => env('LUNO_BASE_URL', 'https://api.luno.com'),
+        'key_id' => env('LUNO_API_KEY_ID'),
+        'key_secret' => env('LUNO_API_KEY_SECRET'),
+        'timeout' => env('LUNO_TIMEOUT', 20),
+    ],
+
     'africastalking' => [
         'username' => env('AFRICASTALKING_USERNAME'),
         'api_key' => env('AFRICASTALKING_API_KEY'),

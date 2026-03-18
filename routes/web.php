@@ -32,6 +32,7 @@ use App\Http\Controllers\Driver\DashboardController as DriverDashboardController
 use App\Http\Controllers\Driver\VirtualCardController as DriverVirtualCardController;
 use App\Http\Controllers\Driver\Repayment1VoucherController as DriverRepayment1VoucherController;
 use App\Http\Controllers\Driver\RepaymentPayShapController as DriverRepaymentPayShapController;
+use App\Http\Controllers\Driver\RepaymentCryptoController as DriverRepaymentCryptoController;
 use App\Http\Controllers\Driver\BankStatementController as DriverBankStatementController;
 use App\Http\Controllers\Investor\InvestorDashboardController;
 use App\Http\Controllers\Admin\InvestorController as AdminInvestorController;
@@ -822,6 +823,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('driver.repayments.payshap.init');
     Route::get('/driver/repayments/payshap/return', [DriverRepaymentPayShapController::class, 'handleReturn'])
         ->name('driver.repayments.payshap.return');
+    Route::get('/driver/repayments/{repayment}/crypto', [DriverRepaymentCryptoController::class, 'show'])
+        ->name('driver.repayments.crypto.show');
+    Route::post('/driver/repayments/{repayment}/crypto/confirm', [DriverRepaymentCryptoController::class, 'confirm'])
+        ->name('driver.repayments.crypto.confirm');
     Route::post('/driver/repayments/autopay/toggle', [DriverDashboardController::class, 'toggleAutopayDaily'])
         ->name('driver.repayments.autopay.toggle');
 

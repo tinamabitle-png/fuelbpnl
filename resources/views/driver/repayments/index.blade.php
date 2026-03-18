@@ -374,9 +374,22 @@
 	                                                >
 	                                            </span>
 	                                        </a>
-	                                        <button type="button" class="px-3 py-2 rounded-lg text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 cursor-not-allowed" title="Ethereum repayments coming soon" disabled>
-	                                            <i class="fab fa-ethereum mr-1"></i> ETH (Soon)
-	                                        </button>
+                                            <a
+                                                href="{{ route('driver.repayments.crypto.show', $repayment) }}?asset=XBT"
+                                                class="px-3 py-2 rounded-lg text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200"
+                                                title="Pay with Bitcoin"
+                                                aria-label="Pay with Bitcoin"
+                                            >
+                                                BTC
+                                            </a>
+                                            <a
+                                                href="{{ route('driver.repayments.crypto.show', $repayment) }}?asset=ETH"
+                                                class="px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200"
+                                                title="Pay with Ethereum"
+                                                aria-label="Pay with Ethereum"
+                                            >
+                                                ETH
+                                            </a>
 	                                    </div>
                                     <div class="mt-2">
                                         <a href="https://wa.me/?text={{ urlencode($shareTextWithUrl) }}" target="_blank" rel="noopener" class="pay-for-me-btn">
