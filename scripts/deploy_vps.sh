@@ -23,6 +23,7 @@ REMOTE_COMPOSER="${REMOTE_COMPOSER:-composer}"
 SSH_OPTS="${SSH_OPTS:- -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 }"
 DEPLOY_KEY_PATH="${DEPLOY_KEY_PATH:-$HOME/.ssh/bwiser_deploy_ed25519}"
 INSTALL_KEY="false"
+CHECK_MAIL="false"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
@@ -37,6 +38,7 @@ while [[ $# -gt 0 ]]; do
     --composer) REMOTE_COMPOSER="${2:-}"; shift 2;;
     --key) DEPLOY_KEY_PATH="${2:-}"; shift 2;;
     --install-key) INSTALL_KEY="true"; shift 1;;
+    --check-mail) CHECK_MAIL="true"; shift 1;;
     --help|-h)
       sed -n '1,140p' "$0"
       exit 0
@@ -164,6 +166,34 @@ if [[ -n "$(git status --porcelain)" ]]; then
   git stash -u >/dev/null || true
 fi
 git pull "$REMOTE" "$BRANCH"
+
+check_mail() {
+  # Non-fatal check: many VPSes use an external SMTP provider instead.
+  echo "Mail check (optional)..."
+  if command -v systemctl >/dev/null 2>&1; then
+    if systemctl list-unit-files 2>/dev/null | grep -q "^postfix\.service"; then
+      systemctl is-active --quiet postfix && echo "postfix: active" || echo "postfix: installed but not active"
+    else
+      echo "postfix: not installed"
+    fi
+    if systemctl list-unit-files 2>/dev/null | grep -q "^opendkim\.service"; then
+      systemctl is-active --quiet opendkim && echo "opendkim: active" || echo "opendkim: installed but not active"
+    else
+      echo "opendkim: not installed"
+    fi
+    if systemctl list-unit-files 2>/dev/null | grep -q "^opendmarc\.service"; then
+      systemctl is-active --quiet opendmarc && echo "opendmarc: active" || echo "opendmarc: installed but not active"
+    else
+      echo "opendmarc: not installed"
+    fi
+  else
+    echo "systemctl not available; skipping mail service checks."
+  fi
+}
+
+if [[ "'"${CHECK_MAIL}"'" == "true" ]]; then
+  check_mail || true
+fi
 
 echo "Composer install..."
 if command -v "$REMOTE_COMPOSER" >/dev/null 2>&1; then
