@@ -335,19 +335,47 @@
 	                                        </a>
                                             <a
                                                 href="{{ route('driver.repayments.crypto.show', $repayment) }}?asset=XBT"
-                                                class="px-3 py-2 rounded-lg text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200"
+                                                class="crypto-3d-btn crypto-3d-btn--btc"
                                                 title="Pay with Bitcoin"
                                                 aria-label="Pay with Bitcoin"
                                             >
-                                                BTC
+                                                <span class="crypto-3d-coin crypto-3d-coin--btc" aria-hidden="true">
+                                                    <svg viewBox="0 0 64 64" class="crypto-3d-svg" aria-hidden="true">
+                                                        <defs>
+                                                            <linearGradient id="btcG" x1="0" y1="0" x2="1" y2="1">
+                                                                <stop offset="0" stop-color="#ffb45a"></stop>
+                                                                <stop offset="0.55" stop-color="#f7931a"></stop>
+                                                                <stop offset="1" stop-color="#d86e00"></stop>
+                                                            </linearGradient>
+                                                        </defs>
+                                                        <circle cx="32" cy="32" r="28" fill="url(#btcG)"></circle>
+                                                        <path d="M32 10c-12.15 0-22 9.85-22 22s9.85 22 22 22 22-9.85 22-22S44.15 10 32 10Z" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2"></path>
+                                                        <path d="M37.8 28.7c1.9-1.1 2.8-2.7 2.4-4.9-.6-3.2-3.9-4.3-7.9-4.5V16h-3v3.2h-2.4V16h-3v3.4h-3.9v3.2h2.1c.9 0 1.2.3 1.3.9v14.1c0 .5-.2.8-.8.8h-2.6V46h3.9V49h3v-3h2.4v3h3v-3.1c4.6-.3 8.2-1.7 8.9-6 .5-3-1-5-3.5-6.2Zm-9.6-5.9c2.1 0 6 .2 6 2.8 0 2.8-3.8 3-6 3v-5.8Zm0 19.2V34c2.6 0 7.2.3 7.2 3.5 0 3.2-4.6 3.6-7.2 3.5Z" fill="#ffffff" opacity="0.95"></path>
+                                                    </svg>
+                                                </span>
                                             </a>
                                             <a
                                                 href="{{ route('driver.repayments.crypto.show', $repayment) }}?asset=ETH"
-                                                class="px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200"
+                                                class="crypto-3d-btn crypto-3d-btn--eth"
                                                 title="Pay with Ethereum"
                                                 aria-label="Pay with Ethereum"
                                             >
-                                                ETH
+                                                <span class="crypto-3d-coin crypto-3d-coin--eth" aria-hidden="true">
+                                                    <svg viewBox="0 0 64 64" class="crypto-3d-svg" aria-hidden="true">
+                                                        <defs>
+                                                            <linearGradient id="ethG" x1="0" y1="0" x2="1" y2="1">
+                                                                <stop offset="0" stop-color="#9aa7ff"></stop>
+                                                                <stop offset="0.55" stop-color="#627eea"></stop>
+                                                                <stop offset="1" stop-color="#3557d8"></stop>
+                                                            </linearGradient>
+                                                        </defs>
+                                                        <circle cx="32" cy="32" r="28" fill="url(#ethG)"></circle>
+                                                        <path d="M32 10c-12.15 0-22 9.85-22 22s9.85 22 22 22 22-9.85 22-22S44.15 10 32 10Z" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2"></path>
+                                                        <path d="M32 16 22.6 32.2 32 27.8l9.4 4.4L32 16Z" fill="#ffffff" opacity="0.92"></path>
+                                                        <path d="M32 28.7 22.6 33.1 32 48l9.4-14.9L32 28.7Z" fill="#ffffff" opacity="0.82"></path>
+                                                        <path d="M32 27.8v20.2l9.4-14.9L32 27.8Z" fill="#dfe6ff" opacity="0.75"></path>
+                                                    </svg>
+                                                </span>
                                             </a>
 	                                    </div>
                                     <div class="mt-2">
@@ -727,6 +755,72 @@
         transform: translateY(-0.5px);
         flex: 0 0 auto;
         background: rgba(255, 255, 255, 0.08);
+    }
+
+    .crypto-3d-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        padding: 0;
+        text-decoration: none;
+        transform: translateY(0);
+        transition: transform 0.16s ease, filter 0.16s ease;
+    }
+
+    .crypto-3d-coin {
+        width: 38px;
+        height: 38px;
+        border-radius: 9999px;
+        position: relative;
+        display: grid;
+        place-items: center;
+        transform: translateY(0);
+        box-shadow:
+            0 12px 18px -14px rgba(2, 6, 23, 0.55),
+            inset 0 2px 0 rgba(255, 255, 255, 0.24),
+            inset 0 -10px 16px rgba(2, 6, 23, 0.18);
+        transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+    }
+
+    .crypto-3d-coin::after {
+        content: "";
+        position: absolute;
+        inset: 5px 6px auto 6px;
+        height: 12px;
+        border-radius: 9999px;
+        background: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0) 65%);
+        pointer-events: none;
+        opacity: 0.9;
+        filter: blur(0.2px);
+    }
+
+    .crypto-3d-svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+        border-radius: 9999px;
+    }
+
+    .crypto-3d-btn:hover .crypto-3d-coin {
+        transform: translateY(-1px);
+        filter: saturate(1.04) contrast(1.02);
+        box-shadow:
+            0 16px 22px -16px rgba(2, 6, 23, 0.6),
+            inset 0 2px 0 rgba(255, 255, 255, 0.26),
+            inset 0 -10px 16px rgba(2, 6, 23, 0.18);
+    }
+
+    .crypto-3d-btn:active .crypto-3d-coin {
+        transform: translateY(2px);
+        box-shadow:
+            0 8px 14px -14px rgba(2, 6, 23, 0.6),
+            inset 0 1px 0 rgba(255, 255, 255, 0.22),
+            inset 0 -8px 14px rgba(2, 6, 23, 0.2);
     }
 
     .pay-card,
