@@ -195,6 +195,22 @@
             background: #eff6ff;
         }
 
+        .staging-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.2rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.62rem;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            line-height: 1;
+            background: rgba(245, 158, 11, 0.18);
+            color: #92400e;
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            text-transform: uppercase;
+        }
+
         .surface-card {
             background: #fff;
             border: 1px solid #e2e8f0;
@@ -414,7 +430,12 @@
                             <x-brand-mark class="h-7 w-auto" />
                         </x-logo-shell>
                         <div>
-                            <p class="brand-font text-lg font-semibold text-slate-900">Bwiser</p>
+                            <div class="flex items-center gap-2">
+                                <p class="brand-font text-lg font-semibold text-slate-900">Bwiser</p>
+                                @if(app()->environment('staging'))
+                                    <span class="staging-badge" aria-label="Staging environment">STAGING</span>
+                                @endif
+                            </div>
                             <p class="text-xs text-slate-500">Buy now, pay later for fuel</p>
                         </div>
                     </div>

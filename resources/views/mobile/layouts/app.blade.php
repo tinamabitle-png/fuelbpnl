@@ -110,6 +110,22 @@
             font-family: var(--title-font);
         }
 
+        .staging-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.18rem 0.45rem;
+            border-radius: 9999px;
+            font-size: 0.6rem;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            line-height: 1;
+            background: rgba(245, 158, 11, 0.18);
+            color: #92400e;
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            text-transform: uppercase;
+        }
+
         h1,
         h2,
         h3,
@@ -129,7 +145,12 @@
                     class="h-10 w-10 rounded-xl object-cover"
                 >
                 <div>
-                    <p class="mobile-brand-font text-base font-semibold text-slate-900 leading-tight">Bwiser</p>
+                    <div class="flex items-center gap-2">
+                        <p class="mobile-brand-font text-base font-semibold text-slate-900 leading-tight">Bwiser</p>
+                        @if(app()->environment('staging'))
+                            <span class="staging-badge" aria-label="Staging environment">STAGING</span>
+                        @endif
+                    </div>
                     <p class="text-[11px] uppercase tracking-[0.18em] text-blue-700">Control Platform</p>
                 </div>
             </div>
