@@ -236,47 +236,6 @@
         </div>
     </div>
 
-    <div class="mt-6 glass rounded-2xl p-6">
-        <div class="flex items-center justify-between gap-3 mb-4">
-            <div>
-                <h2 class="brand-font text-xl text-slate-900">Ethereum Repayments</h2>
-                <p class="text-sm text-slate-600">Crypto repayment rail preview. Backend settlement logic will be enabled next.</p>
-            </div>
-            <span class="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700 font-semibold">Coming Soon</span>
-        </div>
-
-        <div class="flex flex-col md:flex-row gap-5 items-start">
-            <div class="ethpay-card" aria-hidden="true">
-                <svg class="ethpay-img" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="100%" height="100%" viewBox="0 0 784.37 1277.39">
-                    <g>
-                        <polygon fill="#343434" fill-rule="nonzero" points="392.07,0 383.5,29.11 383.5,873.74 392.07,882.29 784.13,650.54"></polygon>
-                        <polygon fill="#8C8C8C" fill-rule="nonzero" points="392.07,0 -0,650.54 392.07,882.29 392.07,472.33"></polygon>
-                        <polygon fill="#3C3C3B" fill-rule="nonzero" points="392.07,956.52 387.24,962.41 387.24,1263.28 392.07,1277.38 784.37,724.89"></polygon>
-                        <polygon fill="#8C8C8C" fill-rule="nonzero" points="392.07,1277.38 392.07,956.52 -0,724.89"></polygon>
-                        <polygon fill="#141414" fill-rule="nonzero" points="392.07,882.29 784.13,650.54 392.07,472.33"></polygon>
-                        <polygon fill="#393939" fill-rule="nonzero" points="0,650.54 392.07,882.29 392.07,472.33"></polygon>
-                    </g>
-                </svg>
-                <div class="ethpay-text-box">
-                    <p class="ethpay-text ethpay-head">Ethereum</p>
-                    <span>Repayment Rail</span>
-                    <p class="ethpay-text ethpay-price">Outstanding: -R {{ number_format(abs((float) $summary['pending_amount']), 2) }}</p>
-                </div>
-            </div>
-
-            <div class="rounded-xl border border-slate-200 bg-white p-4 w-full md:max-w-md">
-                <p class="text-sm text-slate-700">
-                    When enabled, drivers will be able to settle repayment amounts via ETH with wallet signature and on-chain confirmation.
-                </p>
-                <ul class="mt-3 space-y-2 text-xs text-slate-500">
-                    <li>Network: Ethereum Mainnet (planned)</li>
-                    <li>Settlement conversion: ETH -> ZAR (planned)</li>
-                    <li>Webhook reconciliation and receipt posting (planned)</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
     <div class="glass rounded-2xl mt-6 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
@@ -582,72 +541,6 @@
         to {
             transform: translateY(0);
         }
-    }
-
-    .ethpay-card {
-        width: 195px;
-        height: 285px;
-        background: #313131;
-        border-radius: 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        transition: 0.2s ease-in-out;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .ethpay-img {
-        height: 30%;
-        position: absolute;
-        transition: 0.2s ease-in-out;
-        z-index: 1;
-    }
-
-    .ethpay-text-box {
-        opacity: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 15px;
-        transition: 0.2s ease-in-out;
-        z-index: 2;
-        text-align: center;
-        padding: 0 0.5rem;
-    }
-
-    .ethpay-text-box > .ethpay-text {
-        font-weight: bold;
-    }
-
-    .ethpay-text-box > .ethpay-head {
-        font-size: 20px;
-    }
-
-    .ethpay-text-box > .ethpay-price {
-        font-size: 13px;
-    }
-
-    .ethpay-text-box > span {
-        font-size: 12px;
-        color: lightgrey;
-    }
-
-    .ethpay-card:hover > .ethpay-text-box {
-        opacity: 1;
-    }
-
-    .ethpay-card:hover > .ethpay-img {
-        height: 65%;
-        filter: blur(7px);
-        animation: ethpayAnim 3s infinite;
-    }
-
-    .ethpay-card:hover {
-        transform: scale(1.04) rotate(-1deg);
     }
 
     .pay-for-me-btn {
@@ -1130,17 +1023,6 @@
         }
     }
 
-    @keyframes ethpayAnim {
-        0% {
-            transform: translateY(0);
-        }
-        50% {
-            transform: translateY(-20px);
-        }
-        100% {
-            transform: translateY(0);
-        }
-    }
 </style>
 
 @if(!empty($overdueSeconds) && (int) $overdueSeconds > 0)
