@@ -150,9 +150,7 @@
                         <p class="text-[11px] uppercase tracking-[0.18em] text-blue-700">Control Platform</p>
                     </div>
                 </div>
-                @if(app()->environment('staging'))
-                    <span class="staging-badge" aria-label="Staging environment">STAGING</span>
-                @endif
+                <span class="staging-badge" aria-label="Staging environment">STAGING</span>
             </div>
         </div>
     </header>

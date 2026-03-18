@@ -435,9 +435,7 @@
                         </div>
                     </div>
                     <nav class="flex items-center gap-3 text-sm">
-                        @if(app()->environment('staging'))
-                            <span class="staging-badge" aria-label="Staging environment">STAGING</span>
-                        @endif
+                        <span class="staging-badge" aria-label="Staging environment">STAGING</span>
                         @auth
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
