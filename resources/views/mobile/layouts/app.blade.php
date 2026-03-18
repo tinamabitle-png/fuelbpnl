@@ -138,21 +138,21 @@
 <body class="mobile-shell">
     <header class="px-4 pt-4">
         <div class="mx-auto max-w-md mobile-card px-4 py-3">
-            <div class="flex items-center gap-3">
-                <img
-                    src="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}"
-                    alt="Bwiser logo"
-                    class="h-10 w-10 rounded-xl object-cover"
-                >
-                <div>
-                    <div class="flex items-center gap-2">
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <img
+                        src="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}"
+                        alt="Bwiser logo"
+                        class="h-10 w-10 rounded-xl object-cover"
+                    >
+                    <div>
                         <p class="mobile-brand-font text-base font-semibold text-slate-900 leading-tight">Bwiser</p>
-                        @if(app()->environment('staging'))
-                            <span class="staging-badge" aria-label="Staging environment">STAGING</span>
-                        @endif
+                        <p class="text-[11px] uppercase tracking-[0.18em] text-blue-700">Control Platform</p>
                     </div>
-                    <p class="text-[11px] uppercase tracking-[0.18em] text-blue-700">Control Platform</p>
                 </div>
+                @if(app()->environment('staging'))
+                    <span class="staging-badge" aria-label="Staging environment">STAGING</span>
+                @endif
             </div>
         </div>
     </header>

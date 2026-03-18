@@ -430,16 +430,14 @@
                             <x-brand-mark class="h-7 w-auto" />
                         </x-logo-shell>
                         <div>
-                            <div class="flex items-center gap-2">
-                                <p class="brand-font text-lg font-semibold text-slate-900">Bwiser</p>
-                                @if(app()->environment('staging'))
-                                    <span class="staging-badge" aria-label="Staging environment">STAGING</span>
-                                @endif
-                            </div>
+                            <p class="brand-font text-lg font-semibold text-slate-900">Bwiser</p>
                             <p class="text-xs text-slate-500">Buy now, pay later for fuel</p>
                         </div>
                     </div>
                     <nav class="flex items-center gap-3 text-sm">
+                        @if(app()->environment('staging'))
+                            <span class="staging-badge" aria-label="Staging environment">STAGING</span>
+                        @endif
                         @auth
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
