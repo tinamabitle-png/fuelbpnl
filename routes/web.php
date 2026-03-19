@@ -334,7 +334,7 @@ Route::middleware(['auth'])->group(function () {
             return app(InvestorDashboardController::class)->statements(request());
         })->name('statements');
     });
-    
+
     // ========== ADMIN ROUTES ==========
     Route::prefix('admin')->name('admin.')->group(function () {
         // Dashboard

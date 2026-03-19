@@ -164,7 +164,7 @@ class RoleSeeder extends Seeder
             'export_investor_reports',
         ]);
         $investor->syncPermissions($investorPermissions);
-        
+
         // ===== INVESTOR MANAGER ROLE =====
         $investorManager = Role::where('name', 'investor_manager')->first();
         $investorManagerPermissions = $this->filterExistingPermissions([

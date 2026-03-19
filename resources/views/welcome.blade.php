@@ -63,8 +63,8 @@
 
     <div class="glass rounded-2xl p-0 mt-8 overflow-hidden welcome-tween-card">
         <img
-            src="{{ asset('images/1.jpg') }}"
-            alt="Merchant device rollout preview"
+            src="{{ asset('images/bwiser.gif') }}"
+            alt="Bwiser animated preview"
             class="welcome-tween-image is-in"
             loading="lazy"
             data-welcome-tween="slide-in"

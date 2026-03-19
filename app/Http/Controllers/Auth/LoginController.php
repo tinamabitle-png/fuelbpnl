@@ -50,7 +50,7 @@ class LoginController extends Controller
                 ]);
             }
 
-            if (!$user->hasAnyRole(['driver', 'merchant', 'admin', 'super_admin', 'employee'])) {
+            if (!$user->hasAnyRole(['driver', 'merchant', 'admin', 'super_admin', 'employee', 'investor'])) {
                 Auth::logout();
                 return back()->withErrors([
                     'email' => 'This account role is not enabled for this production login channel.',
@@ -64,10 +64,10 @@ class LoginController extends Controller
                 return redirect()->route('admin.dashboard');
             } elseif ($user->hasRole('merchant')) {
                 return redirect()->route('merchant.dashboard');
-            }  elseif ($user->hasRole('investor')) {
+            } elseif ($user->hasRole('investor')) {
                 return redirect()->route('investor.dashboard');
             }
-                else {
+            else {
                 if ($this->needsRegistrationDocuments($user)) {
                     return redirect()
                         ->route('registration.complete', ['role' => 'driver'])
