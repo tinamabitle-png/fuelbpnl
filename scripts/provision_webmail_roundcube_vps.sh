@@ -142,23 +142,25 @@ cp -n "${RC_CFG}" "${RC_CFG}.bak.$(date +%Y%m%d%H%M%S)" || true
 mkdir -p /var/lib/roundcube/temp /var/lib/roundcube/logs
 chown -R www-data:www-data /var/lib/roundcube/temp /var/lib/roundcube/logs
 
-# Configure IMAP/SMTP hosts
-perl -0777 -i -pe "s#\\$config\\['default_host'\\]\\s*=\\s*.*?;#\\$config['default_host'] = 'ssl://${MAIL_HOSTNAME}';#s" "${RC_CFG}" || true
-perl -0777 -i -pe "s#\\$config\\['smtp_server'\\]\\s*=\\s*.*?;#\\$config['smtp_server'] = 'tls://${MAIL_HOSTNAME}';#s" "${RC_CFG}" || true
-perl -0777 -i -pe "s#\\$config\\['smtp_port'\\]\\s*=\\s*.*?;#\\$config['smtp_port'] = 587;#s" "${RC_CFG}" || true
+# Configure IMAP/SMTP hosts (append block; later config wins, avoids brittle in-place edits).
+if ! grep -q "bwiser_webmail_managed" "${RC_CFG}"; then
+  DES_KEY=""
+  if ! grep -q "des_key" "${RC_CFG}"; then
+    DES_KEY="$(openssl rand -hex 24)"
+  fi
 
-if ! grep -q "smtp_user" "${RC_CFG}"; then
-  cat >>"${RC_CFG}" <<EOF
-
-// Use the same credentials the user logs in with.
-\$config['smtp_user'] = '%u';
-\$config['smtp_pass'] = '%p';
-EOF
-fi
-
-if ! grep -q "des_key" "${RC_CFG}"; then
-  DES_KEY="$(openssl rand -hex 24)"
-  echo "\$config[\"des_key\"] = \"${DES_KEY}\";" >>"${RC_CFG}"
+  {
+    echo
+    echo "// bwiser_webmail_managed"
+    echo "\$config['default_host'] = 'ssl://${MAIL_HOSTNAME}';"
+    echo "\$config['smtp_server'] = 'tls://${MAIL_HOSTNAME}';"
+    echo "\$config['smtp_port'] = 587;"
+    echo "\$config['smtp_user'] = '%u';"
+    echo "\$config['smtp_pass'] = '%p';"
+    if [[ -n "${DES_KEY}" ]]; then
+      echo "\$config['des_key'] = '${DES_KEY}';"
+    fi
+  } >>"${RC_CFG}"
 fi
 
 echo "Configuring nginx vhost for ${WEBMAIL_HOSTNAME}..."
