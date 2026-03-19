@@ -193,13 +193,19 @@ server {
 EOF
 
 ln -sf "${NGINX_SITE}" /etc/nginx/sites-enabled/webmail
-rm -f /etc/nginx/sites-enabled/default || true
 
 nginx -t
 systemctl reload nginx
 
-echo "Requesting TLS cert via certbot for ${WEBMAIL_HOSTNAME}..."
-certbot --nginx -d "${WEBMAIL_HOSTNAME}" --non-interactive --agree-tos -m "support@${MAIL_DOMAIN}" --redirect
+echo "Requesting TLS cert via certbot for ${WEBMAIL_HOSTNAME} (will skip if DNS not ready)..."
+if getent ahosts "${WEBMAIL_HOSTNAME}" >/dev/null 2>&1; then
+  if ! certbot --nginx -d "${WEBMAIL_HOSTNAME}" --non-interactive --agree-tos -m "support@${MAIL_DOMAIN}" --redirect; then
+    echo "WARNING: certbot failed; leaving HTTP site in place. Fix DNS/access and rerun certbot."
+  fi
+else
+  echo "WARNING: ${WEBMAIL_HOSTNAME} does not resolve yet. Create an A record and rerun certbot:"
+  echo "  certbot --nginx -d ${WEBMAIL_HOSTNAME}"
+fi
 
 echo
 echo "Webmail is ready:"
