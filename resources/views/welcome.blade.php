@@ -62,24 +62,14 @@
     </div>
 
     <div class="glass rounded-2xl p-3 md:p-4 mt-8 overflow-hidden welcome-tween-card">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-            <img
-                src="{{ asset('images/bwiser01.gif') }}"
-                alt="Bwiser animated preview"
-                class="welcome-tween-image is-in rounded-2xl"
-                loading="lazy"
-                data-welcome-tween="slide-in"
-                onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
-            >
-            <img
-                src="{{ asset('images/bwiser.gif') }}"
-                alt="Bwiser service animation"
-                class="welcome-tween-image is-in rounded-2xl"
-                loading="lazy"
-                data-welcome-tween="slide-in"
-                onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
-            >
-        </div>
+        <img
+            src="{{ asset('images/bwiser01.gif') }}"
+            alt="Bwiser animated preview"
+            class="welcome-tween-image is-in rounded-2xl"
+            loading="lazy"
+            data-welcome-tween="slide-in"
+            onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
+        >
     </div>
 
     @php
