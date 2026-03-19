@@ -71,14 +71,16 @@ if [[ -f "${DEPLOY_KEY_PATH}" ]]; then
   SSH_OPTS_KEYED="${SSH_OPTS_KEYED} -i ${DEPLOY_KEY_PATH}"
 fi
 
-remote_script='
+echo "Remote: provisioning Roundcube webmail on ${TARGET} (${WEBMAIL_HOSTNAME})..."
+ssh ${SSH_OPTS_KEYED} "${TARGET}" \
+  "MAIL_DOMAIN=$(printf %q "${MAIL_DOMAIN}") WEBMAIL_HOSTNAME=$(printf %q "${WEBMAIL_HOSTNAME}") MAIL_HOSTNAME=$(printf %q "${MAIL_HOSTNAME}") WITH_DOVECOT=$(printf %q "${WITH_DOVECOT}") PHP_VERSION=$(printf %q "${PHP_VERSION}") bash -s" <<'REMOTE_SCRIPT'
 set -euo pipefail
 
-MAIL_DOMAIN="'"${MAIL_DOMAIN}"'"
-WEBMAIL_HOSTNAME="'"${WEBMAIL_HOSTNAME}"'"
-MAIL_HOSTNAME="'"${MAIL_HOSTNAME}"'"
-WITH_DOVECOT="'"${WITH_DOVECOT}"'"
-PHP_VERSION="'"${PHP_VERSION}"'"
+: "${MAIL_DOMAIN:?}"
+: "${WEBMAIL_HOSTNAME:?}"
+: "${MAIL_HOSTNAME:?}"
+: "${WITH_DOVECOT:=true}"
+: "${PHP_VERSION:=}"
 
 if [[ "$(id -u)" != "0" ]]; then
   echo "Must run as root on VPS."; exit 40
@@ -105,7 +107,8 @@ apt-get install -y \
   certbot python3-certbot-nginx \
   "${PHP_FPM_PKG}" \
   php-cli php-common php-mbstring php-xml php-curl php-zip php-gd php-intl php-mysql \
-  roundcube roundcube-core roundcube-mysql
+  roundcube roundcube-core roundcube-mysql \
+  openssl
 
 if [[ "${WITH_DOVECOT}" == "true" ]]; then
   echo "Installing Dovecot (IMAP)..."
@@ -115,7 +118,6 @@ fi
 
 echo "Detecting PHP-FPM socket..."
 if [[ -z "${PHP_FPM_SOCK}" ]]; then
-  # Try common sockets (Ubuntu/Debian).
   for sock in /run/php/php*-fpm.sock; do
     if [[ -S "${sock}" ]]; then
       PHP_FPM_SOCK="${sock}"
@@ -137,17 +139,16 @@ fi
 
 cp -n "${RC_CFG}" "${RC_CFG}.bak.$(date +%Y%m%d%H%M%S)" || true
 
-# Ensure PHP files have a writable temp dir.
 mkdir -p /var/lib/roundcube/temp /var/lib/roundcube/logs
 chown -R www-data:www-data /var/lib/roundcube/temp /var/lib/roundcube/logs
 
-# Configure IMAP/SMTP hosts and set smtp auth to use the same creds as login.
+# Configure IMAP/SMTP hosts
 perl -0777 -i -pe "s#\\$config\\['default_host'\\]\\s*=\\s*.*?;#\\$config['default_host'] = 'ssl://${MAIL_HOSTNAME}';#s" "${RC_CFG}" || true
 perl -0777 -i -pe "s#\\$config\\['smtp_server'\\]\\s*=\\s*.*?;#\\$config['smtp_server'] = 'tls://${MAIL_HOSTNAME}';#s" "${RC_CFG}" || true
 perl -0777 -i -pe "s#\\$config\\['smtp_port'\\]\\s*=\\s*.*?;#\\$config['smtp_port'] = 587;#s" "${RC_CFG}" || true
 
-if ! grep -q \"smtp_user\" \"${RC_CFG}\"; then
-  cat >>\"${RC_CFG}\" <<EOF
+if ! grep -q "smtp_user" "${RC_CFG}"; then
+  cat >>"${RC_CFG}" <<EOF
 
 // Use the same credentials the user logs in with.
 \$config['smtp_user'] = '%u';
@@ -155,10 +156,9 @@ if ! grep -q \"smtp_user\" \"${RC_CFG}\"; then
 EOF
 fi
 
-if ! grep -q \"des_key\" \"${RC_CFG}\"; then
-  # Newer configs may not contain it; keep Roundcube happy.
+if ! grep -q "des_key" "${RC_CFG}"; then
   DES_KEY="$(openssl rand -hex 24)"
-  echo \"\\$config['des_key'] = '${DES_KEY}';\" >>\"${RC_CFG}\"
+  echo "\$config[\"des_key\"] = \"${DES_KEY}\";" >>"${RC_CFG}"
 fi
 
 echo "Configuring nginx vhost for ${WEBMAIL_HOSTNAME}..."
@@ -210,8 +210,4 @@ echo "  Username: support@${MAIL_DOMAIN}"
 echo "  Password: (the Linux user password you set)"
 echo
 echo "Done."
-'
-
-echo "Remote: provisioning Roundcube webmail on ${TARGET} (${WEBMAIL_HOSTNAME})..."
-ssh ${SSH_OPTS_KEYED} "${TARGET}" "bash -lc $(printf '%q' "${remote_script}")"
-
+REMOTE_SCRIPT
