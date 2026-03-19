@@ -44,7 +44,7 @@
         ]);
     @endphp
     <div class="glass rounded-2xl p-6 mt-8">
-        <p class="text-xs uppercase tracking-[0.2em] text-blue-600">Trusted Retail Network</p>
+        <p class="text-xs uppercase tracking-[1px] text-blue-600">Trusted Retail Network</p>
         <div class="trusted-ticker-wrap mt-4">
             <div class="trusted-ticker-edge trusted-ticker-edge--left" aria-hidden="true"></div>
             <div class="trusted-ticker-edge trusted-ticker-edge--right" aria-hidden="true"></div>
@@ -63,8 +63,8 @@
 
     <div class="glass rounded-2xl p-3 md:p-4 mt-8 overflow-hidden welcome-tween-card">
         <img
-            src="{{ asset('images/muntu.gif') }}"
-            alt="Muntu animated preview"
+            src="{{ asset('images/bwisermuntu.gif') }}"
+            alt="Bwiser Muntu animated preview"
             class="welcome-tween-image is-in rounded-2xl"
             loading="lazy"
             data-welcome-tween="slide-in"
@@ -85,7 +85,7 @@
     <div class="glass rounded-2xl p-6 mt-8 overflow-hidden">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-                <p class="text-xs uppercase tracking-[0.2em] text-blue-600">Site Stats</p>
+                <p class="text-xs uppercase tracking-[1px] text-blue-600">Site Stats</p>
                 <h3 class="brand-font leading-5 text-base md:text-xl font-bold text-slate-900 mt-2">Operations Overview</h3>
             </div>
             <div class="flex items-center justify-between lg:justify-start mt-2 md:mt-4 lg:mt-0">
@@ -103,7 +103,7 @@
 
         <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Total vouchers</p>
+                <p class="text-xs uppercase tracking-[1px] text-slate-500">Total vouchers</p>
                 <div class="flex items-end mt-3">
                     <h3 class="text-blue-600 leading-5 text-xl md:text-3xl font-semibold">{{ number_format($totalVouchers) }}</h3>
                     <div class="flex items-center md:ml-4 ml-2 {{ $voucherUp ? 'text-emerald-700' : 'text-rose-700' }}">
@@ -118,12 +118,12 @@
                 <p class="text-xs text-slate-500 mt-2">30-day change vs previous 30 days.</p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Drivers</p>
+                <p class="text-xs uppercase tracking-[1px] text-slate-500">Drivers</p>
                 <p class="text-2xl md:text-3xl font-semibold text-slate-900 mt-3">{{ number_format((int) ($totals['drivers'] ?? 0)) }}</p>
                 <p class="text-xs text-slate-500 mt-2">Registered drivers on the network.</p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Stations</p>
+                <p class="text-xs uppercase tracking-[1px] text-slate-500">Stations</p>
                 <p class="text-2xl md:text-3xl font-semibold text-slate-900 mt-3">{{ number_format((int) ($totals['stations'] ?? 0)) }}</p>
                 <p class="text-xs text-slate-500 mt-2">Fuel stations available for redemption.</p>
             </div>
