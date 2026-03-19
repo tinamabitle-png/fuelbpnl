@@ -58,6 +58,9 @@ for u in "${USERS[@]}"; do
   echo "Remote: ensure mailbox user '${u}' exists..."
   ssh ${SSH_OPTS_KEYED} "${TARGET}" "bash -lc $(printf '%q' "
 set -euo pipefail
+
+# XAMPP can ship a non-standard `head` earlier in PATH on macOS.
+export PATH="/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
 if [[ \$(id -u) != 0 ]]; then
   echo 'Must run as root on VPS.' >&2
   exit 40
@@ -74,7 +77,7 @@ tmp_pwfile="$(mktemp)"
 chmod 600 "${tmp_pwfile}"
 for u in "${USERS[@]}"; do
   # URL-safe, 24 chars.
-  pw="$(LC_ALL=C tr -dc 'A-Za-z0-9_-' </dev/urandom | head -c 24)"
+  pw="$(LC_ALL=C tr -dc 'A-Za-z0-9_-' </dev/urandom | /usr/bin/head -c 24)"
   printf '%s:%s\n' "${u}" "${pw}" >>"${tmp_pwfile}"
 done
 
@@ -97,4 +100,3 @@ echo "Mailbox credentials (save these now):"
 cat "${tmp_pwfile}"
 
 rm -f "${tmp_pwfile}"
-
