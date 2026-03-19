@@ -63,8 +63,8 @@
 
     <div class="glass rounded-2xl p-3 md:p-4 mt-8 overflow-hidden welcome-tween-card">
         <img
-            src="{{ asset('images/bwisermuntu.gif') }}"
-            alt="Bwiser Muntu animated preview"
+            src="{{ asset('images/bmuntu.gif') }}"
+            alt="Bmuntu animated preview"
             class="welcome-tween-image is-in rounded-2xl"
             loading="lazy"
             data-welcome-tween="slide-in"
