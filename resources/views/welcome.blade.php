@@ -14,25 +14,17 @@
         <p class="text-slate-600 mt-5 max-w-3xl text-medium">
             Bwiser connects drivers, stations, and finance teams on one buy now pay later process.
             We approve fuel financing, issue secure vouchers, redeem instantly at station level, and settle to bank with full audit visibility.
-        </p>
-        <div class="mt-7 flex flex-wrap gap-3">
-            <a class="super-button" href="{{ Route::has('login') ? route('login') : '/login' }}">
-                <span>Get Started</span>
-            </a>
-            <a class="playstore-button" href="#">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="playstore-icon" viewBox="0 0 512 512" aria-hidden="true">
-                    <path d="M99.617 8.057a50.191 50.191 0 00-38.815-6.713l230.932 230.933 74.846-74.846L99.617 8.057zM32.139 20.116c-6.441 8.563-10.148 19.077-10.148 30.199v411.358c0 11.123 3.708 21.636 10.148 30.199l235.877-235.877L32.139 20.116zM464.261 212.087l-67.266-37.637-81.544 81.544 81.548 81.548 67.273-37.64c16.117-9.03 25.738-25.442 25.738-43.908s-9.621-34.877-25.749-43.907zM291.733 279.711L60.815 510.629c3.786.891 7.639 1.371 11.492 1.371a50.275 50.275 0 0027.31-8.07l266.965-149.372-74.849-74.847z"></path>
-                </svg>
-                <span class="texts">
-                    <span class="text-1">GET IT ON</span>
-                    <span class="text-2">Google Play</span>
-                </span>
-            </a>
-        </div>
-        <!-- <div class="welcome-driver-market mt-8">
-            <img
-                src="{{ asset('images/illustrations/fuel-delivery-banner.png') }}"
-                alt="Fuel delivery illustration"
+	        </p>
+	        <div class="mt-7 flex flex-wrap gap-3">
+	            <a class="super-button" href="{{ Route::has('login') ? route('login') : '/login' }}">
+	                <span>Get Started</span>
+	            </a>
+	            {{-- Play Store button hidden until the mobile app is published. --}}
+	        </div>
+	        <!-- <div class="welcome-driver-market mt-8">
+	            <img
+	                src="{{ asset('images/illustrations/fuel-delivery-banner.png') }}"
+	                alt="Fuel delivery illustration"
                 class="welcome-driver-market-img"
                 loading="lazy"
             >
@@ -67,6 +59,17 @@
                 @endfor
             </div>
         </div>
+    </div>
+
+    <div class="glass rounded-2xl p-0 mt-8 overflow-hidden welcome-tween-card">
+        <img
+            src="{{ asset('images/1.jpg') }}"
+            alt="Merchant device rollout preview"
+            class="welcome-tween-image is-in"
+            loading="lazy"
+            data-welcome-tween="slide-in"
+            onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
+        >
     </div>
 
     @php
@@ -457,6 +460,40 @@
             animation: none;
         }
     }
+
+    .welcome-tween-card {
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 18px 40px -30px rgba(15, 23, 42, 0.35);
+    }
+
+    .welcome-tween-image {
+        width: 100%;
+        height: auto;
+        display: block;
+        object-fit: cover;
+        opacity: 0;
+        transform: translateX(-14px) translateY(8px) scale(0.992);
+        filter: saturate(1.02) contrast(1.02) blur(6px);
+        transition:
+            opacity 980ms cubic-bezier(0.16, 1, 0.3, 1),
+            transform 1100ms cubic-bezier(0.16, 1, 0.3, 1),
+            filter 1100ms cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: transform, opacity;
+    }
+
+    .welcome-tween-image.is-in {
+        opacity: 1;
+        transform: translateX(0) translateY(0) scale(1);
+        filter: saturate(1.02) contrast(1.02) blur(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .welcome-tween-image {
+            opacity: 1;
+            transform: none;
+            transition: none;
+        }
+    }
 </style>
 <script>
     (function () {
@@ -482,6 +519,51 @@
                 window.bwiserAcceptCookies();
             });
         };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', ready);
+        } else {
+            ready();
+        }
+    })();
+</script>
+<script>
+    (function () {
+        const selector = '[data-welcome-tween="slide-in"]';
+        const target = document.querySelector(selector);
+        if (!target) return;
+
+        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const reveal = () => target.classList.add('is-in');
+        const resetForTween = () => {
+            if (reduceMotion) return;
+            target.classList.remove('is-in');
+            // Force style flush so re-adding triggers the transition reliably.
+            void target.offsetHeight;
+        };
+
+        const ready = () => {
+            if (target.dataset.tweenDone === '1') return;
+            if (!('IntersectionObserver' in window)) {
+                resetForTween();
+                window.addEventListener('load', () => {
+                    reveal();
+                    target.dataset.tweenDone = '1';
+                }, { once: true });
+                return;
+            }
+            resetForTween();
+            const io = new IntersectionObserver((entries) => {
+                for (const e of entries) {
+                    if (!e.isIntersecting) continue;
+                    reveal();
+                    target.dataset.tweenDone = '1';
+                    io.disconnect();
+                    break;
+                }
+            }, { threshold: 0.18 });
+            io.observe(target);
+        };
+
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', ready);
         } else {
