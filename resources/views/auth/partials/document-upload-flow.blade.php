@@ -1,12 +1,12 @@
 <div class="mb-8">
     <h4 class="text-md font-semibold text-gray-900 mb-4">Identity & Compliance Documents</h4>
-    <p class="text-sm text-gray-500 mb-4">Upload ID document and driver’s license (required). Bank statement is optional.</p>
+    <p class="text-sm text-gray-500 mb-4">Upload any identity or banking documents you have available. All uploads are optional.</p>
 
     <div class="bg-gray-50 border border-gray-200 rounded-2xl p-5">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="rounded-xl border border-dashed border-blue-300 bg-white p-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">ID Document *</p>
-                <input type="file" name="id_document" accept=".pdf,.jpg,.jpeg,.png" required
+                <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">ID Document</p>
+                <input type="file" name="id_document" accept=".pdf,.jpg,.jpeg,.png"
                        class="mt-3 block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100">
                 @error('id_document')
                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -14,8 +14,8 @@
             </div>
 
             <div class="rounded-xl border border-dashed border-blue-300 bg-white p-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">Driver License *</p>
-                <input type="file" name="driver_license_document" accept=".pdf,.jpg,.jpeg,.png" required
+                <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">Driver License</p>
+                <input type="file" name="driver_license_document" accept=".pdf,.jpg,.jpeg,.png"
                        class="mt-3 block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100">
                 @error('driver_license_document')
                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>

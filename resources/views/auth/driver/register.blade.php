@@ -123,29 +123,29 @@
 	                </div>
 
                 <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-                    <p class="text-xs uppercase tracking-wide text-slate-600 font-semibold">Required documents</p>
+                    <p class="text-xs uppercase tracking-wide text-slate-600 font-semibold">Optional documents</p>
                     <div class="grid grid-cols-1 gap-3">
                         <div class="file-drop rounded-xl border-2 border-dashed border-blue-300 bg-white p-4 text-center cursor-pointer" data-target="id_document">
                             <p class="text-sm font-semibold text-slate-800">ID Document (PDF/JPG/PNG)</p>
-                            <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload (max 8MB)</p>
+                            <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload if available (max 8MB)</p>
                             <p class="text-xs text-blue-700 mt-2 file-name" data-name-for="id_document">No file selected</p>
-                            <input type="file" name="id_document" id="id_document" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
+                            <input type="file" name="id_document" id="id_document" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
                         </div>
                         @error('id_document')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
 
                         <div class="file-drop rounded-xl border-2 border-dashed border-blue-300 bg-white p-4 text-center cursor-pointer" data-target="driver_license_document">
                             <p class="text-sm font-semibold text-slate-800">Driver License (PDF/JPG/PNG)</p>
-                            <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload (max 8MB)</p>
+                            <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload if available (max 8MB)</p>
                             <p class="text-xs text-blue-700 mt-2 file-name" data-name-for="driver_license_document">No file selected</p>
-                            <input type="file" name="driver_license_document" id="driver_license_document" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
+                            <input type="file" name="driver_license_document" id="driver_license_document" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
                         </div>
                         @error('driver_license_document')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
 
                         <div class="file-drop rounded-xl border-2 border-dashed border-blue-300 bg-white p-4 text-center cursor-pointer" data-target="vehicle_license_document">
                             <p class="text-sm font-semibold text-slate-800">Vehicle License (PDF/JPG/PNG)</p>
-                            <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload (max 8MB)</p>
+                            <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload if available (max 8MB)</p>
                             <p class="text-xs text-blue-700 mt-2 file-name" data-name-for="vehicle_license_document">No file selected</p>
-                            <input type="file" name="vehicle_license_document" id="vehicle_license_document" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
+                            <input type="file" name="vehicle_license_document" id="vehicle_license_document" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
                         </div>
                         @error('vehicle_license_document')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
                     </div>

@@ -124,7 +124,7 @@
                     @error('driver_platform_other')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-                    <p class="text-xs uppercase tracking-wide text-slate-600 font-semibold">Required documents</p>
+                    <p class="text-xs uppercase tracking-wide text-slate-600 font-semibold">Optional documents</p>
                     <div>
                         <label class="block text-sm font-medium text-slate-700">ID Document (PDF/JPG/PNG)</label>
                         <input type="file" name="id_document" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 bg-white">

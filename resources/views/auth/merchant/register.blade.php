@@ -138,7 +138,7 @@
                             <p class="text-sm font-semibold text-slate-800">CK Document (PDF/JPG/PNG)</p>
                             <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload (max 8MB)</p>
                             <p class="text-xs text-blue-700 mt-2 file-name" data-name-for="ck_document">No file selected</p>
-                            <input type="file" name="ck_document" id="ck_document" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
+                            <input type="file" name="ck_document" id="ck_document" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
                         </div>
                         @error('ck_document')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
 

@@ -102,8 +102,6 @@ class LoginController extends Controller
 
     private function needsRegistrationDocuments(User $user): bool
     {
-        return empty($user->id_number)
-            || empty($user->id_document_path)
-            || empty($user->driver_license_path);
+        return empty($user->id_number);
     }
 }

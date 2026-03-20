@@ -224,9 +224,9 @@ class GoogleAuthController extends Controller
                 'longitude' => ['nullable', 'numeric', 'between:-180,180'],
                 'driver_platform' => ['required', Rule::in(['checkers_sixty60', 'mr_d', 'takealot', 'indrive', 'uber', 'bolt', 'other'])],
                 'driver_platform_other' => ['nullable', 'required_if:driver_platform,other', 'string', 'max:120'],
-                'id_document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:8192'],
-                'driver_license_document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:8192'],
-                'vehicle_license_document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:8192'],
+                'id_document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:8192'],
+                'driver_license_document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:8192'],
+                'vehicle_license_document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:8192'],
                 'bank_statement_document' => ['nullable', 'file', 'mimetypes:application/pdf', 'max:8192'],
             ]);
         } else {
@@ -240,8 +240,8 @@ class GoogleAuthController extends Controller
                 'country' => ['required', 'string', 'max:120'],
                 'latitude' => ['nullable', 'numeric', 'between:-90,90'],
                 'longitude' => ['nullable', 'numeric', 'between:-180,180'],
-                'ck_document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:8192'],
-                'bbbee_document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:8192'],
+                'ck_document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:8192'],
+                'bbbee_document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:8192'],
             ]);
         }
 
@@ -345,9 +345,15 @@ class GoogleAuthController extends Controller
                     ]);
                 }
 
-                $idPath = $request->file('id_document')->store('driver_documents/id', 'public');
-                $driverLicensePath = $request->file('driver_license_document')->store('driver_documents/license', 'public');
-                $vehicleLicensePath = $request->file('vehicle_license_document')->store('driver_documents/vehicle_license', 'public');
+                $idPath = $request->hasFile('id_document')
+                    ? $request->file('id_document')->store('driver_documents/id', 'public')
+                    : null;
+                $driverLicensePath = $request->hasFile('driver_license_document')
+                    ? $request->file('driver_license_document')->store('driver_documents/license', 'public')
+                    : null;
+                $vehicleLicensePath = $request->hasFile('vehicle_license_document')
+                    ? $request->file('vehicle_license_document')->store('driver_documents/vehicle_license', 'public')
+                    : null;
                 $bankPath = $request->hasFile('bank_statement_document')
                     ? $request->file('bank_statement_document')->store('driver_documents/bank', 'public')
                     : null;
@@ -363,49 +369,63 @@ class GoogleAuthController extends Controller
 
                 if (Schema::hasTable('driver_documents')) {
                     DriverDocument::query()->where('user_id', $user->id)->whereIn('document_type', ['sa_id', 'driver_license', 'vehicle_license'])->delete();
-                    DriverDocument::create([
-                        'user_id' => $user->id,
-                        'document_type' => 'sa_id',
-                        'document_path' => $idPath,
-                        'document_name' => basename($idPath),
-                        'document_number' => $validated['id_number'],
-                        'verified' => false,
-                    ]);
-                    DriverDocument::create([
-                        'user_id' => $user->id,
-                        'document_type' => 'driver_license',
-                        'document_path' => $driverLicensePath,
-                        'document_name' => basename($driverLicensePath),
-                        'verified' => false,
-                    ]);
-                    DriverDocument::create([
-                        'user_id' => $user->id,
-                        'document_type' => 'vehicle_license',
-                        'document_path' => $vehicleLicensePath,
-                        'document_name' => basename($vehicleLicensePath),
-                        'verified' => false,
-                    ]);
+                    if ($idPath) {
+                        DriverDocument::create([
+                            'user_id' => $user->id,
+                            'document_type' => 'sa_id',
+                            'document_path' => $idPath,
+                            'document_name' => basename($idPath),
+                            'document_number' => $validated['id_number'],
+                            'verified' => false,
+                        ]);
+                    }
+                    if ($driverLicensePath) {
+                        DriverDocument::create([
+                            'user_id' => $user->id,
+                            'document_type' => 'driver_license',
+                            'document_path' => $driverLicensePath,
+                            'document_name' => basename($driverLicensePath),
+                            'verified' => false,
+                        ]);
+                    }
+                    if ($vehicleLicensePath) {
+                        DriverDocument::create([
+                            'user_id' => $user->id,
+                            'document_type' => 'vehicle_license',
+                            'document_path' => $vehicleLicensePath,
+                            'document_name' => basename($vehicleLicensePath),
+                            'verified' => false,
+                        ]);
+                    }
                 }
             } else {
-                $ckPath = $request->file('ck_document')->store('merchant_documents/ck', 'public');
-                $bbbeePath = $request->file('bbbee_document')->store('merchant_documents/bbbee', 'public');
+                $ckPath = $request->hasFile('ck_document')
+                    ? $request->file('ck_document')->store('merchant_documents/ck', 'public')
+                    : null;
+                $bbbeePath = $request->hasFile('bbbee_document')
+                    ? $request->file('bbbee_document')->store('merchant_documents/bbbee', 'public')
+                    : null;
 
                 if (Schema::hasTable('driver_documents')) {
                     DriverDocument::query()->where('user_id', $user->id)->whereIn('document_type', ['merchant_ck', 'merchant_bbbee'])->delete();
-                    DriverDocument::create([
-                        'user_id' => $user->id,
-                        'document_type' => 'merchant_ck',
-                        'document_path' => $ckPath,
-                        'document_name' => basename($ckPath),
-                        'verified' => false,
-                    ]);
-                    DriverDocument::create([
-                        'user_id' => $user->id,
-                        'document_type' => 'merchant_bbbee',
-                        'document_path' => $bbbeePath,
-                        'document_name' => basename($bbbeePath),
-                        'verified' => false,
-                    ]);
+                    if ($ckPath) {
+                        DriverDocument::create([
+                            'user_id' => $user->id,
+                            'document_type' => 'merchant_ck',
+                            'document_path' => $ckPath,
+                            'document_name' => basename($ckPath),
+                            'verified' => false,
+                        ]);
+                    }
+                    if ($bbbeePath) {
+                        DriverDocument::create([
+                            'user_id' => $user->id,
+                            'document_type' => 'merchant_bbbee',
+                            'document_path' => $bbbeePath,
+                            'document_name' => basename($bbbeePath),
+                            'verified' => false,
+                        ]);
+                    }
                 }
 
                 if (Schema::hasTable('fuel_stations')) {
@@ -498,9 +518,7 @@ class GoogleAuthController extends Controller
         }
 
         return $user->hasRole('driver')
-            && !empty($user->id_number)
-            && !empty($user->id_document_path)
-            && !empty($user->driver_license_path);
+            && !empty($user->id_number);
     }
 
     private function redirectAfterLogin(User $user): RedirectResponse

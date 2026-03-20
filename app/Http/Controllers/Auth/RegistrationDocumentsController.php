@@ -35,8 +35,8 @@ class RegistrationDocumentsController extends Controller
         $validated = $request->validate([
             'role' => ['nullable', Rule::in(['driver', 'merchant'])],
             'id_number' => ['required', 'digits:13', Rule::unique('users', 'id_number')->ignore($user->id)],
-            'id_document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'driver_license_document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'id_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'driver_license_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'bank_statement_document' => 'nullable|file|mimetypes:application/pdf|max:8192',
             'payment_method_preference' => 'nullable|in:bank_transfer,card,mobile_money',
             'payment_account_name' => 'nullable|string|max:255',
@@ -48,8 +48,12 @@ class RegistrationDocumentsController extends Controller
         $role = $validated['role'] ?? ($user->getRoleNames()->first() ?: 'driver');
 
         $upload = DB::transaction(function () use ($request, $user, $validated): ?BankStatementUpload {
-            $idPath = $request->file('id_document')->store('driver_documents/id', 'public');
-            $licensePath = $request->file('driver_license_document')->store('driver_documents/license', 'public');
+            $idPath = $request->hasFile('id_document')
+                ? $request->file('id_document')->store('driver_documents/id', 'public')
+                : $user->id_document_path;
+            $licensePath = $request->hasFile('driver_license_document')
+                ? $request->file('driver_license_document')->store('driver_documents/license', 'public')
+                : $user->driver_license_path;
             $bankPath = $request->hasFile('bank_statement_document')
                 ? $request->file('bank_statement_document')->store('driver_documents/bank', 'public')
                 : $user->bank_statement_path;
@@ -69,30 +73,34 @@ class RegistrationDocumentsController extends Controller
                 'id_verified_at' => null,
             ]);
 
-            DriverDocument::updateOrCreate(
-                ['user_id' => $user->id, 'document_type' => 'sa_id'],
-                [
-                    'document_path' => $idPath,
-                    'document_name' => basename($idPath),
-                    'document_number' => $validated['id_number'],
-                    'verified' => false,
-                    'verified_by' => null,
-                    'verified_at' => null,
-                    'notes' => null,
-                ]
-            );
+            if ($idPath) {
+                DriverDocument::updateOrCreate(
+                    ['user_id' => $user->id, 'document_type' => 'sa_id'],
+                    [
+                        'document_path' => $idPath,
+                        'document_name' => basename($idPath),
+                        'document_number' => $validated['id_number'],
+                        'verified' => false,
+                        'verified_by' => null,
+                        'verified_at' => null,
+                        'notes' => null,
+                    ]
+                );
+            }
 
-            DriverDocument::updateOrCreate(
-                ['user_id' => $user->id, 'document_type' => 'driver_license'],
-                [
-                    'document_path' => $licensePath,
-                    'document_name' => basename($licensePath),
-                    'verified' => false,
-                    'verified_by' => null,
-                    'verified_at' => null,
-                    'notes' => null,
-                ]
-            );
+            if ($licensePath) {
+                DriverDocument::updateOrCreate(
+                    ['user_id' => $user->id, 'document_type' => 'driver_license'],
+                    [
+                        'document_path' => $licensePath,
+                        'document_name' => basename($licensePath),
+                        'verified' => false,
+                        'verified_by' => null,
+                        'verified_at' => null,
+                        'notes' => null,
+                    ]
+                );
+            }
 
             if (!$request->hasFile('bank_statement_document')) {
                 return null;

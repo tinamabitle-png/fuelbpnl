@@ -99,18 +99,18 @@
                 </div>
 
                 <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">Required Documents</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">Optional Documents</p>
                     <div>
                         <label class="block text-xs text-slate-700">ID Document (PDF/JPG/PNG)</label>
-                        <input name="id_document" type="file" accept=".pdf,.jpg,.jpeg,.png" required class="mt-1 block w-full text-xs text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:font-semibold file:text-white">
+                        <input name="id_document" type="file" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block w-full text-xs text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:font-semibold file:text-white">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-700">Driver License (PDF/JPG/PNG)</label>
-                        <input name="driver_license_document" type="file" accept=".pdf,.jpg,.jpeg,.png" required class="mt-1 block w-full text-xs text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:font-semibold file:text-white">
+                        <input name="driver_license_document" type="file" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block w-full text-xs text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:font-semibold file:text-white">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-700">Vehicle License (PDF/JPG/PNG)</label>
-                        <input name="vehicle_license_document" type="file" accept=".pdf,.jpg,.jpeg,.png" required class="mt-1 block w-full text-xs text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:font-semibold file:text-white">
+                        <input name="vehicle_license_document" type="file" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block w-full text-xs text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:font-semibold file:text-white">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-700">Bank Statement (Optional PDF)</label>

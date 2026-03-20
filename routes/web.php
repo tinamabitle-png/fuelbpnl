@@ -271,10 +271,16 @@ Route::get('/', function () {
                             }
                         }
 
-                        $fallbackKeys = ['checkers_sixty60', 'uber_eats', 'uber', 'indrive', 'mr_d', 'takealot'];
-                        $fallbackKey = $fallbackKeys[abs(crc32($displayName)) % count($fallbackKeys)];
-                        $logo = $knownLogos[$platform] ?? $knownLogos[$fallbackKey];
-                        $logo['path'] = 'images/driver-platforms/' . $logo['file'];
+                        if (isset($knownLogos[$platform])) {
+                            $logo = $knownLogos[$platform];
+                            $logo['path'] = 'images/driver-platforms/' . $logo['file'];
+                        } else {
+                            $logo = [
+                                'file' => 'marker-icon.png',
+                                'label' => 'Leaflet Maps',
+                                'path' => 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                            ];
+                        }
 
                         return [
                             'name' => $displayName,
