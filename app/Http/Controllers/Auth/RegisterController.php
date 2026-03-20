@@ -395,14 +395,30 @@ class RegisterController extends Controller
     private function displayDriverName(string $name): string
     {
         $name = trim($name);
+        $normalized = strtolower($name);
+        $placeholderNames = [
+            '',
+            'john doe',
+            'jane smith',
+            'bwiser driver',
+            'new driver',
+        ];
 
-        if ($name === '') {
-            return 'New driver';
+        if (!in_array($normalized, $placeholderNames, true)) {
+            return $name;
         }
 
-        return strtolower($name) === 'john doe'
-            ? 'Bwiser Driver'
-            : $name;
+        $fallbackNames = [
+            'Aphiwe Dlamini',
+            'Naledi Mokoena',
+            'Thabo Maseko',
+            'Lerato Nkosi',
+            'Sibusiso Khumalo',
+            'Ayanda Mthembu',
+        ];
+
+        $hashSeed = $normalized !== '' ? $normalized : 'driver';
+        return $fallbackNames[abs(crc32($hashSeed)) % count($fallbackNames)];
     }
 
     /**

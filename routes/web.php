@@ -178,6 +178,34 @@ Route::get('/', function () {
         $recentDrivers = [];
         if (Schema::hasTable('users')) {
             try {
+                $displayDriverName = function (?string $rawName, ?string $seed = null): string {
+                    $name = trim((string) $rawName);
+                    $normalized = strtolower($name);
+                    $placeholderNames = [
+                        '',
+                        'john doe',
+                        'jane smith',
+                        'bwiser driver',
+                        'new driver',
+                    ];
+
+                    if (!in_array($normalized, $placeholderNames, true)) {
+                        return $name;
+                    }
+
+                    $fallbackNames = [
+                        'Aphiwe Dlamini',
+                        'Naledi Mokoena',
+                        'Thabo Maseko',
+                        'Lerato Nkosi',
+                        'Sibusiso Khumalo',
+                        'Ayanda Mthembu',
+                    ];
+
+                    $hashSeed = (string) ($seed ?: $normalized ?: 'driver');
+                    return $fallbackNames[abs(crc32($hashSeed)) % count($fallbackNames)];
+                };
+
                 $recentDriverQuery = DB::table('users as u')
                     ->select('u.name', 'u.created_at');
 
@@ -197,11 +225,17 @@ Route::get('/', function () {
                     ->orderByDesc('u.created_at')
                     ->limit(4)
                     ->get()
-                    ->map(function ($user) {
+                    ->map(function ($user) use ($displayDriverName) {
                         $name = trim((string) ($user->name ?? ''));
-                        $displayName = strtolower($name) === 'john doe'
-                            ? 'Bwiser Driver'
-                            : ($name !== '' ? $name : 'New driver');
+                        $displayName = $displayDriverName(
+                            $name,
+                            implode('|', [
+                                $name,
+                                (string) ($user->driver_platform ?? ''),
+                                (string) ($user->driver_platform_other ?? ''),
+                                (string) ($user->created_at ?? ''),
+                            ])
+                        );
                         $initials = collect(preg_split('/\s+/', $displayName))
                             ->filter()
                             ->take(2)
@@ -237,18 +271,10 @@ Route::get('/', function () {
                             }
                         }
 
-                        if ($displayName === 'Bwiser Driver') {
-                            $logo = [
-                                'file' => 'logo.png',
-                                'label' => 'Bwiser',
-                                'path' => 'images/logo.png',
-                            ];
-                        } else {
-                            $fallbackKeys = ['checkers_sixty60', 'uber_eats', 'uber', 'indrive', 'mr_d', 'takealot'];
-                            $fallbackKey = $fallbackKeys[abs(crc32($displayName)) % count($fallbackKeys)];
-                            $logo = $knownLogos[$platform] ?? $knownLogos[$fallbackKey];
-                            $logo['path'] = 'images/driver-platforms/' . $logo['file'];
-                        }
+                        $fallbackKeys = ['checkers_sixty60', 'uber_eats', 'uber', 'indrive', 'mr_d', 'takealot'];
+                        $fallbackKey = $fallbackKeys[abs(crc32($displayName)) % count($fallbackKeys)];
+                        $logo = $knownLogos[$platform] ?? $knownLogos[$fallbackKey];
+                        $logo['path'] = 'images/driver-platforms/' . $logo['file'];
 
                         return [
                             'name' => $displayName,
