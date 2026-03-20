@@ -5,12 +5,12 @@
 @section('canonical', url('/'))
 
 @section('content')
-<section class="max-w-6xl mx-auto px-6 pt-16 pb-20">
+<section class="max-w-7xl mx-auto px-6 pt-16 pb-20">
     <div class="glass rounded-3xl p-8 md:p-12">
         @php
             $recentDrivers = collect((array) (($welcomeStats ?? [])['recent_drivers'] ?? []))->take(4);
         @endphp
-        <div class="grid gap-8 lg:grid-cols-[minmax(0,1.45fr)_390px] lg:items-start">
+        <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1.18fr)_380px] lg:items-start">
             <div>
                 <h1 class="brand-font text-4xl md:text-6xl font-semibold text-slate-900 mt-4 leading-tight">
                     Fuel Infrastructure Finance and Voucher Payments, Low Late Fees,
