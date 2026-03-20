@@ -189,6 +189,7 @@ Route::get('/', function () {
                 }
 
                 $recentDrivers = $recentDriverQuery
+                    ->addSelect('u.driver_platform', 'u.driver_platform_other')
                     ->whereNotNull('u.name')
                     ->orderByDesc('u.created_at')
                     ->limit(4)
@@ -204,9 +205,44 @@ Route::get('/', function () {
                             ->map(fn ($part) => strtoupper(mb_substr($part, 0, 1)))
                             ->implode('');
 
+                        $knownLogos = [
+                            'checkers_sixty60' => ['file' => 'checkers-sixty60.svg', 'label' => 'Checkers Sixty60'],
+                            'mr_d' => ['file' => 'mrd.svg', 'label' => 'Mr D'],
+                            'takealot' => ['file' => 'takealot.svg', 'label' => 'Takealot'],
+                            'indrive' => ['file' => 'indrive.svg', 'label' => 'inDrive'],
+                            'uber' => ['file' => 'uber.svg', 'label' => 'Uber'],
+                            'uber_eats' => ['file' => 'uber-eats.svg', 'label' => 'Uber Eats'],
+                            'bolt' => ['file' => 'bolt.svg', 'label' => 'Bolt'],
+                        ];
+
+                        $platform = strtolower(trim((string) ($user->driver_platform ?? '')));
+                        $platformOther = strtolower(trim((string) ($user->driver_platform_other ?? '')));
+
+                        if ($platform === 'other') {
+                            if (str_contains($platformOther, 'uber eats') || str_contains($platformOther, 'ubereats')) {
+                                $platform = 'uber_eats';
+                            } elseif (str_contains($platformOther, 'uber')) {
+                                $platform = 'uber';
+                            } elseif (str_contains($platformOther, 'mr d') || str_contains($platformOther, 'mrd')) {
+                                $platform = 'mr_d';
+                            } elseif (str_contains($platformOther, 'takealot')) {
+                                $platform = 'takealot';
+                            } elseif (str_contains($platformOther, 'indrive') || str_contains($platformOther, 'in drive')) {
+                                $platform = 'indrive';
+                            } elseif (str_contains($platformOther, 'checkers') || str_contains($platformOther, 'sixty60')) {
+                                $platform = 'checkers_sixty60';
+                            }
+                        }
+
+                        $fallbackKeys = ['checkers_sixty60', 'uber_eats', 'uber', 'indrive', 'mr_d', 'takealot'];
+                        $fallbackKey = $fallbackKeys[abs(crc32($displayName)) % count($fallbackKeys)];
+                        $logo = $knownLogos[$platform] ?? $knownLogos[$fallbackKey];
+
                         return [
                             'name' => $displayName,
                             'initials' => $initials !== '' ? $initials : 'BW',
+                            'platform_logo' => $logo['file'],
+                            'platform_name' => $logo['label'],
                         ];
                     })
                     ->values()

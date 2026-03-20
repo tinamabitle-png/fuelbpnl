@@ -32,7 +32,14 @@
                 <ul class="welcome-driver-stack" aria-label="Last 4 drivers">
                     @forelse($recentDrivers as $index => $driver)
                         <li style="--i: {{ $index + 1 }};">
-                            <div class="welcome-driver-avatar" aria-hidden="true">{{ $driver['initials'] ?? 'BW' }}</div>
+                            <div class="welcome-driver-avatar" aria-hidden="true">
+                                <img
+                                    src="{{ asset('images/driver-platforms/' . ($driver['platform_logo'] ?? 'uber.svg')) }}"
+                                    alt="{{ $driver['platform_name'] ?? 'Driver platform' }}"
+                                    class="welcome-driver-avatar-logo"
+                                    loading="lazy"
+                                >
+                            </div>
                             <div class="content">
                                 <h3>{{ $driver['name'] }}</h3>
                                 <p>{{ $driver['name'] }} is now driving wiser</p>
@@ -46,7 +53,18 @@
                             ['name' => 'Lerato Nkosi', 'initials' => 'LN'],
                         ] as $index => $driver)
                             <li style="--i: {{ $index + 1 }};">
-                                <div class="welcome-driver-avatar" aria-hidden="true">{{ $driver['initials'] }}</div>
+                                @php
+                                    $fallbackLogos = ['checkers-sixty60.svg', 'uber-eats.svg', 'uber.svg', 'indrive.svg'];
+                                    $fallbackLogo = $fallbackLogos[$index % count($fallbackLogos)];
+                                @endphp
+                                <div class="welcome-driver-avatar" aria-hidden="true">
+                                    <img
+                                        src="{{ asset('images/driver-platforms/' . $fallbackLogo) }}"
+                                        alt="Driver platform"
+                                        class="welcome-driver-avatar-logo"
+                                        loading="lazy"
+                                    >
+                                </div>
                                 <div class="content">
                                     <h3>{{ $driver['name'] }}</h3>
                                     <p>{{ $driver['name'] }} is now driving wiser</p>
@@ -350,11 +368,17 @@
         border-radius: 16px;
         display: grid;
         place-items: center;
-        background: linear-gradient(135deg, #1d4ed8, #06b6d4);
-        color: #fff;
-        font-weight: 700;
-        letter-spacing: 1px;
+        background: #ffffff;
+        padding: 0.45rem;
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .welcome-driver-avatar-logo {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
     }
 
     .welcome-driver-stack .content {
