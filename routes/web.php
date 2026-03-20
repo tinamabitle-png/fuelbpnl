@@ -172,10 +172,52 @@ Route::get('/', function () {
             }
         }
 
+        $recentDrivers = [];
+        if (Schema::hasTable('users')) {
+            try {
+                $recentDriverQuery = DB::table('users as u')
+                    ->select('u.name', 'u.created_at');
+
+                if (Schema::hasTable('model_has_roles') && Schema::hasTable('roles')) {
+                    $recentDriverQuery
+                        ->join('model_has_roles as mhr', function ($join) {
+                            $join->on('mhr.model_id', '=', 'u.id')
+                                ->where('mhr.model_type', \App\Models\User::class);
+                        })
+                        ->join('roles as r', 'r.id', '=', 'mhr.role_id')
+                        ->where('r.name', 'driver');
+                }
+
+                $recentDrivers = $recentDriverQuery
+                    ->whereNotNull('u.name')
+                    ->orderByDesc('u.created_at')
+                    ->limit(4)
+                    ->get()
+                    ->map(function ($user) {
+                        $name = trim((string) ($user->name ?? ''));
+                        $initials = collect(preg_split('/\s+/', $name !== '' ? $name : 'New Driver'))
+                            ->filter()
+                            ->take(2)
+                            ->map(fn ($part) => strtoupper(mb_substr($part, 0, 1)))
+                            ->implode('');
+
+                        return [
+                            'name' => $name !== '' ? $name : 'New driver',
+                            'initials' => $initials !== '' ? $initials : 'BW',
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            } catch (\Throwable $e) {
+                $recentDrivers = [];
+            }
+        }
+
         return [
             'totals' => $totals,
             'voucher_growth' => $voucherGrowth,
             'series' => $series,
+            'recent_drivers' => $recentDrivers,
             'generated_at' => $now->toIso8601String(),
         ];
     });

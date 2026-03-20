@@ -7,28 +7,56 @@
 @section('content')
 <section class="max-w-6xl mx-auto px-6 pt-16 pb-20">
     <div class="glass rounded-3xl p-8 md:p-12">
-        <h1 class="brand-font text-4xl md:text-6xl font-semibold text-slate-900 mt-4 leading-tight">
-            Fuel Infrastructure Finance and Voucher Payments, Low Late Fees,
-            <span class="hero-gradient-text block">Built for Real-Time Operations</span>
-        </h1>
-        <p class="text-slate-600 mt-5 max-w-3xl text-medium">
-            Bwiser connects drivers, stations, and finance teams on one buy now pay later process.
-            We approve fuel financing, issue secure vouchers, redeem instantly at station level, and settle to bank with full audit visibility.
-	        </p>
-	        <div class="mt-7 flex flex-wrap gap-3">
-	            <a class="super-button" href="{{ Route::has('login') ? route('login') : '/login' }}">
-	                <span>Get Started</span>
-	            </a>
-	            {{-- Play Store button hidden until the mobile app is published. --}}
-	        </div>
-	        <!-- <div class="welcome-driver-market mt-8">
-	            <img
-	                src="{{ asset('images/illustrations/fuel-delivery-banner.png') }}"
-	                alt="Fuel delivery illustration"
-                class="welcome-driver-market-img"
-                loading="lazy"
-            >
-        </div> -->
+        @php
+            $recentDrivers = collect((array) (($welcomeStats ?? [])['recent_drivers'] ?? []))->take(4);
+        @endphp
+        <div class="grid gap-8 lg:grid-cols-[minmax(0,1.45fr)_390px] lg:items-start">
+            <div>
+                <h1 class="brand-font text-4xl md:text-6xl font-semibold text-slate-900 mt-4 leading-tight">
+                    Fuel Infrastructure Finance and Voucher Payments, Low Late Fees,
+                    <span class="hero-gradient-text block">Built for Real-Time Operations</span>
+                </h1>
+                <p class="text-slate-600 mt-5 max-w-3xl text-medium">
+                    Bwiser connects drivers, stations, and finance teams on one buy now pay later process.
+                    We approve fuel financing, issue secure vouchers, redeem instantly at station level, and settle to bank with full audit visibility.
+                </p>
+                <div class="mt-7 flex flex-wrap gap-3">
+                    <a class="super-button" href="{{ Route::has('login') ? route('login') : '/login' }}">
+                        <span>Get Started</span>
+                    </a>
+                    {{-- Play Store button hidden until the mobile app is published. --}}
+                </div>
+            </div>
+            <div class="welcome-driver-stack-wrap">
+                <p class="text-xs uppercase tracking-[1px] text-blue-600 mb-4">Latest Drivers</p>
+                <ul class="welcome-driver-stack" aria-label="Last 4 drivers">
+                    @forelse($recentDrivers as $index => $driver)
+                        <li style="--i: {{ $index + 1 }};">
+                            <div class="welcome-driver-avatar" aria-hidden="true">{{ $driver['initials'] ?? 'BW' }}</div>
+                            <div class="content">
+                                <h3>{{ $driver['name'] }}</h3>
+                                <p>{{ $driver['name'] }} is now driving wiser</p>
+                            </div>
+                        </li>
+                    @empty
+                        @foreach([
+                            ['name' => 'Aphiwe Dlamini', 'initials' => 'AD'],
+                            ['name' => 'Naledi Mokoena', 'initials' => 'NM'],
+                            ['name' => 'Thabo Maseko', 'initials' => 'TM'],
+                            ['name' => 'Lerato Nkosi', 'initials' => 'LN'],
+                        ] as $index => $driver)
+                            <li style="--i: {{ $index + 1 }};">
+                                <div class="welcome-driver-avatar" aria-hidden="true">{{ $driver['initials'] }}</div>
+                                <div class="content">
+                                    <h3>{{ $driver['name'] }}</h3>
+                                    <p>{{ $driver['name'] }} is now driving wiser</p>
+                                </div>
+                            </li>
+                        @endforeach
+                    @endforelse
+                </ul>
+            </div>
+        </div>
     </div>
 
 
@@ -252,6 +280,100 @@
         font-weight: 600;
     }
 
+    .welcome-driver-stack-wrap {
+        position: relative;
+        min-height: 420px;
+    }
+
+    .welcome-driver-stack {
+        position: relative;
+        transform-style: preserve-3d;
+        perspective: 500px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        transition: 500ms;
+    }
+
+    .welcome-driver-stack:hover {
+        gap: 20px;
+    }
+
+    .welcome-driver-stack li {
+        position: relative;
+        list-style: none;
+        width: 100%;
+        min-height: 96px;
+        padding: 16px;
+        background: #fff;
+        border-radius: 18px;
+        display: flex;
+        gap: 18px;
+        justify-content: flex-start;
+        align-items: center;
+        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        transition: 500ms;
+        transition-delay: calc(var(--i) * 50ms);
+    }
+
+    .welcome-driver-stack li:nth-child(1) {
+        transform: translateZ(-75px) translateY(20px);
+        opacity: .6;
+        filter: blur(4px);
+    }
+
+    .welcome-driver-stack li:nth-child(2) {
+        opacity: .8;
+        filter: blur(2px);
+    }
+
+    .welcome-driver-stack li:nth-child(3) {
+        transform: translateZ(65px) translateY(-30px);
+    }
+
+    .welcome-driver-stack li:nth-child(4) {
+        transform: translateZ(125px) translateY(-68px);
+        filter: blur(1px);
+    }
+
+    .welcome-driver-stack:hover li {
+        opacity: 1;
+        filter: blur(0);
+        transform: translateZ(0) translateY(0);
+    }
+
+    .welcome-driver-avatar {
+        width: 64px;
+        height: 64px;
+        flex: 0 0 64px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #1d4ed8, #06b6d4);
+        color: #fff;
+        font-weight: 700;
+        letter-spacing: 1px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+    }
+
+    .welcome-driver-stack .content {
+        width: 100%;
+    }
+
+    .welcome-driver-stack .content h3 {
+        font-weight: 700;
+        margin-bottom: 8px;
+        line-height: 1.1;
+        color: #0f172a;
+    }
+
+    .welcome-driver-stack .content p {
+        color: rgba(15, 23, 42, 0.68);
+        line-height: 1.2;
+        font-size: 0.95rem;
+    }
+
     .welcome-stats-btn {
         appearance: none;
         border: 1px solid rgba(148, 163, 184, 0.55);
@@ -452,6 +574,25 @@
     @media (max-width: 768px) {
         .trusted-ticker-track {
             animation-duration: 24s;
+        }
+
+        .welcome-driver-stack-wrap {
+            min-height: auto;
+        }
+
+        .welcome-driver-stack {
+            gap: 14px;
+            perspective: none;
+        }
+
+        .welcome-driver-stack li,
+        .welcome-driver-stack li:nth-child(1),
+        .welcome-driver-stack li:nth-child(2),
+        .welcome-driver-stack li:nth-child(3),
+        .welcome-driver-stack li:nth-child(4) {
+            transform: none;
+            opacity: 1;
+            filter: none;
         }
     }
 
