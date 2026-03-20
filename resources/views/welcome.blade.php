@@ -310,7 +310,7 @@
         min-height: 420px;
         width: 100%;
         max-width: 380px;
-        justify-self: start;
+        justify-self: center;
     }
 
     .welcome-driver-stack {
