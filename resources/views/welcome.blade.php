@@ -3,7 +3,7 @@
 @section('title', 'Bwiser Control Platform')
 @section('meta_description', 'Bwiser is a South African fuel finance and payments platform for drivers, stations, vouchers, and settlements.')
 @section('canonical', url('/'))
-@section('og_image', asset('images/wiseup.gif'))
+@section('og_image', asset('images/wisestone.png'))
 
 @section('content')
 <section class="max-w-7xl mx-auto px-6 pt-16 pb-20">
@@ -61,7 +61,7 @@
 
     <div class="glass rounded-2xl p-3 md:p-4 mt-8 overflow-hidden welcome-tween-card">
         <img
-            src="{{ asset('images/wiseup.gif') }}"
+            src="{{ asset('images/wisestone.png') }}"
             alt="Bwiser animated preview"
             class="welcome-tween-image is-in rounded-2xl"
             loading="lazy"
