@@ -29,15 +29,6 @@
         </section>
 
         <section class="mobile-card p-4">
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Core Capabilities</p>
-            <div class="mt-3 space-y-2 text-sm text-slate-700">
-                <div class="rounded-lg bg-slate-50 px-3 py-2 border border-slate-200">Real-time voucher validation at station level</div>
-                <div class="rounded-lg bg-slate-50 px-3 py-2 border border-slate-200">Credit controls with role-based approvals</div>
-                <div class="rounded-lg bg-slate-50 px-3 py-2 border border-slate-200">Automated settlements and audit tracking</div>
-            </div>
-        </section>
-
-        <section class="mobile-card p-4">
             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Trusted Network</p>
             <div class="mt-3 flex flex-wrap gap-2 text-xs text-slate-700">
                 @foreach (['Astron', 'BP', 'Engen', 'Sasol', 'Shell', 'Total Energies'] as $brand)
