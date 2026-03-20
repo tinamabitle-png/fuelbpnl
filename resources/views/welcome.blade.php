@@ -10,8 +10,8 @@
         @php
             $recentDrivers = collect((array) (($welcomeStats ?? [])['recent_drivers'] ?? []))->take(4);
         @endphp
-        <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1.18fr)_380px] lg:items-start">
-            <div>
+        <div class="grid gap-8 md:grid-cols-[minmax(0,1fr)_300px] lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1.12fr)_380px] items-start">
+            <div class="min-w-0">
                 <h1 class="brand-font text-4xl md:text-6xl font-semibold text-slate-900 mt-4 leading-tight">
                     Fuel Infrastructure Finance and Voucher Payments, Low Late Fees,
                     <span class="hero-gradient-text block">Built for Real-Time Operations</span>
@@ -301,6 +301,9 @@
     .welcome-driver-stack-wrap {
         position: relative;
         min-height: 420px;
+        width: 100%;
+        max-width: 380px;
+        justify-self: end;
     }
 
     .welcome-driver-stack {
@@ -596,6 +599,11 @@
     }
 
     @media (max-width: 768px) {
+        .welcome-driver-stack-wrap {
+            max-width: none;
+            justify-self: stretch;
+        }
+
         .trusted-ticker-track {
             animation-duration: 24s;
         }
