@@ -358,9 +358,18 @@ class RegisterController extends Controller
 
         event(new UserRegistered($user, 'web_register_' . $role, $request->ip()));
 
-        return redirect()
+        $redirect = redirect()
             ->route('login')
             ->with('status', ucfirst($role) . ' account created and submitted for admin approval.');
+
+        if ($role === 'driver') {
+            $redirect->with('driver_registered_popup', [
+                'name' => $this->displayDriverName($user->name ?: 'New driver'),
+                'message' => 'You are now driving wiser. Your account has been created and submitted for admin approval.',
+            ]);
+        }
+
+        return $redirect;
     }
 
     private function normalizeSouthAfricanPhone(string $phone): string
@@ -381,6 +390,19 @@ class RegisterController extends Controller
         }
 
         return $clean;
+    }
+
+    private function displayDriverName(string $name): string
+    {
+        $name = trim($name);
+
+        if ($name === '') {
+            return 'New driver';
+        }
+
+        return strtolower($name) === 'john doe'
+            ? 'Bwiser Driver'
+            : $name;
     }
 
     /**

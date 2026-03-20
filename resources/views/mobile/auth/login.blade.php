@@ -23,6 +23,13 @@
                 </div>
             @endif
 
+            @if(session('driver_registered_popup'))
+                <div class="mt-4 rounded-2xl border border-blue-400/40 bg-blue-500/10 px-4 py-3 text-xs text-blue-100">
+                    <p class="font-semibold">{{ data_get(session('driver_registered_popup'), 'name', 'New driver') }}</p>
+                    <p class="mt-1">{{ data_get(session('driver_registered_popup'), 'message') }}</p>
+                </div>
+            @endif
+
             <form method="POST" action="{{ route('login') }}" class="mt-4 space-y-3">
                 @csrf
                 <div>

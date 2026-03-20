@@ -195,14 +195,17 @@ Route::get('/', function () {
                     ->get()
                     ->map(function ($user) {
                         $name = trim((string) ($user->name ?? ''));
-                        $initials = collect(preg_split('/\s+/', $name !== '' ? $name : 'New Driver'))
+                        $displayName = strtolower($name) === 'john doe'
+                            ? 'Bwiser Driver'
+                            : ($name !== '' ? $name : 'New driver');
+                        $initials = collect(preg_split('/\s+/', $displayName))
                             ->filter()
                             ->take(2)
                             ->map(fn ($part) => strtoupper(mb_substr($part, 0, 1)))
                             ->implode('');
 
                         return [
-                            'name' => $name !== '' ? $name : 'New driver',
+                            'name' => $displayName,
                             'initials' => $initials !== '' ? $initials : 'BW',
                         ];
                     })

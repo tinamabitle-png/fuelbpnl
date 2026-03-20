@@ -28,6 +28,53 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
+        .driver-popup-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.58);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            z-index: 60;
+            backdrop-filter: blur(6px);
+        }
+
+        .driver-popup-card {
+            width: min(100%, 420px);
+            border-radius: 1.5rem;
+            background: #ffffff;
+            box-shadow: 0 28px 60px -30px rgba(15, 23, 42, 0.45);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            padding: 1.5rem;
+        }
+
+        .driver-popup-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            border-radius: 999px;
+            background: rgba(37, 99, 235, 0.08);
+            color: #1d4ed8;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 0.4rem 0.7rem;
+        }
+
+        .driver-popup-close {
+            border: 0;
+            background: #1d4ed8;
+            color: #fff;
+            border-radius: 0.9rem;
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+
         .playstore-button {
             display: inline-flex;
             align-items: center;
@@ -73,6 +120,22 @@
     </style>
 </head>
 <body class="bg-gray-100">
+    @if(session('driver_registered_popup'))
+        <div id="driverRegisteredPopup" class="driver-popup-overlay">
+            <div class="driver-popup-card">
+                <div class="driver-popup-badge">
+                    <i class="fas fa-car-side"></i>
+                    Driver Registered
+                </div>
+                <h3 class="mt-4 text-xl font-semibold text-slate-900">{{ data_get(session('driver_registered_popup'), 'name', 'New driver') }}</h3>
+                <p class="mt-2 text-sm text-slate-600">{{ data_get(session('driver_registered_popup'), 'message') }}</p>
+                <p class="mt-2 text-sm text-slate-500">You’ve also been added to the latest drivers stack on the welcome page.</p>
+                <button type="button" class="driver-popup-close mt-5" onclick="document.getElementById('driverRegisteredPopup')?.remove();">
+                    Continue to Sign In
+                </button>
+            </div>
+        </div>
+    @endif
     <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div class="max-w-md w-full">
             <div class="text-center mb-8">
