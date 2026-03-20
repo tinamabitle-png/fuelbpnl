@@ -167,6 +167,7 @@ class RegisterController extends Controller
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'status' => 'flagged',
+                'registration_flag' => 'preseed driver',
                 'credit_score' => 500,
                 'id_number' => $role === 'driver' ? $validated['id_number'] : null,
                 'merchant_franchise_id' => $role === 'merchant'

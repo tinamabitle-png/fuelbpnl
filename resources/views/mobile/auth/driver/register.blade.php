@@ -126,7 +126,9 @@
             <p class="text-xs text-slate-600">Already registered?</p>
             <div class="mt-2 grid grid-cols-1 gap-2">
                 <a href="{{ route('login') }}" class="rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-center text-sm font-semibold text-blue-700">Sign In</a>
-                <a href="{{ route('register.merchant') }}" class="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-700">Register Merchant Instead</a>
+                @if(config('services.registration.public_merchant_enabled'))
+                    <a href="{{ route('register.merchant') }}" class="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-700">Register Merchant Instead</a>
+                @endif
             </div>
         </section>
     </div>

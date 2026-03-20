@@ -19,9 +19,11 @@
                 <a href="{{ route('register.driver') }}" class="rounded-xl bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white">
                     Register Driver
                 </a>
-                <a href="{{ route('register.merchant') }}" class="rounded-xl border border-blue-200 px-4 py-3 text-center text-sm font-semibold text-blue-700 bg-white">
-                    Register Merchant
-                </a>
+                @if(config('services.registration.public_merchant_enabled'))
+                    <a href="{{ route('register.merchant') }}" class="rounded-xl border border-blue-200 px-4 py-3 text-center text-sm font-semibold text-blue-700 bg-white">
+                        Register Merchant
+                    </a>
+                @endif
                 <a href="{{ route('login') }}" class="rounded-xl border border-slate-300 px-4 py-3 text-center text-sm font-semibold text-slate-700 bg-white">
                     Sign In
                 </a>

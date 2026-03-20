@@ -297,6 +297,7 @@ class GoogleAuthController extends Controller
                 'google_sub' => (string) $pending['sub'],
                 'email_verified_at' => now(),
                 'status' => 'flagged',
+                'registration_flag' => 'preseed driver',
                 'credit_score' => $existingUser?->credit_score ?? 500,
                 'id_number' => $role === 'driver' ? $validated['id_number'] : null,
                 'merchant_franchise_id' => $role === 'merchant'

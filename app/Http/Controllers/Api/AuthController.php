@@ -96,6 +96,7 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'device_fingerprint' => $request->device_id,
             'status' => 'pending', // Will be activated after OTP verification
+            'registration_flag' => in_array($role, ['driver', 'merchant'], true) ? 'preseed driver' : null,
             'credit_score' => 500, // Default score
         ]);
 

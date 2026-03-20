@@ -68,7 +68,9 @@
             <p class="text-xs text-slate-600">New to Bwiser?</p>
             <div class="mt-3 grid grid-cols-1 gap-2">
                 <a href="{{ route('register.driver') }}" class="rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-center text-sm font-semibold text-blue-700">Register Driver</a>
-                <a href="{{ route('register.merchant') }}" class="rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-center text-sm font-semibold text-blue-700">Register Merchant</a>
+                @if(config('services.registration.public_merchant_enabled'))
+                    <a href="{{ route('register.merchant') }}" class="rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-center text-sm font-semibold text-blue-700">Register Merchant</a>
+                @endif
             </div>
         </section>
     </div>

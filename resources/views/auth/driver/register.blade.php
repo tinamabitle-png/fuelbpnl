@@ -158,10 +158,12 @@
                 Already have an account?
                 <a href="{{ route('login') }}" class="text-blue-600 font-medium">Sign in</a>
             </div>
-            <div class="mt-2 text-sm text-slate-600">
-                Registering a station?
-                <a href="{{ route('register.merchant') }}" class="text-blue-600 font-medium">Merchant registration</a>
-            </div>
+            @if(config('services.registration.public_merchant_enabled'))
+                <div class="mt-2 text-sm text-slate-600">
+                    Registering a station?
+                    <a href="{{ route('register.merchant') }}" class="text-blue-600 font-medium">Merchant registration</a>
+                </div>
+            @endif
         </div>
         <div class="lg:col-span-5">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 lg:sticky lg:top-6">

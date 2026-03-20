@@ -237,10 +237,12 @@
                        class="inline-flex justify-center items-center py-2 px-4 border border-slate-300 rounded-md text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
                         Register Driver
                     </a>
-                    <a href="{{ route('register.merchant') }}"
-                       class="inline-flex justify-center items-center py-2 px-4 border border-slate-300 rounded-md text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
-                        Register Merchant
-                    </a>
+                    @if(config('services.registration.public_merchant_enabled'))
+                        <a href="{{ route('register.merchant') }}"
+                           class="inline-flex justify-center items-center py-2 px-4 border border-slate-300 rounded-md text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
+                            Register Merchant
+                        </a>
+                    @endif
                 </div>
 
 	                {{-- Play Store button hidden until the mobile app is published. --}}

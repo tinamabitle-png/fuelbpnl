@@ -48,6 +48,7 @@ class User extends Authenticatable
         'device_fingerprint',
         'credit_score',
         'status',
+        'registration_flag',
         'autopay_enabled',
         'autopay_gateway',
         'autopay_token',

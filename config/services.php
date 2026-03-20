@@ -99,6 +99,10 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL') . '/auth/google/callback'),
     ],
 
+    'registration' => [
+        'public_merchant_enabled' => env('PUBLIC_MERCHANT_REGISTRATION_ENABLED', false),
+    ],
+
     'here_maps' => [
         'key' => env('HERE_MAPS_API_KEY'),
         'user_id' => env('HERE_USER_ID'),
