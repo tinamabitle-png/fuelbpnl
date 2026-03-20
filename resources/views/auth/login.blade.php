@@ -222,7 +222,7 @@
                     </div>
                 </form>
 
-                @if(config('services.google.client_id'))
+                @if(config('services.google.enabled') && config('services.google.client_id'))
                     <div class="mt-4">
                         @include('partials.google-button', [
                             'label' => 'Continue with Google',
