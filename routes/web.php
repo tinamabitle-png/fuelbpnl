@@ -206,10 +206,10 @@ Route::get('/', function () {
                             ->implode('');
 
                         $knownLogos = [
-                            'checkers_sixty60' => ['file' => 'checkers-sixty60.svg', 'label' => 'Checkers Sixty60'],
-                            'mr_d' => ['file' => 'mrd.svg', 'label' => 'Mr D'],
-                            'takealot' => ['file' => 'takealot.svg', 'label' => 'Takealot'],
-                            'indrive' => ['file' => 'indrive.svg', 'label' => 'inDrive'],
+                            'checkers_sixty60' => ['file' => 'sixty60.png', 'label' => 'Checkers Sixty60'],
+                            'mr_d' => ['file' => 'mrd.png', 'label' => 'Mr D'],
+                            'takealot' => ['file' => 'takealot.png', 'label' => 'Takealot'],
+                            'indrive' => ['file' => 'indrive.png', 'label' => 'inDrive'],
                             'uber' => ['file' => 'uber.svg', 'label' => 'Uber'],
                             'uber_eats' => ['file' => 'uber-eats.svg', 'label' => 'Uber Eats'],
                             'bolt' => ['file' => 'bolt.svg', 'label' => 'Bolt'],

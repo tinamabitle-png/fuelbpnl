@@ -54,7 +54,7 @@
                         ] as $index => $driver)
                             <li style="--i: {{ $index + 1 }};">
                                 @php
-                                    $fallbackLogos = ['checkers-sixty60.svg', 'uber-eats.svg', 'uber.svg', 'indrive.svg'];
+                                    $fallbackLogos = ['sixty60.png', 'uber-eats.svg', 'uber.svg', 'indrive.png'];
                                     $fallbackLogo = $fallbackLogos[$index % count($fallbackLogos)];
                                 @endphp
                                 <div class="welcome-driver-avatar" aria-hidden="true">
