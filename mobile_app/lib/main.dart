@@ -13,18 +13,20 @@ import 'features/station/station_shell.dart';
 final ValueNotifier<String?> _fatalError = ValueNotifier<String?>(null);
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    _fatalError.value = details.exceptionAsString();
-  };
-  PlatformDispatcher.instance.onError = (error, stack) {
-    _fatalError.value = error.toString();
-    return true;
-  };
-
   runZonedGuarded(
-    () => runApp(const BwiserBootstrap()),
+    () {
+      WidgetsFlutterBinding.ensureInitialized();
+      FlutterError.onError = (FlutterErrorDetails details) {
+        FlutterError.presentError(details);
+        _fatalError.value = details.exceptionAsString();
+      };
+      PlatformDispatcher.instance.onError = (error, stack) {
+        _fatalError.value = error.toString();
+        return true;
+      };
+
+      runApp(const BwiserBootstrap());
+    },
     (error, stack) {
       _fatalError.value = error.toString();
     },
