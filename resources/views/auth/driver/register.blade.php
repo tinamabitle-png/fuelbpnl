@@ -184,8 +184,6 @@
 
 @push('scripts')
 <script>
-const googleMapsEnabled = @json((bool) config('services.google_maps.enabled', true));
-const googleMapsApiKey = @json(config('services.google_maps.key'));
 document.querySelectorAll('.file-drop').forEach((dropZone) => {
     const inputId = dropZone.getAttribute('data-target');
     const input = document.getElementById(inputId);
@@ -279,45 +277,27 @@ const hereGeocodeUrl = @json(route('here.geocode'));
 const hereReverseUrl = @json(route('here.reverse'));
 
 const fallbackCenter = [-26.2041, 28.0473];
-const hasGoogleMaps = Boolean(googleMapsEnabled && googleMapsApiKey);
 const hasHereMaps = Boolean(hereMapsApiKey);
-let activeMapProvider = hasGoogleMaps ? 'google' : (hasHereMaps ? 'here' : 'none');
+let activeMapProvider = 'leaflet';
 let driverMap = null;
 let driverMarker = null;
 let driverGeocodeTimer = null;
-let driverGeocoder = null;
-let driverAutocompleteService = null;
-let driverHerePlatform = null;
 
 const upsertDriverMarker = (currentMarker, position) => {
     if (!driverMap) return currentMarker;
 
-    if (activeMapProvider === 'here') {
+    if (activeMapProvider === 'leaflet') {
+        const latLng = [position.lat, position.lng];
         if (currentMarker) {
-            currentMarker.setGeometry(position);
+            currentMarker.setLatLng(latLng);
             return currentMarker;
         }
-        const iconMarkup = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#2563eb"/></svg>';
-        const icon = new H.map.Icon(iconMarkup);
-        const next = new H.map.Marker(position, { icon });
-        driverMap.addObject(next);
+        const next = window.L.marker(latLng);
+        next.addTo(driverMap);
         return next;
     }
 
-    if (currentMarker) {
-        if (typeof currentMarker.setPosition === 'function') {
-            currentMarker.setPosition(position);
-        } else {
-            currentMarker.position = position;
-        }
-        return currentMarker;
-    }
-
-    if (google.maps.marker?.AdvancedMarkerElement) {
-        return new google.maps.marker.AdvancedMarkerElement({ map: driverMap, position });
-    }
-
-    return new google.maps.Marker({ map: driverMap, position });
+    return currentMarker;
 };
 
 const updateDriverMapStatus = (message, isError = false) => {
@@ -408,51 +388,14 @@ const driverHereFetchReverse = async (lat, lng) => {
     return best;
 };
 
-const driverGeocodeByPlaceId = (placeId) => new Promise((resolve, reject) => {
-    if (activeMapProvider !== 'google') return reject(new Error('Google geocoder not active'));
-    if (!driverGeocoder) return reject(new Error('Geocoder not available'));
-    driverGeocoder.geocode({ placeId }, (results, status) => {
-        if (status === 'OK' && results && results.length) {
-            resolve(results[0]);
-            return;
-        }
-        reject(new Error('Place geocode failed: ' + status));
-    });
-});
-
-const driverGeocodeByAddress = (address) => new Promise((resolve, reject) => {
-    if (activeMapProvider !== 'google') return reject(new Error('Google geocoder not active'));
-    if (!driverGeocoder) return reject(new Error('Geocoder not available'));
-    driverGeocoder.geocode({ address }, (results, status) => {
-        if (status === 'OK' && results && results.length) {
-            resolve(results[0]);
-            return;
-        }
-        reject(new Error('Address geocode failed: ' + status));
-    });
-});
-
-const driverReverseGeocode = (lat, lng) => new Promise((resolve, reject) => {
-    if (activeMapProvider !== 'google') return reject(new Error('Google geocoder not active'));
-    if (!driverGeocoder) return reject(new Error('Geocoder not available'));
-    driverGeocoder.geocode({ location: { lat, lng } }, (results, status) => {
-        if (status === 'OK' && results && results.length) {
-            resolve(fillDriverAddressFields(results[0].address_components || [], results[0].formatted_address || ''));
-            return;
-        }
-        reject(new Error('Reverse geocode failed: ' + status));
-    });
-});
-
 const applyDriverLocationToMap = (lat, lng) => {
     if (driverLatitudeInput) driverLatitudeInput.value = String(lat);
     if (driverLongitudeInput) driverLongitudeInput.value = String(lng);
 
-    if (driverMap) {
+    if (driverMap && activeMapProvider === 'leaflet') {
         const pos = { lat, lng };
         driverMarker = upsertDriverMarker(driverMarker, pos);
-        driverMap.setCenter(pos);
-        driverMap.setZoom(15);
+        driverMap.setView([lat, lng], 15);
     }
 };
 
@@ -461,28 +404,19 @@ const pickDriverSuggestion = async (prediction) => {
         let lat;
         let lng;
 
-        if (activeMapProvider === 'google') {
-            const result = await driverGeocodeByPlaceId(prediction.place_id);
-            const location = result.geometry?.location;
-            if (!location) throw new Error('Missing geometry');
-            lat = location.lat();
-            lng = location.lng();
-            fillDriverAddressFields(result.address_components || [], result.formatted_address || prediction.description || '');
-        } else {
-            const position = prediction?.position || {};
-            lat = Number(position.lat);
-            lng = Number(position.lng);
-            if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('Missing geometry');
-            let resolved = prediction;
-            if (!prediction?.address?.street && !prediction?.address?.houseNumber) {
-                try {
-                    resolved = await driverHereFetchReverse(lat, lng);
-                } catch (error) {
-                    resolved = prediction;
-                }
+        const position = prediction?.position || {};
+        lat = Number(position.lat);
+        lng = Number(position.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('Missing geometry');
+        let resolved = prediction;
+        if (!prediction?.address?.street && !prediction?.address?.houseNumber) {
+            try {
+                resolved = await driverHereFetchReverse(lat, lng);
+            } catch (error) {
+                resolved = prediction;
             }
-            fillDriverAddressFromHereItem(resolved);
         }
+        fillDriverAddressFromHereItem(resolved);
 
         applyDriverLocationToMap(lat, lng);
         updateDriverMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
@@ -521,117 +455,63 @@ const renderDriverSuggestions = (items) => {
     driverAddressSuggestions.classList.remove('hidden');
 };
 
-const loadDriverHereFallbackMap = () => {
-    if (!hasHereMaps) {
-        updateDriverMapStatus('Map preview unavailable. Configure Google or HERE maps keys.', true);
+const loadDriverLeafletMap = () => {
+    if (!window.L?.map) {
+        updateDriverMapStatus('Map preview unavailable. Leaflet failed to load.', true);
         return;
     }
 
-    activeMapProvider = 'here';
-    updateDriverMapStatus('Loading HERE Maps fallback...');
-    let attempts = 0;
-    const tryInit = () => {
-        if (window.H?.service) {
-            initDriverRegisterMap();
-            return;
-        }
-        attempts += 1;
-        if (attempts >= 20) {
-            updateDriverMapStatus('HERE Maps failed to load. Check key, CSP, or internet access.', true);
-            return;
-        }
-        window.setTimeout(tryInit, 250);
-    };
-    tryInit();
+    activeMapProvider = 'leaflet';
+    initDriverRegisterMap();
 };
 
 const initDriverRegisterMap = () => {
     if (!driverMapNode) return;
 
-    if (activeMapProvider === 'google') {
-        if (!window.google?.maps || !googleMapsApiKey) {
-            updateDriverMapStatus('Google map unavailable, attempting HERE fallback...');
-            if (hasHereMaps) {
-                loadDriverHereFallbackMap();
-                return;
-            }
-            updateDriverMapStatus('Map preview unavailable. Set GOOGLE_MAPS_API_KEY or HERE_MAPS_API_KEY.', true);
-            return;
-        }
-
-        driverMap = new google.maps.Map(driverMapNode, {
-            center: { lat: fallbackCenter[0], lng: fallbackCenter[1] },
-            zoom: 11,
-            mapTypeControl: false,
-            streetViewControl: false,
-            fullscreenControl: false,
-        });
-        driverGeocoder = new google.maps.Geocoder();
-        driverAutocompleteService = new google.maps.places.AutocompleteService();
-    } else if (activeMapProvider === 'here') {
-        if (!window.H?.service || !hereMapsApiKey) {
-            updateDriverMapStatus('HERE map preview unavailable. Check HERE_MAPS_API_KEY.', true);
-            return;
-        }
-
-        driverHerePlatform = new H.service.Platform({ apikey: hereMapsApiKey });
-        const layers = driverHerePlatform.createDefaultLayers();
-        driverMap = new H.Map(
-            driverMapNode,
-            layers.vector.normal.map,
-            { center: { lat: fallbackCenter[0], lng: fallbackCenter[1] }, zoom: 11, pixelRatio: window.devicePixelRatio || 1 }
-        );
-        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(driverMap));
-        void behavior;
-        H.ui.UI.createDefault(driverMap, layers);
-        window.addEventListener('resize', () => driverMap.getViewPort().resize());
-    } else {
-        updateDriverMapStatus('Map preview unavailable. Configure Google or HERE maps keys.', true);
+    if (activeMapProvider !== 'leaflet' || !window.L?.map) {
+        updateDriverMapStatus('Map preview unavailable. Leaflet failed to load.', true);
         return;
+    }
+
+    if (!driverMap) {
+        driverMap = window.L.map(driverMapNode, {
+            zoomControl: true,
+            attributionControl: true,
+        }).setView(fallbackCenter, 11);
+
+        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors',
+        }).addTo(driverMap);
     }
 
     const existingLat = parseFloat(driverLatitudeInput?.value || '');
     const existingLng = parseFloat(driverLongitudeInput?.value || '');
     if (Number.isFinite(existingLat) && Number.isFinite(existingLng)) {
         driverMarker = upsertDriverMarker(driverMarker, { lat: existingLat, lng: existingLng });
-        driverMap.setCenter({ lat: existingLat, lng: existingLng });
-        driverMap.setZoom(15);
+        driverMap.setView([existingLat, existingLng], 15);
         updateDriverMapStatus(`Pinned at ${existingLat.toFixed(6)}, ${existingLng.toFixed(6)}`);
     }
 };
 window.initDriverRegisterMap = initDriverRegisterMap;
 
-if (activeMapProvider === 'google' && window.google?.maps && googleMapsApiKey) {
+if (window.L?.map) {
     initDriverRegisterMap();
-} else if (activeMapProvider === 'google' && googleMapsApiKey) {
-    updateDriverMapStatus('Loading Google Maps...');
-    if (typeof window.gm_authFailure !== 'function') {
-        window.gm_authFailure = () => {
-            if (hasHereMaps) {
-                loadDriverHereFallbackMap();
-                return;
-            }
-            updateDriverMapStatus('Google Maps authentication failed. Check API key, billing, and domain restrictions.', true);
-        };
-    }
+} else {
+    updateDriverMapStatus('Loading Leaflet map...');
     window.setTimeout(() => {
-        if (!driverMap && !window.google?.maps) {
-            if (hasHereMaps) {
-                loadDriverHereFallbackMap();
-                return;
-            }
-            updateDriverMapStatus('Google Maps failed to load. Check API key restrictions or internet access.', true);
+        if (!driverMap && window.L?.map) {
+            loadDriverLeafletMap();
+            return;
+        }
+        if (!window.L?.map) {
+            updateDriverMapStatus('Leaflet map failed to load. Check internet access or CSP settings.', true);
         }
     }, 4500);
-} else if (hasHereMaps) {
-    loadDriverHereFallbackMap();
-} else {
-    updateDriverMapStatus('Map preview unavailable. Configure Google or HERE maps keys.', true);
 }
 
 const scheduleDriverGeocode = () => {
-    if (activeMapProvider === 'google' && (!driverGeocoder || !driverAutocompleteService)) return;
-    if (activeMapProvider === 'none') return;
+    if (!hasHereMaps) return;
     if (driverGeocodeTimer) window.clearTimeout(driverGeocodeTimer);
 
     driverGeocodeTimer = window.setTimeout(async () => {
@@ -657,64 +537,37 @@ const scheduleDriverGeocode = () => {
         const query = parts.join(', ');
         updateDriverMapStatus('Locating address...');
 
-        if (activeMapProvider === 'google') {
-            driverAutocompleteService.getPlacePredictions({ input: query }, async (predictions, status) => {
-                const validPredictions = Array.isArray(predictions) ? predictions : [];
-                if (status === google.maps.places.PlacesServiceStatus.OK && validPredictions.length) {
-                    renderDriverSuggestions(validPredictions);
-                } else {
-                    hideDriverSuggestions();
-                }
-
-                try {
-                    const result = await driverGeocodeByAddress(query);
-                    const location = result.geometry?.location;
-                    if (!location) throw new Error('Missing geometry');
-                    const lat = location.lat();
-                    const lng = location.lng();
+        try {
+            const items = await driverHereFetchGeocode(query);
+            if (items.length) {
+                renderDriverSuggestions(items);
+                const first = items[0];
+                const lat = Number(first?.position?.lat);
+                const lng = Number(first?.position?.lng);
+                if (Number.isFinite(lat) && Number.isFinite(lng)) {
                     applyDriverLocationToMap(lat, lng);
-                    updateDriverMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-                } catch (error) {
-                    if (!validPredictions.length) {
-                        if (driverLatitudeInput) driverLatitudeInput.value = '';
-                        if (driverLongitudeInput) driverLongitudeInput.value = '';
-                        updateDriverMapStatus('Address not found yet. Keep typing more detail.', true);
-                    }
-                }
-            });
-        } else {
-            try {
-                const items = await driverHereFetchGeocode(query);
-                if (items.length) {
-                    renderDriverSuggestions(items);
-                    const first = items[0];
-                    const lat = Number(first?.position?.lat);
-                    const lng = Number(first?.position?.lng);
-                    if (Number.isFinite(lat) && Number.isFinite(lng)) {
-                        applyDriverLocationToMap(lat, lng);
-                        let resolved = first;
-                        if (!first?.address?.street && !first?.address?.houseNumber) {
-                            try {
-                                resolved = await driverHereFetchReverse(lat, lng);
-                            } catch (error) {
-                                resolved = first;
-                            }
+                    let resolved = first;
+                    if (!first?.address?.street && !first?.address?.houseNumber) {
+                        try {
+                            resolved = await driverHereFetchReverse(lat, lng);
+                        } catch (error) {
+                            resolved = first;
                         }
-                        fillDriverAddressFromHereItem(resolved);
-                        updateDriverMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
                     }
-                } else {
-                    hideDriverSuggestions();
-                    if (driverLatitudeInput) driverLatitudeInput.value = '';
-                    if (driverLongitudeInput) driverLongitudeInput.value = '';
-                    updateDriverMapStatus('Address not found yet. Keep typing more detail.', true);
+                    fillDriverAddressFromHereItem(resolved);
+                    updateDriverMapStatus(`Pinned at ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
                 }
-            } catch (error) {
+            } else {
+                hideDriverSuggestions();
                 if (driverLatitudeInput) driverLatitudeInput.value = '';
                 if (driverLongitudeInput) driverLongitudeInput.value = '';
-                hideDriverSuggestions();
-                updateDriverMapStatus('Unable to geocode right now. Check internet or try again.', true);
+                updateDriverMapStatus('Address not found yet. Keep typing more detail.', true);
             }
+        } catch (error) {
+            if (driverLatitudeInput) driverLatitudeInput.value = '';
+            if (driverLongitudeInput) driverLongitudeInput.value = '';
+            hideDriverSuggestions();
+            updateDriverMapStatus('Unable to geocode right now. Check internet or try again.', true);
         }
     }, 550);
 };
@@ -725,7 +578,7 @@ const scheduleDriverGeocode = () => {
     field.addEventListener('change', scheduleDriverGeocode);
 });
 
-if ((driverAddressInput?.value || driverCityInput?.value || driverCountryInput?.value) && activeMapProvider !== 'none') {
+if ((driverAddressInput?.value || driverCityInput?.value || driverCountryInput?.value) && hasHereMaps) {
     scheduleDriverGeocode();
 }
 
@@ -740,10 +593,10 @@ if (driverAddressInput) {
     });
 }
 
-if (useDriverCurrentLocationBtn) {
+        if (useDriverCurrentLocationBtn) {
     useDriverCurrentLocationBtn.addEventListener('click', () => {
-        if (activeMapProvider === 'none') {
-            updateDriverMapStatus('Map provider is unavailable. Configure Google or HERE maps keys.', true);
+        if (!window.L?.map && !driverMap) {
+            updateDriverMapStatus('Map provider is unavailable. Leaflet failed to load.', true);
             return;
         }
         if (!navigator.geolocation) {
@@ -761,9 +614,9 @@ if (useDriverCurrentLocationBtn) {
                 const lng = position.coords.longitude;
                 applyDriverLocationToMap(lat, lng);
                 updateDriverMapStatus('Location found. Resolving address...');
-                const resolved = activeMapProvider === 'google'
-                    ? await driverReverseGeocode(lat, lng)
-                    : fillDriverAddressFromHereItem(await driverHereFetchReverse(lat, lng));
+                const resolved = hasHereMaps
+                    ? fillDriverAddressFromHereItem(await driverHereFetchReverse(lat, lng))
+                    : { composedAddress: '', city: '', country: '' };
                 const hasText = resolved.composedAddress || resolved.city || resolved.country;
                 updateDriverMapStatus(
                     hasText
@@ -792,14 +645,6 @@ if (useDriverCurrentLocationBtn) {
     });
 }
 </script>
-@if(config('services.google_maps.enabled', true) && config('services.google_maps.key'))
-<script src="https://maps.googleapis.com/maps/api/js?key={{ urlencode((string) config('services.google_maps.key')) }}&libraries=places,marker&loading=async&callback=initDriverRegisterMap" async defer></script>
-@endif
-@if(config('services.here_maps.key'))
-<script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" async defer></script>
-<script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" async defer></script>
-<script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js" async defer></script>
-<script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js" async defer></script>
-<link rel="stylesheet" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css" />
-@endif
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" async defer></script>
 @endpush
