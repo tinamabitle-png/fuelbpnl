@@ -28,7 +28,18 @@ class SessionStore {
     final prefs = await SharedPreferences.getInstance();
     final value = prefs.getString(_userKey);
     if (value == null || value.isEmpty) return null;
-    return jsonDecode(value) as Map<String, dynamic>;
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      if (decoded is Map) {
+        return decoded.cast<String, dynamic>();
+      }
+    } catch (_) {
+      await prefs.remove(_userKey);
+    }
+    return null;
   }
 
   Future<String?> role() async {

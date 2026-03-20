@@ -1,4 +1,4 @@
-package com.example.mobile_app
+package za.bwiser.driverapp
 
 import android.nfc.cardemulation.HostApduService
 import android.os.Bundle
@@ -54,4 +54,3 @@ class VoucherHceService : HostApduService() {
         return hex.startsWith("00A40400") && hex.contains(aid)
     }
 }
-

@@ -43,7 +43,11 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _ensureBaseUrl() async {
-    await _store.ensureDefaultBaseUrl('https://www.bwiser.co.za/api/v1');
+    try {
+      await _store.ensureDefaultBaseUrl('https://www.bwiser.co.za/api/v1');
+    } catch (_) {
+      // Ignore storage bootstrap issues here so login screen can still render.
+    }
   }
 
   Future<void> login() async {

@@ -1,4 +1,4 @@
-package com.example.mobile_app
+package za.bwiser.driverapp
 
 import android.nfc.NfcAdapter
 import io.flutter.embedding.engine.FlutterEngine

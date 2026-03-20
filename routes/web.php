@@ -84,6 +84,7 @@ Route::get('/', function () {
             'current' => 0,
             'previous' => 0,
             'pct' => 0,
+            'show_pct' => false,
         ];
         if (Schema::hasTable('fuel_vouchers')) {
             $startCurrent = $now->copy()->subDays(30);
@@ -98,8 +99,10 @@ Route::get('/', function () {
                 ->where('created_at', '<', $endPrev)
                 ->count();
 
-            $prev = max(1, $voucherGrowth['previous']);
-            $voucherGrowth['pct'] = (int) round((($voucherGrowth['current'] - $voucherGrowth['previous']) / $prev) * 100);
+            if ($voucherGrowth['previous'] > 0) {
+                $voucherGrowth['pct'] = (int) round((($voucherGrowth['current'] - $voucherGrowth['previous']) / $voucherGrowth['previous']) * 100);
+                $voucherGrowth['show_pct'] = abs($voucherGrowth['pct']) <= 999;
+            }
         }
 
         $labels = [];
@@ -234,15 +237,25 @@ Route::get('/', function () {
                             }
                         }
 
-                        $fallbackKeys = ['checkers_sixty60', 'uber_eats', 'uber', 'indrive', 'mr_d', 'takealot'];
-                        $fallbackKey = $fallbackKeys[abs(crc32($displayName)) % count($fallbackKeys)];
-                        $logo = $knownLogos[$platform] ?? $knownLogos[$fallbackKey];
+                        if ($displayName === 'Bwiser Driver') {
+                            $logo = [
+                                'file' => 'logo.png',
+                                'label' => 'Bwiser',
+                                'path' => 'images/logo.png',
+                            ];
+                        } else {
+                            $fallbackKeys = ['checkers_sixty60', 'uber_eats', 'uber', 'indrive', 'mr_d', 'takealot'];
+                            $fallbackKey = $fallbackKeys[abs(crc32($displayName)) % count($fallbackKeys)];
+                            $logo = $knownLogos[$platform] ?? $knownLogos[$fallbackKey];
+                            $logo['path'] = 'images/driver-platforms/' . $logo['file'];
+                        }
 
                         return [
                             'name' => $displayName,
                             'initials' => $initials !== '' ? $initials : 'BW',
                             'platform_logo' => $logo['file'],
                             'platform_name' => $logo['label'],
+                            'platform_logo_path' => $logo['path'],
                         ];
                     })
                     ->values()

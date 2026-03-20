@@ -1,4 +1,4 @@
-package com.example.mobile_app
+package za.bwiser.driverapp
 
 import android.content.ComponentName
 import android.content.Context
@@ -95,4 +95,3 @@ object Pro545PrinterBridge {
         }
     }
 }
-
