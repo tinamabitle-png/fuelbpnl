@@ -59,6 +59,30 @@
         </div>
     </div>
 
+    <div class="glass rounded-2xl p-6 mt-8">
+        <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div class="flex items-center gap-5">
+                <div class="slack-loader-shell" aria-hidden="true">
+                    <div class="slack-loader"></div>
+                </div>
+                <div>
+                    <h3 class="brand-font text-xl md:text-2xl font-semibold text-slate-900">Request your place in the Bwiser merchant Slack</h3>
+                    <p class="text-sm text-slate-600 mt-2 max-w-2xl">
+                        Merchants can request early access to the Bwiser Slack workspace for rollout updates, onboarding help, and support coordination.
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center md:justify-end">
+                <a
+                    href="mailto:support@bwiser.co.za?subject=Slack%20Access%20Request&body=Hi%20Bwiser%2C%20I%20would%20like%20merchant%20Slack%20access.%0A%0ABusiness%20name%3A%0AContact%20name%3A%0AContact%20number%3A%0A"
+                    class="super-button"
+                >
+                    <span>Request Slack Access</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <div class="glass rounded-2xl p-3 md:p-4 mt-8 overflow-hidden welcome-tween-card">
         <img
             src="{{ asset('images/bwsr.png') }}"
@@ -303,6 +327,88 @@
 
     .playstore-button .text-2 {
         font-weight: 600;
+    }
+
+    .slack-loader-shell {
+        position: relative;
+        width: 88px;
+        height: 88px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.9));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 36px rgba(15, 23, 42, 0.18);
+        flex: 0 0 88px;
+    }
+
+    .slack-loader {
+        position: absolute;
+        top: calc(50% - 1.25em);
+        left: calc(50% - 1.25em);
+        width: 2.5em;
+        height: 2.5em;
+        transform: rotate(165deg);
+    }
+
+    .slack-loader::before,
+    .slack-loader::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        display: block;
+        width: 0.5em;
+        height: 0.5em;
+        border-radius: 0.25em;
+        transform: translate(-50%, -50%);
+    }
+
+    .slack-loader::before {
+        animation: slack-loader-before 2s infinite;
+    }
+
+    .slack-loader::after {
+        animation: slack-loader-after 2s infinite;
+    }
+
+    @keyframes slack-loader-before {
+        0% {
+            width: 0.5em;
+            box-shadow: 1em -0.5em rgba(225, 20, 98, 0.75), -1em 0.5em rgba(111, 202, 220, 0.75);
+        }
+
+        35% {
+            width: 2.5em;
+            box-shadow: 0 -0.5em rgba(225, 20, 98, 0.75), 0 0.5em rgba(111, 202, 220, 0.75);
+        }
+
+        70% {
+            width: 0.5em;
+            box-shadow: -1em -0.5em rgba(225, 20, 98, 0.75), 1em 0.5em rgba(111, 202, 220, 0.75);
+        }
+
+        100% {
+            box-shadow: 1em -0.5em rgba(225, 20, 98, 0.75), -1em 0.5em rgba(111, 202, 220, 0.75);
+        }
+    }
+
+    @keyframes slack-loader-after {
+        0% {
+            height: 0.5em;
+            box-shadow: 0.5em 1em rgba(61, 184, 143, 0.75), -0.5em -1em rgba(233, 169, 32, 0.75);
+        }
+
+        35% {
+            height: 2.5em;
+            box-shadow: 0.5em 0 rgba(61, 184, 143, 0.75), -0.5em 0 rgba(233, 169, 32, 0.75);
+        }
+
+        70% {
+            height: 0.5em;
+            box-shadow: 0.5em -1em rgba(61, 184, 143, 0.75), -0.5em 1em rgba(233, 169, 32, 0.75);
+        }
+
+        100% {
+            box-shadow: 0.5em 1em rgba(61, 184, 143, 0.75), -0.5em -1em rgba(233, 169, 32, 0.75);
+        }
     }
 
     .welcome-driver-stack-wrap {
