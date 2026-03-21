@@ -86,8 +86,8 @@
 
         <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden">
             <img
-                src="{{ asset('images/MsPaballoTsunke.jpg') }}"
-                alt="Ms Paballo Tsunke"
+                src="{{ asset('images/bwsr.png') }}"
+                alt="Bwiser preview"
                 class="block w-full h-full object-cover rounded-2xl"
                 loading="lazy"
             >
@@ -96,8 +96,8 @@
 
     <div class="glass rounded-2xl p-3 md:p-4 mt-8 overflow-hidden welcome-tween-card">
         <img
-            src="{{ asset('images/bwsr.png') }}"
-            alt="Bwiser animated preview"
+            src="{{ asset('images/MsPaballoTsunke.jpg') }}"
+            alt="Ms Paballo Tsunke"
             class="welcome-tween-image is-in rounded-2xl"
             loading="lazy"
             data-welcome-tween="slide-in"
