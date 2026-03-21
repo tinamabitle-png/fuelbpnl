@@ -29,7 +29,7 @@
                     Fuel Infrastructure Finance and Voucher Payments, Low Late Fees,
                     <span class="hero-gradient-text block">Built for Real-Time Operations</span>
                 </h1>
-                <p class="text-slate-600 mt-5 max-w-3xl text-medium">
+                <p class="text-white mt-5 max-w-3xl text-medium">
                     Bwiser connects drivers, stations, and finance teams on one buy now pay later process.
                     We approve fuel financing, issue secure vouchers, redeem instantly at station level, and settle to bank with full audit visibility.
                 </p>
