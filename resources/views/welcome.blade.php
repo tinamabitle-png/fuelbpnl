@@ -11,20 +11,22 @@
         @php
             $recentDrivers = collect((array) (($welcomeStats ?? [])['recent_drivers'] ?? []))->take(4);
         @endphp
-        <div class="min-w-0">
-            <h1 class="brand-font text-4xl md:text-6xl font-semibold text-slate-900 mt-4 leading-tight">
-                Fuel Infrastructure Finance and Voucher Payments, Low Late Fees,
-                <span class="hero-gradient-text block">Built for Real-Time Operations</span>
-            </h1>
-            <p class="text-slate-600 mt-5 max-w-3xl text-medium">
-                Bwiser connects drivers, stations, and finance teams on one buy now pay later process.
-                We approve fuel financing, issue secure vouchers, redeem instantly at station level, and settle to bank with full audit visibility.
-            </p>
-            <div class="mt-7 flex flex-wrap gap-3">
-                <a class="super-button" href="{{ Route::has('login') ? route('login') : '/login' }}">
-                    <span>Get Started</span>
-                </a>
-                {{-- Play Store button hidden until the mobile app is published. --}}
+        <div class="max-w-4xl">
+            <div class="min-w-0">
+                <h1 class="brand-font text-4xl md:text-6xl font-semibold text-slate-900 mt-4 leading-tight">
+                    Fuel Infrastructure Finance and Voucher Payments, Low Late Fees,
+                    <span class="hero-gradient-text block">Built for Real-Time Operations</span>
+                </h1>
+                <p class="text-slate-600 mt-5 max-w-3xl text-medium">
+                    Bwiser connects drivers, stations, and finance teams on one buy now pay later process.
+                    We approve fuel financing, issue secure vouchers, redeem instantly at station level, and settle to bank with full audit visibility.
+                </p>
+                <div class="mt-7 flex flex-wrap gap-3">
+                    <a class="super-button" href="{{ Route::has('login') ? route('login') : '/login' }}">
+                        <span>Get Started</span>
+                    </a>
+                    {{-- Play Store button hidden until the mobile app is published. --}}
+                </div>
             </div>
         </div>
     </div>
@@ -59,27 +61,36 @@
         </div>
     </div>
 
-    <div class="glass rounded-2xl p-6 mt-8">
-        <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div class="flex items-center gap-5">
+    <div class="grid gap-8 lg:grid-cols-2 mt-8 items-stretch">
+        <div class="glass rounded-2xl p-6">
+            <div class="flex items-start gap-5">
                 <div class="slack-loader-shell" aria-hidden="true">
                     <div class="slack-loader"></div>
                 </div>
-                <div>
+                <div class="flex-1">
                     <h3 class="brand-font text-xl md:text-2xl font-semibold text-slate-900">Request your place in the Bwiser merchant Slack</h3>
                     <p class="text-sm text-slate-600 mt-2 max-w-2xl">
                         Merchants can request early access to the Bwiser Slack workspace for rollout updates, onboarding help, and support coordination.
                     </p>
+                    <div class="mt-5">
+                        <a
+                            href="mailto:support@bwiser.co.za?subject=Slack%20Access%20Request&body=Hi%20Bwiser%2C%20I%20would%20like%20merchant%20Slack%20access.%0A%0ABusiness%20name%3A%0AContact%20name%3A%0AContact%20number%3A%0A"
+                            class="super-button whitespace-nowrap"
+                        >
+                            <span>Request Slack Access</span>
+                        </a>
+                    </div>
                 </div>
             </div>
-            <div class="flex items-center md:justify-end">
-                <a
-                    href="mailto:support@bwiser.co.za?subject=Slack%20Access%20Request&body=Hi%20Bwiser%2C%20I%20would%20like%20merchant%20Slack%20access.%0A%0ABusiness%20name%3A%0AContact%20name%3A%0AContact%20number%3A%0A"
-                    class="super-button"
-                >
-                    <span>Request Slack Access</span>
-                </a>
-            </div>
+        </div>
+
+        <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden">
+            <img
+                src="{{ asset('images/MsTsunke.jpg') }}"
+                alt="Ms Tsunke"
+                class="block w-full h-full object-cover rounded-2xl"
+                loading="lazy"
+            >
         </div>
     </div>
 
