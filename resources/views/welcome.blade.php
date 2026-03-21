@@ -285,8 +285,8 @@
 
     .welcome-hero-overlay {
         background:
-            linear-gradient(90deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.42) 42%, rgba(255, 255, 255, 0.12) 100%),
-            linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(248, 250, 252, 0.34));
+            linear-gradient(90deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.18) 42%, rgba(255, 255, 255, 0.04) 100%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(248, 250, 252, 0.12));
     }
 
     .super-button {
