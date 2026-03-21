@@ -17,11 +17,13 @@
 
 @section('content')
 <section class="max-w-7xl mx-auto px-6 pt-16 pb-20">
-    <div class="glass rounded-3xl p-8 md:p-12">
+    <div class="glass welcome-hero-surface rounded-3xl p-8 md:p-12">
+        <div class="welcome-hero-image" aria-hidden="true"></div>
+        <div class="welcome-hero-overlay" aria-hidden="true"></div>
         @php
             $recentDrivers = collect((array) (($welcomeStats ?? [])['recent_drivers'] ?? []))->take(4);
         @endphp
-        <div class="max-w-4xl">
+        <div class="max-w-4xl relative z-[1]">
             <div class="min-w-0">
                 <h1 class="brand-font text-4xl md:text-6xl font-semibold text-slate-900 mt-4 leading-tight">
                     Fuel Infrastructure Finance and Voucher Payments, Low Late Fees,
@@ -259,6 +261,34 @@
 </div>
 
 <style>
+    .welcome-hero-surface {
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(135deg, rgba(255, 251, 235, 0.78), rgba(239, 246, 255, 0.82));
+        border-color: rgba(148, 163, 184, 0.2);
+        box-shadow: 0 24px 48px -34px rgba(148, 163, 184, 0.45);
+    }
+
+    .welcome-hero-image,
+    .welcome-hero-overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+    }
+
+    .welcome-hero-image {
+        background-image: url("{{ asset('images/tennis.jpg') }}");
+        background-position: center;
+        background-size: cover;
+        opacity: 0.9;
+    }
+
+    .welcome-hero-overlay {
+        background:
+            linear-gradient(90deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.42) 42%, rgba(255, 255, 255, 0.12) 100%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(248, 250, 252, 0.34));
+    }
+
     .super-button {
         position: relative;
         display: inline-flex;
