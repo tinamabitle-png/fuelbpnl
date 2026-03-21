@@ -4,7 +4,7 @@
 @section('meta_description', 'Bwiser is a South African fuel finance and payments platform for drivers, stations, vouchers, and settlements.')
 @section('canonical', url('/'))
 @php
-    $welcomeOgImage = 'images/tsunkebwiser.jpg';
+    $welcomeOgImage = 'images/tsunkebwiser1.jpg';
     $welcomeOgImagePath = public_path($welcomeOgImage);
     $welcomeOgImageUrl = asset($welcomeOgImage);
 
@@ -106,8 +106,8 @@
 
     <div class="glass rounded-2xl p-3 md:p-4 mt-8 overflow-hidden welcome-tween-card">
         <img
-            src="{{ asset('images/MsPaballoTsunke.jpg') }}"
-            alt="Ms Paballo Tsunke"
+            src="{{ asset('images/tsunkebwiser1.jpg') }}"
+            alt="Bwiser preview"
             class="welcome-tween-image is-in rounded-2xl"
             loading="lazy"
             data-welcome-tween="slide-in"
