@@ -12,7 +12,7 @@ class InvestorOutreachMail extends Mailable
 
     public function __construct(
         public readonly array $payload,
-        public readonly array $attachments = [],
+        public readonly array $attachmentPayloads = [],
     ) {
     }
 
@@ -28,7 +28,7 @@ class InvestorOutreachMail extends Mailable
             ->subject($this->payload['subject'] ?? 'Bwiser pre-seed investment opportunity')
             ->view('emails.marketing.investor-outreach', $this->payload);
 
-        foreach ($this->attachments as $attachment) {
+        foreach ($this->attachmentPayloads as $attachment) {
             $mail->attachData(
                 $attachment['content'],
                 $attachment['name'],
