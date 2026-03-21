@@ -26,13 +26,11 @@
         <div class="max-w-4xl relative z-[1]">
             <div class="min-w-0">
                 <h1 class="brand-font text-4xl md:text-6xl font-semibold text-slate-900 mt-4 leading-tight">
-                    Fuel Infrastructure Finance and Voucher Payments, Low Late Fees,
+                    Fuel Infrastructure Finance and Voucher Payments,
+                    <br>
+                    <span class="text-white italic">easy as <span class="inline-block rounded-full bg-white px-3 py-1" style="color: #2563eb;">padel</span></span>
                     <span class="hero-gradient-text block">Built for Real-Time Operations</span>
                 </h1>
-                <p class="text-white mt-5 max-w-3xl text-medium">
-                    Bwiser connects drivers, stations, and finance teams on one buy now pay later process.
-                    We approve fuel financing, issue secure vouchers, redeem instantly at station level, and settle to bank with full audit visibility.
-                </p>
                 <div class="mt-7 flex flex-wrap gap-3">
                     <a class="super-button" href="{{ Route::has('login') ? route('login') : '/login' }}">
                         <span>Get Started</span>
