@@ -3,7 +3,17 @@
 @section('title', 'Bwiser Control Platform')
 @section('meta_description', 'Bwiser is a South African fuel finance and payments platform for drivers, stations, vouchers, and settlements.')
 @section('canonical', url('/'))
-@section('og_image', asset('images/tsunkebwiser.jpg') . '?v=' . filemtime(public_path('images/tsunkebwiser.jpg')))
+@php
+    $welcomeOgImage = 'images/tsunkebwiser.jpg';
+    $welcomeOgImagePath = public_path($welcomeOgImage);
+    $welcomeOgImageUrl = asset($welcomeOgImage);
+
+    if (is_file($welcomeOgImagePath)) {
+        $welcomeOgImageUrl .= '?v=' . filemtime($welcomeOgImagePath);
+    }
+@endphp
+
+@section('og_image', $welcomeOgImageUrl)
 
 @section('content')
 <section class="max-w-7xl mx-auto px-6 pt-16 pb-20">
