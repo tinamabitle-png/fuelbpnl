@@ -115,4 +115,10 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    'investor_outreach_from' => [
+        'address' => env('MAIL_INVESTOR_OUTREACH_FROM_ADDRESS', 'tlhologelo.mabitle@bwiser.co.za'),
+        'name' => env('MAIL_INVESTOR_OUTREACH_FROM_NAME', 'Tlhologelo Mabitle'),
+        'reply_to' => env('MAIL_INVESTOR_OUTREACH_REPLY_TO', 'support@bwiser.co.za'),
+    ],
+
 ];

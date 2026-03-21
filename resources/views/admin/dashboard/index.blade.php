@@ -179,6 +179,13 @@
             <p class="font-medium text-slate-900">Repayment Ops</p>
             <p class="text-sm text-gray-600 mt-1">Autopay policy and retries</p>
         </a>
+
+        <a href="{{ route('admin.communications.investor-outreach.create') }}"
+           class="bg-slate-50 hover:bg-slate-100 border border-slate-200 p-4 rounded-lg text-center transition duration-200">
+            <i class="fas fa-envelope-open-text text-indigo-600 text-base mb-2"></i>
+            <p class="font-medium text-slate-900">Investor Outreach</p>
+            <p class="text-sm text-gray-600 mt-1">Compose and send VC emails</p>
+        </a>
     </div>
 </div>
 

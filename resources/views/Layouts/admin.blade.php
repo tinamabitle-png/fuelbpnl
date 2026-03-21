@@ -302,6 +302,7 @@
                     ['route' => 'admin.leases.index', 'icon' => 'fas fa-file-contract', 'label' => 'Leases', 'badge' => '3'],
                     ['route' => 'admin.settlements.index', 'icon' => 'fas fa-money-check-alt', 'label' => 'Settlements', 'badge' => $pendingSettlements],
                     ['route' => 'admin.repayments.ops', 'icon' => 'fas fa-repeat', 'label' => 'Repayment Ops', 'badge' => null],
+                    ['route' => 'admin.communications.investor-outreach.create', 'icon' => 'fas fa-envelope-open-text', 'label' => 'Investor Outreach', 'badge' => null],
                     ['route' => 'admin.feedback.index', 'icon' => 'fas fa-comments', 'label' => 'Feedback', 'badge' => $feedbackCount],
                     ['route' => 'admin.reports.index', 'icon' => 'fas fa-chart-bar', 'label' => 'Reports', 'badge' => null],
                     ['route' => 'admin.settings.index', 'icon' => 'fas fa-cog', 'label' => 'Settings', 'badge' => null],
@@ -448,6 +449,15 @@
                                         <div>
                                             <p class="font-medium">New Settlement</p>
                                             <p class="text-xs text-gray-500">Create payment batch</p>
+                                        </div>
+                                    </a>
+                                    <a href="{{ route('admin.communications.investor-outreach.create') }}" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg group">
+                                        <div class="w-8 h-8 bg-gradient-to-br from-indigo-100 to-indigo-50 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fas fa-envelope-open-text text-indigo-600"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium">Investor Outreach</p>
+                                            <p class="text-xs text-gray-500">Send pre-seed emails</p>
                                         </div>
                                     </a>
                                 </div>

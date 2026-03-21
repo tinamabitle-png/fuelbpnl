@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Admin\RepaymentOpsController as AdminRepaymentOpsController;
 use App\Http\Controllers\Admin\SupportTicketController as AdminSupportTicketController;
+use App\Http\Controllers\Admin\InvestorOutreachController as AdminInvestorOutreachController;
 use App\Http\Controllers\Employee\DashboardController as EmployeeDashboardController;
 use App\Http\Controllers\Employee\ApprovalController as EmployeeApprovalController;
 use App\Http\Controllers\Merchant\DashboardController as MerchantDashboardController;
@@ -502,6 +503,17 @@ Route::middleware(['auth'])->group(function () {
             abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(AdminSupportTicketController::class)->assign(request(), $ticket);
         })->name('support.tickets.assign');
+
+        Route::prefix('communications')->name('communications.')->group(function () {
+            Route::get('/investor-outreach', function () {
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin']), 403);
+                return app(AdminInvestorOutreachController::class)->create();
+            })->name('investor-outreach.create');
+            Route::post('/investor-outreach', function () {
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin']), 403);
+                return app(AdminInvestorOutreachController::class)->send(request());
+            })->name('investor-outreach.send');
+        });
         
         // ========== USERS ROUTES ==========
         Route::get('/users', function() {
