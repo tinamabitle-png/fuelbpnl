@@ -1,6 +1,6 @@
 @extends('Layouts.app')
 
-@section('title', 'Bwiser Control Platform')
+@section('title', 'Bwiser Fuel Buy Now Pay Later')
 @section('meta_description', 'Bwiser is a South African fuel finance and payments platform for drivers, stations, vouchers, and settlements.')
 @section('canonical', url('/'))
 @php
