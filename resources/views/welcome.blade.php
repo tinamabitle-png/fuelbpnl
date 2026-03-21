@@ -3,7 +3,7 @@
 @section('title', 'Bwiser Control Platform')
 @section('meta_description', 'Bwiser is a South African fuel finance and payments platform for drivers, stations, vouchers, and settlements.')
 @section('canonical', url('/'))
-@section('og_image', asset('images/tsunkebwiser.jpg'))
+@section('og_image', asset('images/tsunkebwiser.jpg') . '?v=' . filemtime(public_path('images/tsunkebwiser.jpg')))
 
 @section('content')
 <section class="max-w-7xl mx-auto px-6 pt-16 pb-20">
