@@ -138,6 +138,20 @@
         $voucherUp = $voucherPct >= 0;
         $showVoucherPct = (bool) ($growth['show_pct'] ?? false);
     @endphp
+
+    <div class="glass rounded-2xl p-3 md:p-4 mt-8 overflow-hidden">
+        <video
+            class="block w-full rounded-2xl object-cover"
+            autoplay
+            muted
+            loop
+            playsinline
+            preload="metadata"
+        >
+            <source src="{{ asset('images/badserve.mp4') }}" type="video/mp4">
+        </video>
+    </div>
+
     <div class="grid gap-8 lg:grid-cols-2 mt-8 items-start">
         <div class="glass rounded-2xl p-6 overflow-hidden">
             <p class="text-xs uppercase tracking-[1px] text-blue-600 mb-4">Latest Drivers</p>
