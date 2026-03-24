@@ -35,7 +35,22 @@
                     <a class="super-button" href="{{ Route::has('login') ? route('login') : '/login' }}">
                         <span>Get Started</span>
                     </a>
-                    {{-- Play Store button hidden until the mobile app is published. --}}
+                    <a
+                        class="playstore-button"
+                        href="https://play.google.com/store/apps/details?id=za.bwiser.driverapp"
+                        target="_blank"
+                        rel="noopener"
+                        aria-label="Get BWiser on Google Play"
+                    >
+                        <svg class="playstore-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                            <path fill="currentColor" d="M325.3 234.3L104.6 13.6C92.6 1.6 80 7.1 80 25.7v460.6c0 18.6 12.6 24.1 24.6 12.1l220.7-220.7-45.2-43.4z"/>
+                            <path fill="currentColor" opacity="0.75" d="M392.6 310.2l-67.3-75.9 67.3-75.9 73.7 42.9c18.4 10.7 18.4 28.2 0 38.9l-73.7 70z"/>
+                        </svg>
+                        <span class="texts">
+                            <span class="text-1">Get it on</span>
+                            <span class="text-2">Google Play</span>
+                        </span>
+                    </a>
                 </div>
             </div>
         </div>
