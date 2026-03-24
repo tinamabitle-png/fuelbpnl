@@ -41,8 +41,6 @@
         </div>
     </div>
 
-
-
     @php
         $popularBrands = collect([
             ['name' => 'Astron', 'slug' => 'astron-energy'],
@@ -236,6 +234,38 @@
                     data-series-vouchers='@json((array) ($series["vouchers"] ?? []))'
                     data-series-drivers='@json((array) ($series["drivers"] ?? []))'
                 ></canvas>
+            </div>
+        </div>
+    </div>
+
+    @php
+        $groceriesImages = collect(glob(public_path('images/groceries*')) ?: [])
+            ->sort()
+            ->map(fn ($path) => asset('images/'.basename($path)))
+            ->values();
+    @endphp
+    <div class="voucher-split-card mt-5">
+        <div class="voucher-split-card__grid">
+            <div class="voucher-split-card__media">
+                <div class="voucher-split-slider" data-voucher-slider>
+                    @foreach($groceriesImages as $index => $image)
+                        <img
+                            src="{{ $image }}"
+                            alt="Groceries voucher preview {{ $index + 1 }}"
+                            class="voucher-split-slide{{ $index === 0 ? ' is-active' : '' }}"
+                            data-slide
+                            loading="lazy"
+                        >
+                    @endforeach
+                </div>
+            </div>
+            <div class="voucher-split-card__content">
+                <p class="voucher-split-card__eyebrow">Voucher Split</p>
+                <h3 class="voucher-split-card__title">How Bwiser splits every voucher between fuel and kiosk value</h3>
+                <div class="voucher-split-card__body">
+                    <p>Bwiser treats voucher design as an operational tool, not just a payment token. When a voucher is issued, the platform can divide that value into two coordinated balances: one balance for fuel and one balance for kiosk use. This matters because drivers, merchants, and funding partners do not experience value in a single flat way. Fuel is the core operating requirement, but convenience spend still shapes the real economics of a station visit. By structuring the voucher into defined buckets, Bwiser makes the product more flexible without reducing control. The result is a system that feels practical for drivers, useful for merchants, and auditable for finance teams.</p>
+                    <div class="voucher-split-card__break" aria-hidden="true"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -801,6 +831,100 @@
         box-shadow: 0 18px 40px -30px rgba(15, 23, 42, 0.35);
     }
 
+    .voucher-split-card {
+        margin-top: 20px;
+        border-radius: 1.75rem;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.94)),
+            linear-gradient(135deg, rgba(219, 234, 254, 0.28), rgba(254, 240, 138, 0.12));
+        box-shadow: 0 24px 48px -32px rgba(15, 23, 42, 0.28);
+        overflow: hidden;
+    }
+
+    .voucher-split-card__grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .voucher-split-card__media {
+        position: relative;
+        min-height: 340px;
+        background: linear-gradient(135deg, #dbeafe, #eff6ff 40%, #f8fafc);
+    }
+
+    .voucher-split-slider {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+
+    .voucher-split-slide {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0;
+        transform: scale(1.025);
+        transition: opacity 700ms ease, transform 1200ms ease;
+    }
+
+    .voucher-split-slide.is-active {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .voucher-split-card__content {
+        padding: 2rem 1.5rem;
+    }
+
+    .voucher-split-card__eyebrow {
+        margin: 0;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #2563eb;
+    }
+
+    .voucher-split-card__title {
+        margin-top: 0.85rem;
+        font-size: clamp(1.75rem, 2vw, 2.25rem);
+        line-height: 1.1;
+        color: #0f172a;
+    }
+
+    .voucher-split-card__body {
+        margin-top: 1.5rem;
+        color: #334155;
+        font-size: 0.98rem;
+        line-height: 1.78;
+        display: grid;
+        gap: 1rem;
+    }
+
+    .voucher-split-card__body p {
+        margin: 0;
+    }
+
+    .voucher-split-card__break {
+        position: relative;
+        margin-top: 1.75rem;
+        padding-top: 1.5rem;
+    }
+
+    .voucher-split-card__break::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, rgba(37, 99, 235, 0), rgba(37, 99, 235, 0.55), rgba(14, 165, 233, 0));
+    }
+
+
     .welcome-tween-image {
         width: 100%;
         height: auto;
@@ -827,6 +951,26 @@
             opacity: 1;
             transform: none;
             transition: none;
+        }
+
+        .voucher-split-slide {
+            transition: none;
+        }
+    }
+
+    @media (min-width: 992px) {
+        .voucher-split-card__grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .voucher-split-card__content {
+            padding: 2.4rem 2.2rem;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .voucher-split-card__media {
+            min-height: 260px;
         }
     }
 </style>
@@ -918,6 +1062,40 @@
     @endphp
     <script src="{{ $chartSrc }}"></script>
     <script>
+        (function initVoucherSplitSlider() {
+            const boot = () => {
+                const slider = document.querySelector('[data-voucher-slider]');
+                if (!slider) return;
+
+                const slides = Array.from(slider.querySelectorAll('[data-slide]'));
+                if (slides.length <= 1) {
+                    slides.forEach((slide, index) => slide.classList.toggle('is-active', index === 0));
+                    return;
+                }
+
+                const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                if (reduceMotion) {
+                    slides.forEach((slide, index) => slide.classList.toggle('is-active', index === 0));
+                    return;
+                }
+
+                let activeIndex = slides.findIndex((slide) => slide.classList.contains('is-active'));
+                if (activeIndex < 0) activeIndex = 0;
+
+                window.setInterval(() => {
+                    slides[activeIndex].classList.remove('is-active');
+                    activeIndex = (activeIndex + 1) % slides.length;
+                    slides[activeIndex].classList.add('is-active');
+                }, 3000);
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', boot);
+            } else {
+                boot();
+            }
+        })();
+
         (function initWelcomeStatsChart() {
             const boot = () => {
                 const canvas = document.getElementById('welcomeStatsChart');
