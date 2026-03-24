@@ -42,12 +42,11 @@
                         rel="noopener"
                         aria-label="Get BWiser on Google Play"
                     >
-                        <svg class="playstore-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                            <path fill="currentColor" d="M325.3 234.3L104.6 13.6C92.6 1.6 80 7.1 80 25.7v460.6c0 18.6 12.6 24.1 24.6 12.1l220.7-220.7-45.2-43.4z"/>
-                            <path fill="currentColor" opacity="0.75" d="M392.6 310.2l-67.3-75.9 67.3-75.9 73.7 42.9c18.4 10.7 18.4 28.2 0 38.9l-73.7 70z"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+                            <path d="M99.617 8.057a50.191 50.191 0 00-38.815-6.713l230.932 230.933 74.846-74.846L99.617 8.057zM32.139 20.116c-6.441 8.563-10.148 19.077-10.148 30.199v411.358c0 11.123 3.708 21.636 10.148 30.199l235.877-235.877L32.139 20.116zM464.261 212.087l-67.266-37.637-81.544 81.544 81.548 81.548 67.273-37.64c16.117-9.03 25.738-25.442 25.738-43.908s-9.621-34.877-25.749-43.907zM291.733 279.711L60.815 510.629c3.786.891 7.639 1.371 11.492 1.371a50.275 50.275 0 0027.31-8.07l266.965-149.372-74.849-74.847z"></path>
                         </svg>
                         <span class="texts">
-                            <span class="text-1">Get it on</span>
+                            <span class="text-1">GET IT ON</span>
                             <span class="text-2">Google Play</span>
                         </span>
                     </a>
@@ -386,10 +385,10 @@
         justify-content: center;
         border: 2px solid #000;
         border-radius: 9999px;
-        background-color: #000;
+        background-color: rgba(0, 0, 0, 1);
         padding: 0.625rem 1.5rem;
         text-align: center;
-        color: #fff;
+        color: rgba(255, 255, 255, 1);
         outline: 0;
         transition: all .2s ease;
         text-decoration: none;
@@ -397,10 +396,10 @@
 
     .playstore-button:hover {
         background-color: transparent;
-        color: #000;
+        color: rgba(0, 0, 0, 1);
     }
 
-    .playstore-button .playstore-icon {
+    .playstore-button .icon {
         height: 1.5rem;
         width: 1.5rem;
     }
