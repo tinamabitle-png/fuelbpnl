@@ -156,6 +156,15 @@
                     <path d="M8 5v14l11-7z" fill="currentColor"></path>
                 </svg>
             </button>
+            <button class="welcome-video__sound" type="button" aria-label="Unmute video" title="Unmute">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M11 5L6.8 8.5H4a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h2.8L11 19V5z" fill="currentColor"></path>
+                    <path class="welcome-video__sound-waves" d="M14.5 8.5a1 1 0 0 1 1.4 0 5 5 0 0 1 0 7.1 1 1 0 1 1-1.4-1.4 3 3 0 0 0 0-4.2 1 1 0 0 1 0-1.5z" fill="currentColor"></path>
+                    <path class="welcome-video__sound-waves" d="M16.8 6.2a1 1 0 0 1 1.4 0 8 8 0 0 1 0 11.3 1 1 0 1 1-1.4-1.4 6 6 0 0 0 0-8.5 1 1 0 0 1 0-1.4z" fill="currentColor"></path>
+                    <path class="welcome-video__sound-mute" d="M20 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path>
+                    <path class="welcome-video__sound-mute" d="M14 9l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path>
+                </svg>
+            </button>
             <div class="welcome-video__loader" aria-hidden="true"></div>
         </div>
     </div>
@@ -941,6 +950,48 @@
         pointer-events: none;
     }
 
+    .welcome-video__sound {
+        position: absolute;
+        right: 14px;
+        top: 14px;
+        width: 44px;
+        height: 44px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(15, 23, 42, 0.6);
+        color: #ffffff;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 180ms ease, transform 180ms ease, background-color 180ms ease;
+        backdrop-filter: blur(10px);
+    }
+
+    .welcome-video.is-playing .welcome-video__sound {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .welcome-video__sound:hover {
+        transform: scale(1.03);
+        background: rgba(15, 23, 42, 0.72);
+    }
+
+    .welcome-video__sound svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    .welcome-video.is-muted .welcome-video__sound-waves {
+        opacity: 0;
+    }
+
+    .welcome-video:not(.is-muted) .welcome-video__sound-mute {
+        opacity: 0;
+    }
+
     .welcome-video__loader {
         position: absolute;
         left: 50%;
@@ -1238,7 +1289,8 @@
                 const video = container.querySelector('video');
                 const poster = container.querySelector('.welcome-video__poster');
                 const play = container.querySelector('.welcome-video__play');
-                if (!video || !poster || !play) return;
+                const sound = container.querySelector('.welcome-video__sound');
+                if (!video || !poster || !play || !sound) return;
 
                 const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
                 const posterSeconds = Number(container.getAttribute('data-poster-seconds') || '22');
@@ -1301,12 +1353,31 @@
                     container.classList.add('is-playing');
                     setLoading(true);
                     try {
+                        video.muted = false;
+                        video.volume = 1;
+                        container.classList.remove('is-muted');
                         await video.play();
                     } catch (e) {
                         container.classList.remove('is-playing');
                         setLoading(false);
                     }
                 });
+
+                const syncMuteUi = () => {
+                    container.classList.toggle('is-muted', Boolean(video.muted));
+                    sound.setAttribute('aria-label', video.muted ? 'Unmute video' : 'Mute video');
+                    sound.setAttribute('title', video.muted ? 'Unmute' : 'Mute');
+                };
+
+                syncMuteUi();
+
+                sound.addEventListener('click', () => {
+                    video.muted = !video.muted;
+                    if (!video.muted && video.volume === 0) video.volume = 1;
+                    syncMuteUi();
+                });
+
+                video.addEventListener('volumechange', syncMuteUi);
             };
 
             if (document.readyState === 'loading') {
