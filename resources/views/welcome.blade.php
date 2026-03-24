@@ -140,16 +140,24 @@
     @endphp
 
     <div class="glass rounded-2xl p-3 md:p-4 mt-8 overflow-hidden">
-        <video
-            class="block w-full rounded-2xl object-cover"
-            autoplay
-            muted
-            loop
-            playsinline
-            preload="metadata"
-        >
-            <source src="{{ asset('images/badserve.mp4') }}" type="video/mp4">
-        </video>
+        <div class="welcome-video" data-welcome-video data-poster-seconds="22">
+            <img class="welcome-video__poster" alt="Badserve preview" loading="lazy">
+            <video
+                class="welcome-video__media"
+                muted
+                loop
+                playsinline
+                preload="metadata"
+            >
+                <source src="{{ asset('images/badserve.mp4') }}" type="video/mp4">
+            </video>
+            <button class="welcome-video__play" type="button" aria-label="Play video">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M8 5v14l11-7z" fill="currentColor"></path>
+                </svg>
+            </button>
+            <div class="welcome-video__loader" aria-hidden="true"></div>
+        </div>
     </div>
 
     <div class="grid gap-8 lg:grid-cols-2 mt-8 items-start">
@@ -859,6 +867,104 @@
         box-shadow: 0 18px 40px -30px rgba(15, 23, 42, 0.35);
     }
 
+    .welcome-video {
+        position: relative;
+        border-radius: 1rem;
+        overflow: hidden;
+        background: #0b1220;
+        aspect-ratio: 16 / 9;
+    }
+
+    .welcome-video__poster,
+    .welcome-video__media {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .welcome-video__media {
+        opacity: 0;
+        transition: opacity 220ms ease;
+    }
+
+    .welcome-video.is-playing .welcome-video__media {
+        opacity: 1;
+    }
+
+    .welcome-video.is-playing .welcome-video__poster {
+        opacity: 0;
+        transition: opacity 180ms ease;
+    }
+
+    .welcome-video__play {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+        color: #ffffff;
+    }
+
+    .welcome-video__play::before {
+        content: "";
+        position: absolute;
+        width: 84px;
+        height: 84px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 18px 40px -26px rgba(15, 23, 42, 0.7);
+        backdrop-filter: blur(10px);
+        transition: transform 180ms ease, background-color 180ms ease;
+    }
+
+    .welcome-video__play svg {
+        position: relative;
+        width: 34px;
+        height: 34px;
+        transform: translateX(2px);
+        filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
+    }
+
+    .welcome-video__play:hover::before {
+        transform: scale(1.05);
+        background: rgba(15, 23, 42, 0.84);
+    }
+
+    .welcome-video.is-playing .welcome-video__play {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .welcome-video__loader {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 44px;
+        height: 44px;
+        border-radius: 999px;
+        border: 3px solid rgba(255, 255, 255, 0.24);
+        border-top-color: rgba(255, 255, 255, 0.95);
+        transform: translate(-50%, -50%);
+        animation: welcomeVideoSpin 1s linear infinite;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .welcome-video.is-loading .welcome-video__loader {
+        opacity: 1;
+    }
+
+    @keyframes welcomeVideoSpin {
+        from { transform: translate(-50%, -50%) rotate(0deg); }
+        to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
     .voucher-split-card {
         margin-top: 20px;
         border-radius: 1.75rem;
@@ -1115,6 +1221,92 @@
                     activeIndex = (activeIndex + 1) % slides.length;
                     slides[activeIndex].classList.add('is-active');
                 }, 3000);
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', boot);
+            } else {
+                boot();
+            }
+        })();
+
+        (function initWelcomeVideo() {
+            const boot = () => {
+                const container = document.querySelector('[data-welcome-video]');
+                if (!container) return;
+
+                const video = container.querySelector('video');
+                const poster = container.querySelector('.welcome-video__poster');
+                const play = container.querySelector('.welcome-video__play');
+                if (!video || !poster || !play) return;
+
+                const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                const posterSeconds = Number(container.getAttribute('data-poster-seconds') || '22');
+
+                const setLoading = (loading) => {
+                    container.classList.toggle('is-loading', Boolean(loading));
+                };
+
+                const capturePoster = () => {
+                    if (reduceMotion) return;
+                    if (!video.videoWidth || !video.videoHeight) return;
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    try {
+                        poster.src = canvas.toDataURL('image/jpeg', 0.86);
+                    } catch (e) {
+                        // Some browsers can block toDataURL in edge cases; just keep the default background.
+                    }
+                };
+
+                let posterCaptured = false;
+                const seekForPoster = () => {
+                    if (posterCaptured || reduceMotion) return;
+                    const duration = Number.isFinite(video.duration) ? video.duration : 0;
+                    const target = duration > 0 ? Math.min(Math.max(0.1, posterSeconds), Math.max(0.1, duration - 0.1)) : posterSeconds;
+
+                    try {
+                        video.currentTime = target;
+                    } catch (e) {
+                        // Ignore; poster will just stay as background.
+                    }
+                };
+
+                const onSeeked = () => {
+                    if (posterCaptured) return;
+                    capturePoster();
+                    posterCaptured = true;
+                    setLoading(false);
+                    // Rewind so playback starts normally on user click.
+                    try { video.currentTime = 0; } catch (e) {}
+                    video.removeEventListener('seeked', onSeeked);
+                };
+
+                setLoading(true);
+                video.addEventListener('loadedmetadata', seekForPoster, { once: true });
+                video.addEventListener('seeked', onSeeked);
+
+                video.addEventListener('loadstart', () => setLoading(true));
+                video.addEventListener('waiting', () => setLoading(true));
+                video.addEventListener('playing', () => setLoading(false));
+                video.addEventListener('canplay', () => setLoading(false));
+
+                play.addEventListener('click', async () => {
+                    container.classList.add('is-playing');
+                    setLoading(true);
+                    try {
+                        await video.play();
+                    } catch (e) {
+                        container.classList.remove('is-playing');
+                        setLoading(false);
+                    }
+                });
             };
 
             if (document.readyState === 'loading') {
