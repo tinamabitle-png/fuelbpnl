@@ -204,6 +204,23 @@
             background: #eff6ff;
         }
 
+        .preprod-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.22rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.62rem;
+            font-weight: 900;
+            letter-spacing: 0.14em;
+            line-height: 1;
+            background: linear-gradient(120deg, var(--primary), var(--primary-dark));
+            color: #eff6ff;
+            border: 1px solid rgba(37, 99, 235, 0.25);
+            text-transform: uppercase;
+            box-shadow: 0 10px 18px rgba(37, 99, 235, 0.22);
+        }
+
         .surface-card {
             background: #fff;
             border: 1px solid #e2e8f0;
@@ -429,6 +446,7 @@
                         </div>
                     </div>
                     <nav class="flex items-center gap-3 text-sm">
+                        <span class="preprod-badge" aria-label="Pre-production environment">PRE-PRODUCTION</span>
                         @auth
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf

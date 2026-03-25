@@ -117,6 +117,23 @@
             font-family: var(--title-font);
         }
 
+        .preprod-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.2rem 0.55rem;
+            border-radius: 9999px;
+            font-size: 0.6rem;
+            font-weight: 900;
+            letter-spacing: 0.14em;
+            line-height: 1;
+            background: linear-gradient(120deg, var(--primary-dark), var(--primary));
+            color: #eff6ff;
+            border: 1px solid rgba(37, 99, 235, 0.25);
+            text-transform: uppercase;
+            box-shadow: 0 10px 18px rgba(37, 99, 235, 0.22);
+        }
+
         h1,
         h2,
         h3,
@@ -142,6 +159,7 @@
                         <p class="text-[11px] uppercase tracking-[0.18em] text-blue-700">Control Platform</p>
                     </div>
                 </div>
+                <span class="preprod-badge" aria-label="Pre-production environment">PRE-PRODUCTION</span>
             </div>
         </div>
     </header>
