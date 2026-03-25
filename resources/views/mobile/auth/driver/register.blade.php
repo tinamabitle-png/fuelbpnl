@@ -39,10 +39,6 @@
                             <option value="other" @selected(old('gender') === 'other')>Other</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-700">Date of Birth</label>
-                        <input id="m_driver_dob" name="date_of_birth" type="date" value="{{ old('date_of_birth') }}" readonly class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none">
-                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-700">Phone (South Africa)</label>
@@ -131,7 +127,6 @@ if (platformSelect) {
 
 (function initIdentityFields() {
     const idEl = document.getElementById('m_driver_id_number');
-    const dobEl = document.getElementById('m_driver_dob');
 
     const deriveDobFromSaId = (raw) => {
         const digits = String(raw || '').replace(/\D+/g, '');
@@ -150,14 +145,11 @@ if (platformSelect) {
         return `${String(yyyy).padStart(4, '0')}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
     };
 
-    if (idEl && dobEl) {
-        const syncDob = () => {
-            const derived = deriveDobFromSaId(idEl.value);
-            if (derived) dobEl.value = derived;
-        };
-        idEl.addEventListener('input', syncDob);
-        idEl.addEventListener('blur', syncDob);
-        syncDob();
+    if (idEl) {
+        const validateDob = () => deriveDobFromSaId(idEl.value);
+        idEl.addEventListener('input', validateDob);
+        idEl.addEventListener('blur', validateDob);
+        validateDob();
     }
 })();
 </script>
