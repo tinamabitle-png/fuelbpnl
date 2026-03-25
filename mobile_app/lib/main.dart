@@ -113,17 +113,32 @@ class _BwiserAppState extends State<BwiserApp> {
 
   @override
   Widget build(BuildContext context) {
+    final baseHome = role == 'driver'
+        ? DriverShell(api: api, onLogout: _onLogout)
+        : role == 'station'
+            ? StationShell(api: api, onLogout: _onLogout)
+            : LoginPage(api: api, onLoggedIn: _onLogin);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'BWiser',
       theme: AppTheme.light,
-      home: loading
-          ? const Scaffold(body: Center(child: AppLoader()))
-          : role == 'driver'
-          ? DriverShell(api: api, onLogout: _onLogout)
-          : role == 'station'
-          ? StationShell(api: api, onLogout: _onLogout)
-          : LoginPage(api: api, onLoggedIn: _onLogin),
+      home: Stack(
+        children: [
+          baseHome,
+          // No dedicated splash screen: just an in-place loader overlay during session restore.
+          if (loading)
+            Positioned.fill(
+              child: IgnorePointer(
+                ignoring: true,
+                child: Container(
+                  color: const Color(0xFFFFFFFF),
+                  child: const Center(child: AppLoader()),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

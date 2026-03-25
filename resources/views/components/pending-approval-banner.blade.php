@@ -34,9 +34,6 @@
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <span class="inline-flex items-center rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-800 border border-amber-200">
-                    Status: Pending
-                </span>
                 <a href="mailto:support@bwiser.co.za" class="inline-flex items-center rounded-full bg-amber-700 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-800 transition-colors">
                     Contact support
                 </a>
@@ -44,4 +41,3 @@
         </div>
     </div>
 @endif
-
