@@ -38,14 +38,16 @@
                 Realtime: connecting
             </span>
         </div>
-    </div>
+	    </div>
 
-    @include('merchant.partials.nav')
+	    @include('merchant.partials.nav')
 
-    @if(session('success'))
-        <div class="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            {{ session('success') }}
-        </div>
+	    <x-pending-approval-banner />
+
+	    @if(session('success'))
+	        <div class="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+	            {{ session('success') }}
+	        </div>
     @endif
 
     @if(session('error'))

@@ -41,16 +41,24 @@ class LoginController extends Controller
             ]);
             
             // Check user status
-            if ($user->status !== 'active') {
-                $pendingApproval = Schema::hasTable('account_approvals')
-                    ? $user->latestAccountApproval()->where('status', 'pending')->exists()
-                    : false;
+            if ((string) $user->status === 'suspended') {
                 Auth::logout();
                 return back()->withErrors([
-                    'email' => $pendingApproval
-                        ? 'Your account is pending admin approval.'
-                        : 'Your account is ' . $user->status . '. Please contact support.',
+                    'email' => 'Your account is suspended. Please contact support.',
                 ]);
+            }
+
+            // Allow flagged/pending users to login (they can browse the dashboard, but key actions can remain gated).
+            $pendingApproval = Schema::hasTable('account_approvals')
+                ? $user->latestAccountApproval()->where('status', 'pending')->exists()
+                : false;
+            $pendingAdminApprovalFlag = $pendingApproval || ((string) $user->status !== 'active');
+            if ($user->hasAnyRole(['driver', 'merchant'])) {
+                if ($pendingAdminApprovalFlag) {
+                    $request->session()->put('pending_admin_approval', true);
+                } else {
+                    $request->session()->forget('pending_admin_approval');
+                }
             }
 
             if (!$user->hasAnyRole(['driver', 'merchant', 'admin', 'super_admin', 'employee', 'investor'])) {

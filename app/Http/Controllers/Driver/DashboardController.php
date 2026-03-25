@@ -264,6 +264,11 @@ class DashboardController extends Controller
         if ($redirect = $this->redirectIfDriverDocumentsMissing($user)) {
             return $redirect;
         }
+        if ((string) ($user->status ?? '') !== 'active') {
+            return redirect()
+                ->route('driver.dashboard')
+                ->with('error', 'Your account is pending admin approval. Voucher requests are locked for now.');
+        }
 
         $stationsPayload = Cache::remember('driver:voucher:stations-payload:v1', now()->addMinute(), function () {
             $stations = FuelStation::where('status', 'active')
@@ -369,6 +374,11 @@ class DashboardController extends Controller
         $this->authorizeDriverPortal($user);
         if ($redirect = $this->redirectIfDriverDocumentsMissing($user)) {
             return $redirect;
+        }
+        if ((string) ($user->status ?? '') !== 'active') {
+            return redirect()
+                ->route('driver.dashboard')
+                ->with('error', 'Your account is pending admin approval. Voucher requests are locked for now.');
         }
 
         $validated = $request->validate([

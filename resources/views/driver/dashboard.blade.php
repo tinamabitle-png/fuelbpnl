@@ -42,24 +42,25 @@
             100% { transform: translateY(-2px) scale(1.06); }
         }
     </style>
-    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-        <div>
-            <p class="text-sm uppercase tracking-[0.2em] text-blue-600">Drive r Dashboard</p>
-            <h1 class="brand-font text-3xl md:text-4xl font-semibold text-slate-900 mt-2">Driver Dashboard</h1>
-            <p class="text-slate-600 mt-3">Apply for vouchers, locate stations, and manage repayments.</p>
-            <div class="driver-greet-card mt-4">
-                <div class="driver-greet-loader">
-                    <p>Welcome</p>
-                    <div class="driver-greet-words">
-                        <span class="driver-greet-word">{{ auth()->user()->name ?? 'Driver' }}</span>
-                        <span class="driver-greet-word">to Bwiser</span>
-                        <span class="driver-greet-word">Driver</span>
-                        <span class="driver-greet-word"> {{ auth()->user()->name ?? 'Driver' }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="driver-header-actions flex flex-col items-start md:items-end gap-3">
+	    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+	        <div>
+	            <p class="text-sm uppercase tracking-[0.2em] text-blue-600">Drive r Dashboard</p>
+	            <h1 class="brand-font text-3xl md:text-4xl font-semibold text-slate-900 mt-2">Driver Dashboard</h1>
+	            <p class="text-slate-600 mt-3">Apply for vouchers, locate stations, and manage repayments.</p>
+	            <div class="driver-greet-card mt-4">
+	                <div class="driver-greet-loader">
+	                    <p>Welcome</p>
+	                    <div class="driver-greet-words">
+	                        <span class="driver-greet-word">{{ auth()->user()->name ?? 'Driver' }}</span>
+	                        <span class="driver-greet-word">to Bwiser</span>
+	                        <span class="driver-greet-word">Driver</span>
+	                        <span class="driver-greet-word"> {{ auth()->user()->name ?? 'Driver' }}</span>
+	                    </div>
+	                </div>
+	            </div>
+	            <x-pending-approval-banner />
+	        </div>
+	        <div class="driver-header-actions flex flex-col items-start md:items-end gap-3">
            
             <div class="driver-header-cta flex flex-wrap gap-3 md:justify-end">
                 <a href="{{ route('driver.vouchers.create') }}" class="animated-button driver-apply-voucher-btn">
