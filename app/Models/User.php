@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\Crypt;
+use App\Notifications\VerifyEmailBwiser;
 
 class User extends Authenticatable implements MustVerifyEmailContract
 {
@@ -88,6 +89,11 @@ class User extends Authenticatable implements MustVerifyEmailContract
     ];
 
     protected $appends = ['available_credit'];
+
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyEmailBwiser());
+    }
 
     // Relationships
     public function wallet()
