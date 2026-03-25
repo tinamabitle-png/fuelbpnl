@@ -5,9 +5,7 @@ Disallow: /driver/
 Disallow: /merchant/
 Disallow: /employee/
 Disallow: /investor/
-Disallow: /login
 Disallow: /logout
-Disallow: /register
 Disallow: /auth/google/
 Disallow: /registration/
 Disallow: /setup-roles

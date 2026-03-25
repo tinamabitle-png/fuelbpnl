@@ -2,7 +2,6 @@
 
 @section('title', 'Merchant Registration')
 @section('meta_description', 'Register your fuel station or merchant account on Bwiser for voucher redemption and settlements.')
-@section('meta_robots', 'noindex,nofollow')
 
 @section('content')
 <section class="min-h-screen bg-slate-100 py-10 px-4">

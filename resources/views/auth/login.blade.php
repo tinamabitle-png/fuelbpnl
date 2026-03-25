@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Bwiser</title>
     <meta name="description" content="Secure sign-in portal for Bwiser platform users.">
-    <meta name="robots" content="noindex,nofollow">
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
     <link rel="canonical" href="{{ url()->current() }}">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Login | Bwiser">

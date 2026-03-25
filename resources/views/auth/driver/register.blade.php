@@ -2,7 +2,6 @@
 
 @section('title', 'Driver Registration')
 @section('meta_description', 'Register as a driver on Bwiser to access voucher and fuel finance workflows.')
-@section('meta_robots', 'noindex,nofollow')
 
 @section('content')
 <section class="min-h-screen bg-slate-100 py-10 px-4">

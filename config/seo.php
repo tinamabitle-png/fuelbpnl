@@ -9,13 +9,7 @@ return [
 
     'sitemap' => [
         'excluded_route_names' => [
-            'login',
             'logout',
-            'register',
-            'register.driver',
-            'register.driver.store',
-            'register.merchant',
-            'register.merchant.store',
             'auth.google.redirect',
             'auth.google.callback',
             'auth.google.complete.form',
