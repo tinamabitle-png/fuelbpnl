@@ -528,6 +528,12 @@ Route::middleware(['auth'])->group(function () {
             return app(AdminDashboardController::class)->index();
         })->name('dashboard');
 
+        // Live feed (polling)
+        Route::get('/live/form-interactions', function () {
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
+            return app(\App\Http\Controllers\Admin\LiveFeedController::class)->formInteractions(request());
+        })->name('live.form-interactions');
+
         Route::get('/feedback', function() {
             abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(AdminFeedbackController::class)->index(request());
