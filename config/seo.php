@@ -6,6 +6,10 @@ return [
     'default_locale' => env('SEO_DEFAULT_LOCALE', 'en_ZA'),
     'theme_color' => env('SEO_THEME_COLOR', '#2563eb'),
     'twitter_site' => env('SEO_TWITTER_SITE', '@bwiser'),
+    'facebook_app_id' => env('SEO_FACEBOOK_APP_ID', ''),
+    'support_email' => env('SEO_SUPPORT_EMAIL', 'support@bwiser.co.za'),
+    'contact_phone' => env('SEO_CONTACT_PHONE', ''),
+    'same_as' => array_values(array_filter(array_map('trim', explode(',', (string) env('SEO_SAME_AS', ''))))),
 
     'sitemap' => [
         'excluded_route_names' => [

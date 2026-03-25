@@ -14,6 +14,32 @@
 @endphp
 
 @section('og_image', $welcomeOgImageUrl)
+@section('og_image_alt', 'Bwiser Fuel Buy Now Pay Later')
+
+@push('head')
+    <script type="application/ld+json">
+    {!! json_encode([
+        '@context' => 'https://schema.org',
+        '@graph' => [
+            [
+                '@type' => 'WebPage',
+                'name' => 'Bwiser Fuel Buy Now Pay Later',
+                'url' => url('/'),
+                'description' => 'Bwiser is a South African fuel finance and payments platform for drivers, stations, vouchers, and settlements.',
+            ],
+            [
+                '@type' => 'MobileApplication',
+                'name' => 'BWiser Driver App',
+                'operatingSystem' => 'ANDROID',
+                'applicationCategory' => 'BusinessApplication',
+                'url' => 'https://bwiser.co.za',
+                'installUrl' => 'https://play.google.com/store/apps/details?id=za.bwiser.driverapp',
+                'downloadUrl' => 'https://play.google.com/store/apps/details?id=za.bwiser.driverapp',
+            ],
+        ],
+    ], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}
+    </script>
+@endpush
 
 @section('content')
 <section class="max-w-7xl mx-auto px-6 pt-16 pb-20">

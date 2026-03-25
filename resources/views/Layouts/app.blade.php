@@ -15,9 +15,11 @@
         $canonical = trim($__env->yieldContent('canonical', url()->current()));
         $ogType = trim($__env->yieldContent('og_type', 'website'));
         $ogImage = trim($__env->yieldContent('og_image', asset('images/brand-logo.png')));
+        $ogImageAlt = trim($__env->yieldContent('og_image_alt', $siteName . ' preview'));
         $locale = (string) config('seo.default_locale', 'en_ZA');
         $themeColor = (string) config('seo.theme_color', '#2563eb');
         $twitterSite = (string) config('seo.twitter_site', '@bwiser');
+        $facebookAppId = trim((string) config('seo.facebook_app_id', ''));
     @endphp
     <title>{{ $metaTitle }}</title>
     <meta name="description" content="{{ $metaDescription }}">
@@ -32,11 +34,16 @@
     <meta property="og:description" content="{{ $metaDescription }}">
     <meta property="og:url" content="{{ $canonical }}">
     <meta property="og:image" content="{{ $ogImage }}">
+    <meta property="og:image:alt" content="{{ $ogImageAlt }}">
+    @if($facebookAppId !== '')
+        <meta property="fb:app_id" content="{{ $facebookAppId }}">
+    @endif
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="{{ $twitterSite }}">
     <meta name="twitter:title" content="{{ $metaTitle }}">
     <meta name="twitter:description" content="{{ $metaDescription }}">
     <meta name="twitter:image" content="{{ $ogImage }}">
+    <meta name="twitter:image:alt" content="{{ $ogImageAlt }}">
     <script type="application/ld+json">
     {!! json_encode([
         '@context' => 'https://schema.org',
@@ -44,7 +51,9 @@
         'name' => $siteName,
         'url' => config('seo.site_url'),
         'logo' => asset('images/brand-logo.png'),
-        'sameAs' => [],
+        'email' => config('seo.support_email', 'support@bwiser.co.za'),
+        'telephone' => (string) config('seo.contact_phone', ''),
+        'sameAs' => (array) config('seo.same_as', []),
     ], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}
     </script>
     <link rel="icon" type="image/png" href="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}">
@@ -419,6 +428,7 @@
             opacity: .55;
         }
     </style>
+    @stack('head')
 </head>
 <body>
     <div class="min-h-screen flex flex-col">

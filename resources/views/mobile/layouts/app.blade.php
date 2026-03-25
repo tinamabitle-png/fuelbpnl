@@ -14,9 +14,11 @@
         $metaRobots = trim($__env->yieldContent('meta_robots', 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1'));
         $canonical = trim($__env->yieldContent('canonical', url()->current()));
         $ogImage = trim($__env->yieldContent('og_image', asset('images/brand-logo.png')));
+        $ogImageAlt = trim($__env->yieldContent('og_image_alt', $siteName . ' preview'));
         $locale = (string) config('seo.default_locale', 'en_ZA');
         $themeColor = (string) config('seo.theme_color', '#2563eb');
         $twitterSite = (string) config('seo.twitter_site', '@bwiser');
+        $facebookAppId = trim((string) config('seo.facebook_app_id', ''));
     @endphp
     <title>{{ $metaTitle }}</title>
     <meta name="description" content="{{ $metaDescription }}">
@@ -31,11 +33,16 @@
     <meta property="og:description" content="{{ $metaDescription }}">
     <meta property="og:url" content="{{ $canonical }}">
     <meta property="og:image" content="{{ $ogImage }}">
+    <meta property="og:image:alt" content="{{ $ogImageAlt }}">
+    @if($facebookAppId !== '')
+        <meta property="fb:app_id" content="{{ $facebookAppId }}">
+    @endif
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="{{ $twitterSite }}">
     <meta name="twitter:title" content="{{ $metaTitle }}">
     <meta name="twitter:description" content="{{ $metaDescription }}">
     <meta name="twitter:image" content="{{ $ogImage }}">
+    <meta name="twitter:image:alt" content="{{ $ogImageAlt }}">
     <script type="application/ld+json">
     {!! json_encode([
         '@context' => 'https://schema.org',
@@ -134,6 +141,7 @@
             font-family: var(--title-font);
         }
     </style>
+    @stack('head')
 </head>
 <body class="mobile-shell">
     <header class="px-4 pt-4">

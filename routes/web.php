@@ -322,6 +322,10 @@ Route::view('/legal/poppia', 'legal.poppia')->name('legal.poppia');
 Route::view('/legal/paia-manual', 'legal.paia')->name('legal.paia');
 Route::view('/legal/security-compliance', 'legal.security')->name('legal.security');
 
+// SEO landing pages (public/indexable)
+Route::view('/drivers', 'seo.drivers')->name('seo.drivers');
+Route::view('/merchants', 'seo.merchants')->name('seo.merchants');
+
 Route::get('/repayments/request/{repayment}', [DriverDashboardController::class, 'publicRepaymentRequest'])
     ->middleware('signed')
     ->name('driver.repayments.request.show');
