@@ -59,6 +59,27 @@
             </details>
         </div>
     </div>
+
+    <div class="glass rounded-2xl p-6 mt-8">
+        <h2 class="brand-font text-2xl font-semibold text-slate-900">Top cities</h2>
+        <p class="text-slate-700 mt-2">Find fuel voucher info for drivers by city.</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+            @foreach([
+                ['Johannesburg', url('/drivers/johannesburg')],
+                ['Pretoria', url('/drivers/pretoria')],
+                ['Cape Town', url('/drivers/cape-town')],
+                ['Durban', url('/drivers/durban')],
+                ['Sandton', url('/drivers/sandton')],
+                ['Soweto', url('/drivers/soweto')],
+                ['Centurion', url('/drivers/centurion')],
+                ['Mbombela', url('/drivers/mbombela')],
+            ] as $item)
+                <a class="inline-flex items-center rounded-full border border-slate-200 bg-white/70 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-white"
+                   href="{{ $item[1] }}">
+                    {{ $item[0] }}
+                </a>
+            @endforeach
+        </div>
+    </div>
 </section>
 @endsection
-

@@ -326,6 +326,29 @@ Route::view('/legal/security-compliance', 'legal.security')->name('legal.securit
 Route::view('/drivers', 'seo.drivers')->name('seo.drivers');
 Route::view('/merchants', 'seo.merchants')->name('seo.merchants');
 
+// City landing pages (explicit routes so they appear in sitemap.xml)
+$seoCities = [
+    'johannesburg' => 'Johannesburg',
+    'pretoria' => 'Pretoria',
+    'cape-town' => 'Cape Town',
+    'durban' => 'Durban',
+    'sandton' => 'Sandton',
+    'midrand' => 'Midrand',
+    'soweto' => 'Soweto',
+    'centurion' => 'Centurion',
+    'stellenbosch' => 'Stellenbosch',
+    'gqeberha' => 'Gqeberha',
+    'east-london' => 'East London',
+    'mbombela' => 'Mbombela',
+];
+
+foreach ($seoCities as $slug => $city) {
+    Route::view("/drivers/{$slug}", 'seo.drivers-city', ['city' => $city, 'slug' => $slug])
+        ->name("seo.drivers.city.{$slug}");
+    Route::view("/merchants/{$slug}", 'seo.merchants-city', ['city' => $city, 'slug' => $slug])
+        ->name("seo.merchants.city.{$slug}");
+}
+
 Route::get('/repayments/request/{repayment}', [DriverDashboardController::class, 'publicRepaymentRequest'])
     ->middleware('signed')
     ->name('driver.repayments.request.show');
