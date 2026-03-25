@@ -225,17 +225,18 @@
                                 Account Status
                             </label>
                             <div class="flex items-center space-x-2">
-                                <span class="px-3 py-1 rounded-full text-sm font-medium {{ $status[0] }} {{ $status[1] }}">
-                                    {{ $status[2] }}
-                                </span>
-                                <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST" class="inline">
-                                    @csrf
-                                    <button type="submit" 
-                                            class="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                                            onclick="return confirm('Are you sure you want to {{ $user->status === 'active' ? 'suspend' : 'activate' }} this user?')">
-                                        {{ $user->status === 'active' ? 'Suspend' : 'Activate' }}
-                                    </button>
-                                </form>
+	                                <span class="px-3 py-1 rounded-full text-sm font-medium {{ $status[0] }} {{ $status[1] }}">
+	                                    {{ $status[2] }}
+	                                </span>
+	                                <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST" class="inline">
+	                                    @csrf
+	                                    @method('PATCH')
+	                                    <button type="submit" 
+	                                            class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+	                                            onclick="return confirm('Are you sure you want to {{ $user->status === 'active' ? 'suspend' : 'activate' }} this user?')">
+	                                        {{ $user->status === 'active' ? 'Suspend' : 'Activate' }}
+	                                    </button>
+	                                </form>
                             </div>
                         </div>
                         <div>

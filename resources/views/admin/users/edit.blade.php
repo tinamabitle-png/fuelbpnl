@@ -220,15 +220,16 @@
                     </button>
                 </form>
 
-                <!-- Status Toggle -->
-                <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST" class="inline ml-3">
-                    @csrf
-                    <button type="submit" 
-                            onclick="return confirm('{{ $user->status === 'active' ? 'Suspend' : 'Activate' }} {{ $user->name }}?')"
-                            class="px-4 py-2 {{ $user->status === 'active' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-green-600 hover:bg-green-700' }} text-white rounded-lg transition-colors">
-                        {{ $user->status === 'active' ? 'Suspend User' : 'Activate User' }}
-                    </button>
-                </form>
+	                <!-- Status Toggle -->
+	                <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST" class="inline ml-3">
+	                    @csrf
+	                    @method('PATCH')
+	                    <button type="submit" 
+	                            onclick="return confirm('{{ $user->status === 'active' ? 'Suspend' : 'Activate' }} {{ $user->name }}?')"
+	                            class="px-4 py-2 {{ $user->status === 'active' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-green-600 hover:bg-green-700' }} text-white rounded-lg transition-colors">
+	                        {{ $user->status === 'active' ? 'Suspend User' : 'Activate User' }}
+	                    </button>
+	                </form>
             </div>
         </div>
         @endif

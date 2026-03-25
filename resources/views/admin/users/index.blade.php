@@ -396,6 +396,7 @@
                                 <!-- Quick Status Toggle -->
                                 <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST" class="inline">
                                     @csrf
+                                    @method('PATCH')
                                     <button type="submit" 
                                             class="text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-50 rounded-lg transition-colors group relative"
                                             title="{{ $user->status == 'active' ? 'Suspend User' : 'Activate User' }}">
