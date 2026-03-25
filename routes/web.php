@@ -402,7 +402,8 @@ Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 Route::get('/auth/google/complete', [GoogleAuthController::class, 'showCompleteForm'])->name('auth.google.complete.form');
 Route::post('/auth/google/complete', [GoogleAuthController::class, 'completeRegistration'])->name('auth.google.complete.store');
-Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
+// Accept both GET + POST so logout links don't throw MethodNotAllowed. POST remains recommended.
+Route::match(['GET', 'POST'], '/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/register', fn () => redirect()->route('register.driver'))->name('register');
 Route::get('/register/driver', [RegisterController::class, 'showDriver'])->name('register.driver');
 Route::post('/register/driver', [RegisterController::class, 'storeDriver'])->name('register.driver.store');
