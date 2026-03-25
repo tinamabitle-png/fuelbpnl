@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
@@ -375,9 +376,19 @@ class RegisterController extends Controller
 
         event(new UserRegistered($user, 'web_register_' . $role, $request->ip()));
 
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (\Throwable $e) {
+            Log::warning('Email verification notification failed', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         $redirect = redirect()
-            ->route('login')
-            ->with('status', ucfirst($role) . ' account created and submitted for admin approval.');
+            ->route('verification.notice', ['email' => (string) $user->email])
+            ->with('status', ucfirst($role) . ' account created. Please verify your email while your account is pending admin approval.');
 
         if ($role === 'driver') {
             $redirect->with('driver_registered_popup', [

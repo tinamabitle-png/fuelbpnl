@@ -14,6 +14,9 @@ return [
     'sitemap' => [
         'excluded_route_names' => [
             'logout',
+            'verification.notice',
+            'verification.verify',
+            'verification.send',
             'auth.google.redirect',
             'auth.google.callback',
             'auth.google.complete.form',

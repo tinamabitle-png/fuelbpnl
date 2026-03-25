@@ -7,6 +7,7 @@ Disallow: /employee/
 Disallow: /investor/
 Disallow: /logout
 Disallow: /auth/google/
+Disallow: /email/
 Disallow: /registration/
 Disallow: /setup-roles
 Disallow: /test-roles

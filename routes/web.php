@@ -39,6 +39,7 @@ use App\Http\Controllers\Investor\InvestorDashboardController;
 use App\Http\Controllers\Admin\InvestorController as AdminInvestorController;
 use App\Http\Controllers\FeedbackController;
 use App\Support\Seo\SitemapBuilder;
+use Illuminate\Auth\Events\Verified;
 
 // ========== PUBLIC ROUTES ==========
 Route::get('/', function () {
@@ -407,6 +408,51 @@ Route::get('/register/driver', [RegisterController::class, 'showDriver'])->name(
 Route::post('/register/driver', [RegisterController::class, 'storeDriver'])->name('register.driver.store');
 Route::get('/register/merchant', [RegisterController::class, 'showMerchant'])->name('register.merchant');
 Route::post('/register/merchant', [RegisterController::class, 'storeMerchant'])->name('register.merchant.store');
+
+// Email verification (works even if user cannot log in yet due to admin approval flow)
+Route::get('/email/verify', function () {
+    return view('auth.verify-email');
+})->name('verification.notice');
+
+Route::get('/email/verify/{id}/{hash}', function (Request $request, string $id, string $hash) {
+    $user = \App\Models\User::query()->findOrFail((int) $id);
+
+    if (!$request->hasValidSignature()) {
+        abort(403, 'Invalid or expired verification link.');
+    }
+
+    if (!hash_equals($hash, sha1($user->getEmailForVerification()))) {
+        abort(403, 'Invalid verification hash.');
+    }
+
+    if (!$user->hasVerifiedEmail()) {
+        $user->markEmailAsVerified();
+        event(new Verified($user));
+    }
+
+    return redirect()
+        ->route('login')
+        ->with('success', 'Email verified successfully. You can log in once your account is approved.');
+})->middleware(['signed'])->name('verification.verify');
+
+Route::post('/email/verification-notification', function (Request $request) {
+    $validated = $request->validate([
+        'email' => ['required', 'email'],
+    ]);
+
+    $user = \App\Models\User::query()->where('email', $validated['email'])->first();
+    if (!$user) {
+        return back()->withErrors(['email' => 'No account found for this email.']);
+    }
+
+    if ($user->hasVerifiedEmail()) {
+        return back()->with('success', 'This email is already verified.');
+    }
+
+    $user->sendEmailVerificationNotification();
+
+    return back()->with('success', 'Verification email sent. Please check your inbox.');
+})->middleware(['throttle:6,1'])->name('verification.send');
 Route::get('/geo/here/geocode', [HereMapsController::class, 'geocode'])
     ->middleware('throttle:120,1')
     ->name('here.geocode');
