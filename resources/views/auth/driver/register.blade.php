@@ -120,36 +120,10 @@
 	                    <label class="block text-sm font-medium text-slate-700">South African ID Number</label>
 	                    <input id="driver_id_number" name="id_number" type="text" value="{{ old('id_number') }}" required maxlength="13" pattern="[0-9]{13}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="13 digits">
 	                    @error('id_number')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
+                        <p class="text-xs text-slate-500 mt-2">
+                            Document uploads happen after signup in your dashboard. Voucher applications are enabled once documents are uploaded.
+                        </p>
 	                </div>
-
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-                    <p class="text-xs uppercase tracking-wide text-slate-600 font-semibold">Optional documents</p>
-                    <div class="grid grid-cols-1 gap-3">
-                        <div class="file-drop rounded-xl border-2 border-dashed border-blue-300 bg-white p-4 text-center cursor-pointer" data-target="id_document">
-                            <p class="text-sm font-semibold text-slate-800">ID Document (PDF/JPG/PNG)</p>
-                            <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload if available (max 8MB)</p>
-                            <p class="text-xs text-blue-700 mt-2 file-name" data-name-for="id_document">No file selected</p>
-                            <input type="file" name="id_document" id="id_document" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
-                        </div>
-                        @error('id_document')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
-
-                        <div class="file-drop rounded-xl border-2 border-dashed border-blue-300 bg-white p-4 text-center cursor-pointer" data-target="driver_license_document">
-                            <p class="text-sm font-semibold text-slate-800">Driver License (PDF/JPG/PNG)</p>
-                            <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload if available (max 8MB)</p>
-                            <p class="text-xs text-blue-700 mt-2 file-name" data-name-for="driver_license_document">No file selected</p>
-                            <input type="file" name="driver_license_document" id="driver_license_document" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
-                        </div>
-                        @error('driver_license_document')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
-
-                        <div class="file-drop rounded-xl border-2 border-dashed border-blue-300 bg-white p-4 text-center cursor-pointer" data-target="vehicle_license_document">
-                            <p class="text-sm font-semibold text-slate-800">Vehicle License (PDF/JPG/PNG)</p>
-                            <p class="text-xs text-slate-500 mt-1">Drag and drop or click to upload if available (max 8MB)</p>
-                            <p class="text-xs text-blue-700 mt-2 file-name" data-name-for="vehicle_license_document">No file selected</p>
-                            <input type="file" name="vehicle_license_document" id="vehicle_license_document" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
-                        </div>
-                        @error('vehicle_license_document')<p class="text-xs text-rose-600">{{ $message }}</p>@enderror
-                    </div>
-                </div>
 
                 <button type="submit" class="w-full rounded-xl bg-blue-600 text-white py-2.5 font-semibold hover:bg-blue-700">Create Driver Account</button>
             </form>

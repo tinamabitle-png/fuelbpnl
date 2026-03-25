@@ -261,6 +261,9 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $this->authorizeDriverPortal($user);
+        if ($redirect = $this->redirectIfDriverDocumentsMissing($user)) {
+            return $redirect;
+        }
 
         $stationsPayload = Cache::remember('driver:voucher:stations-payload:v1', now()->addMinute(), function () {
             $stations = FuelStation::where('status', 'active')
@@ -364,6 +367,9 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $this->authorizeDriverPortal($user);
+        if ($redirect = $this->redirectIfDriverDocumentsMissing($user)) {
+            return $redirect;
+        }
 
         $validated = $request->validate([
             'fuel_station_id' => 'required|exists:fuel_stations,id',
@@ -1025,6 +1031,47 @@ class DashboardController extends Controller
     private function authorizeDriverPortal($user): void
     {
         abort_unless($user && $user->hasAnyRole(['super_admin', 'admin', 'driver']), 403);
+    }
+
+    private function redirectIfDriverDocumentsMissing($user)
+    {
+        if (!$user || $user->hasAnyRole(['super_admin', 'admin'])) {
+            return null;
+        }
+
+        // Require at least SA ID + driver licence before voucher applications are enabled.
+        $requiredTypes = ['sa_id', 'driver_license'];
+        $providedTypes = [];
+
+        if (Schema::hasTable('driver_documents')) {
+            $providedTypes = $user->driverDocuments()
+                ->whereIn('document_type', $requiredTypes)
+                ->whereNotNull('document_path')
+                ->pluck('document_type')
+                ->map(fn ($v) => (string) $v)
+                ->unique()
+                ->values()
+                ->all();
+        }
+
+        // Fallback for legacy columns if present.
+        if (Schema::hasColumn('users', 'id_document_path') && !empty($user->id_document_path)) {
+            $providedTypes[] = 'sa_id';
+        }
+        if (Schema::hasColumn('users', 'driver_license_path') && !empty($user->driver_license_path)) {
+            $providedTypes[] = 'driver_license';
+        }
+
+        $providedTypes = array_values(array_unique($providedTypes));
+        $missing = array_diff($requiredTypes, $providedTypes);
+
+        if (!empty($missing)) {
+            return redirect()
+                ->route('driver.profile')
+                ->with('error', 'Upload your SA ID and driver licence in your dashboard before applying for vouchers.');
+        }
+
+        return null;
     }
 
     private function normalizePopularBrand(string $brand): string

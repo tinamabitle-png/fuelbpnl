@@ -13,6 +13,7 @@ use App\Services\VirtualCardService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class VirtualCardController extends Controller
@@ -20,6 +21,45 @@ class VirtualCardController extends Controller
     private function authorizeDriverPortal($user): void
     {
         abort_unless($user && $user->hasAnyRole(['super_admin', 'admin', 'driver']), 403);
+    }
+
+    private function redirectIfDriverDocumentsMissing($user)
+    {
+        if (!$user || $user->hasAnyRole(['super_admin', 'admin'])) {
+            return null;
+        }
+
+        $requiredTypes = ['sa_id', 'driver_license'];
+        $providedTypes = [];
+
+        if (Schema::hasTable('driver_documents')) {
+            $providedTypes = $user->driverDocuments()
+                ->whereIn('document_type', $requiredTypes)
+                ->whereNotNull('document_path')
+                ->pluck('document_type')
+                ->map(fn ($v) => (string) $v)
+                ->unique()
+                ->values()
+                ->all();
+        }
+
+        if (Schema::hasColumn('users', 'id_document_path') && !empty($user->id_document_path)) {
+            $providedTypes[] = 'sa_id';
+        }
+        if (Schema::hasColumn('users', 'driver_license_path') && !empty($user->driver_license_path)) {
+            $providedTypes[] = 'driver_license';
+        }
+
+        $providedTypes = array_values(array_unique($providedTypes));
+        $missing = array_diff($requiredTypes, $providedTypes);
+
+        if (!empty($missing)) {
+            return redirect()
+                ->route('driver.profile')
+                ->with('error', 'Upload your SA ID and driver licence in your dashboard before applying for vouchers.');
+        }
+
+        return null;
     }
 
     public function index()
@@ -256,6 +296,9 @@ class VirtualCardController extends Controller
     {
         $user = Auth::user();
         $this->authorizeDriverPortal($user);
+        if ($redirect = $this->redirectIfDriverDocumentsMissing($user)) {
+            return $redirect;
+        }
         abort_unless($card->user_id === $user->id, 404);
 
         $validated = $request->validate([
