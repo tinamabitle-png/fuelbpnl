@@ -329,17 +329,8 @@ Route::view('/merchants', 'seo.merchants')->name('seo.merchants');
 // City landing pages (explicit routes so they appear in sitemap.xml)
 $seoCities = [
     'johannesburg' => 'Johannesburg',
-    'pretoria' => 'Pretoria',
     'cape-town' => 'Cape Town',
     'durban' => 'Durban',
-    'sandton' => 'Sandton',
-    'midrand' => 'Midrand',
-    'soweto' => 'Soweto',
-    'centurion' => 'Centurion',
-    'stellenbosch' => 'Stellenbosch',
-    'gqeberha' => 'Gqeberha',
-    'east-london' => 'East London',
-    'mbombela' => 'Mbombela',
 ];
 
 foreach ($seoCities as $slug => $city) {

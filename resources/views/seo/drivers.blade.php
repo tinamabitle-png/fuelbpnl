@@ -66,13 +66,8 @@
         <div class="mt-4 flex flex-wrap gap-2">
             @foreach([
                 ['Johannesburg', url('/drivers/johannesburg')],
-                ['Pretoria', url('/drivers/pretoria')],
                 ['Cape Town', url('/drivers/cape-town')],
                 ['Durban', url('/drivers/durban')],
-                ['Sandton', url('/drivers/sandton')],
-                ['Soweto', url('/drivers/soweto')],
-                ['Centurion', url('/drivers/centurion')],
-                ['Mbombela', url('/drivers/mbombela')],
             ] as $item)
                 <a class="inline-flex items-center rounded-full border border-slate-200 bg-white/70 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-white"
                    href="{{ $item[1] }}">
