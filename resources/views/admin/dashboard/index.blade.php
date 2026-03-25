@@ -289,4 +289,128 @@
 
 </div>
 
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5" id="adminLiveFeed">
+    <div class="flex items-center justify-between gap-3">
+        <div>
+            <h3 class="text-lg font-semibold text-slate-900">Live Form Feed</h3>
+            <p class="text-sm text-slate-600 mt-1">New logins and registrations (IP and reported location).</p>
+        </div>
+        <button type="button" class="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-200" data-livefeed-clear>
+            Clear
+        </button>
+    </div>
+    <div class="mt-4 overflow-hidden rounded-lg border border-slate-200">
+        <div class="max-h-80 overflow-y-auto custom-scrollbar divide-y divide-slate-100" data-livefeed-list>
+            <div class="p-4 text-sm text-slate-500">Waiting for activity...</div>
+        </div>
+    </div>
+</div>
+
 @endsection
+
+@push('scripts')
+<script>
+(() => {
+    const endpoint = @json(route('admin.live.form-interactions'));
+    const list = document.querySelector('[data-livefeed-list]');
+    const clearBtn = document.querySelector('[data-livefeed-clear]');
+    if (!list) return;
+
+    const KEY = 'bwiser:admin:livefeed:lastId';
+    let lastId = Number(localStorage.getItem(KEY) || 0) || 0;
+
+    const toast = (() => {
+        const node = document.createElement('div');
+        node.className = 'fixed right-4 top-4 z-[100] hidden w-[min(420px,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white p-4 shadow-xl';
+        node.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-xs uppercase tracking-[1px] text-blue-600">New activity</p>
+              <p class="mt-1 text-sm font-semibold text-slate-900" data-toast-title></p>
+              <p class="mt-1 text-xs text-slate-600" data-toast-sub></p>
+            </div>
+            <button class="rounded-lg bg-slate-100 px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-200" type="button" data-toast-close>Close</button>
+          </div>
+        `;
+        document.body.appendChild(node);
+        const close = node.querySelector('[data-toast-close]');
+        close.addEventListener('click', () => node.classList.add('hidden'));
+        let timer = null;
+
+        return (title, sub) => {
+            node.querySelector('[data-toast-title]').textContent = title;
+            node.querySelector('[data-toast-sub]').textContent = sub || '';
+            node.classList.remove('hidden');
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => node.classList.add('hidden'), 6000);
+        };
+    })();
+
+    const renderRow = (item) => {
+        const div = document.createElement('div');
+        div.className = 'p-3 flex items-start justify-between gap-4';
+        const left = document.createElement('div');
+        left.innerHTML = `
+          <p class="text-sm font-semibold text-slate-900">${escapeHtml(item.form)} • ${escapeHtml(item.action)}${item.outcome ? ' • ' + escapeHtml(item.outcome) : ''}</p>
+          <p class="text-xs text-slate-600 mt-1">${escapeHtml(item.ip || '')}${item.location ? ' • ' + escapeHtml(item.location) : ''}${item.path ? ' • ' + escapeHtml(item.path) : ''}</p>
+        `;
+        const right = document.createElement('div');
+        right.className = 'text-right';
+        right.innerHTML = `
+          <p class="text-xs font-semibold text-slate-700">${escapeHtml(item.at_human || '')}</p>
+        `;
+        div.appendChild(left);
+        div.appendChild(right);
+        return div;
+    };
+
+    const escapeHtml = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    const appendItems = (items) => {
+        if (!items.length) return;
+
+        if (list.firstElementChild && list.firstElementChild.textContent?.includes('Waiting for activity')) {
+            list.innerHTML = '';
+        }
+
+        items.forEach((item) => list.prepend(renderRow(item)));
+
+        // Trim to 60 rows.
+        while (list.children.length > 60) {
+            list.removeChild(list.lastElementChild);
+        }
+    };
+
+    const poll = async () => {
+        try {
+            const url = new URL(endpoint, window.location.origin);
+            if (lastId > 0) url.searchParams.set('after_id', String(lastId));
+            url.searchParams.set('limit', '30');
+
+            const res = await fetch(url.toString(), { headers: { 'Accept': 'application/json' }});
+            if (!res.ok) return;
+            const data = await res.json();
+            const items = Array.isArray(data.items) ? data.items : [];
+            if (!items.length) return;
+
+            const maxId = items.reduce((m, it) => Math.max(m, Number(it.id) || 0), lastId);
+            lastId = maxId;
+            localStorage.setItem(KEY, String(lastId));
+
+            appendItems(items);
+            const newest = items[items.length - 1];
+            toast(`${newest.form} • ${newest.action}`, `${newest.ip || ''}${newest.location ? ' • ' + newest.location : ''}`);
+        } catch (_) {}
+    };
+
+    clearBtn?.addEventListener('click', () => {
+        list.innerHTML = '<div class="p-4 text-sm text-slate-500">Waiting for activity...</div>';
+        lastId = 0;
+        localStorage.removeItem(KEY);
+    });
+
+    poll();
+    setInterval(poll, 5000);
+})();
+</script>
+@endpush

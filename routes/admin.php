@@ -8,11 +8,15 @@ use App\Http\Controllers\Admin\StationController;
 use App\Http\Controllers\Admin\LeaseController;
 use App\Http\Controllers\Admin\SettlementController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\LiveFeedController;
 
 Route::middleware(['auth', 'role:super_admin|employee'])->prefix('admin')->name('admin.')->group(function () {
     
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Live feed (polling)
+    Route::get('/live/form-interactions', [LiveFeedController::class, 'formInteractions'])->name('live.form-interactions');
     
     // Users
     Route::resource('users', UserController::class);

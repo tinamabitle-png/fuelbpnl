@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use App\Models\User;
 use App\Services\AuditTrailService;
+use App\Services\FormInteractionService;
 
 class LoginController extends Controller
 {
@@ -30,6 +31,8 @@ class LoginController extends Controller
             $request->session()->regenerate();
             
             $user = Auth::user();
+
+            FormInteractionService::record('login', 'submit', $request, 'ok');
             
             // Update last login
             $user->update([
@@ -91,6 +94,8 @@ class LoginController extends Controller
             ['email' => (string) $request->input('email')],
             'Login failed'
         );
+
+        FormInteractionService::record('login', 'submit', $request, 'fail');
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',

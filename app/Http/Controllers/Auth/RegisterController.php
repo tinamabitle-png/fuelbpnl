@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
+use App\Services\FormInteractionService;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
@@ -385,6 +386,17 @@ class RegisterController extends Controller
                 'error' => $e->getMessage(),
             ]);
         }
+
+        FormInteractionService::record(
+            'register_' . $role,
+            'submit',
+            $request,
+            'ok',
+            [
+                'submitted_city' => (string) ($request->input('city') ?? ''),
+                'submitted_country' => (string) ($request->input('country') ?? ''),
+            ]
+        );
 
         $redirect = redirect()
             ->route('verification.notice', ['email' => (string) $user->email])
