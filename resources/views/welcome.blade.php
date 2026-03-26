@@ -69,7 +69,7 @@
                     Fuel Infrastructure Finance and Voucher Payments,
                     <br>
                     <span class="text-white italic">easy as <span class="inline-block rounded-full bg-white px-3 py-1" style="color: #2563eb;">padel</span></span>
-                    <span class="hero-gradient-text block">Built for Real-Time Operations</span>
+                    <span class="hero-gradient-text block">Built for Real-Time <span class="inline-block rounded-full bg-white px-3 py-1" style="color: #2563eb;">Operations</span></span>
                 </h1>
                 <div class="mt-7 flex flex-wrap gap-3">
                     @auth
