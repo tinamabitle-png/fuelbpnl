@@ -42,10 +42,10 @@
         <section class="mobile-card p-4">
             <div class="mt-3 flex items-center gap-3">
                 <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                    <img src="{{ asset('images/cards/visa.png') }}" alt="Visa logo" class="h-7 w-auto object-contain" loading="lazy">
+                    <img src="{{ asset('images/cards/visa.png') }}" alt="Visa logo" class="h-14 w-auto object-contain" loading="lazy">
                 </div>
                 <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                    <img src="{{ asset('images/cards/mastercard.png') }}" alt="Mastercard logo" class="h-7 w-auto object-contain" loading="lazy">
+                    <img src="{{ asset('images/cards/mastercard.png') }}" alt="Mastercard logo" class="h-14 w-auto object-contain" loading="lazy">
                 </div>
             </div>
             <div class="mt-3 flex flex-wrap items-center gap-2">
@@ -54,9 +54,11 @@
                     ['name' => 'Uber Eats', 'path' => 'images/driver-platforms/uber-eats.svg'],
                     ['name' => 'inDrive', 'path' => 'images/driver-platforms/indrive.png'],
                     ['name' => 'Takealot', 'path' => 'images/driver-platforms/takealot.png'],
+                    ['name' => 'Mr D', 'path' => 'images/driver-platforms/mrd.png'],
+                    ['name' => 'Sixty60', 'path' => 'images/driver-platforms/sixty60.png'],
                 ] as $p)
                     <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                        <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-6 w-auto object-contain" loading="lazy">
+                        <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-12 w-auto object-contain" loading="lazy">
                     </div>
                 @endforeach
             </div>
