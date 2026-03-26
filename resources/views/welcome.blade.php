@@ -109,6 +109,41 @@
         </div>
     </div>
 
+    <div class="glass rounded-2xl p-6 mt-8">
+        <div class="grid gap-6 md:grid-cols-2">
+            <div>
+                <p class="text-xs uppercase tracking-[1px] text-blue-600">Card Networks</p>
+                <p class="text-sm text-slate-600 mt-2">Voucher redemptions and settlements are designed for mainstream card rails.</p>
+                <div class="mt-4 flex flex-wrap items-center gap-3">
+                    <div class="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
+                        <img src="{{ asset('images/cards/visa.png') }}" alt="Visa logo" class="h-7 w-auto object-contain" loading="lazy">
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
+                        <img src="{{ asset('images/cards/mastercard.png') }}" alt="Mastercard logo" class="h-7 w-auto object-contain" loading="lazy">
+                    </div>
+                </div>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-[1px] text-blue-600">Mobility Partners</p>
+                <p class="text-sm text-slate-600 mt-2">Built for drivers across ride-hailing, delivery, and retail logistics workflows.</p>
+                <div class="mt-4 flex flex-wrap items-center gap-3">
+                    @foreach ([
+                        ['name' => 'Uber', 'file' => 'uber.png'],
+                        ['name' => 'Uber Eats', 'file' => 'uber-eats.png'],
+                        ['name' => 'inDrive', 'file' => 'indrive.png'],
+                        ['name' => 'Mr D', 'file' => 'mrd.png'],
+                        ['name' => 'Takealot', 'file' => 'takealot.png'],
+                        ['name' => 'Sixty60', 'file' => 'sixty60.png'],
+                    ] as $p)
+                        <div class="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
+                            <img src="{{ asset('images/partners/' . $p['file']) }}" alt="{{ $p['name'] }} logo" class="h-6 w-auto object-contain" loading="lazy">
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="grid gap-8 lg:grid-cols-2 mt-8 items-stretch">
         <div class="glass rounded-2xl p-6">
             <div class="flex items-start gap-5">
