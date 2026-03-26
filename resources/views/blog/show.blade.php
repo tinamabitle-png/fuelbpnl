@@ -61,9 +61,6 @@
                 <div class="mt-7 overflow-hidden rounded-2xl border border-slate-200 bg-white">
                     <img src="{{ $img }}" alt="{{ $imgAlt }}" class="w-full h-[280px] object-cover" loading="lazy">
                 </div>
-                <p class="mt-2 text-[11px] text-slate-500">
-                    Photo source: Unsplash (royalty-free).
-                </p>
             @endif
 
             @if(!empty($keywords))
@@ -105,4 +102,3 @@
     </div>
 </section>
 @endsection
-
