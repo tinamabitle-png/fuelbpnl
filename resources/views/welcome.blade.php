@@ -48,6 +48,20 @@
         <div class="welcome-hero-overlay" aria-hidden="true"></div>
         @php
             $recentDrivers = collect((array) (($welcomeStats ?? [])['recent_drivers'] ?? []))->take(4);
+            $dashboardUrl = null;
+            if (auth()->check()) {
+                $user = auth()->user();
+
+                if ($user?->hasAnyRole(['super_admin', 'admin', 'employee'])) {
+                    $dashboardUrl = route('employee.dashboard');
+                } elseif ($user?->hasRole('merchant')) {
+                    $dashboardUrl = route('merchant.dashboard');
+                } elseif ($user?->hasRole('driver')) {
+                    $dashboardUrl = route('driver.dashboard');
+                } else {
+                    $dashboardUrl = Route::has('login') ? route('login') : '/login';
+                }
+            }
         @endphp
         <div class="max-w-4xl relative z-[1]">
             <div class="min-w-0">
@@ -58,9 +72,22 @@
                     <span class="hero-gradient-text block">Built for Real-Time Operations</span>
                 </h1>
                 <div class="mt-7 flex flex-wrap gap-3">
-                    <a class="super-button" href="{{ Route::has('login') ? route('login') : '/login' }}">
-                        <span>Get Started</span>
-                    </a>
+                    @auth
+                        @if($dashboardUrl)
+                            <a class="bw-dashboard-button" href="{{ $dashboardUrl }}">
+                                <svg class="bw-dashboard-bell" viewBox="0 0 448 512" aria-hidden="true" focusable="false">
+                                    <path d="M224 0c-17.7 0-32 14.3-32 32V49.9C119.5 61.4 64 124.2 64 200v33.4c0 45.4-15.5 89.5-43.8 124.9L5.3 377c-5.8 7.2-6.9 17.1-2.9 25.4S14.8 416 24 416H424c9.2 0 17.6-5.3 21.6-13.6s2.9-18.2-2.9-25.4l-14.9-18.6C399.5 322.9 384 278.8 384 233.4V200c0-75.8-55.5-138.6-128-150.1V32c0-17.7-14.3-32-32-32zm0 96h8c57.4 0 104 46.6 104 104v33.4c0 47.9 13.9 94.6 39.7 134.6H72.3C98.1 328 112 281.3 112 233.4V200c0-57.4 46.6-104 104-104h8zm64 352H224 160c0 17 6.7 33.3 18.7 45.3s28.3 18.7 45.3 18.7s33.3-6.7 45.3-18.7s18.7-28.3 18.7-45.3z"></path>
+                                </svg>
+                                <span class="bw-dashboard-label">Go to Dashboard</span>
+                                <span class="bw-dashboard-arrow" aria-hidden="true">›</span>
+                            </a>
+                        @endif
+                    @endauth
+                    @guest
+                        <a class="super-button" href="{{ Route::has('login') ? route('login') : '/login' }}">
+                            <span>Get Started</span>
+                        </a>
+                    @endguest
                     <a
                         class="playstore-button"
                         href="https://play.google.com/store/apps/details?id=za.bwiser.driverapp"
@@ -508,6 +535,85 @@
 
     .playstore-button .text-2 {
         font-weight: 600;
+    }
+
+    .bw-dashboard-button {
+        width: min(260px, 100%);
+        min-height: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 12px;
+        padding: 0 18px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.9));
+        color: rgba(255, 255, 255, 0.98);
+        text-decoration: none;
+        position: relative;
+        cursor: pointer;
+        transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+        backdrop-filter: blur(10px);
+    }
+
+    .bw-dashboard-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 18px 34px rgba(15, 23, 42, 0.24);
+    }
+
+    .bw-dashboard-button:focus-visible {
+        outline: 3px solid rgba(37, 99, 235, 0.45);
+        outline-offset: 2px;
+    }
+
+    .bw-dashboard-bell {
+        width: 14px;
+        height: 14px;
+        flex: 0 0 14px;
+    }
+
+    .bw-dashboard-bell path {
+        fill: rgb(0, 206, 62);
+    }
+
+    .bw-dashboard-label {
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: 0.2px;
+        white-space: nowrap;
+    }
+
+    .bw-dashboard-arrow {
+        position: absolute;
+        right: 12px;
+        width: 28px;
+        height: 100%;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.85;
+    }
+
+    .bw-dashboard-button:hover .bw-dashboard-arrow {
+        animation: bw-slide-right .6s ease-out both;
+    }
+
+    @keyframes bw-slide-right {
+        0% {
+            transform: translateX(-10px);
+            opacity: 0;
+        }
+
+        100% {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    .bw-dashboard-button:active {
+        transform: translate(1px, 1px);
     }
 
     .slack-loader-shell {

@@ -7,6 +7,22 @@
 <main class="px-4 pb-8 pt-6">
     <div class="mx-auto max-w-md space-y-4">
         <section class="mobile-card p-5">
+            @php
+                $dashboardUrl = null;
+                if (auth()->check()) {
+                    $user = auth()->user();
+
+                    if ($user?->hasAnyRole(['super_admin', 'admin', 'employee'])) {
+                        $dashboardUrl = route('employee.dashboard');
+                    } elseif ($user?->hasRole('merchant')) {
+                        $dashboardUrl = route('merchant.dashboard');
+                    } elseif ($user?->hasRole('driver')) {
+                        $dashboardUrl = route('driver.dashboard');
+                    } else {
+                        $dashboardUrl = Route::has('login') ? route('login') : '/login';
+                    }
+                }
+            @endphp
             <p class="text-xs uppercase tracking-[0.25em] text-blue-700">Bwiser Platform</p>
             <h1 class="mt-3 text-3xl font-semibold leading-tight text-slate-900">
                 Fuel Credit, Voucher Issuance and Settlement
@@ -16,17 +32,26 @@
                 Bwiser connects field users and operations teams with real-time voucher processing, credit control, and settlement workflows backed by your existing APIs.
             </p>
             <div class="mt-5 grid grid-cols-1 gap-2">
-                <a href="{{ route('register.driver') }}" class="rounded-xl bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white">
-                    Register Driver
-                </a>
-                @if(config('services.registration.public_merchant_enabled'))
-                    <a href="{{ route('register.merchant') }}" class="rounded-xl border border-blue-200 px-4 py-3 text-center text-sm font-semibold text-blue-700 bg-white">
-                        Register Merchant
+                @auth
+                    @if($dashboardUrl)
+                        <a href="{{ $dashboardUrl }}" class="rounded-xl bg-slate-900 px-4 py-3 text-center text-sm font-semibold text-white">
+                            Go to Dashboard
+                        </a>
+                    @endif
+                @endauth
+                @guest
+                    <a href="{{ route('register.driver') }}" class="rounded-xl bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white">
+                        Register Driver
                     </a>
-                @endif
-                <a href="{{ route('login') }}" class="rounded-xl border border-slate-300 px-4 py-3 text-center text-sm font-semibold text-slate-700 bg-white">
-                    Sign In
-                </a>
+                    @if(config('services.registration.public_merchant_enabled'))
+                        <a href="{{ route('register.merchant') }}" class="rounded-xl border border-blue-200 px-4 py-3 text-center text-sm font-semibold text-blue-700 bg-white">
+                            Register Merchant
+                        </a>
+                    @endif
+                    <a href="{{ route('login') }}" class="rounded-xl border border-slate-300 px-4 py-3 text-center text-sm font-semibold text-slate-700 bg-white">
+                        Sign In
+                    </a>
+                @endguest
             </div>
         </section>
 
