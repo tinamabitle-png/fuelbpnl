@@ -327,6 +327,18 @@ Route::view('/legal/security-compliance', 'legal.security')->name('legal.securit
 Route::view('/drivers', 'seo.drivers')->name('seo.drivers');
 Route::view('/merchants', 'seo.merchants')->name('seo.merchants');
 
+// Intent landing pages (public/indexable, explicit routes so they appear in sitemap.xml)
+$intentPages = (array) config('intent_pages', []);
+foreach ($intentPages as $slug => $page) {
+    $slug = trim((string) $slug);
+    if ($slug === '' || !is_array($page)) {
+        continue;
+    }
+
+    Route::view("/intent/{$slug}", 'seo.intent', ['page' => $page, 'slug' => $slug])
+        ->name("seo.intent.{$slug}");
+}
+
 // City landing pages (explicit routes so they appear in sitemap.xml)
 $seoCities = [
     'johannesburg' => 'Johannesburg',

@@ -149,11 +149,13 @@
         <div class="mx-auto max-w-md mobile-card px-4 py-3">
             <div class="flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
-                    <img
-                        src="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}"
-                        alt="Bwiser logo"
-                        class="h-10 w-10 rounded-xl object-cover"
-                    >
+                    <a href="{{ url('/') }}" aria-label="Bwiser home" class="inline-flex items-center hover:opacity-95">
+                        <img
+                            src="{{ asset('images/brand-logo.png') }}?v={{ filemtime(public_path('images/brand-logo.png')) }}"
+                            alt="Bwiser logo"
+                            class="h-10 w-10 rounded-xl object-cover"
+                        >
+                    </a>
                     <div>
                         <p class="mobile-brand-font text-base font-semibold text-slate-900 leading-tight">Bwiser</p>
                         <p class="text-[11px] uppercase tracking-[0.18em] text-blue-700">Control Platform</p>

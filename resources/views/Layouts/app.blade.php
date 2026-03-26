@@ -436,7 +436,7 @@
         <header class="sticky top-0 z-30">
             <div class="glass">
                 <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
+                    <a href="{{ url('/') }}" class="flex items-center gap-3 hover:opacity-95" aria-label="Bwiser home">
                         <x-logo-shell size="md">
                             <x-brand-mark class="h-7 w-auto" />
                         </x-logo-shell>
@@ -444,7 +444,7 @@
                             <p class="brand-font text-lg font-semibold text-slate-900">Bwiser</p>
                             <p class="text-xs text-slate-500">Buy now, pay later for fuel</p>
                         </div>
-                    </div>
+                    </a>
                     <nav class="flex items-center gap-3 text-sm">
                         <span class="preprod-badge" aria-label="Pre-production environment">PRE-PRODUCTION</span>
                         @auth
@@ -471,10 +471,12 @@
             <div class="max-w-6xl mx-auto px-6 py-8 text-sm text-slate-500">
                 <div class="flex flex-col md:flex-row justify-between gap-4">
                 <div class="flex items-center gap-2">
-                    <x-logo-shell size="sm">
-                        <x-brand-mark class="h-5 w-auto" />
-                    </x-logo-shell>
-                    <span>© {{ date('Y') }} Bwiser. All rights reserved.</span>
+                    <a href="{{ url('/') }}" class="inline-flex items-center gap-2 hover:opacity-95" aria-label="Bwiser home">
+                        <x-logo-shell size="sm">
+                            <x-brand-mark class="h-5 w-auto" />
+                        </x-logo-shell>
+                        <span>© {{ date('Y') }} Bwiser. All rights reserved.</span>
+                    </a>
                 </div>
                 <div class="flex items-center gap-6">
                     <span>Support: support@bwiser.co.za</span>
