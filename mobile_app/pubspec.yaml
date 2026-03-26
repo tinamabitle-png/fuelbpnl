@@ -78,6 +78,8 @@ flutter:
     - assets/images/driver_logo.png
     - assets/images/app_logo.png
     - assets/images/brands/
+    - assets/images/cards/
+    - assets/images/partners/
     - assets/audio/wiser.wav
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -36,6 +36,14 @@ class _DriverVirtualCardsPageState extends State<DriverVirtualCardsPage> {
   final Map<int, String> revealedPanByCardId = <int, String>{};
   final Map<int, String> revealedCvvByCardId = <int, String>{};
 
+  String _schemeAsset(VirtualCardItem card) {
+    final scheme = (card.cardScheme ?? '').toLowerCase();
+    if (scheme.contains('master')) {
+      return 'assets/images/cards/mastercard.png';
+    }
+    return 'assets/images/cards/visa.png';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -808,8 +816,8 @@ class _DriverVirtualCardsPageState extends State<DriverVirtualCardsPage> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Image.network(
-                              'https://assets.codepen.io/14762/visa-virtual.svg',
+                            Image.asset(
+                              _schemeAsset(card),
                               height: 38,
                               errorBuilder: (_, _, _) =>
                                   const SizedBox.shrink(),
@@ -832,7 +840,7 @@ class _DriverVirtualCardsPageState extends State<DriverVirtualCardsPage> {
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        'Allocated: ${card.currency} ${card.allocatedAmount.toStringAsFixed(2)}',
+                        'Allocated: ${formatMoney(card.allocatedAmount, currencyCode: card.currency)}',
                         style: const TextStyle(
                           color: Color(0xFF111827),
                           fontWeight: FontWeight.w800,

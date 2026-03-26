@@ -440,6 +440,8 @@ class _DriverHomePageState extends State<DriverHomePage> {
           const SizedBox(height: 12),
           _brandsCard(),
           const SizedBox(height: 12),
+          _mobilityPartnersCard(),
+          const SizedBox(height: 12),
           _wisdomCard(),
           const SizedBox(height: 12),
           const FeedbackPanel(compact: true),
@@ -777,6 +779,95 @@ class _DriverHomePageState extends State<DriverHomePage> {
                       ),
                     );
                   },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _mobilityPartnersCard() {
+    const partners = <Map<String, String>>[
+      {'name': 'Uber', 'logo': 'assets/images/partners/uber.png'},
+      {'name': 'Uber Eats', 'logo': 'assets/images/partners/uber-eats.png'},
+      {'name': 'inDrive', 'logo': 'assets/images/partners/indrive.png'},
+      {'name': 'Mr D', 'logo': 'assets/images/partners/mrd.png'},
+      {'name': 'Takealot', 'logo': 'assets/images/partners/takealot.png'},
+      {'name': 'Sixty60', 'logo': 'assets/images/partners/sixty60.png'},
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1220),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF334155)),
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Mobility Partners',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFE2E8F0),
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.local_shipping_rounded,
+                color: AppTheme.primaryBlue,
+                size: 18,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Where drivers earn: ride-hailing, delivery, and retail logistics.',
+            style: TextStyle(color: Color(0xFF94A3B8)),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 80,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: partners.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 10),
+              itemBuilder: (context, i) {
+                final p = partners[i];
+                return Container(
+                  width: 110,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF334155)),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF111827), Color(0xFF1F2937)],
+                    ),
+                  ),
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Image.asset(
+                        p['logo'] ?? '',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => Text(
+                          p['name'] ?? 'Partner',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                            color: AppTheme.slate,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 );
               },
             ),
