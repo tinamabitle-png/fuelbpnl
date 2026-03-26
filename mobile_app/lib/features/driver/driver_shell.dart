@@ -16,6 +16,7 @@ import '../../core/logo_mark.dart';
 import '../../core/theme.dart';
 import '../../data/api_client.dart';
 import '../../data/models.dart';
+import '../../shared/currency.dart';
 import 'virtual_cards_page.dart';
 
 class DriverShell extends StatefulWidget {
@@ -70,8 +71,8 @@ class _DriverShellState extends State<DriverShell> {
         if (_seenApprovedVoucherIds.add(voucher.id)) {
           if (!mounted) return;
           final station = (voucher.stationName ?? 'station').trim();
-          final amount = voucher.amount.toStringAsFixed(2);
-          final message = 'Voucher approved at $station • ZAR $amount';
+          final message =
+              'Voucher approved at $station • ${formatMoney(voucher.amount)}';
           _notifications.insert(
             0,
             '${DateTime.now().toLocal().toString().substring(11, 16)}  $message',
@@ -416,7 +417,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 : 'Active Voucher • ${latest.stationName ?? 'Station'}',
             value: latest == null
                 ? 'No active voucher'
-                : 'ZAR ${latest.amount.toStringAsFixed(2)}',
+                : formatMoney(latest.amount),
             gradient: const LinearGradient(
               colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
             ),
@@ -427,7 +428,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
             title: 'Next Repayment',
             value: nextRepayment == null
                 ? 'No upcoming repayments'
-                : 'Due ${_fmtDate(nextRepayment.dueDate)} • ZAR ${nextRepayment.amount.toStringAsFixed(2)}',
+                : 'Due ${_fmtDate(nextRepayment.dueDate)} • ${formatMoney(nextRepayment.amount)}',
             gradient: const LinearGradient(
               colors: [Color(0xFF172554), Color(0xFF312E81)],
             ),
@@ -489,7 +490,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
           ),
           const SizedBox(height: 10),
           Text(
-            'Balance: ZAR ${balance.toStringAsFixed(2)}',
+            'Balance: ${formatMoney(balance)}',
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w800,
@@ -497,7 +498,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Available: ZAR ${available.toStringAsFixed(2)} • Reserved: ZAR ${reserved.toStringAsFixed(2)} • Allocated: ZAR ${allocated.toStringAsFixed(2)}',
+            'Available: ${formatMoney(available)} • Reserved: ${formatMoney(reserved)} • Allocated: ${formatMoney(allocated)}',
             style: TextStyle(color: Colors.white.withValues(alpha: 0.75)),
           ),
           const SizedBox(height: 12),
@@ -1066,7 +1067,7 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'ZAR ${v.amount.toStringAsFixed(2)}',
+            formatMoney(v.amount),
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -1697,7 +1698,7 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                         ),
                       ),
                       Text(
-                        'ZAR ${v.amount.toStringAsFixed(2)} • ${v.status}',
+                        '${formatMoney(v.amount)} • ${v.status}',
                         style: const TextStyle(color: Color(0xFF94A3B8)),
                       ),
                       const SizedBox(height: 12),
@@ -2822,7 +2823,7 @@ class _DriverApplyVoucherPageState extends State<DriverApplyVoucherPage> {
                   controller: amountCtrl,
                   style: const TextStyle(color: Color(0xFFFFFFFF)),
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Amount (ZAR)'),
+                  decoration: const InputDecoration(labelText: 'Amount (R)'),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
@@ -3077,7 +3078,7 @@ class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'ZAR ${item.amount.toStringAsFixed(2)}',
+                      formatMoney(item.amount),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -3259,7 +3260,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       final checkout = await widget.api.initializeAutopayPaystack(email: email);
       final authUrl = (checkout['authorization_url'] ?? '').toString();
       final reference = (checkout['reference'] ?? '').toString();
-      final probe = (checkout['probe_amount'] ?? 0).toString();
+      final probe = double.tryParse('${checkout['probe_amount'] ?? 0}') ?? 0;
       if (authUrl.isEmpty || reference.isEmpty) {
         throw Exception('Paystack AutoPay initialization is incomplete.');
       }
@@ -3278,7 +3279,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
         builder: (context) => AlertDialog(
           title: const Text('Confirm AutoPay Authorization'),
           content: Text(
-            'Complete the small Paystack authorization transaction (about ZAR $probe), then tap Confirm.',
+            'Complete the small Paystack authorization transaction (about ${formatMoney(probe)}), then tap Confirm.',
           ),
           actions: [
             TextButton(

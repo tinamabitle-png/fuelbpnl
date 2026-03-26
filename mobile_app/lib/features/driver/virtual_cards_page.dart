@@ -4,6 +4,7 @@ import '../../core/app_loader.dart';
 import '../../core/fx_button.dart';
 import '../../data/api_client.dart';
 import '../../data/models.dart';
+import '../../shared/currency.dart';
 
 class DriverVirtualCardsPage extends StatefulWidget {
   const DriverVirtualCardsPage({super.key, required this.api});
@@ -179,7 +180,7 @@ class _DriverVirtualCardsPageState extends State<DriverVirtualCardsPage> {
           controller: ctrl,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: const InputDecoration(
-            labelText: 'Amount (ZAR)',
+            labelText: 'Amount (R)',
             hintText: 'e.g. 200',
           ),
         ),
@@ -413,7 +414,7 @@ class _DriverVirtualCardsPageState extends State<DriverVirtualCardsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Wallet (ZAR)',
+            'Wallet (R)',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.86),
               fontWeight: FontWeight.w700,
@@ -467,7 +468,7 @@ class _DriverVirtualCardsPageState extends State<DriverVirtualCardsPage> {
         border: Border.all(color: const Color(0xFF1F2937)),
       ),
       child: Text(
-        '$label: ZAR ${value.toStringAsFixed(2)}',
+        '$label: ${formatMoney(value)}',
         style: const TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.w700,
