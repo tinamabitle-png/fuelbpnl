@@ -143,6 +143,7 @@ class _StationMenuBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF0B1220),
@@ -152,6 +153,8 @@ class _StationMenuBar extends StatelessWidget {
         ),
         border: const Border(top: BorderSide(color: Color(0xFF334155))),
       ),
+      // Keep the in-app bottom nav above the Android system navigation bar (3-button/gesture).
+      padding: EdgeInsets.only(bottom: bottomInset),
       child: Row(
         children: [
           _item(0, Icons.history_rounded, 'History'),

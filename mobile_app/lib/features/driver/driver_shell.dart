@@ -222,6 +222,7 @@ class _DriverBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.of(context).size.width < 390;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
     final items = <_DriverNavItem>[
       const _DriverNavItem('Home', Icons.home_outlined),
       const _DriverNavItem('Vouchers', Icons.confirmation_number_outlined),
@@ -235,7 +236,8 @@ class _DriverBottomNav extends StatelessWidget {
         color: Color(0xFF0B1220),
         border: Border(top: BorderSide(color: Color(0xFF334155))),
       ),
-      padding: const EdgeInsets.only(top: 4, bottom: 4),
+      // Keep the in-app bottom nav above the Android system navigation bar (3-button/gesture).
+      padding: EdgeInsets.only(top: 4, bottom: 4 + bottomInset),
       child: Row(
         children: List.generate(items.length, (i) {
           final active = selectedIndex == i;

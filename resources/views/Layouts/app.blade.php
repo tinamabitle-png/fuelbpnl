@@ -454,8 +454,11 @@
                             </form>
                         @else
                             <a class="btn-ghost px-4 py-2 rounded-xl" href="{{ Route::has('login') ? route('login') : '/login' }}">Login</a>
-                            @if(Route::has('investor.register'))
-                                <a class="btn-primary px-4 py-2 rounded-xl" href="{{ route('investor.register') }}">Get Started</a>
+                            @if(Route::has('register.driver'))
+                                <a class="btn-primary px-4 py-2 rounded-xl" href="{{ route('register.driver') }}">Driver signup</a>
+                            @endif
+                            @if(Route::has('register.merchant'))
+                                <a class="btn-ghost px-4 py-2 rounded-xl" href="{{ route('register.merchant') }}">Merchant signup</a>
                             @endif
                         @endauth
                     </nav>
