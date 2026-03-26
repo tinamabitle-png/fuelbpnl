@@ -327,6 +327,29 @@ Route::view('/legal/security-compliance', 'legal.security')->name('legal.securit
 Route::view('/drivers', 'seo.drivers')->name('seo.drivers');
 Route::view('/merchants', 'seo.merchants')->name('seo.merchants');
 
+// Blog (public/indexable, explicit routes so they appear in sitemap.xml)
+Route::get('/blog', function () {
+    $posts = (array) config('blog_posts', []);
+    usort($posts, static function (array $a, array $b): int {
+        return strcmp((string) ($b['date'] ?? ''), (string) ($a['date'] ?? ''));
+    });
+    return view('blog.index', ['posts' => $posts]);
+})->name('blog.index');
+
+$blogPosts = (array) config('blog_posts', []);
+foreach ($blogPosts as $post) {
+    if (!is_array($post)) {
+        continue;
+    }
+    $slug = trim((string) ($post['slug'] ?? ''));
+    if ($slug === '') {
+        continue;
+    }
+    Route::get("/blog/{$slug}", function () use ($post) {
+        return view('blog.show', ['post' => $post]);
+    })->name("blog.show.{$slug}");
+}
+
 // Intent landing pages (public/indexable, explicit routes so they appear in sitemap.xml)
 $intentPages = (array) config('intent_pages', []);
 foreach ($intentPages as $slug => $page) {
