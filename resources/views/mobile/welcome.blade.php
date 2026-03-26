@@ -40,7 +40,6 @@
         </section>
 
         <section class="mobile-card p-4">
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Card Networks</p>
             <div class="mt-3 flex items-center gap-3">
                 <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
                     <img src="{{ asset('images/cards/visa.png') }}" alt="Visa logo" class="h-7 w-auto object-contain" loading="lazy">
@@ -49,18 +48,15 @@
                     <img src="{{ asset('images/cards/mastercard.png') }}" alt="Mastercard logo" class="h-7 w-auto object-contain" loading="lazy">
                 </div>
             </div>
-            <p class="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Mobility Partners</p>
             <div class="mt-3 flex flex-wrap items-center gap-2">
                 @foreach ([
-                    ['name' => 'Uber', 'file' => 'uber.png'],
-                    ['name' => 'Uber Eats', 'file' => 'uber-eats.png'],
-                    ['name' => 'inDrive', 'file' => 'indrive.png'],
-                    ['name' => 'Mr D', 'file' => 'mrd.png'],
-                    ['name' => 'Takealot', 'file' => 'takealot.png'],
-                    ['name' => 'Sixty60', 'file' => 'sixty60.png'],
+                    ['name' => 'Uber', 'path' => 'images/driver-platforms/uber.svg'],
+                    ['name' => 'Uber Eats', 'path' => 'images/driver-platforms/uber-eats.svg'],
+                    ['name' => 'inDrive', 'path' => 'images/driver-platforms/indrive.png'],
+                    ['name' => 'Takealot', 'path' => 'images/driver-platforms/takealot.png'],
                 ] as $p)
                     <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                        <img src="{{ asset('images/partners/' . $p['file']) }}" alt="{{ $p['name'] }} logo" class="h-6 w-auto object-contain" loading="lazy">
+                        <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-6 w-auto object-contain" loading="lazy">
                     </div>
                 @endforeach
             </div>
