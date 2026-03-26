@@ -67,10 +67,10 @@
         <section class="mobile-card p-4">
             <div class="mt-3 flex items-center gap-3">
                 <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                    <img src="{{ asset('images/cards/visa.png') }}" alt="Visa logo" class="h-14 w-auto object-contain" loading="lazy">
+                    <img src="{{ asset('images/cards/visa.png') }}" alt="Visa logo" class="h-7 w-auto object-contain" loading="lazy">
                 </div>
                 <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                    <img src="{{ asset('images/cards/mastercard.png') }}" alt="Mastercard logo" class="h-14 w-auto object-contain" loading="lazy">
+                    <img src="{{ asset('images/cards/mastercard.png') }}" alt="Mastercard logo" class="h-7 w-auto object-contain" loading="lazy">
                 </div>
             </div>
             <div class="mt-3 flex flex-wrap items-center gap-2">
