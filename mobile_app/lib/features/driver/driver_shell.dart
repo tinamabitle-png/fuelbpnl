@@ -1569,28 +1569,16 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
   }
 
   Future<void> _showVoucherSheet(VoucherItem v) async {
-    final status = v.status.toLowerCase().trim();
-    final isApproved = status == 'approved';
     final hasQr = v.qrCode.isNotEmpty;
-    var mode = (!isApproved) ? 'details' : (hasQr ? 'qr' : 'tap');
+    var mode = hasQr ? 'qr' : 'tap';
     var tapArming = false;
     var tapArmed = false;
-    var tapStatus = isApproved
-        ? 'Switch to Tap to arm your phone for POS tap.'
-        : 'Voucher is ${v.status}. QR/Tap becomes available once approved.';
+    var tapStatus = 'Switch to Tap to arm your phone for POS tap.';
 
     Future<void> armTap(
       StateSetter setSheetState,
       BuildContext sheetContext,
     ) async {
-      if (!isApproved) {
-        setSheetState(() {
-          tapArming = false;
-          tapArmed = false;
-          tapStatus = 'Voucher is ${v.status}. Tap is available once approved.';
-        });
-        return;
-      }
       if (tapArming || tapArmed) return;
       setSheetState(() {
         tapArming = true;
@@ -1670,89 +1658,62 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                         v.stationName ?? '',
                         style: const TextStyle(color: Color(0xFF94A3B8)),
                       ),
-                      const SizedBox(height: 10),
-                      if (isApproved)
-                        SegmentedButton<String>(
-                          showSelectedIcon: false,
-                          segments: [
-                            if (hasQr)
-                              const ButtonSegment(
-                                value: 'qr',
-                                label: Text('QR-Scan'),
-                                icon: Icon(Icons.qr_code_2, size: 16),
-                              ),
-                            const ButtonSegment(
-                              value: 'tap',
-                              label: Text('Tap'),
-                              icon: Icon(Icons.nfc, size: 16),
-                            ),
-                          ],
-                          selected: {mode},
-                          onSelectionChanged: (v) {
-                            setSheetState(() => mode = v.first);
-                            if (v.first == 'tap') {
-                              unawaited(armTap(setSheetState, context));
-                            }
-                          },
-                        )
-                      else
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF111827),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFF334155)),
-                          ),
-                          child: const Text(
-                            'This voucher is not approved yet. You can view it now, but QR/Tap redemption becomes available after approval.',
-                            style: TextStyle(
-                              color: Color(0xFFCBD5E1),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                            ),
-                          ),
+                      const SizedBox(height: 6),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF111827),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFF334155)),
                         ),
-                      const SizedBox(height: 14),
-                      if (!isApproved)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF111827),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFF334155)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Status',
-                                style: TextStyle(
-                                  color: Color(0xFFE2E8F0),
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                v.status,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline_rounded,
+                              color: Color(0xFF93C5FD),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Status: ${v.status}. Tap can still be armed; station validation applies on redemption.',
                                 style: const TextStyle(
-                                  color: Color(0xFFFCA5A5),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Once approved, this sheet will show the QR code and enable phone tap for POS redemption.',
-                                style: TextStyle(
-                                  color: Color(0xFF94A3B8),
+                                  color: Color(0xFFCBD5E1),
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 12,
                                 ),
                               ),
-                            ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SegmentedButton<String>(
+                        showSelectedIcon: false,
+                        segments: [
+                          if (hasQr)
+                            const ButtonSegment(
+                              value: 'qr',
+                              label: Text('QR-Scan'),
+                              icon: Icon(Icons.qr_code_2, size: 16),
+                            ),
+                          const ButtonSegment(
+                            value: 'tap',
+                            label: Text('Tap'),
+                            icon: Icon(Icons.nfc, size: 16),
                           ),
-                        )
-                      else if (mode == 'qr')
+                        ],
+                        selected: {mode},
+                        onSelectionChanged: (v) {
+                          setSheetState(() => mode = v.first);
+                          if (v.first == 'tap') {
+                            unawaited(armTap(setSheetState, context));
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      if (mode == 'qr')
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(

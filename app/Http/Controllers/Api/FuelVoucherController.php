@@ -296,7 +296,9 @@ class FuelVoucherController extends Controller
     }
 
     /**
-     * Generate a short-lived secure tap token for an approved voucher.
+     * Generate a short-lived secure tap token for a voucher.
+     *
+     * Note: Station-side redemption must validate business rules (status, limits, expiry).
      */
     public function tapToken(Request $request, int $id, TapTokenService $tapTokens)
     {
@@ -312,13 +314,6 @@ class FuelVoucherController extends Controller
                 'success' => false,
                 'message' => 'Voucher not found',
             ], 404);
-        }
-
-        if ($voucher->status !== 'approved') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only approved vouchers can be used for tap redemption.',
-            ], 422);
         }
 
         if ($voucher->expires_at && now()->gt($voucher->expires_at)) {
