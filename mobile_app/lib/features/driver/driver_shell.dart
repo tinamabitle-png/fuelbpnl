@@ -2998,14 +2998,17 @@ class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
   }
 
   Future<void> fetch() async {
+    if (!mounted) return;
     setState(() {
       loading = true;
       error = null;
     });
     try {
       final list = await widget.api.driverRepayments();
+      if (!mounted) return;
       setState(() => items = list);
     } catch (e) {
+      if (!mounted) return;
       setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => loading = false);
@@ -3013,6 +3016,7 @@ class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
   }
 
   Future<void> payNow(RepaymentItem item) async {
+    if (!mounted) return;
     setState(() => loading = true);
     try {
       await widget.api.payRepayment(item.id);
@@ -3033,6 +3037,7 @@ class _DriverRepaymentsPageState extends State<DriverRepaymentsPage> {
   }
 
   Future<void> payWithPaystack(RepaymentItem item) async {
+    if (!mounted) return;
     setState(() => loading = true);
     String? reference;
     try {
