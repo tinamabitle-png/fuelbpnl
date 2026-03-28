@@ -17,7 +17,6 @@ import '../../core/theme.dart';
 import '../../data/api_client.dart';
 import '../../data/models.dart';
 import '../../shared/currency.dart';
-import 'virtual_cards_page.dart';
 
 class DriverShell extends StatefulWidget {
   const DriverShell({super.key, required this.api, required this.onLogout});
@@ -125,9 +124,6 @@ class _DriverShellState extends State<DriverShell> {
         api: widget.api,
         onOpenVouchers: () => setState(() => index = 1),
         onOpenApply: () => setState(() => index = 5),
-        onOpenVirtualCards: () {
-          _openVirtualCards();
-        },
       ),
       DriverVouchersPage(
         api: widget.api,
@@ -200,15 +196,6 @@ class _DriverShellState extends State<DriverShell> {
       bottomNavigationBar: _DriverBottomNav(
         selectedIndex: index,
         onTap: (v) => setState(() => index = v),
-      ),
-    );
-  }
-
-  Future<void> _openVirtualCards() async {
-    if (!mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => DriverVirtualCardsPage(api: widget.api),
       ),
     );
   }
@@ -292,13 +279,11 @@ class DriverHomePage extends StatefulWidget {
     required this.api,
     required this.onOpenVouchers,
     required this.onOpenApply,
-    required this.onOpenVirtualCards,
   });
 
   final ApiClient api;
   final VoidCallback onOpenVouchers;
   final VoidCallback onOpenApply;
-  final VoidCallback onOpenVirtualCards;
 
   @override
   State<DriverHomePage> createState() => _DriverHomePageState();
@@ -460,9 +445,6 @@ class _DriverHomePageState extends State<DriverHomePage> {
     final reserved =
         double.tryParse('${wallet['wallet_reserved_voucher_balance'] ?? 0}') ??
         0.0;
-    final allocated =
-        double.tryParse('${wallet['wallet_allocated_card_balance'] ?? 0}') ??
-        0.0;
 
     return Container(
       decoration: BoxDecoration(
@@ -481,7 +463,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
               Icon(Icons.account_balance_wallet_outlined, color: Colors.white),
               SizedBox(width: 10),
               Text(
-                'Wallet & Virtual Cards',
+                'Wallet',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -500,13 +482,8 @@ class _DriverHomePageState extends State<DriverHomePage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Available: ${formatMoney(available)} • Reserved: ${formatMoney(reserved)} • Allocated: ${formatMoney(allocated)}',
+            'Available: ${formatMoney(available)} • Reserved: ${formatMoney(reserved)}',
             style: TextStyle(color: Colors.white.withValues(alpha: 0.75)),
-          ),
-          const SizedBox(height: 12),
-          FxButton(
-            label: 'Manage Virtual Cards',
-            onPressed: widget.onOpenVirtualCards,
           ),
         ],
       ),
