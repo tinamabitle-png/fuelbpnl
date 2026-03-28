@@ -3225,6 +3225,7 @@ class DriverProfilePage extends StatefulWidget {
 
 class _DriverProfilePageState extends State<DriverProfilePage> {
   bool loading = true;
+  bool toggling = false;
   bool enabled = false;
   bool ready = false;
   bool hasToken = false;
@@ -3239,6 +3240,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
   }
 
   Future<void> fetch() async {
+    if (!mounted) return;
     setState(() {
       loading = true;
       error = null;
@@ -3246,6 +3248,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
     try {
       final p = await widget.api.profile();
       final isEnabled = (p['autopay_enabled'] ?? false) == true;
+      if (!mounted) return;
       setState(() {
         enabled = isEnabled;
         paymentMethod = (p['autopay_gateway'] ?? 'paystack').toString();
@@ -3270,6 +3273,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
         autopayEmail = (p['autopay_email'] ?? p['email'] ?? '').toString();
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => loading = false);
@@ -3278,9 +3282,26 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
 
   Future<void> toggle(bool value) async {
     if (value) {
-      final configured = await _setupPaystackAutopay();
-      if (!configured) return;
       if (!mounted) return;
+      setState(() {
+        toggling = true;
+        enabled = true; // controlled Switch needs state update to move
+        error = null;
+      });
+      // Give the Switch time to animate before we open dialogs.
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      final configured = await _setupPaystackAutopay();
+      if (!configured) {
+        if (!mounted) return;
+        setState(() {
+          toggling = false;
+          enabled = false;
+          ready = false;
+        });
+        return;
+      }
+      if (!mounted) return;
+      setState(() => toggling = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('AutoPay enabled (Paystack).')),
       );
@@ -3288,7 +3309,13 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       return;
     }
 
-    setState(() => loading = true);
+    if (!mounted) return;
+    setState(() {
+      toggling = true;
+      enabled = false;
+      ready = false;
+      error = null;
+    });
     try {
       await widget.api.setAutopay(enabled: false, method: 'paystack');
       if (!mounted) return;
@@ -3304,8 +3331,9 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
+      setState(() => enabled = true);
     } finally {
-      if (mounted) setState(() => loading = false);
+      if (mounted) setState(() => toggling = false);
     }
   }
 
@@ -3398,7 +3426,16 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
 
       if (confirm != true) return false;
       await widget.api.verifyAutopayPaystack(reference: reference);
+      // Persist auto-pay settings on the server so scheduling + gating is consistent.
+      // If the token was just captured, the backend will keep the current token/email.
+      await widget.api.setAutopay(
+        enabled: true,
+        method: 'paystack',
+        paystackEmail: email,
+      );
+      if (!mounted) return true;
       setState(() {
+        enabled = true;
         hasToken = true;
         ready = true;
       });
@@ -3443,42 +3480,54 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       padding: const EdgeInsets.all(14),
       children: [
         Card(
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.actionGradient,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.flash_on_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Text(
-                    'AutoPay',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.slate,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: toggling ? null : () => toggle(!enabled),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.actionGradient,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.flash_on_rounded,
+                      color: Colors.white,
                     ),
                   ),
-                ),
-                Text(
-                  paymentMethod.toUpperCase(),
-                  style: const TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'AutoPay',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.slate,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Switch(value: enabled, onChanged: toggle),
-              ],
+                  Text(
+                    paymentMethod.toUpperCase(),
+                    style: const TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (toggling) ...[
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Switch(value: enabled, onChanged: toggling ? null : toggle),
+                ],
+              ),
             ),
           ),
         ),
