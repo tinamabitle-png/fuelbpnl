@@ -13,6 +13,7 @@ class ApiClient {
   final SessionStore _store;
 
   static const bool mockMode = false;
+  static const Duration _networkTimeout = Duration(seconds: 25);
 
   static Map<String, dynamic>? _mockUser;
   static final List<VoucherItem> _mockDriverVouchers = [
@@ -163,21 +164,9 @@ class ApiClient {
       'name': 'Vivo Energy',
       'logo': 'images/brands/vivo-energy.png',
     },
-    {
-      'slug': 'mulilo',
-      'name': 'Mulilo',
-      'logo': 'images/brands/mulilo.png',
-    },
-    {
-      'slug': 'petrosa',
-      'name': 'PetroSA',
-      'logo': 'images/brands/petrosa.png',
-    },
-    {
-      'slug': 'eskom',
-      'name': 'Eskom',
-      'logo': 'images/brands/eskom.png',
-    },
+    {'slug': 'mulilo', 'name': 'Mulilo', 'logo': 'images/brands/mulilo.png'},
+    {'slug': 'petrosa', 'name': 'PetroSA', 'logo': 'images/brands/petrosa.png'},
+    {'slug': 'eskom', 'name': 'Eskom', 'logo': 'images/brands/eskom.png'},
     {
       'slug': 'central-energy-fund',
       'name': 'Central Energy Fund',
@@ -197,8 +186,16 @@ class ApiClient {
           'name': 'BP',
           'logo_url': 'assets/images/brands/bp-southern-africa.png',
         },
-        {'slug': 'engen', 'name': 'Engen', 'logo_url': 'assets/images/brands/engen.png'},
-        {'slug': 'sasol', 'name': 'Sasol', 'logo_url': 'assets/images/brands/sasol.png'},
+        {
+          'slug': 'engen',
+          'name': 'Engen',
+          'logo_url': 'assets/images/brands/engen.png',
+        },
+        {
+          'slug': 'sasol',
+          'name': 'Sasol',
+          'logo_url': 'assets/images/brands/sasol.png',
+        },
         {
           'slug': 'astron-energy',
           'name': 'Astron Energy',
@@ -219,9 +216,21 @@ class ApiClient {
           'name': 'Vivo Energy',
           'logo_url': 'assets/images/brands/vivo-energy.png',
         },
-        {'slug': 'mulilo', 'name': 'Mulilo', 'logo_url': 'assets/images/brands/mulilo.png'},
-        {'slug': 'petrosa', 'name': 'PetroSA', 'logo_url': 'assets/images/brands/petrosa.png'},
-        {'slug': 'eskom', 'name': 'Eskom', 'logo_url': 'assets/images/brands/eskom.png'},
+        {
+          'slug': 'mulilo',
+          'name': 'Mulilo',
+          'logo_url': 'assets/images/brands/mulilo.png',
+        },
+        {
+          'slug': 'petrosa',
+          'name': 'PetroSA',
+          'logo_url': 'assets/images/brands/petrosa.png',
+        },
+        {
+          'slug': 'eskom',
+          'name': 'Eskom',
+          'logo_url': 'assets/images/brands/eskom.png',
+        },
         {
           'slug': 'central-energy-fund',
           'name': 'Central Energy Fund',
@@ -1373,28 +1382,24 @@ class ApiClient {
     try {
       switch (method.toUpperCase()) {
         case 'POST':
-          response = await http.post(
-            uri,
-            headers: headers,
-            body: jsonEncode(body ?? {}),
-          );
+          response = await http
+              .post(uri, headers: headers, body: jsonEncode(body ?? {}))
+              .timeout(_networkTimeout);
           break;
         case 'PUT':
-          response = await http.put(
-            uri,
-            headers: headers,
-            body: jsonEncode(body ?? {}),
-          );
+          response = await http
+              .put(uri, headers: headers, body: jsonEncode(body ?? {}))
+              .timeout(_networkTimeout);
           break;
         case 'DELETE':
-          response = await http.delete(
-            uri,
-            headers: headers,
-            body: jsonEncode(body ?? {}),
-          );
+          response = await http
+              .delete(uri, headers: headers, body: jsonEncode(body ?? {}))
+              .timeout(_networkTimeout);
           break;
         default:
-          response = await http.get(uri, headers: headers);
+          response = await http
+              .get(uri, headers: headers)
+              .timeout(_networkTimeout);
       }
     } catch (e) {
       final message = e.toString().toLowerCase();

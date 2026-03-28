@@ -3480,54 +3480,45 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       padding: const EdgeInsets.all(14),
       children: [
         Card(
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
+          child: ListTile(
             onTap: toggling ? null : () => toggle(!enabled),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.actionGradient,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.flash_on_rounded,
-                      color: Colors.white,
-                    ),
+            contentPadding: const EdgeInsets.all(14),
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: AppTheme.actionGradient,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.flash_on_rounded, color: Colors.white),
+            ),
+            title: const Text(
+              'AutoPay',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: AppTheme.slate,
+              ),
+            ),
+            subtitle: Text(
+              paymentMethod.toUpperCase(),
+              style: const TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (toggling) ...[
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator.adaptive(strokeWidth: 2),
                   ),
                   const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      'AutoPay',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.slate,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    paymentMethod.toUpperCase(),
-                    style: const TextStyle(
-                      color: Color(0xFF94A3B8),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  if (toggling) ...[
-                    const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  Switch(value: enabled, onChanged: toggling ? null : toggle),
                 ],
-              ),
+                Switch(value: enabled, onChanged: toggling ? null : toggle),
+              ],
             ),
           ),
         ),
