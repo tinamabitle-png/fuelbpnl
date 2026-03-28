@@ -1080,7 +1080,6 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
   }
 
   Widget _voucherTile(VoucherItem v) {
-    final canShow = v.qrCode.isNotEmpty;
     final statusColor = v.status == 'redeemed'
         ? const Color(0xFFDBEAFE)
         : const Color(0xFFE7E7FF);
@@ -1174,28 +1173,27 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                   ],
                 ),
               ),
-              if (canShow)
-                InkWell(
-                  onTap: () => _showVoucherSheet(v),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.qr_code_2,
+              InkWell(
+                onTap: () => _showVoucherSheet(v),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.qr_code_2,
+                      color: AppTheme.primaryBlue,
+                      size: 20,
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      'Show voucher',
+                      style: TextStyle(
                         color: AppTheme.primaryBlue,
-                        size: 20,
+                        fontWeight: FontWeight.w700,
                       ),
-                      SizedBox(width: 6),
-                      Text(
-                        'Show QR',
-                        style: TextStyle(
-                          color: AppTheme.primaryBlue,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+              ),
             ],
           ),
           if (stationMeta.label.isNotEmpty) ...[
@@ -1571,16 +1569,28 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
   }
 
   Future<void> _showVoucherSheet(VoucherItem v) async {
-    var mode = 'qr';
-    final tapTokenFuture = widget.api.driverTapToken(v.id);
+    final status = v.status.toLowerCase().trim();
+    final isApproved = status == 'approved';
+    final hasQr = v.qrCode.isNotEmpty;
+    var mode = (!isApproved) ? 'details' : (hasQr ? 'qr' : 'tap');
     var tapArming = false;
     var tapArmed = false;
-    var tapStatus = 'Switch to Tap to arm your phone for POS tap.';
+    var tapStatus = isApproved
+        ? 'Switch to Tap to arm your phone for POS tap.'
+        : 'Voucher is ${v.status}. QR/Tap becomes available once approved.';
 
     Future<void> armTap(
       StateSetter setSheetState,
       BuildContext sheetContext,
     ) async {
+      if (!isApproved) {
+        setSheetState(() {
+          tapArming = false;
+          tapArmed = false;
+          tapStatus = 'Voucher is ${v.status}. Tap is available once approved.';
+        });
+        return;
+      }
       if (tapArming || tapArmed) return;
       setSheetState(() {
         tapArming = true;
@@ -1588,7 +1598,7 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
       });
 
       try {
-        final token = await tapTokenFuture;
+        final token = await widget.api.driverTapToken(v.id);
         final enabled = await NfcHceBridge.isAvailable();
         if (!enabled) {
           throw Exception('NFC/HCE is unavailable or disabled on this phone.');
@@ -1649,7 +1659,7 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                       ),
                       const SizedBox(height: 14),
                       const Text(
-                        'Voucher QR',
+                        'Voucher',
                         style: TextStyle(
                           color: Color(0xFFE2E8F0),
                           fontSize: 26,
@@ -1661,30 +1671,88 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                         style: const TextStyle(color: Color(0xFF94A3B8)),
                       ),
                       const SizedBox(height: 10),
-                      SegmentedButton<String>(
-                        showSelectedIcon: false,
-                        segments: const [
-                          ButtonSegment(
-                            value: 'qr',
-                            label: Text('QR-Scan'),
-                            icon: Icon(Icons.qr_code_2, size: 16),
+                      if (isApproved)
+                        SegmentedButton<String>(
+                          showSelectedIcon: false,
+                          segments: [
+                            if (hasQr)
+                              const ButtonSegment(
+                                value: 'qr',
+                                label: Text('QR-Scan'),
+                                icon: Icon(Icons.qr_code_2, size: 16),
+                              ),
+                            const ButtonSegment(
+                              value: 'tap',
+                              label: Text('Tap'),
+                              icon: Icon(Icons.nfc, size: 16),
+                            ),
+                          ],
+                          selected: {mode},
+                          onSelectionChanged: (v) {
+                            setSheetState(() => mode = v.first);
+                            if (v.first == 'tap') {
+                              unawaited(armTap(setSheetState, context));
+                            }
+                          },
+                        )
+                      else
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF111827),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFF334155)),
                           ),
-                          ButtonSegment(
-                            value: 'tap',
-                            label: Text('Tap'),
-                            icon: Icon(Icons.nfc, size: 16),
+                          child: const Text(
+                            'This voucher is not approved yet. You can view it now, but QR/Tap redemption becomes available after approval.',
+                            style: TextStyle(
+                              color: Color(0xFFCBD5E1),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
                           ),
-                        ],
-                        selected: {mode},
-                        onSelectionChanged: (v) {
-                          setSheetState(() => mode = v.first);
-                          if (v.first == 'tap') {
-                            unawaited(armTap(setSheetState, context));
-                          }
-                        },
-                      ),
+                        ),
                       const SizedBox(height: 14),
-                      if (mode == 'qr')
+                      if (!isApproved)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF111827),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFF334155)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Status',
+                                style: TextStyle(
+                                  color: Color(0xFFE2E8F0),
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                v.status,
+                                style: const TextStyle(
+                                  color: Color(0xFFFCA5A5),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Once approved, this sheet will show the QR code and enable phone tap for POS redemption.',
+                                style: TextStyle(
+                                  color: Color(0xFF94A3B8),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (mode == 'qr')
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
