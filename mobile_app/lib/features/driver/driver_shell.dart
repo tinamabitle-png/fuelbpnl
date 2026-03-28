@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -3395,13 +3396,42 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
         throw Exception('Paystack AutoPay initialization is incomplete.');
       }
 
-      final opened = await launchUrl(
-        Uri.parse(authUrl),
-        mode: LaunchMode.externalApplication,
+      if (!mounted) return false;
+      // On web, opening a new tab after an async call is commonly blocked.
+      // Open Paystack from a button click (user gesture) instead.
+      final proceeded = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Authorize AutoPay on Paystack'),
+          content: Text(
+            'Tap "Open Paystack" to complete the small authorization transaction (about ${formatMoney(probe)}). Return here and then tap Confirm.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FxButton(
+              label: 'Open Paystack',
+              icon: Icons.open_in_new_rounded,
+              onPressed: () async {
+                final ok = await _openPaystackUrl(authUrl);
+                if (!ok && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Unable to open Paystack. Allow popups and try again.',
+                      ),
+                    ),
+                  );
+                }
+                if (context.mounted) Navigator.of(context).pop(true);
+              },
+            ),
+          ],
+        ),
       );
-      if (!opened) {
-        throw Exception('Unable to open Paystack authorization URL.');
-      }
+      if (proceeded != true) return false;
 
       if (!mounted) return false;
       final confirm = await showDialog<bool>(
@@ -3448,6 +3478,14 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       }
       return false;
     }
+  }
+
+  Future<bool> _openPaystackUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (kIsWeb) {
+      return launchUrl(uri, webOnlyWindowName: '_blank');
+    }
+    return launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   Future<void> _authorizeAutopayCard() async {
