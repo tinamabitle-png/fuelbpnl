@@ -3233,6 +3233,10 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
   String? error;
   String paymentMethod = 'paystack';
   String? autopayEmail;
+  int _autopayOpId = 0;
+  bool _cancelRequested = false;
+  bool _preToggleEnabled = false;
+  bool _preToggleReady = false;
 
   @override
   void initState() {
@@ -3282,6 +3286,13 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
   }
 
   Future<void> toggle(bool value) async {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final opId = ++_autopayOpId;
+    _cancelRequested = false;
+    _preToggleEnabled = enabled;
+    _preToggleReady = ready;
+
     if (value) {
       if (!mounted) return;
       setState(() {
@@ -3291,19 +3302,20 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       });
       // Give the Switch time to animate before we open dialogs.
       await Future<void>.delayed(const Duration(milliseconds: 120));
-      final configured = await _setupPaystackAutopay();
+      if (!_isAutopayOpActive(opId)) return;
+      final configured = await _setupPaystackAutopay(opId: opId);
       if (!configured) {
-        if (!mounted) return;
+        if (!_isAutopayOpActive(opId)) return;
         setState(() {
           toggling = false;
-          enabled = false;
-          ready = false;
+          enabled = _preToggleEnabled;
+          ready = _preToggleReady;
         });
         return;
       }
-      if (!mounted) return;
+      if (!_isAutopayOpActive(opId)) return;
       setState(() => toggling = false);
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('AutoPay enabled (Paystack).')),
       );
       await fetch();
@@ -3319,23 +3331,43 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
     });
     try {
       await widget.api.setAutopay(enabled: false, method: 'paystack');
-      if (!mounted) return;
+      if (!_isAutopayOpActive(opId)) return;
       setState(() {
         enabled = false;
         ready = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('AutoPay disabled.')));
+      messenger.showSnackBar(
+        const SnackBar(content: Text('AutoPay disabled.')),
+      );
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!_isAutopayOpActive(opId)) return;
+      messenger.showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
       setState(() => enabled = true);
     } finally {
-      if (mounted) setState(() => toggling = false);
+      if (_isAutopayOpActive(opId)) setState(() => toggling = false);
     }
+  }
+
+  bool _isAutopayOpActive(int opId) {
+    return mounted && !_cancelRequested && opId == _autopayOpId;
+  }
+
+  void _cancelAutopayOp() {
+    if (!mounted) return;
+    if (!toggling) return;
+    _cancelRequested = true;
+    // Invalidate any in-flight async work. We can't cancel HTTP, but we can ignore results.
+    _autopayOpId++;
+    setState(() {
+      toggling = false;
+      enabled = _preToggleEnabled;
+      ready = _preToggleReady;
+    });
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('AutoPay cancelled.')));
   }
 
   Future<String?> _askAutopayEmail() async {
@@ -3381,14 +3413,18 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
     return result;
   }
 
-  Future<bool> _setupPaystackAutopay() async {
+  Future<bool> _setupPaystackAutopay({required int opId}) async {
+    final ctx = context;
+    final messenger = ScaffoldMessenger.of(ctx);
     final email = await _askAutopayEmail();
     if (email == null || email.trim().isEmpty) {
       return false;
     }
+    if (!_isAutopayOpActive(opId)) return false;
 
     try {
       final checkout = await widget.api.initializeAutopayPaystack(email: email);
+      if (!_isAutopayOpActive(opId)) return false;
       final authUrl = (checkout['authorization_url'] ?? '').toString();
       final reference = (checkout['reference'] ?? '').toString();
       final probe = double.tryParse('${checkout['probe_amount'] ?? 0}') ?? 0;
@@ -3396,11 +3432,12 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
         throw Exception('Paystack AutoPay initialization is incomplete.');
       }
 
-      if (!mounted) return false;
+      if (!_isAutopayOpActive(opId)) return false;
       // On web, opening a new tab after an async call is commonly blocked.
       // Open Paystack from a button click (user gesture) instead.
       final proceeded = await showDialog<bool>(
-        context: context,
+        // ignore: use_build_context_synchronously
+        context: ctx,
         builder: (context) => AlertDialog(
           title: const Text('Authorize AutoPay on Paystack'),
           content: Text(
@@ -3416,8 +3453,8 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
               icon: Icons.open_in_new_rounded,
               onPressed: () async {
                 final ok = await _openPaystackUrl(authUrl);
-                if (!ok && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                if (!ok) {
+                  messenger.showSnackBar(
                     const SnackBar(
                       content: Text(
                         'Unable to open Paystack. Allow popups and try again.',
@@ -3433,9 +3470,10 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       );
       if (proceeded != true) return false;
 
-      if (!mounted) return false;
+      if (!_isAutopayOpActive(opId)) return false;
       final confirm = await showDialog<bool>(
-        context: context,
+        // ignore: use_build_context_synchronously
+        context: ctx,
         builder: (context) => AlertDialog(
           title: const Text('Confirm AutoPay Authorization'),
           content: Text(
@@ -3455,7 +3493,9 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       );
 
       if (confirm != true) return false;
+      if (!_isAutopayOpActive(opId)) return false;
       await widget.api.verifyAutopayPaystack(reference: reference);
+      if (!_isAutopayOpActive(opId)) return false;
       // Persist auto-pay settings on the server so scheduling + gating is consistent.
       // If the token was just captured, the backend will keep the current token/email.
       await widget.api.setAutopay(
@@ -3463,7 +3503,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
         method: 'paystack',
         paystackEmail: email,
       );
-      if (!mounted) return true;
+      if (!_isAutopayOpActive(opId)) return true;
       setState(() {
         enabled = true;
         hasToken = true;
@@ -3471,8 +3511,8 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       });
       return true;
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (_isAutopayOpActive(opId)) {
+        messenger.showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
         );
       }
@@ -3491,7 +3531,9 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
   Future<void> _authorizeAutopayCard() async {
     setState(() => loading = true);
     try {
-      final configured = await _setupPaystackAutopay();
+      final opId = ++_autopayOpId;
+      _cancelRequested = false;
+      final configured = await _setupPaystackAutopay(opId: opId);
       if (!configured) return;
       if (!mounted) return;
       await fetch();
@@ -3514,93 +3556,132 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
     if (loading) return const Center(child: AppLoader());
     if (error != null) return Center(child: Text(error!));
 
-    return ListView(
-      padding: const EdgeInsets.all(14),
+    return Stack(
       children: [
-        Card(
-          child: ListTile(
-            onTap: toggling ? null : () => toggle(!enabled),
-            contentPadding: const EdgeInsets.all(14),
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: AppTheme.actionGradient,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.flash_on_rounded, color: Colors.white),
-            ),
-            title: const Text(
-              'AutoPay',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: AppTheme.slate,
-              ),
-            ),
-            subtitle: Text(
-              paymentMethod.toUpperCase(),
-              style: const TextStyle(
-                color: Color(0xFF94A3B8),
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (toggling) ...[
-                  const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+        ListView(
+          padding: const EdgeInsets.all(14),
+          children: [
+            Card(
+              child: ListTile(
+                onTap: toggling ? null : () => toggle(!enabled),
+                contentPadding: const EdgeInsets.all(14),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.actionGradient,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 10),
-                ],
-                Switch(value: enabled, onChanged: toggling ? null : toggle),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+                  child: const Icon(
+                    Icons.flash_on_rounded,
+                    color: Colors.white,
+                  ),
+                ),
+                title: const Text(
+                  'AutoPay',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.slate,
+                  ),
+                ),
+                subtitle: Text(
+                  paymentMethod.toUpperCase(),
+                  style: const TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      ready
-                          ? Icons.check_circle_rounded
-                          : Icons.error_outline_rounded,
-                      color: ready
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFF59E0B),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        ready
-                            ? 'AutoPay is healthy and tokenized for future billing.'
-                            : 'AutoPay is not healthy yet. Re-authorize Paystack to continue applying for vouchers.',
-                        style: const TextStyle(color: AppTheme.slate),
+                    if (toggling) ...[
+                      const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator.adaptive(
+                          strokeWidth: 2,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 10),
+                    ],
+                    Switch(value: enabled, onChanged: toggling ? null : toggle),
                   ],
                 ),
-                if (!ready) ...[
-                  const SizedBox(height: 12),
-                  FxButton(
-                    label: 'Authorize AutoPay Card',
-                    icon: Icons.credit_card_rounded,
-                    fullWidth: true,
-                    onPressed: _authorizeAutopayCard,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          ready
+                              ? Icons.check_circle_rounded
+                              : Icons.error_outline_rounded,
+                          color: ready
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFF59E0B),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            ready
+                                ? 'AutoPay is healthy and tokenized for future billing.'
+                                : 'AutoPay is not healthy yet. Re-authorize Paystack to continue applying for vouchers.',
+                            style: const TextStyle(color: AppTheme.slate),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (!ready) ...[
+                      const SizedBox(height: 12),
+                      FxButton(
+                        label: 'Authorize AutoPay Card',
+                        icon: Icons.credit_card_rounded,
+                        fullWidth: true,
+                        onPressed: _authorizeAutopayCard,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (toggling)
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: _cancelAutopayOp,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 22),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.65),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Text(
+                      'Loading AutoPay... tap anywhere to cancel',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
-                ],
-              ],
+                ),
+              ),
             ),
           ),
-        ),
       ],
     );
   }
