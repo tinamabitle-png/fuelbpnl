@@ -149,19 +149,42 @@
                 </div>
             </div>
             <div>
-                <div class="flex flex-wrap items-center gap-3">
-                    @foreach ([
-                        ['name' => 'Uber', 'path' => 'images/driver-platforms/uber.svg'],
-                        ['name' => 'Uber Eats', 'path' => 'images/driver-platforms/uber-eats.svg'],
-                        ['name' => 'inDrive', 'path' => 'images/driver-platforms/indrive.png'],
-                        ['name' => 'Takealot', 'path' => 'images/driver-platforms/takealot.png'],
-                        ['name' => 'Mr D', 'path' => 'images/driver-platforms/mrd.png'],
-                        ['name' => 'Sixty60', 'path' => 'images/driver-platforms/sixty60.png'],
-                    ] as $p)
-                        <div class="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
-                            <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-12 w-auto object-contain" loading="lazy">
-                        </div>
-                    @endforeach
+                @php
+                    $mobilityPartners = [
+                        ['name' => 'Uber', 'path' => 'images/partners/uber.png'],
+                        ['name' => 'Uber Eats', 'path' => 'images/partners/uber-eats.png'],
+                        ['name' => 'inDrive', 'path' => 'images/partners/indrive.png'],
+                        ['name' => 'Takealot', 'path' => 'images/partners/takealot.png'],
+                        ['name' => 'Mr D', 'path' => 'images/partners/mrd.png'],
+                        ['name' => 'Sixty60', 'path' => 'images/partners/sixty60.png'],
+                    ];
+
+                    $gridPartners = collect($mobilityPartners)->pad(9, $mobilityPartners[0])->take(9)->values();
+                @endphp
+
+                <div class="flex justify-center md:justify-end">
+                    <a
+                        class="bw-order-grid"
+                        href="{{ route('bnpl.marketplace.index', [], false) }}"
+                        aria-label="Place order here"
+                    >
+                        <span class="bw-order-grid__cards" aria-hidden="true">
+                            @foreach($gridPartners as $p)
+                                <span class="bw-order-grid__card">
+                                    <img
+                                        src="{{ asset($p['path']) }}"
+                                        alt=""
+                                        class="bw-order-grid__logo"
+                                        loading="lazy"
+                                    >
+                                </span>
+                            @endforeach
+                        </span>
+                        <span class="bw-order-grid__text">
+                            PLACE<br><br>ORDER<br><br>HERE
+                        </span>
+                        <span class="bw-order-grid__back" aria-hidden="true"></span>
+                    </a>
                 </div>
             </div>
         </div>
@@ -517,6 +540,162 @@
     .playstore-button .icon {
         height: 1.5rem;
         width: 1.5rem;
+    }
+
+    .bw-order-grid {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 14em;
+        height: 14em;
+        text-decoration: none;
+        border-radius: 14px;
+        outline: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .bw-order-grid:focus-visible {
+        box-shadow: 0 0 0 4px rgba(2, 13, 255, 0.25);
+    }
+
+    .bw-order-grid__back {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        border-radius: 12px;
+        transform: translate(-50%, -50%) rotate(90deg);
+        width: 11em;
+        height: 11em;
+        background: linear-gradient(270deg, #020DFF, #cc39a4, #ffb5d2);
+        z-index: 0;
+        box-shadow: inset 0 0 180px 5px rgba(255, 255, 255, 0.9);
+    }
+
+    .bw-order-grid__cards {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        width: 14em;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+    }
+
+    .bw-order-grid__card {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+        border-top-left-radius: 10px;
+        transition: 0.4s ease-in-out, 0.2s background-color ease-in-out, 0.2s background-image ease-in-out;
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(5px);
+        border: 1px solid transparent;
+        -webkit-backdrop-filter: blur(5px);
+    }
+
+    .bw-order-grid__logo {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+        opacity: 0;
+        transform: scale(0.96);
+        transition: 0.2s ease-in-out;
+        filter: drop-shadow(0 8px 14px rgba(15, 23, 42, 0.15));
+    }
+
+    .bw-order-grid__card:nth-child(2),
+    .bw-order-grid__card:nth-child(4),
+    .bw-order-grid__card:nth-child(5),
+    .bw-order-grid__card:nth-child(6),
+    .bw-order-grid__card:nth-child(8) {
+        border-radius: 0;
+    }
+
+    .bw-order-grid__card:nth-child(3) {
+        border-top-right-radius: 10px;
+        border-top-left-radius: 0;
+    }
+
+    .bw-order-grid__card:nth-child(7) {
+        border-bottom-left-radius: 10px;
+        border-top-left-radius: 0;
+    }
+
+    .bw-order-grid__card:nth-child(9) {
+        border-bottom-right-radius: 10px;
+        border-top-left-radius: 0;
+    }
+
+    .bw-order-grid__text {
+        position: absolute;
+        font-size: 0.72em;
+        transition: 0.4s ease-in-out;
+        color: #0f172a;
+        text-align: center;
+        font-weight: 800;
+        letter-spacing: 0.33em;
+        z-index: 2;
+        text-transform: uppercase;
+        line-height: 1.1;
+        padding-left: 0.33em;
+    }
+
+    .bw-order-grid:hover .bw-order-grid__card {
+        margin: 0.2em;
+        border-radius: 10px;
+        box-shadow: 0 4px 30px rgba(15, 23, 42, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        background: rgba(255, 255, 255, 0.24);
+    }
+
+    .bw-order-grid:hover .bw-order-grid__logo {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .bw-order-grid:hover .bw-order-grid__text {
+        opacity: 0;
+    }
+
+    .bw-order-grid:hover .bw-order-grid__back {
+        opacity: 0;
+    }
+
+    .bw-order-grid:focus .bw-order-grid__card,
+    .bw-order-grid:active .bw-order-grid__card {
+        margin: 0.2em;
+        border-radius: 10px;
+        box-shadow: 0 4px 30px rgba(15, 23, 42, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        background: rgba(255, 255, 255, 0.24);
+    }
+
+    .bw-order-grid:focus .bw-order-grid__logo,
+    .bw-order-grid:active .bw-order-grid__logo {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .bw-order-grid:focus .bw-order-grid__text,
+    .bw-order-grid:active .bw-order-grid__text {
+        opacity: 0;
+    }
+
+    .bw-order-grid:focus .bw-order-grid__back,
+    .bw-order-grid:active .bw-order-grid__back {
+        opacity: 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .bw-order-grid__card,
+        .bw-order-grid__logo,
+        .bw-order-grid__text,
+        .bw-order-grid__back {
+            transition: none !important;
+        }
     }
 
     .playstore-button .texts {
