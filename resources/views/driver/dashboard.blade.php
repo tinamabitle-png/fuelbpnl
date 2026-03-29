@@ -53,11 +53,12 @@
             gap: 12px;
             padding: 0px 12px;
             font-family: Arial, Helvetica, sans-serif;
-            box-shadow: 0 10px 26px rgba(2, 13, 255, 0.12);
+            /* No background fill: keep it clean and lightweight. */
+            box-shadow: none;
             position: relative;
             overflow: hidden;
-            background-color: #1c1f2f;
-            border: 1px solid rgba(148, 163, 184, 0.22);
+            background: transparent;
+            border: 1px solid rgba(2, 13, 255, 0.22);
         }
         .walletBalanceCard > * { position: relative; z-index: 1; }
         .svgwrapper {
@@ -93,7 +94,7 @@
         .addmoney {
             padding: 1px 15px;
             border-radius: 20px;
-            background: linear-gradient(135deg, #020DFF, #7C3AED, #EC4899);
+            background: #020DFF; /* Bwiser logo blue */
             color: white;
             border: none;
             font-size: 12px;
@@ -106,7 +107,7 @@
             white-space: nowrap;
             text-decoration: none;
         }
-        .addmoney:hover { background: #ffffff; color: #4F46E5; }
+        .addmoney:hover { background: #1d29ff; color: #ffffff; }
         .plussign {
             font-size: 20px;
             display: flex;
@@ -195,7 +196,7 @@
                                 type="submit"
                                 id="walletTopupSubmitBtn"
                                 class="w-full rounded-xl py-3 font-semibold text-white"
-                                style="background: linear-gradient(135deg, #020DFF, #7C3AED, #EC4899);"
+                                style="background: #020DFF;"
                             >
                                 Continue to Paystack
                             </button>
