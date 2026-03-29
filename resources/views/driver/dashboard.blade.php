@@ -46,7 +46,6 @@
         .walletBalanceCard {
             width: fit-content;
             height: 55px;
-            background-color: #1c1f2f;
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -55,7 +54,42 @@
             padding: 0px 12px;
             font-family: Arial, Helvetica, sans-serif;
             box-shadow: 0 10px 26px rgba(2, 13, 255, 0.12);
+            position: relative;
+            overflow: hidden;
+            background-color: #0b1220;
+            border: 1px solid rgba(148, 163, 184, 0.22);
         }
+        .walletBalanceCard::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            --s: 96px; /* pattern scale */
+            --c1: rgba(2, 13, 255, 0.72);  /* Bwiser blue */
+            --c2: rgba(236, 72, 153, 0.62); /* Bwiser pink */
+            --_g: var(--c2) 4% 14%, var(--c1) 14% 24%, var(--c2) 22% 34%,
+                var(--c1) 34% 44%, var(--c2) 44% 56%, var(--c1) 56% 66%,
+                var(--c2) 66% 76%, var(--c1) 76% 86%, var(--c2) 86% 96%;
+            background:
+                radial-gradient(
+                    100% 100% at 100% 0,
+                    var(--c1) 4%,
+                    var(--_g),
+                    rgba(0, 0, 0, 0.55) 96%,
+                    rgba(0, 0, 0, 0)
+                ),
+                radial-gradient(
+                    100% 100% at 0 100%,
+                    rgba(0, 0, 0, 0),
+                    rgba(0, 0, 0, 0.55) 4%,
+                    var(--_g),
+                    var(--c1) 96%
+                )
+                var(--c1);
+            background-size: var(--s) var(--s);
+            opacity: 0.32;
+            pointer-events: none;
+        }
+        .walletBalanceCard > * { position: relative; z-index: 1; }
         .svgwrapper {
             width: 28px;
             display: flex;
