@@ -169,6 +169,7 @@
                         </div>
 
                         <form
+                            id="walletTopupForm"
                             method="POST"
                             action="{{ route('driver.wallet.topup.paystack.init') }}"
                             class="mt-4 space-y-3"
@@ -3168,6 +3169,7 @@
             const closeBtn = document.getElementById('walletTopupCloseBtn');
             const amountInput = document.getElementById('walletTopupAmount');
             const submitBtn = document.getElementById('walletTopupSubmitBtn');
+            const form = document.getElementById('walletTopupForm');
 
             function open() {
                 if (!modal) return;
@@ -3193,8 +3195,9 @@
                 if (e.key === 'Escape') close();
             });
 
-            // Basic UX: disable the submit button after click to prevent duplicate posts.
-            submitBtn && submitBtn.addEventListener('click', () => {
+            // Basic UX: disable submit after the form actually submits (prevents blocking the submit).
+            form && form.addEventListener('submit', () => {
+                if (!submitBtn) return;
                 submitBtn.setAttribute('disabled', 'disabled');
                 submitBtn.textContent = 'Redirecting to Paystack...';
             });
