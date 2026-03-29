@@ -162,29 +162,39 @@
                     $gridPartners = collect($mobilityPartners)->pad(9, $mobilityPartners[0])->take(9)->values();
                 @endphp
 
-                <div class="flex justify-center md:justify-end">
-                    <a
-                        class="bw-order-grid"
-                        href="{{ route('bnpl.marketplace.index', [], false) }}"
-                        aria-label="Place order here"
-                    >
-                        <span class="bw-order-grid__cards" aria-hidden="true">
-                            @foreach($gridPartners as $p)
-                                <span class="bw-order-grid__card">
-                                    <img
-                                        src="{{ asset($p['path']) }}"
-                                        alt=""
-                                        class="bw-order-grid__logo"
-                                        loading="lazy"
-                                    >
-                                </span>
-                            @endforeach
-                        </span>
-                        <span class="bw-order-grid__text">
-                            PLACE<br><br>ORDER<br><br>HERE
-                        </span>
-                        <span class="bw-order-grid__back" aria-hidden="true"></span>
-                    </a>
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+                    <div class="flex flex-wrap items-center gap-3 justify-center lg:justify-start">
+                        @foreach ($mobilityPartners as $p)
+                            <div class="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
+                                <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-12 w-auto object-contain" loading="lazy">
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="flex justify-center lg:justify-end">
+                        <a
+                            class="bw-order-grid"
+                            href="{{ route('bnpl.marketplace.index', [], false) }}"
+                            aria-label="Place order here"
+                        >
+                            <span class="bw-order-grid__cards" aria-hidden="true">
+                                @foreach($gridPartners as $p)
+                                    <span class="bw-order-grid__card">
+                                        <img
+                                            src="{{ asset($p['path']) }}"
+                                            alt=""
+                                            class="bw-order-grid__logo"
+                                            loading="lazy"
+                                        >
+                                    </span>
+                                @endforeach
+                            </span>
+                            <span class="bw-order-grid__text">
+                                PLACE<br><br>ORDER<br><br>HERE
+                            </span>
+                            <span class="bw-order-grid__back" aria-hidden="true"></span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
