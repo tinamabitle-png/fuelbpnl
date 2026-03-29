@@ -31,6 +31,8 @@ use App\Http\Controllers\Employee\ApprovalController as EmployeeApprovalControll
 use App\Http\Controllers\Merchant\DashboardController as MerchantDashboardController;
 use App\Http\Controllers\Driver\DashboardController as DriverDashboardController;
 use App\Http\Controllers\Driver\VirtualCardController as DriverVirtualCardController;
+use App\Http\Controllers\Driver\BnplOrderController as DriverBnplOrderController;
+use App\Http\Controllers\Bnpl\CheckoutController as BnplCheckoutController;
 use App\Http\Controllers\Driver\Repayment1VoucherController as DriverRepayment1VoucherController;
 use App\Http\Controllers\Driver\RepaymentPayShapController as DriverRepaymentPayShapController;
 use App\Http\Controllers\Driver\RepaymentCryptoController as DriverRepaymentCryptoController;
@@ -1029,6 +1031,12 @@ Route::middleware(['auth'])->group(function () {
     // Driver
     Route::prefix('driver')->name('driver.')->group(function () {
         Route::get('/dashboard', [DriverDashboardController::class, 'index'])->name('dashboard');
+        Route::prefix('bnpl')->name('bnpl.')->group(function () {
+            Route::get('/orders', [DriverBnplOrderController::class, 'index'])->name('orders.index');
+            Route::get('/orders/create', [DriverBnplOrderController::class, 'create'])->name('orders.create');
+            Route::post('/orders', [DriverBnplOrderController::class, 'store'])->name('orders.store');
+            Route::get('/orders/{order}', [DriverBnplOrderController::class, 'show'])->whereNumber('order')->name('orders.show');
+        });
         Route::get('/wallet/topup/paystack/start', [DriverDashboardController::class, 'walletTopupPaystackStart'])->name('wallet.topup.paystack.start');
         Route::post('/wallet/topup/paystack', [DriverDashboardController::class, 'walletTopupPaystackInit'])->name('wallet.topup.paystack.init');
         Route::get('/wallet/topup/paystack/callback', [DriverDashboardController::class, 'walletTopupPaystackCallback'])->name('wallet.topup.paystack.callback');
@@ -1073,6 +1081,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
 });
+
+Route::get('/bnpl/checkout/{order}', [BnplCheckoutController::class, 'show'])
+    ->middleware('signed')
+    ->whereNumber('order')
+    ->name('bnpl.checkout.show');
 
 // ========== UTILITY ROUTES ==========
 Route::get('/clear-cache', function() {

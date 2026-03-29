@@ -156,6 +156,16 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this->hasMany(DriverDocument::class);
     }
 
+    public function bnplOrdersAsDriver()
+    {
+        return $this->hasMany(BnplOrder::class, 'driver_id');
+    }
+
+    public function bnplOrdersAsShopper()
+    {
+        return $this->hasMany(BnplOrder::class, 'shopper_id');
+    }
+
     public function bankStatementUploads()
     {
         return $this->hasMany(BankStatementUpload::class);
