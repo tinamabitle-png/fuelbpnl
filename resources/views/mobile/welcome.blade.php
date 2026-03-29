@@ -86,6 +86,14 @@
                         <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-12 w-auto object-contain" loading="lazy">
                     </div>
                 @endforeach
+                @foreach ([
+                    ['name' => 'Apple Pay', 'path' => 'images/cards/apple-pay.svg'],
+                    ['name' => 'Google Pay', 'path' => 'images/cards/google-pay.svg'],
+                ] as $p)
+                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                        <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-12 w-auto object-contain" loading="lazy">
+                    </div>
+                @endforeach
             </div>
         </section>
     </div>
