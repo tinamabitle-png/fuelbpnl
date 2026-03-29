@@ -79,14 +79,14 @@
         }
         .balanceHeading {
             font-size: 8px;
-            color: rgb(214, 214, 214);
+            color: rgba(15, 23, 42, 0.72);
             font-weight: 100;
             letter-spacing: 0.6px;
             text-transform: uppercase;
         }
         .balance {
             font-size: 13.5px;
-            color: white;
+            color: #0f172a;
             font-weight: 600;
             letter-spacing: 0.5px;
             line-height: 1.1;
