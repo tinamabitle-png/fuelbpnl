@@ -25,7 +25,7 @@
             @endphp
             <p class="text-xs uppercase tracking-[0.25em] text-blue-700">Bwiser Platform</p>
             <h1 class="mt-3 text-3xl font-semibold leading-tight text-slate-900">
-                Fuel Credit, Voucher Issuance and Settlement
+                Credit, Voucher Issuance and Settlement
                 <span class="mobile-gradient-text block">For Drivers, Stations and Finance Teams</span>
             </h1>
             <p class="mt-3 text-sm text-slate-600">
