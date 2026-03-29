@@ -151,12 +151,12 @@
             <div>
                 @php
                     $mobilityPartners = [
-                        ['name' => 'Uber', 'path' => 'images/partners/uber.png'],
-                        ['name' => 'Uber Eats', 'path' => 'images/partners/uber-eats.png'],
-                        ['name' => 'inDrive', 'path' => 'images/partners/indrive.png'],
-                        ['name' => 'Takealot', 'path' => 'images/partners/takealot.png'],
-                        ['name' => 'Mr D', 'path' => 'images/partners/mrd.png'],
-                        ['name' => 'Sixty60', 'path' => 'images/partners/sixty60.png'],
+                        ['name' => 'Uber', 'path' => 'images/driver-platforms/uber.svg'],
+                        ['name' => 'Uber Eats', 'path' => 'images/driver-platforms/uber-eats.svg'],
+                        ['name' => 'inDrive', 'path' => 'images/driver-platforms/indrive.png'],
+                        ['name' => 'Takealot', 'path' => 'images/driver-platforms/takealot.png'],
+                        ['name' => 'Mr D', 'path' => 'images/driver-platforms/mrd.png'],
+                        ['name' => 'Sixty60', 'path' => 'images/driver-platforms/sixty60.png'],
                     ];
 
                     $gridPartners = collect($mobilityPartners)->pad(9, $mobilityPartners[0])->take(9)->values();

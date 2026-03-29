@@ -247,6 +247,8 @@ Route::get('/', function () {
                             ->map(fn ($part) => strtoupper(mb_substr($part, 0, 1)))
                             ->implode('');
 
+                        // Keep this aligned with the live welcome page assets on the VPS:
+                        // https://bwiser.co.za uses `images/driver-platforms/*` (including uber.svg).
                         $knownLogos = [
                             'checkers_sixty60' => ['file' => 'sixty60.png', 'label' => 'Checkers Sixty60'],
                             'mr_d' => ['file' => 'mrd.png', 'label' => 'Mr D'],
