@@ -86,14 +86,15 @@
                         <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-12 w-auto object-contain" loading="lazy">
                     </div>
                 @endforeach
-                @foreach ([
-                    ['name' => 'Apple Pay', 'path' => 'images/cards/apple-pay.svg'],
-                    ['name' => 'Google Pay', 'path' => 'images/cards/google-pay.svg'],
-                ] as $p)
-                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                        <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-12 w-auto object-contain" loading="lazy">
-                    </div>
-                @endforeach
+            </div>
+
+            <div class="mt-4 flex flex-col gap-3 items-start">
+                <a href="{{ route('bnpl.marketplace.index', [], false) }}" class="block">
+                    <img src="{{ asset('images/cards/apple-pay.svg') }}" alt="Apple Pay" class="block w-44 max-w-full h-auto" loading="lazy">
+                </a>
+                <a href="{{ route('bnpl.marketplace.index', [], false) }}" class="block">
+                    <img src="{{ asset('images/cards/google-pay.svg') }}" alt="Google Pay" class="block w-44 max-w-full h-auto" loading="lazy">
+                </a>
             </div>
         </section>
     </div>
