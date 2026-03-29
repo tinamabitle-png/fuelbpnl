@@ -163,11 +163,23 @@
             justify-content: center;
             line-height: 1;
         }
+
+        /* Ensure top-up modal is above all dashboard UI (and above Paystack iframe where possible). */
+        #walletTopupModal { z-index: 2147483647; }
+        iframe.paystack_checkout { z-index: 2147483646 !important; }
     </style>
 	    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
 	        <div>
                 @php
                     $walletBalance = (float) (auth()->user()?->wallet?->balance ?? 0);
+                    $walletTopupEmail = trim((string) (
+                        auth()->user()?->autopay_email
+                        ?? auth()->user()?->email
+                        ?? (function () {
+                            $digits = preg_replace('/\\D+/', '', (string) (auth()->user()?->phone ?? ''));
+                            return $digits !== '' ? ('driver' . $digits . '@bwiser.co.za') : ('driver+' . (auth()->id() ?? '0') . '@bwiser.co.za');
+                        })()
+                    ));
                 @endphp
 	            <div class="walletBalanceCard">
                     <span class="wallet-chip-overlay" aria-hidden="true"></span>
@@ -198,21 +210,19 @@
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="text-xs uppercase tracking-[0.2em] text-blue-600">Wallet Top-up</p>
-                                <p class="text-lg font-semibold text-slate-900 mt-1">Fund your wallet via Paystack</p>
-                                <p class="text-sm text-slate-600 mt-1">Enter an amount and complete payment in a new Paystack window.</p>
+                                <p class="text-lg font-semibold text-slate-900 mt-1">Pay by Card</p>
+                                <p class="text-sm text-slate-600 mt-1">A secure card form will open to complete the payment.</p>
                             </div>
                             <button type="button" id="walletTopupCloseBtn" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                                 Close
                             </button>
                         </div>
 
-                        <form method="POST" action="{{ route('driver.wallet.topup.paystack.init') }}" class="mt-4 space-y-3">
-                            @csrf
+                        <div class="mt-4 space-y-3">
                             <div>
                                 <label class="block text-sm font-semibold text-slate-700" for="walletTopupAmount">Amount (R)</label>
                                 <input
                                     id="walletTopupAmount"
-                                    name="amount"
                                     type="number"
                                     min="10"
                                     step="0.01"
@@ -223,22 +233,24 @@
                                 />
                                 <p class="mt-1 text-xs text-slate-500">Minimum top-up is R 10.00.</p>
                             </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700" for="walletTopupEmail">Email (optional)</label>
-                                <input
-                                    id="walletTopupEmail"
-                                    name="payer_email"
-                                    type="email"
-                                    class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                                    placeholder="you@example.com"
-                                />
-                                <p class="mt-1 text-xs text-slate-500">If empty we use your profile email/phone-based fallback.</p>
-                            </div>
 
-                            <button type="submit" class="w-full rounded-xl py-3 font-semibold text-white" style="background: linear-gradient(135deg, #020DFF, #7C3AED, #EC4899);">
-                                Continue to Paystack
+                            <button
+                                type="button"
+                                id="walletTopupPayBtn"
+                                class="w-full rounded-xl py-3 font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed"
+                                style="background: linear-gradient(135deg, #020DFF, #7C3AED, #EC4899);"
+                                data-paystack-key="{{ (string) config('services.paystack.public_key') }}"
+                                data-paystack-email="{{ $walletTopupEmail }}"
+                                data-paystack-currency="{{ strtoupper((string) config('services.paystack.currency', 'ZAR')) }}"
+                                data-callback-url="{{ route('driver.wallet.topup.paystack.callback') }}"
+                            >
+                                Pay with Card
                             </button>
-                        </form>
+
+                            <p class="text-[11px] text-slate-500">
+                                If the card popup is blocked, allow popups for this site and try again.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -3195,12 +3207,15 @@
 
 	</script>
 
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+
     <script>
         (function () {
             const openBtn = document.getElementById('walletTopupOpenBtn');
             const modal = document.getElementById('walletTopupModal');
             const closeBtn = document.getElementById('walletTopupCloseBtn');
             const amountInput = document.getElementById('walletTopupAmount');
+            const payBtn = document.getElementById('walletTopupPayBtn');
 
             function open() {
                 if (!modal) return;
@@ -3224,6 +3239,79 @@
             });
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') close();
+            });
+
+            function randomRef() {
+                // Unique enough for Paystack references; backend is idempotent by reference.
+                return (
+                    'WTU-WEB-' +
+                    Date.now().toString(36).toUpperCase() +
+                    '-' +
+                    Math.random().toString(36).slice(2, 8).toUpperCase()
+                );
+            }
+
+            payBtn && payBtn.addEventListener('click', () => {
+                const key = payBtn.getAttribute('data-paystack-key') || '';
+                const email = payBtn.getAttribute('data-paystack-email') || '';
+                const currency = payBtn.getAttribute('data-paystack-currency') || 'ZAR';
+                const callbackUrl = payBtn.getAttribute('data-callback-url') || '';
+
+                const amt = parseFloat((amountInput && amountInput.value) || '0');
+                if (!isFinite(amt) || amt < 10) {
+                    alert('Enter a valid amount (minimum R 10.00).');
+                    return;
+                }
+                if (!key) {
+                    alert('Paystack is not configured yet (missing public key).');
+                    return;
+                }
+
+                const amountMinor = Math.round(amt * 100);
+                const ref = randomRef();
+
+                payBtn.disabled = true;
+                payBtn.textContent = 'Opening secure card form...';
+
+                const handler = window.PaystackPop && window.PaystackPop.setup
+                    ? window.PaystackPop.setup({
+                        key,
+                        email,
+                        amount: amountMinor,
+                        currency,
+                        ref,
+                        metadata: {
+                            scope: 'wallet_topup',
+                            // backend will also verify metadata from Paystack verify
+                            user_id: {{ (int) auth()->id() }},
+                            requested_by: 'driver_portal_web_inline',
+                        },
+                        callback: function (response) {
+                            // Finalize on the server (verify + credit wallet) via callback route.
+                            const r = (response && response.reference) ? response.reference : ref;
+                            window.location.href = callbackUrl + '?reference=' + encodeURIComponent(r);
+                        },
+                        onClose: function () {
+                            payBtn.disabled = false;
+                            payBtn.textContent = 'Pay with Card';
+                        },
+                      })
+                    : null;
+
+                if (!handler) {
+                    alert('Payment popup failed to load. Refresh and try again.');
+                    payBtn.disabled = false;
+                    payBtn.textContent = 'Pay with Card';
+                    return;
+                }
+
+                try {
+                    handler.openIframe();
+                } catch (e) {
+                    payBtn.disabled = false;
+                    payBtn.textContent = 'Pay with Card';
+                    alert('Unable to open the card form. Please allow popups and try again.');
+                }
             });
         })();
     </script>
