@@ -56,59 +56,10 @@
             box-shadow: 0 10px 26px rgba(2, 13, 255, 0.12);
             position: relative;
             overflow: hidden;
-            background-color: #0b1220;
+            background-color: #1c1f2f;
             border: 1px solid rgba(148, 163, 184, 0.22);
         }
-        /* Conic glow background (rotating, blurred) */
-        .walletBalanceCard::before,
-        .walletBalanceCard::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 220%;
-            height: 220%;
-            transform: translate(-50%, -50%);
-            background: conic-gradient(
-                from 0deg,
-                rgba(2, 13, 255, 0.95),
-                rgba(124, 58, 237, 0.95),
-                rgba(236, 72, 153, 0.92),
-                rgba(2, 13, 255, 0.95)
-            );
-            animation: walletGlowRotate 8s linear infinite;
-            filter: blur(26px);
-            opacity: 0.55;
-            pointer-events: none;
-        }
-        .walletBalanceCard::after {
-            width: 190%;
-            height: 190%;
-            animation: walletGlowRotateReverse 10s linear infinite;
-            opacity: 0.35;
-            filter: blur(32px);
-        }
-        @keyframes walletGlowRotate {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-        @keyframes walletGlowRotateReverse {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(-360deg); }
-        }
-        /* Darken for readability (on top of glow, behind content) */
-        .walletBalanceCard .wallet-chip-overlay {
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(
-                circle at 30% 20%,
-                rgba(255, 255, 255, 0.06),
-                rgba(0, 0, 0, 0.62)
-            );
-            pointer-events: none;
-            z-index: 1;
-        }
-        .walletBalanceCard > * { position: relative; z-index: 2; }
+        .walletBalanceCard > * { position: relative; z-index: 1; }
         .svgwrapper {
             width: 28px;
             display: flex;
@@ -164,9 +115,8 @@
             line-height: 1;
         }
 
-        /* Ensure top-up modal is above all dashboard UI (and above Paystack iframe where possible). */
+        /* Ensure top-up modal is above all dashboard UI. */
         #walletTopupModal { z-index: 2147483647; }
-        iframe.paystack_checkout { z-index: 2147483646 !important; }
     </style>
 	    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
 	        <div>
@@ -182,7 +132,6 @@
                     ));
                 @endphp
 	            <div class="walletBalanceCard">
-                    <span class="wallet-chip-overlay" aria-hidden="true"></span>
                     <div class="svgwrapper" aria-hidden="true">
                         <svg viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <rect x="0.539915" y="6.28937" width="21" height="4" rx="1.5" transform="rotate(-4.77865 0.539915 6.28937)" fill="#020DFF" stroke="black"></rect>
