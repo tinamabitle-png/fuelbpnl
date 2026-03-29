@@ -170,9 +170,9 @@
                             </div>
                         @endforeach
                         @foreach ([
-                            ['name' => 'Apple Pay', 'path' => 'images/apple-pay.svg'],
-                            ['name' => 'GPay', 'path' => 'images/gpay.svg'],
-                            ['name' => 'Diners Club', 'path' => 'images/diners-club.svg'],
+                            ['name' => 'Apple Pay', 'path' => 'images/p1.svg'],
+                            ['name' => 'GPay', 'path' => 'images/p2.svg'],
+                            ['name' => 'Diners Club', 'path' => 'images/p3.svg'],
                         ] as $p)
                             <div class="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
                                 <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-12 w-auto object-contain" loading="lazy">
