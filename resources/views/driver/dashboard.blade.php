@@ -242,7 +242,6 @@
                     </div>
                 </div>
 
-	            <p class="text-slate-600 mt-3">Apply for vouchers, locate stations, and manage repayments.</p>
 	            <div class="driver-greet-card mt-4">
 	                <div class="driver-greet-loader">
 	                    <p>Welcome</p>
