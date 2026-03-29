@@ -4,6 +4,20 @@
 
 @section('content')
 <section class="max-w-6xl mx-auto px-6 pt-16 pb-20">
+    @php
+        $walletBalance = (float) (auth()->user()?->wallet?->balance ?? 0);
+        $walletTopupEmail = trim((string) (
+            auth()->user()?->autopay_email
+            ?? auth()->user()?->email
+            ?? (function () {
+                $digits = preg_replace('/\\D+/', '', (string) (auth()->user()?->phone ?? ''));
+                return $digits !== '' ? ('driver' . $digits . '@bwiser.co.za') : ('driver+' . (auth()->id() ?? '0') . '@bwiser.co.za');
+            })()
+        ));
+        $compliance = $driverCompliance ?? ['ready' => true, 'items' => [], 'upload_url' => route('registration.complete', ['role' => 'driver'], false)];
+        $complianceReady = (bool) ($compliance['ready'] ?? true);
+        $complianceUploadUrl = (string) ($compliance['upload_url'] ?? route('registration.complete', ['role' => 'driver'], false));
+    @endphp
     <style>
         /* Dashboard quick-link icon animations (hover + active) */
         .driver-quick-icon {
@@ -121,102 +135,6 @@
     </style>
 	    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
 	        <div>
-                @php
-                    $walletBalance = (float) (auth()->user()?->wallet?->balance ?? 0);
-                    $walletTopupEmail = trim((string) (
-                        auth()->user()?->autopay_email
-                        ?? auth()->user()?->email
-                        ?? (function () {
-                            $digits = preg_replace('/\\D+/', '', (string) (auth()->user()?->phone ?? ''));
-                            return $digits !== '' ? ('driver' . $digits . '@bwiser.co.za') : ('driver+' . (auth()->id() ?? '0') . '@bwiser.co.za');
-                        })()
-                    ));
-                    $compliance = $driverCompliance ?? ['ready' => true, 'items' => [], 'upload_url' => route('registration.complete', ['role' => 'driver'], false)];
-                    $complianceReady = (bool) ($compliance['ready'] ?? true);
-                    $complianceUploadUrl = (string) ($compliance['upload_url'] ?? route('registration.complete', ['role' => 'driver'], false));
-                @endphp
-	            <div class="walletBalanceCard">
-                    <div class="svgwrapper" aria-hidden="true">
-                        <svg viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="0.539915" y="6.28937" width="21" height="4" rx="1.5" transform="rotate(-4.77865 0.539915 6.28937)" fill="#020DFF" stroke="black"></rect>
-                            <path d="M2.12011 6.64507C7.75028 6.98651 12.7643 6.94947 21.935 6.58499C22.789 6.55105 23.5 7.23329 23.5 8.08585V24C23.5 24.8284 22.8284 25.5 22 25.5H2C1.17157 25.5 0.5 24.8284 0.5 24V8.15475C0.5 7.2846 1.24157 6.59179 2.12011 6.64507Z" fill="#020DFF" stroke="black"></path>
-                            <path d="M16 13.5H23.5V18.5H16C14.6193 18.5 13.5 17.3807 13.5 16C13.5 14.6193 14.6193 13.5 16 13.5Z" fill="#020DFF" stroke="black"></path>
-                        </svg>
-                    </div>
-
-                    <div class="balancewrapper">
-                        <span class="balanceHeading">Wallet balance</span>
-                        <p class="balance"><span id="currency">R</span>{{ number_format($walletBalance, 2) }}</p>
-                    </div>
-
-                    <button type="button" class="addmoney" id="walletTopupOpenBtn">
-                        <span class="plussign">+</span>Add Money
-                    </button>
-	            </div>
-
-                <div
-                    id="walletTopupModal"
-                    class="fixed inset-0 z-[80] hidden items-center justify-center bg-black/50 p-4"
-                    aria-hidden="true"
-                >
-                    <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <p class="text-xs uppercase tracking-[0.2em] text-blue-600">Wallet Top-up</p>
-                                <p class="text-lg font-semibold text-slate-900 mt-1">Pay by Card</p>
-                                <p class="text-sm text-slate-600 mt-1">A secure card form will open to complete the payment.</p>
-                            </div>
-                            <button type="button" id="walletTopupCloseBtn" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                                Close
-                            </button>
-                        </div>
-
-                        <form
-                            id="walletTopupForm"
-                            method="GET"
-                            action="{{ route('driver.wallet.topup.paystack.start', [], false) }}"
-                            class="mt-4 space-y-3"
-                        >
-                            @if ($errors->walletTopup->any())
-                                <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                                    <p class="font-semibold">Please fix:</p>
-                                    <ul class="mt-2 list-disc pl-5 space-y-1">
-                                        @foreach ($errors->walletTopup->all() as $msg)
-                                            <li>{{ $msg }}</li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700" for="walletTopupAmount">Amount (R)</label>
-                                <input
-                                    id="walletTopupAmount"
-                                    name="amount"
-                                    type="number"
-                                    min="10"
-                                    step="0.01"
-                                    inputmode="decimal"
-                                    required
-                                    class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                                    placeholder="e.g. 250.00"
-                                />
-                                <p class="mt-1 text-xs text-slate-500">Minimum top-up is R 10.00.</p>
-                            </div>
-
-                            <input type="hidden" name="payer_email" value="{{ $walletTopupEmail }}">
-
-                            <button
-                                type="submit"
-                                id="walletTopupSubmitBtn"
-                                class="w-full rounded-xl py-3 font-semibold text-white"
-                                style="background: #020DFF;"
-                            >
-                                Continue to Paystack
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
 	            <div class="driver-greet-card mt-4">
 	                <div class="driver-greet-loader">
 	                    <p>Welcome</p>
@@ -316,7 +234,91 @@
     </div>
     @include('driver.partials.nav')
 
-    <div class="mt-6 glass rounded-2xl p-5 border border-slate-200">
+    <div class="mt-6 flex justify-start">
+        <div class="walletBalanceCard">
+            <div class="svgwrapper" aria-hidden="true">
+                <svg viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="0.539915" y="6.28937" width="21" height="4" rx="1.5" transform="rotate(-4.77865 0.539915 6.28937)" fill="#020DFF" stroke="black"></rect>
+                    <path d="M2.12011 6.64507C7.75028 6.98651 12.7643 6.94947 21.935 6.58499C22.789 6.55105 23.5 7.23329 23.5 8.08585V24C23.5 24.8284 22.8284 25.5 22 25.5H2C1.17157 25.5 0.5 24.8284 0.5 24V8.15475C0.5 7.2846 1.24157 6.59179 2.12011 6.64507Z" fill="#020DFF" stroke="black"></path>
+                    <path d="M16 13.5H23.5V18.5H16C14.6193 18.5 13.5 17.3807 13.5 16C13.5 14.6193 14.6193 13.5 16 13.5Z" fill="#020DFF" stroke="black"></path>
+                </svg>
+            </div>
+
+            <div class="balancewrapper">
+                <span class="balanceHeading">Wallet balance</span>
+                <p class="balance"><span id="currency">R</span>{{ number_format($walletBalance, 2) }}</p>
+            </div>
+
+            <button type="button" class="addmoney" id="walletTopupOpenBtn">
+                <span class="plussign">+</span>Add Money
+            </button>
+        </div>
+    </div>
+
+    <div
+        id="walletTopupModal"
+        class="fixed inset-0 z-[80] hidden items-center justify-center bg-black/50 p-4"
+        aria-hidden="true"
+    >
+        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-blue-600">Wallet Top-up</p>
+                    <p class="text-lg font-semibold text-slate-900 mt-1">Pay by Card</p>
+                    <p class="text-sm text-slate-600 mt-1">A secure card form will open to complete the payment.</p>
+                </div>
+                <button type="button" id="walletTopupCloseBtn" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                    Close
+                </button>
+            </div>
+
+            <form
+                id="walletTopupForm"
+                method="GET"
+                action="{{ route('driver.wallet.topup.paystack.start', [], false) }}"
+                class="mt-4 space-y-3"
+            >
+                @if ($errors->walletTopup->any())
+                    <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                        <p class="font-semibold">Please fix:</p>
+                        <ul class="mt-2 list-disc pl-5 space-y-1">
+                            @foreach ($errors->walletTopup->all() as $msg)
+                                <li>{{ $msg }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700" for="walletTopupAmount">Amount (R)</label>
+                    <input
+                        id="walletTopupAmount"
+                        name="amount"
+                        type="number"
+                        min="10"
+                        step="0.01"
+                        inputmode="decimal"
+                        required
+                        class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        placeholder="e.g. 250.00"
+                    />
+                    <p class="mt-1 text-xs text-slate-500">Minimum top-up is R 10.00.</p>
+                </div>
+
+                <input type="hidden" name="payer_email" value="{{ $walletTopupEmail }}">
+
+                <button
+                    type="submit"
+                    id="walletTopupSubmitBtn"
+                    class="w-full rounded-xl py-3 font-semibold text-white"
+                    style="background: #020DFF;"
+                >
+                    Continue to Paystack
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="mt-4 glass rounded-2xl p-5 border border-slate-200">
         <div class="flex items-start justify-between gap-4">
             <div>
                 <h3 class="brand-font text-lg text-slate-900 mt-1">Unlock Voucher Applications</h3>
