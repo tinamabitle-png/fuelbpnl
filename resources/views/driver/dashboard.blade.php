@@ -58,7 +58,7 @@
             position: relative;
             overflow: hidden;
             background: transparent;
-            border: 1px solid rgba(2, 13, 255, 0.22);
+            border: none;
         }
         .walletBalanceCard > * { position: relative; z-index: 1; }
         .svgwrapper {
