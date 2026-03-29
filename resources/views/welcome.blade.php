@@ -179,16 +179,19 @@
 	                        @endforeach
 	                    </div>
 
-                    <div class="flex justify-center lg:justify-end">
-                        <a
-                            class="bw-order-grid"
-                            href="{{ route('bnpl.marketplace.index', [], false) }}"
-                            aria-label="Place order here"
-                        >
-                            <span class="bw-order-grid__cards" aria-hidden="true">
-                                @foreach($gridPartners as $p)
-                                    <span class="bw-order-grid__card">
-                                        <img
+	                    <div class="flex justify-center lg:justify-end">
+	                        <button
+	                            class="bw-order-grid"
+	                            type="button"
+	                            data-coming-soon-open
+	                            aria-haspopup="dialog"
+	                            aria-controls="comingSoonModal"
+	                            aria-label="Place order here, coming soon"
+	                        >
+	                            <span class="bw-order-grid__cards" aria-hidden="true">
+	                                @foreach($gridPartners as $p)
+	                                    <span class="bw-order-grid__card">
+	                                        <img
                                             src="{{ asset($p['path']) }}"
                                             alt=""
                                             class="bw-order-grid__logo"
@@ -197,16 +200,16 @@
                                     </span>
                                 @endforeach
                             </span>
-                            <span class="bw-order-grid__text">
-                                PLACE<br><br>ORDER<br><br>HERE
-                            </span>
-                            <span class="bw-order-grid__back" aria-hidden="true"></span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+	                            <span class="bw-order-grid__text">
+	                                PLACE<br><br>ORDER<br><br>HERE
+	                            </span>
+	                            <span class="bw-order-grid__back" aria-hidden="true"></span>
+	                        </button>
+	                    </div>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
 
     <div class="grid gap-8 lg:grid-cols-2 mt-8 items-stretch">
         <div class="glass rounded-2xl p-6">
@@ -441,10 +444,34 @@
     </div>
 
 </section>
+
+<div id="comingSoonModal" class="hidden fixed inset-0 z-[300] items-center justify-center p-4" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="absolute inset-0 bg-black/55 backdrop-blur-sm" data-coming-soon-close></div>
+    <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/10">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Bwiser</p>
+                <h3 class="mt-2 text-xl font-bold text-slate-900">Coming soon</h3>
+            </div>
+            <button type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" data-coming-soon-close>
+                Close
+            </button>
+        </div>
+        <p class="mt-3 text-sm text-slate-600">
+            Ordering is launching soon. This button will open the marketplace once it is live.
+        </p>
+        <div class="mt-6 flex justify-end">
+            <button type="button" class="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700" data-coming-soon-close>
+                OK
+            </button>
+        </div>
+    </div>
+</div>
+
 <div id="cookieConsentBar" class="cookie-bar hidden" role="dialog" aria-live="polite" aria-label="Cookie consent">
-    <div class="cookie-bar__inner">
-        <div class="cookie-bar__copy">
-            <p class="cookie-bar__title">We use cookies</p>
+	    <div class="cookie-bar__inner">
+	        <div class="cookie-bar__copy">
+	            <p class="cookie-bar__title">We use cookies</p>
             <p class="cookie-bar__text">
                 We use essential cookies to keep BWiser secure and working properly. By continuing, you accept cookies used for core
                 platform functionality.
@@ -560,18 +587,23 @@
         width: 1.5rem;
     }
 
-    .bw-order-grid {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 14em;
-        height: 14em;
-        text-decoration: none;
-        border-radius: 14px;
-        outline: none;
-        -webkit-tap-highlight-color: transparent;
-    }
+	    .bw-order-grid {
+	        position: relative;
+	        display: inline-flex;
+	        align-items: center;
+	        justify-content: center;
+	        width: 14em;
+	        height: 14em;
+	        text-decoration: none;
+	        border: 0;
+	        background: transparent;
+	        padding: 0;
+	        cursor: pointer;
+	        font: inherit;
+	        border-radius: 14px;
+	        outline: none;
+	        -webkit-tap-highlight-color: transparent;
+	    }
 
     .bw-order-grid:focus-visible {
         box-shadow: 0 0 0 4px rgba(2, 13, 255, 0.25);
@@ -1603,10 +1635,10 @@
             ? asset($chartLocal).'?v='.filemtime($chartLocalPath)
             : 'https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js';
     @endphp
-    <script src="{{ $chartSrc }}"></script>
-    <script>
-        (function initVoucherSplitSlider() {
-            const boot = () => {
+	    <script src="{{ $chartSrc }}"></script>
+	    <script>
+	        (function initVoucherSplitSlider() {
+	            const boot = () => {
                 const slider = document.querySelector('[data-voucher-slider]');
                 if (!slider) return;
 
@@ -1825,11 +1857,47 @@
                 setActive(activeKey);
             };
 
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', boot);
-            } else {
-                boot();
-            }
-        })();
-    </script>
+	            if (document.readyState === 'loading') {
+	                document.addEventListener('DOMContentLoaded', boot);
+	            } else {
+	                boot();
+	            }
+	        })();
+	    </script>
+	    <script>
+	        (function initComingSoonModal() {
+	            const modal = document.getElementById('comingSoonModal');
+	            if (!modal) return;
+
+	            const openers = Array.from(document.querySelectorAll('[data-coming-soon-open]'));
+	            const closers = Array.from(modal.querySelectorAll('[data-coming-soon-close]'));
+
+	            const open = () => {
+	                modal.classList.remove('hidden');
+	                modal.classList.add('flex');
+	                modal.setAttribute('aria-hidden', 'false');
+	                document.body.style.overflow = 'hidden';
+	            };
+
+	            const close = () => {
+	                modal.classList.add('hidden');
+	                modal.classList.remove('flex');
+	                modal.setAttribute('aria-hidden', 'true');
+	                document.body.style.overflow = '';
+	            };
+
+	            openers.forEach((btn) => {
+	                btn.addEventListener('click', (e) => {
+	                    e.preventDefault();
+	                    open();
+	                });
+	            });
+
+	            closers.forEach((btn) => btn.addEventListener('click', close));
+
+	            document.addEventListener('keydown', (e) => {
+	                if (e.key === 'Escape' && modal.getAttribute('aria-hidden') === 'false') close();
+	            });
+	        })();
+	    </script>
 @endpush
