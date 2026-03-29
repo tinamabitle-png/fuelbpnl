@@ -170,11 +170,10 @@
 
                         <form
                             id="walletTopupForm"
-                            method="POST"
-                            action="{{ route('driver.wallet.topup.paystack.init') }}"
+                            method="GET"
+                            action="{{ route('driver.wallet.topup.paystack.start') }}"
                             class="mt-4 space-y-3"
                         >
-                            @csrf
                             <div>
                                 <label class="block text-sm font-semibold text-slate-700" for="walletTopupAmount">Amount (R)</label>
                                 <input
@@ -201,10 +200,6 @@
                             >
                                 Continue to Paystack
                             </button>
-
-                            <p class="text-[11px] text-slate-500">
-                                You will be redirected to the Paystack checkout (same flow used for repayments).
-                            </p>
                         </form>
                     </div>
                 </div>

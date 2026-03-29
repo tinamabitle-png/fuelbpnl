@@ -774,6 +774,58 @@ class DashboardController extends Controller
         }
     }
 
+    /**
+     * Pay-now style initializer (GET) to match the existing repayments "Pay Now" behavior.
+     */
+    public function walletTopupPaystackStart(Request $request)
+    {
+        $user = Auth::user();
+        $this->authorizeDriverPortal($user);
+
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:10|max:50000',
+            'payer_email' => 'nullable|email|max:255',
+        ]);
+
+        if (!$this->paystackService->configured()) {
+            return back()->with('error', 'Paystack is not configured yet. Please try again later.');
+        }
+
+        $amount = (float) $validated['amount'];
+        $payerEmail = trim((string) ($validated['payer_email'] ?? ''));
+
+        try {
+            $checkout = $this->paystackService->initializeWalletTopupCheckout(
+                $user,
+                $amount,
+                $this->absoluteRouteForCurrentHost($request, 'driver.wallet.topup.paystack.callback'),
+                $payerEmail !== '' ? $payerEmail : null
+            );
+
+            AuditTrailService::record(
+                'wallet_topup_checkout_initialized',
+                $user,
+                [],
+                [
+                    'reference' => (string) ($checkout['reference'] ?? ''),
+                    'amount' => $amount,
+                    'payment_method' => 'paystack_card',
+                    'flow' => 'get_start',
+                ],
+                'Wallet top-up Paystack checkout initialized'
+            );
+
+            $url = (string) ($checkout['authorization_url'] ?? '');
+            if ($url === '') {
+                return back()->with('error', 'Paystack did not return an authorization URL.');
+            }
+
+            return redirect()->away($url);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Failed to initialize Paystack top-up: ' . $e->getMessage());
+        }
+    }
+
     public function walletTopupPaystackCallback(Request $request)
     {
         $user = Auth::user();
