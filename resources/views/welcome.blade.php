@@ -164,7 +164,7 @@
 	                    $payPartners = [
 	                        ['name' => 'Apple Pay', 'path' => 'images/applepay.svg'],
 	                        ['name' => 'GPay', 'path' => 'images/p2.svg'],
-	                        ['name' => 'Diners Club', 'path' => 'images/p3.svg'],
+	                        ['name' => 'Diners Club', 'path' => 'images/p1.svg'],
 	                    ];
 
 	                    $gridPartners = collect(array_merge($mobilityPartners, $payPartners))->take(9)->values();
