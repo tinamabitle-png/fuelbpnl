@@ -139,13 +139,13 @@
     <div class="glass rounded-2xl p-6 mt-8">
         <div class="grid gap-6 md:grid-cols-2">
             <div>
-                <div class="flex flex-wrap items-center gap-3">
-                    <div class="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
-                        <img src="{{ asset('images/cards/visa.png') }}" alt="Visa logo" class="h-7 w-auto object-contain" loading="lazy">
-                    </div>
-                    <div class="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
-                        <img src="{{ asset('images/cards/mastercard.png') }}" alt="Mastercard logo" class="h-7 w-auto object-contain" loading="lazy">
-                    </div>
+                <div class="relative">
+                    <img
+                        src="{{ asset('images/shopping.png') }}"
+                        alt="Shopping"
+                        class="float-left block h-40 md:h-44 lg:h-48 w-auto object-contain"
+                        loading="lazy"
+                    >
                 </div>
             </div>
             <div>
