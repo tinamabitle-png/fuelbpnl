@@ -153,7 +153,7 @@
                                     <form method="POST" action="{{ route('driver.virtual-cards.allocate', $card) }}" class="vc-inline">
                                         @csrf
                                         <input name="amount" type="number" step="0.01" min="10" placeholder="Amount" class="vc-input vc-input-sm" />
-                                        <button class="btn-ghost vc-btn">Allocate</button>
+                                        <button type="submit" class="vc-btn vc-allocate-btn">Allocate</button>
                                     </form>
 
                                     @if($status === 'active')
@@ -392,6 +392,20 @@
         letter-spacing: 0.4px;
         font-weight: 900;
         line-height: 1;
+        opacity: 0;
+        transform: translateY(-6px);
+        transition: opacity 180ms ease, transform 180ms ease;
+        pointer-events: none;
+    }
+
+    /* Hover-to-reveal allocated balance (keep visible on touch devices). */
+    .card:hover .vc-amount,
+    .card:focus-within .vc-amount {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    @media (hover: none) {
+        .vc-amount { opacity: 1; transform: translateY(0); }
     }
 
     .vc-inactive { opacity: 0.9; }
@@ -412,6 +426,21 @@
     .vc-input::placeholder { color: rgba(15, 23, 42, 0.45); }
     .vc-input-sm { width: 120px; }
     .vc-btn { padding: 10px 14px; border-radius: 12px; }
+
+    /* Theme-colored allocate button. */
+    .vc-allocate-btn {
+        border: none;
+        color: #fff;
+        font-weight: 800;
+        letter-spacing: 0.2px;
+        background: linear-gradient(135deg, #020DFF, #7C3AED, #EC4899);
+        box-shadow: 0 10px 24px rgba(2, 13, 255, 0.18);
+    }
+    .vc-allocate-btn:hover { filter: brightness(1.05); }
+    .vc-allocate-btn:focus-visible {
+        outline: 3px solid rgba(2, 13, 255, 0.25);
+        outline-offset: 2px;
+    }
     .vc-close-btn {
         padding: 10px 14px;
         border-radius: 12px;
