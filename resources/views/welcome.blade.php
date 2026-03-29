@@ -149,36 +149,35 @@
                 </div>
             </div>
             <div>
-                @php
-                    $mobilityPartners = [
-                        ['name' => 'Uber', 'path' => 'images/driver-platforms/uber.svg'],
-                        ['name' => 'Uber Eats', 'path' => 'images/driver-platforms/uber-eats.svg'],
-                        ['name' => 'inDrive', 'path' => 'images/driver-platforms/indrive.png'],
-                        ['name' => 'Takealot', 'path' => 'images/driver-platforms/takealot.png'],
-                        ['name' => 'Mr D', 'path' => 'images/driver-platforms/mrd.png'],
-                        ['name' => 'Sixty60', 'path' => 'images/driver-platforms/sixty60.png'],
-                    ];
+	                @php
+	                    $mobilityPartners = [
+	                        ['name' => 'Uber', 'path' => 'images/driver-platforms/uber.svg'],
+	                        ['name' => 'Uber Eats', 'path' => 'images/driver-platforms/uber-eats.svg'],
+	                        ['name' => 'inDrive', 'path' => 'images/driver-platforms/indrive.png'],
+	                        ['name' => 'Takealot', 'path' => 'images/driver-platforms/takealot.png'],
+	                        ['name' => 'Mr D', 'path' => 'images/driver-platforms/mrd.png'],
+	                        ['name' => 'Sixty60', 'path' => 'images/driver-platforms/sixty60.png'],
+	                    ];
 
-                    $gridPartners = collect($mobilityPartners)->pad(9, $mobilityPartners[0])->take(9)->values();
-                @endphp
+	                    // Bottom row of the "Place Order Here" grid should show pay options (p1-p3),
+	                    // instead of repeating the first mobility logo (Uber).
+	                    $payPartners = [
+	                        ['name' => 'Apple Pay', 'path' => 'images/p1.svg'],
+	                        ['name' => 'GPay', 'path' => 'images/p2.svg'],
+	                        ['name' => 'Diners Club', 'path' => 'images/p3.svg'],
+	                    ];
+
+	                    $gridPartners = collect(array_merge($mobilityPartners, $payPartners))->take(9)->values();
+	                @endphp
 
                 <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-                    <div class="flex flex-wrap items-center gap-3 justify-center lg:justify-start">
-                        @foreach ($mobilityPartners as $p)
-                            <div class="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
-                                <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-12 w-auto object-contain" loading="lazy">
-                            </div>
-                        @endforeach
-                        @foreach ([
-                            ['name' => 'Apple Pay', 'path' => 'images/p1.svg'],
-                            ['name' => 'GPay', 'path' => 'images/p2.svg'],
-                            ['name' => 'Diners Club', 'path' => 'images/p3.svg'],
-                        ] as $p)
-                            <div class="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
-                                <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-12 w-auto object-contain" loading="lazy">
-                            </div>
-                        @endforeach
-                    </div>
+	                    <div class="flex flex-wrap items-center gap-3 justify-center lg:justify-start">
+	                        @foreach ($mobilityPartners as $p)
+	                            <div class="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
+	                                <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-12 w-auto object-contain" loading="lazy">
+	                            </div>
+	                        @endforeach
+	                    </div>
 
                     <div class="flex justify-center lg:justify-end">
                         <a

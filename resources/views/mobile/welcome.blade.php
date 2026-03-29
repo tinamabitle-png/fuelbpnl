@@ -73,30 +73,21 @@
 	                    loading="lazy"
 	                >
             </div>
-            <div class="mt-3 flex flex-wrap items-center gap-2">
-                @foreach ([
-                    ['name' => 'Uber', 'path' => 'images/driver-platforms/uber.svg'],
-                    ['name' => 'Uber Eats', 'path' => 'images/driver-platforms/uber-eats.svg'],
-                    ['name' => 'inDrive', 'path' => 'images/driver-platforms/indrive.png'],
-                    ['name' => 'Takealot', 'path' => 'images/driver-platforms/takealot.png'],
-                    ['name' => 'Mr D', 'path' => 'images/driver-platforms/mrd.png'],
-                    ['name' => 'Sixty60', 'path' => 'images/driver-platforms/sixty60.png'],
-                ] as $p)
-                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                        <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-12 w-auto object-contain" loading="lazy">
-                    </div>
-                @endforeach
-                @foreach ([
-                    ['name' => 'Apple Pay', 'path' => 'images/p1.svg'],
-                    ['name' => 'GPay', 'path' => 'images/p2.svg'],
-                    ['name' => 'Diners Club', 'path' => 'images/p3.svg'],
-                ] as $p)
-                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                        <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-12 w-auto object-contain" loading="lazy">
-                    </div>
-                @endforeach
-            </div>
-        </section>
+	            <div class="mt-3 flex flex-wrap items-center gap-2">
+	                @foreach ([
+	                    ['name' => 'Uber', 'path' => 'images/driver-platforms/uber.svg'],
+	                    ['name' => 'Uber Eats', 'path' => 'images/driver-platforms/uber-eats.svg'],
+	                    ['name' => 'inDrive', 'path' => 'images/driver-platforms/indrive.png'],
+	                    ['name' => 'Takealot', 'path' => 'images/driver-platforms/takealot.png'],
+	                    ['name' => 'Mr D', 'path' => 'images/driver-platforms/mrd.png'],
+	                    ['name' => 'Sixty60', 'path' => 'images/driver-platforms/sixty60.png'],
+	                ] as $p)
+	                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+	                        <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-12 w-auto object-contain" loading="lazy">
+	                    </div>
+	                @endforeach
+	            </div>
+	        </section>
     </div>
 </main>
 @endsection
