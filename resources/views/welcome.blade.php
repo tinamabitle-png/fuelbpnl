@@ -162,7 +162,7 @@
 	                    // Bottom row of the "Place Order Here" grid should show pay options (p1-p3),
 	                    // instead of repeating the first mobility logo (Uber).
 	                    $payPartners = [
-	                        ['name' => 'Apple Pay', 'path' => 'images/p1.svg'],
+	                        ['name' => 'Apple Pay', 'path' => 'images/applepay.svg'],
 	                        ['name' => 'GPay', 'path' => 'images/p2.svg'],
 	                        ['name' => 'Diners Club', 'path' => 'images/p3.svg'],
 	                    ];
