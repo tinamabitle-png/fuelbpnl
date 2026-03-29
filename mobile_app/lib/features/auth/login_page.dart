@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -21,25 +22,116 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends State<LoginPage>
+    with SingleTickerProviderStateMixin {
   final phoneCtrl = TextEditingController();
   final passCtrl = TextEditingController();
   final SessionStore _store = SessionStore();
 
   bool submitting = false;
   String? error;
+  late final AnimationController _heroBorderCtrl;
 
   @override
   void initState() {
     super.initState();
     unawaited(_ensureBaseUrl());
+    _heroBorderCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    )..repeat();
   }
 
   @override
   void dispose() {
+    _heroBorderCtrl.dispose();
     phoneCtrl.dispose();
     passCtrl.dispose();
     super.dispose();
+  }
+
+  Widget _heroBanner() {
+    const stroke = 3.0;
+    const radius = 14.0;
+
+    return SizedBox(
+      height: 148,
+      child: AnimatedBuilder(
+        animation: _heroBorderCtrl,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: _RotatingRRectBorderPainter(
+              t: _heroBorderCtrl.value,
+              radius: radius,
+              strokeWidth: stroke,
+              colors: const [
+                Color(0xFF4F46E5),
+                Color(0xFF7C3AED),
+                Color(0xFFEC4899),
+                Color(0xFF4F46E5),
+              ],
+            ),
+            child: child,
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(radius),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset('assets/images/tsunkebwiser1.jpg', fit: BoxFit.cover),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.12),
+                        Colors.black.withValues(alpha: 0.62),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 62,
+                      height: 62,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.24),
+                        ),
+                      ),
+                      child: const Center(
+                        child: LogoMark(size: 34, color: Colors.white),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'bwiser',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFFE2E8F0),
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _ensureBaseUrl() async {
@@ -279,59 +371,8 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Stack(
-                        children: [
-                          Image.asset(
-                            'assets/images/tsunkebwiser1.jpg',
-                            height: 140,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                          Positioned.fill(
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.black.withValues(alpha: 0.10),
-                                    Colors.black.withValues(alpha: 0.55),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _heroBanner(),
                     const SizedBox(height: 16),
-                    Center(
-                      child: Container(
-                        width: 62,
-                        height: 62,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          gradient: AppTheme.actionGradient,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Center(
-                          child: LogoMark(size: 34, color: Colors.white),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'bwiser',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFFE2E8F0),
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
                     const SizedBox(height: 18),
                     const Text(
                       'Phone Number',
@@ -450,5 +491,49 @@ class _LoginPageState extends State<LoginPage> {
         borderSide: const BorderSide(color: Color(0xFF334155)),
       ),
     );
+  }
+}
+
+class _RotatingRRectBorderPainter extends CustomPainter {
+  _RotatingRRectBorderPainter({
+    required this.t,
+    required this.radius,
+    required this.strokeWidth,
+    required this.colors,
+  });
+
+  final double t;
+  final double radius;
+  final double strokeWidth;
+  final List<Color> colors;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(
+      rect.deflate(strokeWidth / 2),
+      Radius.circular(radius),
+    );
+
+    final shader = SweepGradient(
+      colors: colors,
+      transform: GradientRotation(2 * math.pi * t),
+    ).createShader(rect);
+
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..shader = shader;
+
+    canvas.drawRRect(rrect, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RotatingRRectBorderPainter oldDelegate) {
+    return oldDelegate.t != t ||
+        oldDelegate.radius != radius ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.colors != colors;
   }
 }
