@@ -46,6 +46,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $this->authorizeDriverPortal($user);
+        $user->loadMissing('driverDocuments');
 
         $mostOverdue = null;
         $overdueSeconds = 0;
@@ -177,7 +178,10 @@ class DashboardController extends Controller
             ? \Illuminate\Support\Carbon::parse($nextRepayment->due_date)->endOfDay()->getTimestampMs()
             : null;
 
+        $driverCompliance = $this->buildDriverComplianceChecklist($user);
+
         return view('driver.dashboard', compact(
+            'driverCompliance',
             'virtualCards',
             'virtualCardsAllocatedTotal',
             'stationsByBrandSlug',
@@ -1253,6 +1257,20 @@ class DashboardController extends Controller
 
         // Require at least SA ID + driver licence before voucher applications are enabled.
         $requiredTypes = ['sa_id', 'driver_license'];
+        $providedTypes = $this->providedDriverDocumentTypes($user, $requiredTypes);
+        $missing = array_diff($requiredTypes, $providedTypes);
+
+        if (!empty($missing)) {
+            return redirect()
+                ->route('driver.profile')
+                ->with('error', 'Upload your SA ID and driver licence in your dashboard before applying for vouchers.');
+        }
+
+        return null;
+    }
+
+    private function providedDriverDocumentTypes($user, array $requiredTypes): array
+    {
         $providedTypes = [];
 
         if (Schema::hasTable('driver_documents')) {
@@ -1274,16 +1292,85 @@ class DashboardController extends Controller
             $providedTypes[] = 'driver_license';
         }
 
-        $providedTypes = array_values(array_unique($providedTypes));
-        $missing = array_diff($requiredTypes, $providedTypes);
+        return array_values(array_unique($providedTypes));
+    }
 
-        if (!empty($missing)) {
-            return redirect()
-                ->route('driver.profile')
-                ->with('error', 'Upload your SA ID and driver licence in your dashboard before applying for vouchers.');
+    private function buildDriverComplianceChecklist($user): array
+    {
+        $uploadUrl = route('registration.complete', ['role' => 'driver'], false);
+
+        $docsByType = collect($user->driverDocuments ?? [])->keyBy('document_type');
+
+        $required = [
+            [
+                'key' => 'sa_id',
+                'label' => 'SA ID',
+                'required' => true,
+                'hint' => 'Upload a clear photo or PDF of your SA ID.',
+            ],
+            [
+                'key' => 'driver_license',
+                'label' => 'Driver Licence',
+                'required' => true,
+                'hint' => 'Upload your driver licence (front/back).',
+            ],
+        ];
+
+        $optional = [
+            [
+                'key' => 'bank_statement',
+                'label' => 'Bank Statement (Optional)',
+                'required' => false,
+                'hint' => 'Improves your credit assessment and limits.',
+            ],
+        ];
+
+        $items = [];
+        foreach (array_merge($required, $optional) as $row) {
+            $key = (string) $row['key'];
+            $uploaded = false;
+            $verified = false;
+
+            if ($key === 'bank_statement') {
+                $uploaded = Schema::hasColumn('users', 'bank_statement_path') && !empty($user->bank_statement_path);
+                $verified = false;
+            } else {
+                $doc = $docsByType->get($key);
+                $uploaded = $doc && !empty($doc->document_path);
+                $verified = (bool) ($doc?->verified ?? false);
+
+                // Legacy fallbacks.
+                if (!$uploaded && $key === 'sa_id') {
+                    $uploaded = Schema::hasColumn('users', 'id_document_path') && !empty($user->id_document_path);
+                }
+                if (!$uploaded && $key === 'driver_license') {
+                    $uploaded = Schema::hasColumn('users', 'driver_license_path') && !empty($user->driver_license_path);
+                }
+            }
+
+            $status = $uploaded ? ($verified ? 'verified' : 'uploaded') : 'missing';
+
+            $items[] = [
+                'key' => $key,
+                'label' => (string) $row['label'],
+                'required' => (bool) ($row['required'] ?? false),
+                'hint' => (string) ($row['hint'] ?? ''),
+                'status' => $status, // missing|uploaded|verified
+                'uploaded' => $uploaded,
+                'verified' => $verified,
+                'upload_url' => $uploadUrl,
+            ];
         }
 
-        return null;
+        $ready = collect($items)
+            ->where('required', true)
+            ->every(fn ($i) => (string) ($i['status'] ?? '') !== 'missing');
+
+        return [
+            'ready' => (bool) $ready,
+            'upload_url' => $uploadUrl,
+            'items' => $items,
+        ];
     }
 
     private function normalizePopularBrand(string $brand): string

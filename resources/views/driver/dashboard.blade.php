@@ -151,6 +151,86 @@
                     </button>
 	            </div>
 
+                @php
+                    $compliance = $driverCompliance ?? ['ready' => true, 'items' => [], 'upload_url' => route('registration.complete', ['role' => 'driver'], false)];
+                    $complianceReady = (bool) ($compliance['ready'] ?? true);
+                    $complianceUploadUrl = (string) ($compliance['upload_url'] ?? route('registration.complete', ['role' => 'driver'], false));
+                @endphp
+
+                <div class="mt-4 glass rounded-2xl p-5 border border-slate-200">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.2em] {{ $complianceReady ? 'text-emerald-600' : 'text-blue-600' }}">Compliance Checklist</p>
+                            <h3 class="brand-font text-lg text-slate-900 mt-1">Unlock Voucher Applications</h3>
+                            <p class="text-sm text-slate-600 mt-1">
+                                Upload your required documents. Voucher applications unlock automatically once complete.
+                            </p>
+                        </div>
+                        <a
+                            href="{{ $complianceUploadUrl }}"
+                            class="px-4 py-2.5 rounded-xl text-sm font-semibold text-white"
+                            style="background:#020DFF;"
+                        >
+                            Upload Documents
+                        </a>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        @foreach(($compliance['items'] ?? []) as $item)
+                            @php
+                                $status = (string) ($item['status'] ?? 'missing');
+                                $isMissing = $status === 'missing';
+                                $isUploaded = $status === 'uploaded';
+                                $isVerified = $status === 'verified';
+                            @endphp
+                            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex items-start gap-3">
+                                        <div class="mt-0.5 h-6 w-6 rounded-full grid place-items-center {{ $isMissing ? 'bg-rose-50 text-rose-600' : ($isVerified ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600') }}">
+                                            @if($isMissing)
+                                                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                                    <path d="M12 9v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                                    <path d="M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                                </svg>
+                                            @else
+                                                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                                    <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                                </svg>
+                                            @endif
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-semibold text-slate-900">
+                                                {{ $item['label'] ?? 'Document' }}
+                                                @if(!empty($item['required']))
+                                                    <span class="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase">Required</span>
+                                                @else
+                                                    <span class="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase">Optional</span>
+                                                @endif
+                                            </p>
+                                            @if(!empty($item['hint']))
+                                                <p class="text-xs text-slate-500 mt-1">{{ $item['hint'] }}</p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <span class="text-[11px] px-2 py-1 rounded-full font-semibold uppercase {{ $isMissing ? 'bg-rose-50 text-rose-700' : ($isVerified ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700') }}">
+                                        {{ $isMissing ? 'Missing' : ($isVerified ? 'Verified' : 'Uploaded') }}
+                                    </span>
+                                </div>
+                                @if($isMissing)
+                                    <a href="{{ $complianceUploadUrl }}" class="mt-2 inline-flex text-xs font-semibold text-blue-600 hover:text-blue-700">Upload now</a>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+
+                    @if(!$complianceReady)
+                        <p class="text-xs text-slate-600 mt-4">
+                            Voucher applications are locked until your <span class="font-semibold">SA ID</span> and <span class="font-semibold">Driver Licence</span> are uploaded.
+                        </p>
+                    @endif
+                </div>
+
                 <div
                     id="walletTopupModal"
                     class="fixed inset-0 z-[80] hidden items-center justify-center bg-black/50 p-4"
@@ -230,11 +310,15 @@
 	        <div class="driver-header-actions flex flex-col items-start md:items-end gap-3">
            
             <div class="driver-header-cta flex flex-wrap gap-3 md:justify-end">
-                <a href="{{ route('driver.vouchers.create') }}" class="animated-button driver-apply-voucher-btn">
+                <a
+                    href="{{ $complianceReady ? route('driver.vouchers.create', [], false) : $complianceUploadUrl }}"
+                    class="animated-button driver-apply-voucher-btn {{ $complianceReady ? '' : 'opacity-80' }}"
+                    title="{{ $complianceReady ? 'Apply for a voucher' : 'Upload required documents to unlock voucher applications' }}"
+                >
                     <svg viewBox="0 0 24 24" class="arr-2" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path>
                     </svg>
-                    <span class="text">Apply for Voucher</span>
+                    <span class="text">{{ $complianceReady ? 'Apply for Voucher' : 'Upload Docs to Apply' }}</span>
                     <span class="circle" aria-hidden="true"></span>
                     <svg viewBox="0 0 24 24" class="arr-1" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path>
