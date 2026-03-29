@@ -731,13 +731,14 @@ class DashboardController extends Controller
         $user = Auth::user();
         $this->authorizeDriverPortal($user);
 
-        $validated = $request->validate([
+        $validated = $request->validateWithBag('walletTopup', [
             'amount' => 'required|numeric|min:10|max:50000',
             'payer_email' => 'nullable|email|max:255',
         ]);
 
         if (!$this->paystackService->configured()) {
-            return back()->with('error', 'Paystack is not configured yet. Please try again later.');
+            return back()->with('error', 'Paystack is not configured yet. Please try again later.')
+                ->with('wallet_topup_open', true);
         }
 
         $amount = (float) $validated['amount'];
@@ -765,12 +766,14 @@ class DashboardController extends Controller
 
             $url = (string) ($checkout['authorization_url'] ?? '');
             if ($url === '') {
-                return back()->with('error', 'Paystack did not return an authorization URL.');
+                return back()->with('error', 'Paystack did not return an authorization URL.')
+                    ->with('wallet_topup_open', true);
             }
 
             return redirect()->away($url);
         } catch (\Throwable $e) {
-            return back()->with('error', 'Failed to initialize Paystack top-up: ' . $e->getMessage());
+            return back()->with('error', 'Failed to initialize Paystack top-up: ' . $e->getMessage())
+                ->with('wallet_topup_open', true);
         }
     }
 
@@ -782,13 +785,14 @@ class DashboardController extends Controller
         $user = Auth::user();
         $this->authorizeDriverPortal($user);
 
-        $validated = $request->validate([
+        $validated = $request->validateWithBag('walletTopup', [
             'amount' => 'required|numeric|min:10|max:50000',
             'payer_email' => 'nullable|email|max:255',
         ]);
 
         if (!$this->paystackService->configured()) {
-            return back()->with('error', 'Paystack is not configured yet. Please try again later.');
+            return back()->with('error', 'Paystack is not configured yet. Please try again later.')
+                ->with('wallet_topup_open', true);
         }
 
         $amount = (float) $validated['amount'];
@@ -817,12 +821,14 @@ class DashboardController extends Controller
 
             $url = (string) ($checkout['authorization_url'] ?? '');
             if ($url === '') {
-                return back()->with('error', 'Paystack did not return an authorization URL.');
+                return back()->with('error', 'Paystack did not return an authorization URL.')
+                    ->with('wallet_topup_open', true);
             }
 
             return redirect()->away($url);
         } catch (\Throwable $e) {
-            return back()->with('error', 'Failed to initialize Paystack top-up: ' . $e->getMessage());
+            return back()->with('error', 'Failed to initialize Paystack top-up: ' . $e->getMessage())
+                ->with('wallet_topup_open', true);
         }
     }
 

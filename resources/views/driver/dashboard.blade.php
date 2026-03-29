@@ -174,6 +174,16 @@
                             action="{{ route('driver.wallet.topup.paystack.start') }}"
                             class="mt-4 space-y-3"
                         >
+                            @if ($errors->walletTopup->any())
+                                <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                                    <p class="font-semibold">Please fix:</p>
+                                    <ul class="mt-2 list-disc pl-5 space-y-1">
+                                        @foreach ($errors->walletTopup->all() as $msg)
+                                            <li>{{ $msg }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
                             <div>
                                 <label class="block text-sm font-semibold text-slate-700" for="walletTopupAmount">Amount (R)</label>
                                 <input
@@ -3196,6 +3206,10 @@
                 submitBtn.setAttribute('disabled', 'disabled');
                 submitBtn.textContent = 'Redirecting to Paystack...';
             });
+
+            // If the last attempt failed (validation/Paystack), re-open the modal automatically.
+            const shouldAutoOpen = @json((bool) session('wallet_topup_open', false) || $errors->walletTopup->any());
+            if (shouldAutoOpen) open();
         })();
     </script>
 	@endsection
