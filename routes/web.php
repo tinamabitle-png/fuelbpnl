@@ -33,6 +33,7 @@ use App\Http\Controllers\Driver\DashboardController as DriverDashboardController
 use App\Http\Controllers\Driver\VirtualCardController as DriverVirtualCardController;
 use App\Http\Controllers\Driver\BnplOrderController as DriverBnplOrderController;
 use App\Http\Controllers\Bnpl\CheckoutController as BnplCheckoutController;
+use App\Http\Controllers\Bnpl\MarketplaceController as BnplMarketplaceController;
 use App\Http\Controllers\Driver\Repayment1VoucherController as DriverRepayment1VoucherController;
 use App\Http\Controllers\Driver\RepaymentPayShapController as DriverRepaymentPayShapController;
 use App\Http\Controllers\Driver\RepaymentCryptoController as DriverRepaymentCryptoController;
@@ -1080,6 +1081,15 @@ Route::middleware(['auth'])->group(function () {
         ->name('driver.repayments.autopay.toggle');
 
     Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/bnpl/drivers', [BnplMarketplaceController::class, 'index'])->name('bnpl.marketplace.index');
+    Route::get('/bnpl/drivers/{driver}/order', [BnplMarketplaceController::class, 'create'])->whereNumber('driver')->name('bnpl.marketplace.order.create');
+    Route::post('/bnpl/drivers/{driver}/order', [BnplMarketplaceController::class, 'store'])->whereNumber('driver')->name('bnpl.marketplace.order.store');
+
+    Route::get('/bnpl/orders', [BnplMarketplaceController::class, 'orders'])->name('bnpl.orders.index');
+    Route::get('/bnpl/orders/{order}', [BnplMarketplaceController::class, 'showOrder'])->whereNumber('order')->name('bnpl.orders.show');
 });
 
 Route::get('/bnpl/checkout/{order}', [BnplCheckoutController::class, 'show'])
