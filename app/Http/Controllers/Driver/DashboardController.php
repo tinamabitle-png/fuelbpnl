@@ -843,6 +843,9 @@ class DashboardController extends Controller
                 ]);
             });
 
+            // Reuse the existing integration behavior: capture authorization/customer for future autopay.
+            $this->paystackService->storeAuthorizationFromTransaction($user, $verified);
+
             AuditTrailService::record(
                 'wallet_topup_checkout_verified',
                 $user,

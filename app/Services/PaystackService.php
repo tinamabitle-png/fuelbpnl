@@ -49,16 +49,7 @@ class PaystackService
             $payload['channels'] = ['card'];
         }
 
-        $response = $this->http()->post($this->baseUrl() . '/transaction/initialize', $payload);
-        if (!$response->successful() || !$response->json('status')) {
-            throw new \RuntimeException('Paystack initialize failed: ' . $this->extractError($response));
-        }
-
-        return [
-            'reference' => (string) $reference,
-            'authorization_url' => (string) $response->json('data.authorization_url'),
-            'access_code' => (string) $response->json('data.access_code'),
-        ];
+        return $this->initializeTransaction($payload, (string) $reference);
     }
 
     public function initializeAutopayAuthorization(
@@ -88,16 +79,7 @@ class PaystackService
             ],
         ];
 
-        $response = $this->http()->post($this->baseUrl() . '/transaction/initialize', $payload);
-        if (!$response->successful() || !$response->json('status')) {
-            throw new \RuntimeException('Paystack initialize failed: ' . $this->extractError($response));
-        }
-
-        return [
-            'reference' => (string) $reference,
-            'authorization_url' => (string) $response->json('data.authorization_url'),
-            'access_code' => (string) $response->json('data.access_code'),
-        ];
+        return $this->initializeTransaction($payload, (string) $reference);
     }
 
     public function initializeWalletTopupCheckout(
@@ -129,6 +111,11 @@ class PaystackService
             ],
         ];
 
+        return $this->initializeTransaction($payload, (string) $reference);
+    }
+
+    private function initializeTransaction(array $payload, string $reference): array
+    {
         $response = $this->http()->post($this->baseUrl() . '/transaction/initialize', $payload);
         if (!$response->successful() || !$response->json('status')) {
             throw new \RuntimeException('Paystack initialize failed: ' . $this->extractError($response));
