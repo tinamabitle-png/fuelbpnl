@@ -140,12 +140,12 @@
         <div class="grid gap-6 md:grid-cols-2">
             <div>
                 <div class="relative">
-                    <img
-                        src="{{ asset('images/shopping.png') }}"
-                        alt="Shopping"
-                        class="float-left block h-40 md:h-44 lg:h-48 w-auto object-contain"
-                        loading="lazy"
-                    >
+	                    <img
+	                        src="{{ asset('images/shopping.jpg') }}"
+	                        alt="Shopping"
+	                        class="float-left block h-40 md:h-44 lg:h-48 w-auto object-contain"
+	                        loading="lazy"
+	                    >
                 </div>
             </div>
             <div>

@@ -66,12 +66,12 @@
 
         <section class="mobile-card p-4">
             <div class="mt-3 relative">
-                <img
-                    src="{{ asset('images/shopping.png') }}"
-                    alt="Shopping"
-                    class="float-left block h-32 w-auto object-contain"
-                    loading="lazy"
-                >
+	                <img
+	                    src="{{ asset('images/shopping.jpg') }}"
+	                    alt="Shopping"
+	                    class="float-left block h-32 w-auto object-contain"
+	                    loading="lazy"
+	                >
             </div>
             <div class="mt-3 flex flex-wrap items-center gap-2">
                 @foreach ([
