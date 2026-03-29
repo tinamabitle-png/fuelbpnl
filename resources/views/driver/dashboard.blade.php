@@ -160,7 +160,6 @@
                 <div class="mt-4 glass rounded-2xl p-5 border border-slate-200">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <p class="text-xs uppercase tracking-[0.2em] {{ $complianceReady ? 'text-emerald-600' : 'text-blue-600' }}">Compliance Checklist</p>
                             <h3 class="brand-font text-lg text-slate-900 mt-1">Unlock Voucher Applications</h3>
                             <p class="text-sm text-slate-600 mt-1">
                                 Upload your required documents. Voucher applications unlock automatically once complete.
@@ -171,7 +170,7 @@
                             class="px-4 py-2.5 rounded-xl text-sm font-semibold text-white"
                             style="background:#020DFF;"
                         >
-                            Upload Documents
+                            Upload
                         </a>
                     </div>
 
