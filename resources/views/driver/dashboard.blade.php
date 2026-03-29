@@ -171,7 +171,7 @@
                         <form
                             id="walletTopupForm"
                             method="GET"
-                            action="{{ route('driver.wallet.topup.paystack.start') }}"
+                            action="{{ route('driver.wallet.topup.paystack.start', [], false) }}"
                             class="mt-4 space-y-3"
                         >
                             @if ($errors->walletTopup->any())
