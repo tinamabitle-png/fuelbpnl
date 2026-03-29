@@ -61,14 +61,23 @@ async function main() {
 
   fs.mkdirSync(outDir, { recursive: true });
 
+  // Use an isolated Chrome profile inside the project output dir to avoid
+  // touching the user's real Chrome profile (often blocked in sandboxed envs).
+  const userDataDir = path.join(outDir, ".chrome-profile");
+
   const browser = await puppeteer.launch({
     headless: headful ? false : "new",
     executablePath,
+    userDataDir,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--disable-gpu",
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--disable-breakpad",
+      "--disable-crash-reporter",
     ],
   });
 
@@ -137,4 +146,3 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-
