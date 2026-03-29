@@ -247,6 +247,17 @@
                                 Pay with Card
                             </button>
 
+                            <form
+                                id="walletTopupFallbackForm"
+                                method="POST"
+                                action="{{ route('driver.wallet.topup.paystack.init') }}"
+                                class="hidden"
+                            >
+                                @csrf
+                                <input type="hidden" name="amount" id="walletTopupFallbackAmount" value="">
+                                <input type="hidden" name="payer_email" id="walletTopupFallbackEmail" value="{{ $walletTopupEmail }}">
+                            </form>
+
                             <p class="text-[11px] text-slate-500">
                                 If the card popup is blocked, allow popups for this site and try again.
                             </p>
@@ -3216,6 +3227,9 @@
             const closeBtn = document.getElementById('walletTopupCloseBtn');
             const amountInput = document.getElementById('walletTopupAmount');
             const payBtn = document.getElementById('walletTopupPayBtn');
+            const fallbackForm = document.getElementById('walletTopupFallbackForm');
+            const fallbackAmount = document.getElementById('walletTopupFallbackAmount');
+            const fallbackEmail = document.getElementById('walletTopupFallbackEmail');
 
             function open() {
                 if (!modal) return;
@@ -3251,6 +3265,54 @@
                 );
             }
 
+            function fallbackToRedirect(amt) {
+                if (!fallbackForm || !fallbackAmount) {
+                    alert('Unable to start payment. Please refresh and try again.');
+                    return;
+                }
+                fallbackAmount.value = String(amt.toFixed(2));
+                if (fallbackEmail && !fallbackEmail.value) {
+                    fallbackEmail.value = (payBtn && payBtn.getAttribute('data-paystack-email')) || '';
+                }
+                fallbackForm.submit();
+            }
+
+            function ensurePaystackLoaded(timeoutMs) {
+                timeoutMs = timeoutMs || 5000;
+                return new Promise((resolve) => {
+                    if (window.PaystackPop && window.PaystackPop.setup) {
+                        resolve(true);
+                        return;
+                    }
+
+                    // If the script tag exists, just wait a bit.
+                    const existing = document.querySelector('script[src*=\"js.paystack.co/v1/inline.js\"]');
+                    if (existing) {
+                        const start = Date.now();
+                        const tick = setInterval(() => {
+                            if (window.PaystackPop && window.PaystackPop.setup) {
+                                clearInterval(tick);
+                                resolve(true);
+                                return;
+                            }
+                            if (Date.now() - start > timeoutMs) {
+                                clearInterval(tick);
+                                resolve(false);
+                            }
+                        }, 120);
+                        return;
+                    }
+
+                    // Otherwise dynamically inject.
+                    const s = document.createElement('script');
+                    s.src = 'https://js.paystack.co/v1/inline.js';
+                    s.async = true;
+                    s.onload = () => resolve(!!(window.PaystackPop && window.PaystackPop.setup));
+                    s.onerror = () => resolve(false);
+                    document.head.appendChild(s);
+                });
+            }
+
             payBtn && payBtn.addEventListener('click', () => {
                 const key = payBtn.getAttribute('data-paystack-key') || '';
                 const email = payBtn.getAttribute('data-paystack-email') || '';
@@ -3273,8 +3335,16 @@
                 payBtn.disabled = true;
                 payBtn.textContent = 'Opening secure card form...';
 
-                const handler = window.PaystackPop && window.PaystackPop.setup
-                    ? window.PaystackPop.setup({
+                ensurePaystackLoaded(5000).then((ok) => {
+                    if (!ok || !(window.PaystackPop && window.PaystackPop.setup)) {
+                        // Most likely blocked by CSP/adblock. Fall back to redirect-based checkout.
+                        payBtn.disabled = false;
+                        payBtn.textContent = 'Pay with Card';
+                        fallbackToRedirect(amt);
+                        return;
+                    }
+
+                    const handler = window.PaystackPop.setup({
                         key,
                         email,
                         amount: amountMinor,
@@ -3295,23 +3365,16 @@
                             payBtn.disabled = false;
                             payBtn.textContent = 'Pay with Card';
                         },
-                      })
-                    : null;
+                    });
 
-                if (!handler) {
-                    alert('Payment popup failed to load. Refresh and try again.');
-                    payBtn.disabled = false;
-                    payBtn.textContent = 'Pay with Card';
-                    return;
-                }
-
-                try {
-                    handler.openIframe();
-                } catch (e) {
-                    payBtn.disabled = false;
-                    payBtn.textContent = 'Pay with Card';
-                    alert('Unable to open the card form. Please allow popups and try again.');
-                }
+                    try {
+                        handler.openIframe();
+                    } catch (e) {
+                        payBtn.disabled = false;
+                        payBtn.textContent = 'Pay with Card';
+                        fallbackToRedirect(amt);
+                    }
+                });
             });
         })();
     </script>
