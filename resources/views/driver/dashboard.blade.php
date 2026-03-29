@@ -218,11 +218,18 @@
                             </button>
                         </div>
 
-                        <div class="mt-4 space-y-3">
+                        <form
+                            method="POST"
+                            action="{{ route('driver.wallet.topup.paystack.init') }}"
+                            target="_blank"
+                            class="mt-4 space-y-3"
+                        >
+                            @csrf
                             <div>
                                 <label class="block text-sm font-semibold text-slate-700" for="walletTopupAmount">Amount (R)</label>
                                 <input
                                     id="walletTopupAmount"
+                                    name="amount"
                                     type="number"
                                     min="10"
                                     step="0.01"
@@ -234,34 +241,20 @@
                                 <p class="mt-1 text-xs text-slate-500">Minimum top-up is R 10.00.</p>
                             </div>
 
+                            <input type="hidden" name="payer_email" value="{{ $walletTopupEmail }}">
+
                             <button
-                                type="button"
-                                id="walletTopupPayBtn"
-                                class="w-full rounded-xl py-3 font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed"
+                                type="submit"
+                                class="w-full rounded-xl py-3 font-semibold text-white"
                                 style="background: linear-gradient(135deg, #020DFF, #7C3AED, #EC4899);"
-                                data-paystack-key="{{ (string) config('services.paystack.public_key') }}"
-                                data-paystack-email="{{ $walletTopupEmail }}"
-                                data-paystack-currency="{{ strtoupper((string) config('services.paystack.currency', 'ZAR')) }}"
-                                data-callback-url="{{ route('driver.wallet.topup.paystack.callback') }}"
                             >
-                                Pay with Card
+                                Continue to Paystack
                             </button>
 
-                            <form
-                                id="walletTopupFallbackForm"
-                                method="POST"
-                                action="{{ route('driver.wallet.topup.paystack.init') }}"
-                                class="hidden"
-                            >
-                                @csrf
-                                <input type="hidden" name="amount" id="walletTopupFallbackAmount" value="">
-                                <input type="hidden" name="payer_email" id="walletTopupFallbackEmail" value="{{ $walletTopupEmail }}">
-                            </form>
-
                             <p class="text-[11px] text-slate-500">
-                                If the card popup is blocked, allow popups for this site and try again.
+                                This opens Paystack in a new tab. Complete payment there and return here.
                             </p>
-                        </div>
+                        </form>
                     </div>
                 </div>
 
@@ -3218,18 +3211,12 @@
 
 	</script>
 
-    <script src="https://js.paystack.co/v1/inline.js"></script>
-
     <script>
         (function () {
             const openBtn = document.getElementById('walletTopupOpenBtn');
             const modal = document.getElementById('walletTopupModal');
             const closeBtn = document.getElementById('walletTopupCloseBtn');
             const amountInput = document.getElementById('walletTopupAmount');
-            const payBtn = document.getElementById('walletTopupPayBtn');
-            const fallbackForm = document.getElementById('walletTopupFallbackForm');
-            const fallbackAmount = document.getElementById('walletTopupFallbackAmount');
-            const fallbackEmail = document.getElementById('walletTopupFallbackEmail');
 
             function open() {
                 if (!modal) return;
@@ -3253,128 +3240,6 @@
             });
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') close();
-            });
-
-            function randomRef() {
-                // Unique enough for Paystack references; backend is idempotent by reference.
-                return (
-                    'WTU-WEB-' +
-                    Date.now().toString(36).toUpperCase() +
-                    '-' +
-                    Math.random().toString(36).slice(2, 8).toUpperCase()
-                );
-            }
-
-            function fallbackToRedirect(amt) {
-                if (!fallbackForm || !fallbackAmount) {
-                    alert('Unable to start payment. Please refresh and try again.');
-                    return;
-                }
-                fallbackAmount.value = String(amt.toFixed(2));
-                if (fallbackEmail && !fallbackEmail.value) {
-                    fallbackEmail.value = (payBtn && payBtn.getAttribute('data-paystack-email')) || '';
-                }
-                fallbackForm.submit();
-            }
-
-            function ensurePaystackLoaded(timeoutMs) {
-                timeoutMs = timeoutMs || 5000;
-                return new Promise((resolve) => {
-                    if (window.PaystackPop && window.PaystackPop.setup) {
-                        resolve(true);
-                        return;
-                    }
-
-                    // If the script tag exists, just wait a bit.
-                    const existing = document.querySelector('script[src*=\"js.paystack.co/v1/inline.js\"]');
-                    if (existing) {
-                        const start = Date.now();
-                        const tick = setInterval(() => {
-                            if (window.PaystackPop && window.PaystackPop.setup) {
-                                clearInterval(tick);
-                                resolve(true);
-                                return;
-                            }
-                            if (Date.now() - start > timeoutMs) {
-                                clearInterval(tick);
-                                resolve(false);
-                            }
-                        }, 120);
-                        return;
-                    }
-
-                    // Otherwise dynamically inject.
-                    const s = document.createElement('script');
-                    s.src = 'https://js.paystack.co/v1/inline.js';
-                    s.async = true;
-                    s.onload = () => resolve(!!(window.PaystackPop && window.PaystackPop.setup));
-                    s.onerror = () => resolve(false);
-                    document.head.appendChild(s);
-                });
-            }
-
-            payBtn && payBtn.addEventListener('click', () => {
-                const key = payBtn.getAttribute('data-paystack-key') || '';
-                const email = payBtn.getAttribute('data-paystack-email') || '';
-                const currency = payBtn.getAttribute('data-paystack-currency') || 'ZAR';
-                const callbackUrl = payBtn.getAttribute('data-callback-url') || '';
-
-                const amt = parseFloat((amountInput && amountInput.value) || '0');
-                if (!isFinite(amt) || amt < 10) {
-                    alert('Enter a valid amount (minimum R 10.00).');
-                    return;
-                }
-                if (!key) {
-                    alert('Paystack is not configured yet (missing public key).');
-                    return;
-                }
-
-                const amountMinor = Math.round(amt * 100);
-                const ref = randomRef();
-
-                payBtn.disabled = true;
-                payBtn.textContent = 'Opening secure card form...';
-
-                ensurePaystackLoaded(5000).then((ok) => {
-                    if (!ok || !(window.PaystackPop && window.PaystackPop.setup)) {
-                        // Most likely blocked by CSP/adblock. Fall back to redirect-based checkout.
-                        payBtn.disabled = false;
-                        payBtn.textContent = 'Pay with Card';
-                        fallbackToRedirect(amt);
-                        return;
-                    }
-
-                    const handler = window.PaystackPop.setup({
-                        key,
-                        email,
-                        amount: amountMinor,
-                        currency,
-                        ref,
-                        metadata: {
-                            scope: 'wallet_topup',
-                            // backend will also verify metadata from Paystack verify
-                            user_id: {{ (int) auth()->id() }},
-                            requested_by: 'driver_portal_web_inline',
-                        },
-                        callback: function (response) {
-                            // Finalize on the server (verify + credit wallet) via callback route.
-                            const r = (response && response.reference) ? response.reference : ref;
-                            window.location.href = callbackUrl + '?reference=' + encodeURIComponent(r);
-                        },
-                        onClose: function () {
-                            payBtn.disabled = false;
-                            payBtn.textContent = 'Pay with Card';
-                        },
-                    });
-
-                    try {
-                        handler.openIframe();
-                    } catch (e) {
-                        payBtn.disabled = false;
-                        payBtn.textContent = 'Pay with Card';
-                        fallbackToRedirect(amt);
-                    }
-                });
             });
         })();
     </script>
