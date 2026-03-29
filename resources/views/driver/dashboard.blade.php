@@ -221,7 +221,6 @@
                         <form
                             method="POST"
                             action="{{ route('driver.wallet.topup.paystack.init') }}"
-                            target="_blank"
                             class="mt-4 space-y-3"
                         >
                             @csrf
@@ -245,6 +244,7 @@
 
                             <button
                                 type="submit"
+                                id="walletTopupSubmitBtn"
                                 class="w-full rounded-xl py-3 font-semibold text-white"
                                 style="background: linear-gradient(135deg, #020DFF, #7C3AED, #EC4899);"
                             >
@@ -252,7 +252,7 @@
                             </button>
 
                             <p class="text-[11px] text-slate-500">
-                                This opens Paystack in a new tab. Complete payment there and return here.
+                                You will be redirected to the Paystack checkout (same flow used for repayments).
                             </p>
                         </form>
                     </div>
@@ -3217,6 +3217,7 @@
             const modal = document.getElementById('walletTopupModal');
             const closeBtn = document.getElementById('walletTopupCloseBtn');
             const amountInput = document.getElementById('walletTopupAmount');
+            const submitBtn = document.getElementById('walletTopupSubmitBtn');
 
             function open() {
                 if (!modal) return;
@@ -3240,6 +3241,12 @@
             });
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') close();
+            });
+
+            // Basic UX: disable the submit button after click to prevent duplicate posts.
+            submitBtn && submitBtn.addEventListener('click', () => {
+                submitBtn.setAttribute('disabled', 'disabled');
+                submitBtn.textContent = 'Redirecting to Paystack...';
             });
         })();
     </script>
