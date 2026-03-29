@@ -13,12 +13,17 @@
 /.zed
 /auth.json
 /node_modules
+**/node_modules
 /public/build
 /public/hot
 /public/storage
 /storage/*.key
 /storage/pail
 /vendor
+tools/scrapers/**/out
+tools/scrapers/**/.npm-cache
+.npm-cache
+.npm/_logs
 Homestead.json
 Homestead.yaml
 Thumbs.db
