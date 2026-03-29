@@ -87,15 +87,6 @@
                     </div>
                 @endforeach
             </div>
-
-            <div class="mt-4 flex flex-col gap-3 items-start">
-                <a href="{{ route('bnpl.marketplace.index', [], false) }}" class="block">
-                    <img src="{{ asset('images/cards/apple-pay.svg') }}" alt="Apple Pay" class="block w-44 max-w-full h-auto" loading="lazy">
-                </a>
-                <a href="{{ route('bnpl.marketplace.index', [], false) }}" class="block">
-                    <img src="{{ asset('images/cards/google-pay.svg') }}" alt="Google Pay" class="block w-44 max-w-full h-auto" loading="lazy">
-                </a>
-            </div>
         </section>
     </div>
 </main>
