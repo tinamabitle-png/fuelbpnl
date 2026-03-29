@@ -164,10 +164,64 @@
                         <p class="balance"><span id="currency">R</span>{{ number_format($walletBalance, 2) }}</p>
                     </div>
 
-                    <button type="button" class="addmoney" onclick="alert('Wallet top-ups are coming soon.');">
+                    <button type="button" class="addmoney" id="walletTopupOpenBtn">
                         <span class="plussign">+</span>Add Money
                     </button>
 	            </div>
+
+                <div
+                    id="walletTopupModal"
+                    class="fixed inset-0 z-[80] hidden items-center justify-center bg-black/50 p-4"
+                    aria-hidden="true"
+                >
+                    <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-xs uppercase tracking-[0.2em] text-blue-600">Wallet Top-up</p>
+                                <p class="text-lg font-semibold text-slate-900 mt-1">Fund your wallet via Paystack</p>
+                                <p class="text-sm text-slate-600 mt-1">Enter an amount and complete payment in a new Paystack window.</p>
+                            </div>
+                            <button type="button" id="walletTopupCloseBtn" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                                Close
+                            </button>
+                        </div>
+
+                        <form method="POST" action="{{ route('driver.wallet.topup.paystack.init') }}" class="mt-4 space-y-3">
+                            @csrf
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700" for="walletTopupAmount">Amount (R)</label>
+                                <input
+                                    id="walletTopupAmount"
+                                    name="amount"
+                                    type="number"
+                                    min="10"
+                                    step="0.01"
+                                    inputmode="decimal"
+                                    required
+                                    class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                    placeholder="e.g. 250.00"
+                                />
+                                <p class="mt-1 text-xs text-slate-500">Minimum top-up is R 10.00.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700" for="walletTopupEmail">Email (optional)</label>
+                                <input
+                                    id="walletTopupEmail"
+                                    name="payer_email"
+                                    type="email"
+                                    class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                    placeholder="you@example.com"
+                                />
+                                <p class="mt-1 text-xs text-slate-500">If empty we use your profile email/phone-based fallback.</p>
+                            </div>
+
+                            <button type="submit" class="w-full rounded-xl py-3 font-semibold text-white" style="background: linear-gradient(135deg, #020DFF, #7C3AED, #EC4899);">
+                                Continue to Paystack
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
 	            <p class="text-slate-600 mt-3">Apply for vouchers, locate stations, and manage repayments.</p>
 	            <div class="driver-greet-card mt-4">
 	                <div class="driver-greet-loader">
@@ -3118,7 +3172,40 @@
 	                if (!this.time.a.length) this.time.a = [...this.time.b];
 	            }
 	        }
-	    })();
+    })();
 
 	</script>
+
+    <script>
+        (function () {
+            const openBtn = document.getElementById('walletTopupOpenBtn');
+            const modal = document.getElementById('walletTopupModal');
+            const closeBtn = document.getElementById('walletTopupCloseBtn');
+            const amountInput = document.getElementById('walletTopupAmount');
+
+            function open() {
+                if (!modal) return;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                modal.setAttribute('aria-hidden', 'false');
+                setTimeout(() => amountInput && amountInput.focus(), 0);
+            }
+
+            function close() {
+                if (!modal) return;
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+
+            openBtn && openBtn.addEventListener('click', open);
+            closeBtn && closeBtn.addEventListener('click', close);
+            modal && modal.addEventListener('click', (e) => {
+                if (e.target === modal) close();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') close();
+            });
+        })();
+    </script>
 	@endsection

@@ -1029,6 +1029,8 @@ Route::middleware(['auth'])->group(function () {
     // Driver
     Route::prefix('driver')->name('driver.')->group(function () {
         Route::get('/dashboard', [DriverDashboardController::class, 'index'])->name('dashboard');
+        Route::post('/wallet/topup/paystack', [DriverDashboardController::class, 'walletTopupPaystackInit'])->name('wallet.topup.paystack.init');
+        Route::get('/wallet/topup/paystack/callback', [DriverDashboardController::class, 'walletTopupPaystackCallback'])->name('wallet.topup.paystack.callback');
         Route::get('/vouchers', [DriverDashboardController::class, 'vouchers'])->name('vouchers.index');
         Route::get('/vouchers/create', [DriverDashboardController::class, 'createVoucher'])->name('vouchers.create');
         Route::post('/vouchers', [DriverDashboardController::class, 'storeVoucher'])->name('vouchers.store');

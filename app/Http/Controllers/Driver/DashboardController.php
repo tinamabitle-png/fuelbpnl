@@ -10,6 +10,7 @@ use App\Models\Lease;
 use App\Models\Repayment;
 use App\Models\AuditLog;
 use App\Models\VirtualCard;
+use App\Models\WalletTransaction;
 use Illuminate\Support\Collection;
 use App\Services\AuditTrailService;
 use App\Services\DriverUnderwritingService;
@@ -723,6 +724,146 @@ class DashboardController extends Controller
     public function payRepaymentNow(Request $request, Repayment $repayment)
     {
         return $this->startRepaymentCheckout($request, $repayment, 'force_now', 'card');
+    }
+
+    public function walletTopupPaystackInit(Request $request)
+    {
+        $user = Auth::user();
+        $this->authorizeDriverPortal($user);
+
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:10|max:50000',
+            'payer_email' => 'nullable|email|max:255',
+        ]);
+
+        if (!$this->paystackService->configured()) {
+            return back()->with('error', 'Paystack is not configured yet. Please try again later.');
+        }
+
+        $amount = (float) $validated['amount'];
+        $payerEmail = trim((string) ($validated['payer_email'] ?? ''));
+
+        try {
+            $checkout = $this->paystackService->initializeWalletTopupCheckout(
+                $user,
+                $amount,
+                $this->absoluteRouteForCurrentHost($request, 'driver.wallet.topup.paystack.callback'),
+                $payerEmail !== '' ? $payerEmail : null
+            );
+
+            AuditTrailService::record(
+                'wallet_topup_checkout_initialized',
+                $user,
+                [],
+                [
+                    'reference' => (string) ($checkout['reference'] ?? ''),
+                    'amount' => $amount,
+                    'payment_method' => 'paystack_card',
+                ],
+                'Wallet top-up Paystack checkout initialized'
+            );
+
+            $url = (string) ($checkout['authorization_url'] ?? '');
+            if ($url === '') {
+                return back()->with('error', 'Paystack did not return an authorization URL.');
+            }
+
+            return redirect()->away($url);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Failed to initialize Paystack top-up: ' . $e->getMessage());
+        }
+    }
+
+    public function walletTopupPaystackCallback(Request $request)
+    {
+        $user = Auth::user();
+        $this->authorizeDriverPortal($user);
+
+        $reference = trim((string) ($request->query('reference') ?: $request->query('trxref') ?: ''));
+        if ($reference === '') {
+            return redirect()
+                ->route('driver.dashboard')
+                ->with('error', 'Paystack callback did not include a reference.');
+        }
+
+        try {
+            $verified = $this->paystackService->verifyTransaction($reference);
+            $metadata = (array) ($verified['metadata'] ?? []);
+            $scope = (string) ($metadata['scope'] ?? '');
+            $userId = (int) ($metadata['user_id'] ?? 0);
+
+            if ($scope !== 'wallet_topup' || $userId <= 0 || $userId !== (int) $user->id) {
+                return redirect()
+                    ->route('driver.dashboard')
+                    ->with('error', 'This Paystack payment is not linked to your wallet top-up.');
+            }
+
+            $paidMinor = (int) ($verified['amount'] ?? 0);
+            if ($paidMinor <= 0) {
+                return redirect()
+                    ->route('driver.dashboard')
+                    ->with('error', 'Paystack did not return a valid amount.');
+            }
+
+            $amount = round($paidMinor / 100, 2);
+
+            // Idempotency: wallet_transactions.reference is unique, so reuse Paystack reference.
+            if (WalletTransaction::query()->where('reference', $reference)->exists()) {
+                return redirect()
+                    ->route('driver.dashboard')
+                    ->with('success', 'Wallet top-up already processed.');
+            }
+
+            DB::transaction(function () use ($user, $amount, $reference, $verified) {
+                $wallet = $user->wallet()->lockForUpdate()->firstOrCreate([], [
+                    'balance' => 0,
+                    'outstanding_balance' => 0,
+                    'total_credit_used' => 0,
+                    'total_repayments' => 0,
+                    'currency' => strtoupper((string) config('services.paystack.currency', 'ZAR')),
+                ]);
+
+                $before = (float) $wallet->balance;
+                $after = $before + (float) $amount;
+
+                $wallet->forceFill(['balance' => $after])->save();
+
+                $wallet->transactions()->create([
+                    'type' => 'credit',
+                    'amount' => $amount,
+                    'balance_before' => $before,
+                    'balance_after' => $after,
+                    'description' => 'Wallet topup via Paystack',
+                    'reference' => $reference,
+                    'status' => 'completed',
+                    'metadata' => [
+                        'gateway' => 'paystack',
+                        'paystack' => $verified,
+                    ],
+                ]);
+            });
+
+            AuditTrailService::record(
+                'wallet_topup_checkout_verified',
+                $user,
+                [],
+                [
+                    'reference' => $reference,
+                    'amount' => $amount,
+                    'payment_method' => 'paystack_card',
+                    'gateway_status' => (string) ($verified['status'] ?? 'success'),
+                ],
+                'Wallet top-up Paystack checkout verified and credited'
+            );
+
+            return redirect()
+                ->route('driver.dashboard')
+                ->with('success', 'Wallet funded successfully: R ' . number_format((float) $amount, 2));
+        } catch (\Throwable $e) {
+            return redirect()
+                ->route('driver.dashboard')
+                ->with('error', 'Paystack top-up verification failed: ' . $e->getMessage());
+        }
     }
 
     private function startRepaymentCheckout(Request $request, Repayment $repayment, string $intent, string $method)
