@@ -59,37 +59,56 @@
             background-color: #0b1220;
             border: 1px solid rgba(148, 163, 184, 0.22);
         }
-        .walletBalanceCard::before {
+        /* Conic glow background (rotating, blurred) */
+        .walletBalanceCard::before,
+        .walletBalanceCard::after {
             content: "";
             position: absolute;
-            inset: 0;
-            --s: 96px; /* pattern scale */
-            --c1: rgba(2, 13, 255, 0.72);  /* Bwiser blue */
-            --c2: rgba(236, 72, 153, 0.62); /* Bwiser pink */
-            --_g: var(--c2) 4% 14%, var(--c1) 14% 24%, var(--c2) 22% 34%,
-                var(--c1) 34% 44%, var(--c2) 44% 56%, var(--c1) 56% 66%,
-                var(--c2) 66% 76%, var(--c1) 76% 86%, var(--c2) 86% 96%;
-            background:
-                radial-gradient(
-                    100% 100% at 100% 0,
-                    var(--c1) 4%,
-                    var(--_g),
-                    rgba(0, 0, 0, 0.55) 96%,
-                    rgba(0, 0, 0, 0)
-                ),
-                radial-gradient(
-                    100% 100% at 0 100%,
-                    rgba(0, 0, 0, 0),
-                    rgba(0, 0, 0, 0.55) 4%,
-                    var(--_g),
-                    var(--c1) 96%
-                )
-                var(--c1);
-            background-size: var(--s) var(--s);
-            opacity: 0.32;
+            top: 50%;
+            left: 50%;
+            width: 220%;
+            height: 220%;
+            transform: translate(-50%, -50%);
+            background: conic-gradient(
+                from 0deg,
+                rgba(2, 13, 255, 0.95),
+                rgba(124, 58, 237, 0.95),
+                rgba(236, 72, 153, 0.92),
+                rgba(2, 13, 255, 0.95)
+            );
+            animation: walletGlowRotate 8s linear infinite;
+            filter: blur(26px);
+            opacity: 0.55;
             pointer-events: none;
         }
-        .walletBalanceCard > * { position: relative; z-index: 1; }
+        .walletBalanceCard::after {
+            width: 190%;
+            height: 190%;
+            animation: walletGlowRotateReverse 10s linear infinite;
+            opacity: 0.35;
+            filter: blur(32px);
+        }
+        @keyframes walletGlowRotate {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        @keyframes walletGlowRotateReverse {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(-360deg); }
+        }
+        /* Darken for readability (on top of glow, behind content) */
+        .walletBalanceCard .wallet-chip-overlay {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(
+                circle at 30% 20%,
+                rgba(255, 255, 255, 0.06),
+                rgba(0, 0, 0, 0.62)
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+        .walletBalanceCard > * { position: relative; z-index: 2; }
         .svgwrapper {
             width: 28px;
             display: flex;
@@ -151,6 +170,7 @@
                     $walletBalance = (float) (auth()->user()?->wallet?->balance ?? 0);
                 @endphp
 	            <div class="walletBalanceCard">
+                    <span class="wallet-chip-overlay" aria-hidden="true"></span>
                     <div class="svgwrapper" aria-hidden="true">
                         <svg viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <rect x="0.539915" y="6.28937" width="21" height="4" rx="1.5" transform="rotate(-4.77865 0.539915 6.28937)" fill="#7D6B9D" stroke="black"></rect>
