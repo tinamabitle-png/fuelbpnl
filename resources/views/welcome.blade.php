@@ -149,39 +149,79 @@
                 </div>
             </div>
             <div>
-	                @php
-	                    $mobilityPartners = [
-	                        ['name' => 'Uber', 'path' => 'images/driver-platforms/uber.svg'],
-	                        ['name' => 'Uber Eats', 'path' => 'images/driver-platforms/uber-eats.svg'],
-	                        ['name' => 'inDrive', 'path' => 'images/driver-platforms/indrive.png'],
-	                        ['name' => 'Takealot', 'path' => 'images/driver-platforms/takealot.png'],
-	                        ['name' => 'Mr D', 'path' => 'images/driver-platforms/mrd.png'],
-	                        ['name' => 'Sixty60', 'path' => 'images/driver-platforms/sixty60.png'],
-	                    ];
+		                @php
+		                    $mobilityPartners = [
+		                        ['name' => 'Uber', 'path' => 'images/driver-platforms/uber.svg'],
+		                        ['name' => 'Uber Eats', 'path' => 'images/driver-platforms/uber-eats.svg'],
+		                        ['name' => 'inDrive', 'path' => 'images/driver-platforms/indrive.png'],
+		                        ['name' => 'Takealot', 'path' => 'images/driver-platforms/takealot.png'],
+		                        ['name' => 'Mr D', 'path' => 'images/driver-platforms/mrd.png'],
+		                        ['name' => 'Sixty60', 'path' => 'images/driver-platforms/sixty60.png'],
+		                    ];
 
-	                    // Bottom row of the "Place Order Here" grid should show pay options (p1-p3),
-	                    // instead of repeating the first mobility logo (Uber).
-	                    $payPartners = [
-	                        ['name' => 'Apple Pay', 'path' => 'images/applepay.svg'],
-	                        ['name' => 'GPay', 'path' => 'images/p2.svg'],
-	                        ['name' => 'Diners Club', 'path' => 'images/p1.svg'],
+		                    $mrdSpecialCandidates = [
+		                        'images/mrd-special.webp',
+		                        'images/mrd-special.jpg',
+		                        'images/mrd-special.png',
+		                    ];
+		                    $mrdSpecialRelPath = null;
+		                    foreach ($mrdSpecialCandidates as $candidate) {
+		                        if (is_file(public_path($candidate))) {
+		                            $mrdSpecialRelPath = $candidate;
+		                            break;
+		                        }
+		                    }
+		                    $mrdSpecialUrl = null;
+		                    if ($mrdSpecialRelPath) {
+		                        $abs = public_path($mrdSpecialRelPath);
+		                        $mrdSpecialUrl = asset($mrdSpecialRelPath) . '?v=' . filemtime($abs);
+		                    }
+
+		                    // Bottom row of the "Place Order Here" grid should show pay options (p1-p3),
+		                    // instead of repeating the first mobility logo (Uber).
+		                    $payPartners = [
+		                        ['name' => 'Apple Pay', 'path' => 'images/applepay.svg'],
+		                        ['name' => 'GPay', 'path' => 'images/p2.svg'],
+		                        ['name' => 'Diners Club', 'path' => 'images/p1.svg'],
 	                    ];
 
 	                    $gridPartners = collect(array_merge($mobilityPartners, $payPartners))->take(9)->values();
-	                @endphp
+		                @endphp
 
-                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-	                    <div class="flex flex-wrap items-center gap-3 justify-center lg:justify-start">
-	                        @foreach ($mobilityPartners as $p)
-	                            <div class="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
-	                                <img src="{{ asset($p['path']) }}" alt="{{ $p['name'] }} logo" class="h-12 w-auto object-contain" loading="lazy">
-	                            </div>
-	                        @endforeach
-	                    </div>
+		                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+		                    <div class="flex items-center justify-center lg:justify-start w-full lg:w-auto">
+		                        <ul class="bw-mrd-cards" aria-label="Mr D special">
+		                            <li>
+		                                <a href="javascript:void(0)" class="bw-mrd-card" aria-label="Mr D special">
+		                                    <img
+		                                        src="{{ $mrdSpecialUrl ?: asset('images/driver-platforms/mrd.png') }}"
+		                                        class="bw-mrd-card__image"
+		                                        alt="Mr D special"
+		                                        loading="lazy"
+		                                    />
+		                                    <div class="bw-mrd-card__overlay">
+		                                        <div class="bw-mrd-card__header">
+		                                            <svg class="bw-mrd-card__arc" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+		                                                <path />
+		                                            </svg>
+		                                            <img class="bw-mrd-card__thumb" src="{{ asset('images/driver-platforms/mrd.png') }}" alt="Mr D logo" loading="lazy" />
+		                                            <div class="bw-mrd-card__header-text">
+		                                                <h3 class="bw-mrd-card__title">Mr D Special</h3>
+		                                                <span class="bw-mrd-card__status">Bwiser shoppers: Pay in 4</span>
+		                                            </div>
+		                                        </div>
+		                                        <p class="bw-mrd-card__description">
+		                                            Bwiser BNPL lets shoppers split checkout into 4 repayments with participating drivers.
+		                                        </p>
+		                                    </div>
+		                                </a>
+		                            </li>
+		                        </ul>
+		                    </div>
 
-	                    <div class="flex justify-center lg:justify-end">
-	                        <button
-	                            class="bw-order-grid"
+		                    <div class="flex justify-center lg:justify-end">
+		                        <button
+		                            class="bw-order-grid"
 	                            type="button"
 	                            data-coming-soon-open
 	                            aria-haspopup="dialog"
@@ -582,14 +622,133 @@
         color: rgba(0, 0, 0, 1);
     }
 
-    .playstore-button .icon {
-        height: 1.5rem;
-        width: 1.5rem;
-    }
+	    .playstore-button .icon {
+	        height: 1.5rem;
+	        width: 1.5rem;
+	    }
 
-	    .bw-order-grid {
+	    /* Mr D Special hover-reveal card (scoped). */
+	    .bw-mrd-cards {
+	        --surface-color: #ffffff;
+	        --curve: 40;
+	        display: grid;
+	        grid-template-columns: 1fr;
+	        gap: 0;
+	        margin: 0;
+	        padding: 0;
+	        list-style-type: none;
+	        width: min(26rem, 100%);
+	    }
+
+	    .bw-mrd-card {
 	        position: relative;
-	        display: inline-flex;
+	        display: block;
+	        height: 12.8em;
+	        border-radius: calc(var(--curve) * 1px);
+	        overflow: hidden;
+	        text-decoration: none;
+	        box-shadow: 0 18px 42px -30px rgba(15, 23, 42, 0.7);
+	    }
+
+	    .bw-mrd-card__image {
+	        width: 100%;
+	        height: 100%;
+	        object-fit: cover;
+	        display: block;
+	    }
+
+	    .bw-mrd-card__overlay {
+	        position: absolute;
+	        bottom: 0;
+	        left: 0;
+	        right: 0;
+	        z-index: 1;
+	        border-radius: calc(var(--curve) * 1px);
+	        background-color: rgba(255, 255, 255, 0.96);
+	        transform: translateY(100%);
+	        transition: 0.2s ease-in-out;
+	    }
+
+	    .bw-mrd-card:hover .bw-mrd-card__overlay {
+	        transform: translateY(0);
+	    }
+
+	    .bw-mrd-card__header {
+	        position: relative;
+	        display: flex;
+	        align-items: center;
+	        gap: 1.25em;
+	        padding: 1.25em 1.25em 1em;
+	        border-radius: calc(var(--curve) * 1px) 0 0 0;
+	        background-color: rgba(255, 255, 255, 0.96);
+	        transform: translateY(-100%);
+	        transition: 0.2s ease-in-out;
+	    }
+
+	    .bw-mrd-card__arc {
+	        width: 80px;
+	        height: 80px;
+	        position: absolute;
+	        bottom: 100%;
+	        right: 0;
+	        z-index: 1;
+	    }
+
+	    .bw-mrd-card__arc path {
+	        fill: rgba(255, 255, 255, 0.96);
+	        d: path("M 40 80 c 22 0 40 -22 40 -40 v 40 Z");
+	    }
+
+	    .bw-mrd-card:hover .bw-mrd-card__header {
+	        transform: translateY(0);
+	    }
+
+	    .bw-mrd-card__thumb {
+	        flex-shrink: 0;
+	        width: 46px;
+	        height: 46px;
+	        border-radius: 9999px;
+	        background: #fff;
+	        object-fit: contain;
+	        padding: 8px;
+	        border: 1px solid rgba(226, 232, 240, 0.9);
+	    }
+
+	    .bw-mrd-card__title {
+	        font-size: 1em;
+	        margin: 0 0 0.25em;
+	        color: #0f172a;
+	        font-weight: 800;
+	    }
+
+	    .bw-mrd-card__status {
+	        font-size: 0.85em;
+	        color: rgba(100, 116, 139, 0.9);
+	        font-weight: 700;
+	    }
+
+	    .bw-mrd-card__description {
+	        padding: 0 1.25em 1.25em;
+	        margin: 0;
+	        color: rgba(100, 116, 139, 0.92);
+	        display: -webkit-box;
+	        -webkit-box-orient: vertical;
+	        -webkit-line-clamp: 3;
+	        overflow: hidden;
+	    }
+
+	    @media (hover: none) {
+	        .bw-mrd-card__overlay {
+	            transform: translateY(0);
+	        }
+	        .bw-mrd-card__header {
+	            transform: translateY(0);
+	        }
+	    }
+
+		    .bw-order-grid {
+		        position: relative;
+		        display: inline-flex;
 	        align-items: center;
 	        justify-content: center;
 	        width: 14em;
