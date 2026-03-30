@@ -193,10 +193,12 @@
 		                        <ul class="bw-mrd-cards" aria-label="Mr D special">
 		                            <li>
 		                                <a href="javascript:void(0)" class="bw-mrd-card" aria-label="Mr D special">
+		                                    <span class="bw-mrd-card__loader" aria-hidden="true"></span>
 		                                    <img
 		                                        src="{{ $mrdSpecialUrl ?: asset('images/driver-platforms/mrd.png') }}"
 		                                        class="bw-mrd-card__image"
 		                                        alt="Mr D special"
+		                                        data-bw-mrd-img
 		                                        loading="lazy"
 		                                    />
 		                                    <div class="bw-mrd-card__overlay">
@@ -650,11 +652,30 @@
 	        box-shadow: 0 18px 42px -30px rgba(15, 23, 42, 0.7);
 	    }
 
+	    .bw-mrd-card__loader {
+	        position: absolute;
+	        inset: 0;
+	        z-index: 0;
+	        background:
+	            linear-gradient(110deg, rgba(226, 232, 240, 0.25) 8%, rgba(148, 163, 184, 0.25) 18%, rgba(226, 232, 240, 0.25) 33%),
+	            linear-gradient(145deg, rgba(37, 99, 235, 0.25), rgba(217, 70, 239, 0.18), rgba(244, 114, 182, 0.18));
+	        background-size: 250% 100%, 100% 100%;
+	        animation: bw-mrd-shimmer 1.25s infinite linear;
+	        opacity: 1;
+	        transition: opacity 0.35s ease;
+	    }
+
 	    .bw-mrd-card__image {
 	        width: 100%;
 	        height: 100%;
 	        object-fit: cover;
 	        display: block;
+	        position: relative;
+	        z-index: 1;
+	        opacity: 0;
+	        filter: blur(16px) saturate(1.05);
+	        transform: scale(1.02);
+	        transition: opacity 0.45s ease, filter 0.55s ease, transform 0.55s ease;
 	    }
 
 	    .bw-mrd-card__overlay {
@@ -667,6 +688,17 @@
 	        background-color: rgba(255, 255, 255, 0.96);
 	        transform: translateY(100%);
 	        transition: 0.2s ease-in-out;
+	    }
+
+	    .bw-mrd-card.is-loaded .bw-mrd-card__image {
+	        opacity: 1;
+	        filter: none;
+	        transform: none;
+	    }
+
+	    .bw-mrd-card.is-loaded .bw-mrd-card__loader {
+	        opacity: 0;
+	        animation: none;
 	    }
 
 	    .bw-mrd-card:hover .bw-mrd-card__overlay {
@@ -744,6 +776,11 @@
 	        .bw-mrd-card__header {
 	            transform: translateY(0);
 	        }
+	    }
+
+	    @keyframes bw-mrd-shimmer {
+	        0% { background-position: 100% 0, 0 0; }
+	        100% { background-position: -100% 0, 0 0; }
 	    }
 
 		    .bw-order-grid {
@@ -2015,6 +2052,39 @@
 
                 setActive(activeKey);
             };
+
+	            if (document.readyState === 'loading') {
+	                document.addEventListener('DOMContentLoaded', boot);
+	            } else {
+	                boot();
+	            }
+	        })();
+	    </script>
+	    <script>
+	        (function initMrdSpecialLoader() {
+	            const boot = () => {
+	                const imgs = Array.from(document.querySelectorAll('img[data-bw-mrd-img]'));
+	                imgs.forEach((img) => {
+	                    const card = img.closest('.bw-mrd-card');
+	                    if (!card) return;
+
+	                    const done = () => card.classList.add('is-loaded');
+
+	                    // Stop the loader even if the image fails.
+	                    img.addEventListener('error', done, { once: true });
+
+	                    if (img.complete) {
+	                        if (img.decode) {
+	                            img.decode().then(done).catch(done);
+	                        } else {
+	                            done();
+	                        }
+	                        return;
+	                    }
+
+	                    img.addEventListener('load', done, { once: true });
+	                });
+	            };
 
 	            if (document.readyState === 'loading') {
 	                document.addEventListener('DOMContentLoaded', boot);
