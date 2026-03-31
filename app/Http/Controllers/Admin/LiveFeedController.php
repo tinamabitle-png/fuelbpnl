@@ -20,7 +20,7 @@ class LiveFeedController extends Controller
         $limit = max(1, min(100, $limit));
 
         $query = FormInteraction::query()->orderByDesc('id')->limit($limit);
-        if ($afterId > 0) {
+        if ($afterId > 0) { 
             $query->where('id', '>', $afterId);
         }
 

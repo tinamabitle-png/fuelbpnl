@@ -19,7 +19,16 @@ class MarketplaceController extends Controller
         $user = Auth::user();
         abort_unless($user, 403);
 
-        $catalog = $catalogService->loadCatalog();
+        // Nearby-only: only load from the location-aware scrape output (no sample fallback).
+        $catalogPath = storage_path('app/scrapes/mrd/catalog_user_' . $user->id . '.json');
+        $catalog = $catalogService->loadCatalog($catalogPath);
+
+        $geoUsed = (bool) data_get($catalog, 'meta.geo.used', false);
+        if (!$geoUsed) {
+            $catalog['products'] = [];
+            $catalog['categories'] = [];
+            $catalog['source'] = 'nearby_required';
+        }
 
         $q = trim((string) $request->query('q', ''));
         $category = trim((string) $request->query('category', ''));

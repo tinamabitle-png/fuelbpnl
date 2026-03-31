@@ -10,12 +10,16 @@
     $rating = $product['rating'] ?? null;
     $badge = (string) ($product['badge'] ?? '');
     $desc = (string) ($product['description'] ?? '');
+    $link = (string) ($product['url'] ?? '');
 
     $image = (string) ($product['image'] ?? '');
-    $imgUrl = $image !== '' ? asset($image) : asset('images/driver-platforms/mrd.png');
+    $imageUrl = (string) ($product['image_url'] ?? '');
+    $imgUrl = $imageUrl !== ''
+        ? $imageUrl
+        : ($image !== '' ? asset($image) : asset('images/driver-platforms/mrd.png'));
 
     $currencySymbol = $currency === 'ZAR' ? 'R' : $currency;
-    $priceText = is_numeric($price) ? $currencySymbol . number_format((float) $price, 2) : $currencySymbol . '0.00';
+    $priceText = is_numeric($price) ? $currencySymbol . number_format((float) $price, 2) : '';
 @endphp
 
 <div class="bw-mrd-card">
@@ -47,12 +51,13 @@
         <div class="bw-mrd-desc">{{ $desc }}</div>
     @endif
 
-    <span class="bw-mrd-price">{{ $priceText }}</span>
+    @if($priceText !== '')
+        <span class="bw-mrd-price">{{ $priceText }}</span>
+    @endif
 
     <div class="bw-mrd-actions">
-        <a href="javascript:void(0)" class="bw-mrd-btn" onclick="alert('Checkout coming soon. This will create a BNPL order request.'); return false;">
+        <a href="{{ $link !== '' ? $link : 'javascript:void(0)' }}" class="bw-mrd-btn" onclick="alert('Checkout coming soon. This will create a BNPL order request.'); return false;">
             Pay in 4
         </a>
     </div>
 </div>
-

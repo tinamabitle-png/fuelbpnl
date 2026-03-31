@@ -23,6 +23,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Local HTTPS reverse-proxy support (e.g. https://localhost:8443 -> http://127.0.0.1:8000).
+        // Without this, Laravel may generate http:// links/redirects based on APP_URL, causing mixed content
+        // and "broken" pages under the proxy.
+        if (!app()->runningInConsole() && app()->environment('local')) {
+            $r = request();
+            $xfp = strtolower((string) $r->header('x-forwarded-proto', ''));
+            if ($xfp === 'https' && $r->getHost() === 'localhost') {
+                URL::forceScheme('https');
+                URL::forceRootUrl('https://' . $r->getHttpHost());
+            }
+        }
+
         if (app()->environment('production') && config('app.force_https')) {
             URL::forceScheme('https');
         }

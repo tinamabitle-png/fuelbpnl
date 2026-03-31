@@ -1085,11 +1085,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
 });
 
-Route::middleware(['auth'])->group(function () {
-    Route::get('/bnpl/mrd', [BnplMarketplaceController::class, 'mrd'])->name('bnpl.mrd.index');
-    Route::get('/bnpl/drivers', [BnplMarketplaceController::class, 'index'])->name('bnpl.marketplace.index');
-    Route::get('/bnpl/drivers/{driver}/order', [BnplMarketplaceController::class, 'create'])->whereNumber('driver')->name('bnpl.marketplace.order.create');
-    Route::post('/bnpl/drivers/{driver}/order', [BnplMarketplaceController::class, 'store'])->whereNumber('driver')->name('bnpl.marketplace.order.store');
+	Route::middleware(['auth'])->group(function () {
+	    Route::get('/bnpl/mrd', [BnplMarketplaceController::class, 'mrd'])->name('bnpl.mrd.index');
+	    Route::post('/bnpl/mrd/refresh', [\App\Http\Controllers\Bnpl\MrdScrapeController::class, 'refresh'])->name('bnpl.mrd.refresh');
+	    Route::get('/bnpl/drivers', [BnplMarketplaceController::class, 'index'])->name('bnpl.marketplace.index');
+	    Route::get('/bnpl/drivers/{driver}/order', [BnplMarketplaceController::class, 'create'])->whereNumber('driver')->name('bnpl.marketplace.order.create');
+	    Route::post('/bnpl/drivers/{driver}/order', [BnplMarketplaceController::class, 'store'])->whereNumber('driver')->name('bnpl.marketplace.order.store');
 
     Route::get('/bnpl/orders', [BnplMarketplaceController::class, 'orders'])->name('bnpl.orders.index');
     Route::get('/bnpl/orders/{order}', [BnplMarketplaceController::class, 'showOrder'])->whereNumber('order')->name('bnpl.orders.show');

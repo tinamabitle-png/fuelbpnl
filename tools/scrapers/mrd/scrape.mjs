@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import puppeteer from "puppeteer-core";
@@ -63,7 +64,7 @@ async function main() {
 
   // Use an isolated Chrome profile inside the project output dir to avoid
   // touching the user's real Chrome profile (often blocked in sandboxed envs).
-  const userDataDir = path.join(outDir, ".chrome-profile");
+  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "bwiser-mrd-profile-"));
 
   const browser = await puppeteer.launch({
     headless: headful ? false : "new",
@@ -74,10 +75,15 @@ async function main() {
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--disable-gpu",
+      "--disable-features=Crashpad",
+      `--crash-dumps-dir=${path.join(outDir, "crash")}`,
+      "--no-crash-upload",
       "--no-first-run",
       "--no-default-browser-check",
       "--disable-breakpad",
       "--disable-crash-reporter",
+      "--disable-background-networking",
+      "--disable-component-update",
     ],
   });
 
@@ -138,6 +144,11 @@ async function main() {
 
     console.log(`Saved: ${jsonPath}${screenshot ? " (+ screenshot)" : ""}`);
   } finally {
+    try {
+      fs.rmSync(userDataDir, { recursive: true, force: true });
+    } catch {
+      // ignore
+    }
     await browser.close();
   }
 }

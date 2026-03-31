@@ -8,12 +8,15 @@ class MrdCatalogService
 {
     public function loadCatalog(?string $pathOverride = null): array
     {
-        $pathsToTry = array_values(array_filter([
-            $pathOverride,
-            storage_path('app/scrapes/mrd/catalog.json'),
-            base_path('tools/scrapers/mrd/out/catalog.json'),
-            base_path('resources/data/mrd_catalog.sample.json'),
-        ]));
+        if (is_string($pathOverride) && trim($pathOverride) !== '') {
+            $pathsToTry = [trim($pathOverride)];
+        } else {
+            $pathsToTry = array_values(array_filter([
+                storage_path('app/scrapes/mrd/catalog.json'),
+                base_path('tools/scrapers/mrd/out/catalog.json'),
+                base_path('resources/data/mrd_catalog.sample.json'),
+            ]));
+        }
 
         foreach ($pathsToTry as $path) {
             if (!is_file($path)) {
@@ -32,6 +35,12 @@ class MrdCatalogService
 
             $categories = array_values(array_filter((array) Arr::get($decoded, 'categories', []), 'is_array'));
             $products = array_values(array_filter((array) Arr::get($decoded, 'products', []), 'is_array'));
+
+            // If a scrape wrote an empty file (blocked/geolocation/anti-bot), keep trying fallbacks
+            // so the marketplace template still has data to render.
+            if (count($products) === 0) {
+                continue;
+            }
 
             return [
                 'source' => (string) Arr::get($decoded, 'source', 'unknown'),
@@ -53,4 +62,3 @@ class MrdCatalogService
         ];
     }
 }
-

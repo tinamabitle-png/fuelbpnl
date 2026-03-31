@@ -41,15 +41,14 @@
     </script>
 @endpush
 
-@section('content')
-<section class="max-w-7xl mx-auto px-6 pt-16 pb-20">
-    <div class="glass welcome-hero-surface rounded-3xl p-8 md:p-12">
-        <div class="welcome-hero-image" aria-hidden="true"></div>
-        <div class="welcome-hero-overlay" aria-hidden="true"></div>
-        @php
-            $recentDrivers = collect((array) (($welcomeStats ?? [])['recent_drivers'] ?? []))->take(4);
-            $dashboardUrl = null;
-            if (auth()->check()) {
+	@section('content')
+	<section class="max-w-7xl mx-auto px-6 pt-16 pb-20">
+	    <div class="glass welcome-hero-surface rounded-3xl p-8 md:p-12">
+	        <div class="welcome-hero-image" aria-hidden="true"></div>
+	        @php
+	            $recentDrivers = collect((array) (($welcomeStats ?? [])['recent_drivers'] ?? []))->take(4);
+	            $dashboardUrl = null;
+	            if (auth()->check()) {
                 $user = auth()->user();
 
                 if ($user?->hasAnyRole(['super_admin', 'admin', 'employee'])) {
@@ -69,7 +68,7 @@
                     Infrastructure Finance and Voucher Payments,
                     <br>
                     <span class="text-white italic">easy as <span class="inline-block rounded-full bg-white px-3 py-1" style="color: #2563eb;">padel</span></span>
-                    <span class="hero-gradient-text block">Built for Real-Time <span class="inline-block rounded-full bg-white px-3 py-1" style="color: #2563eb;">Operations</span></span>
+                    <span class="hero-gradient-text block"><span class="inline-block rounded-full bg-white px-3 py-1" style="color: #2563eb;">Built for Real-Time Operations</span></span>
                 </h1>
                 <div class="mt-7 flex flex-wrap gap-3">
                     @auth
@@ -487,7 +486,7 @@
 
 </section>
 
-<div id="comingSoonModal" class="hidden fixed inset-0 z-[300] items-center justify-center p-4" role="dialog" aria-modal="true" aria-hidden="true">
+<div id="comingSoonModal" class="hidden fixed inset-0 z-[9999] items-center justify-center p-4" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="absolute inset-0 bg-black/55 backdrop-blur-sm" data-coming-soon-close></div>
     <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/10">
         <div class="flex items-start justify-between gap-4">
@@ -527,34 +526,27 @@
     </div>
 </div>
 
-<style>
-    .welcome-hero-surface {
-        position: relative;
-        overflow: hidden;
-        background: linear-gradient(135deg, rgba(255, 251, 235, 0.78), rgba(239, 246, 255, 0.82));
-        border-color: rgba(148, 163, 184, 0.2);
-        box-shadow: 0 24px 48px -34px rgba(148, 163, 184, 0.45);
-    }
+	<style>
+	    .welcome-hero-surface {
+	        position: relative;
+	        overflow: hidden;
+	        background: linear-gradient(135deg, rgba(255, 251, 235, 0.78), rgba(239, 246, 255, 0.82));
+	        border-color: rgba(148, 163, 184, 0.2);
+	        box-shadow: 0 24px 48px -34px rgba(148, 163, 184, 0.45);
+	    }
 
-    .welcome-hero-image,
-    .welcome-hero-overlay {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-    }
+	    .welcome-hero-image {
+	        position: absolute;
+	        inset: 0;
+	        pointer-events: none;
+	    }
 
-    .welcome-hero-image {
-        background-image: url("{{ asset('images/tennis.jpg') }}");
-        background-position: center;
-        background-size: cover;
-        opacity: 0.9;
-    }
-
-    .welcome-hero-overlay {
-        background:
-            linear-gradient(90deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.18) 42%, rgba(255, 255, 255, 0.04) 100%),
-            linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(248, 250, 252, 0.12));
-    }
+	    .welcome-hero-image {
+	        background-image: url("{{ asset('images/tennis.jpg') }}");
+	        background-position: center;
+	        background-size: cover;
+	        opacity: 0.9;
+	    }
 
     .super-button {
         position: relative;

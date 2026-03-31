@@ -6,10 +6,11 @@
     "node": ">=16.20.0"
   },
   "scripts": {
-    "scrape": "node scrape.mjs"
+    "scrape": "node scrape.mjs",
+    "scrape:special": "node scrape_special.mjs --out-dir out/special --download-dir ../../public/images --max-w 2400",
+    "scrape:catalog": "node scrape_catalog.mjs --out-dir out --out-file catalog.json --max-items 80"
   },
   "dependencies": {
     "puppeteer-core": "21.11.0"
   }
 }
-
