@@ -1,0 +1,146 @@
+{
+  "source": "mrd_template",
+  "fetched_at": "2026-03-31T00:00:00Z",
+  "currency": "ZAR",
+  "categories": [
+    { "id": "fresh", "name": "Fruits & Veges" },
+    { "id": "pantry", "name": "Pantry" },
+    { "id": "dairy", "name": "Dairy" },
+    { "id": "drinks", "name": "Juices" }
+  ],
+  "products": [
+    {
+      "id": "banana-1",
+      "category_id": "fresh",
+      "name": "Fresh Bananas",
+      "unit": "1 kg",
+      "price": 29.99,
+      "rating": 4.6,
+      "badge": "-10%",
+      "image": "images/mrd-template/thumb-bananas.png",
+      "description": "Market-fresh bananas. Perfect for breakfast, smoothies, and snacks."
+    },
+    {
+      "id": "avocado-1",
+      "category_id": "fresh",
+      "name": "Hass Avocados",
+      "unit": "4 pack",
+      "price": 54.00,
+      "rating": 4.7,
+      "badge": null,
+      "image": "images/mrd-template/thumb-avocado.png",
+      "description": "Ripe-ready avocados with creamy texture. Great for toast and salads."
+    },
+    {
+      "id": "tomato-1",
+      "category_id": "fresh",
+      "name": "Vine Tomatoes",
+      "unit": "1 kg",
+      "price": 38.50,
+      "rating": 4.4,
+      "badge": null,
+      "image": "images/mrd-template/thumb-tomatoes.png",
+      "description": "Juicy tomatoes for cooking and fresh meals."
+    },
+    {
+      "id": "cucumber-1",
+      "category_id": "fresh",
+      "name": "Cucumbers",
+      "unit": "2 pack",
+      "price": 24.00,
+      "rating": 4.3,
+      "badge": null,
+      "image": "images/mrd-template/thumb-cucumber.png",
+      "description": "Crisp cucumbers for salads and healthy snacks."
+    },
+    {
+      "id": "milk-1",
+      "category_id": "dairy",
+      "name": "Fresh Milk",
+      "unit": "2 L",
+      "price": 42.99,
+      "rating": 4.5,
+      "badge": null,
+      "image": "images/mrd-template/thumb-milk.png",
+      "description": "Everyday milk for coffee, cereal, and baking."
+    },
+    {
+      "id": "oj-1",
+      "category_id": "drinks",
+      "name": "Orange Juice",
+      "unit": "1 L",
+      "price": 36.99,
+      "rating": 4.2,
+      "badge": "NEW",
+      "image": "images/mrd-template/thumb-orange-juice.png",
+      "description": "Refreshing juice, chilled and ready."
+    },
+    {
+      "id": "rasp-1",
+      "category_id": "fresh",
+      "name": "Raspberries",
+      "unit": "125 g",
+      "price": 49.99,
+      "rating": 4.4,
+      "badge": null,
+      "image": "images/mrd-template/thumb-raspberries.png",
+      "description": "Sweet berries for desserts and breakfast bowls."
+    },
+    {
+      "id": "ketchup-1",
+      "category_id": "pantry",
+      "name": "Tomato Ketchup",
+      "unit": "700 g",
+      "price": 39.99,
+      "rating": 4.6,
+      "badge": "-15%",
+      "image": "images/mrd-template/thumb-tomatoketchup.png",
+      "description": "Classic ketchup for burgers, fries, and family meals."
+    },
+    {
+      "id": "tuna-1",
+      "category_id": "pantry",
+      "name": "Tuna Chunks",
+      "unit": "2 x 170 g",
+      "price": 59.99,
+      "rating": 4.1,
+      "badge": null,
+      "image": "images/mrd-template/thumb-tuna.jpg",
+      "description": "Pantry staple for quick meals and salads."
+    },
+    {
+      "id": "biscuits-1",
+      "category_id": "pantry",
+      "name": "Butter Biscuits",
+      "unit": "1 pack",
+      "price": 27.50,
+      "rating": 4.0,
+      "badge": null,
+      "image": "images/mrd-template/thumb-biscuits.png",
+      "description": "Crispy biscuits for tea-time and lunchboxes."
+    },
+    {
+      "id": "honey-1",
+      "category_id": "pantry",
+      "name": "Raw Honey",
+      "unit": "500 g",
+      "price": 89.00,
+      "rating": 4.8,
+      "badge": "TOP",
+      "image": "images/mrd-template/thumb-honey.jpg",
+      "description": "Natural honey for breakfast, baking, and wellness."
+    },
+    {
+      "id": "snack-1",
+      "category_id": "pantry",
+      "name": "Snack Mix",
+      "unit": "1 pack",
+      "price": 34.99,
+      "rating": 3.9,
+      "badge": null,
+      "image": "images/mrd-template/thumb-junk.jpg",
+      "description": "Convenient snack selection for busy days."
+    }
+  ]
+}
+

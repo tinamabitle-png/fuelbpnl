@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BnplInstallment;
 use App\Models\BnplOrder;
 use App\Models\User;
+use App\Services\MrdCatalogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,46 @@ use Illuminate\Support\Str;
 
 class MarketplaceController extends Controller
 {
+    public function mrd(Request $request, MrdCatalogService $catalogService)
+    {
+        $user = Auth::user();
+        abort_unless($user, 403);
+
+        $catalog = $catalogService->loadCatalog();
+
+        $q = trim((string) $request->query('q', ''));
+        $category = trim((string) $request->query('category', ''));
+
+        $products = collect((array) ($catalog['products'] ?? []));
+
+        if ($category !== '') {
+            $products = $products->filter(fn ($p) => (string) ($p['category_id'] ?? '') === $category);
+        }
+
+        if ($q !== '') {
+            $needle = mb_strtolower($q);
+            $products = $products->filter(function ($p) use ($needle) {
+                $hay = mb_strtolower((string) (($p['name'] ?? '') . ' ' . ($p['description'] ?? '') . ' ' . ($p['unit'] ?? '')));
+                return str_contains($hay, $needle);
+            });
+        }
+
+        // Keep it predictable for UI (and avoid massive renders until we have pagination).
+        $products = $products->values()->take(80);
+
+        $categories = collect((array) ($catalog['categories'] ?? []))
+            ->filter(fn ($c) => is_array($c) && (string) ($c['id'] ?? '') !== '')
+            ->values();
+
+        return view('bnpl.marketplace.mrd.index', [
+            'catalog' => $catalog,
+            'categories' => $categories,
+            'products' => $products,
+            'q' => $q,
+            'category' => $category,
+        ]);
+    }
+
     public function index(Request $request)
     {
         $user = Auth::user();

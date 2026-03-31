@@ -1086,6 +1086,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('/bnpl/mrd', [BnplMarketplaceController::class, 'mrd'])->name('bnpl.mrd.index');
     Route::get('/bnpl/drivers', [BnplMarketplaceController::class, 'index'])->name('bnpl.marketplace.index');
     Route::get('/bnpl/drivers/{driver}/order', [BnplMarketplaceController::class, 'create'])->whereNumber('driver')->name('bnpl.marketplace.order.create');
     Route::post('/bnpl/drivers/{driver}/order', [BnplMarketplaceController::class, 'store'])->whereNumber('driver')->name('bnpl.marketplace.order.store');
