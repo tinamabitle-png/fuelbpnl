@@ -65,9 +65,9 @@
         <div class="max-w-4xl relative z-[1]">
             <div class="min-w-0">
                 <h1 class="brand-font text-4xl md:text-6xl font-semibold text-slate-900 mt-4 leading-tight">
-                    Infrastructure Finance and Voucher Payments,
+                    Fuel Infrastructure Finance and Voucher Payments,
                     <br>
-                    <span class="text-white italic">easy as <span class="inline-block rounded-full bg-white px-3 py-1" style="color: #2563eb;">padel</span></span>
+                    <span class="text-white italic">easy as padel</span>
                     <span class="hero-gradient-text block"><span class="inline-block rounded-full bg-white px-3 py-1" style="color: #2563eb;">Built for Real-Time Operations</span></span>
                 </h1>
                 <div class="mt-7 flex flex-wrap gap-3">
