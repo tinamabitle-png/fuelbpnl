@@ -295,15 +295,13 @@
 		                                                <div class="ticket">
 		                                                    <div class="t-main">
 		                                                        <div class="t-content">
-	                                                            <div class="t-header">
-	                                                                <div class="t-logo">
-	                                                                    <svg viewBox="0 0 24 24" aria-hidden="true">
-	                                                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-	                                                                    </svg>
-	                                                                    BWISER
-	                                                                </div>
-	                                                                <div class="t-type">Voucher</div>
-	                                                            </div>
+		                                                            <div class="t-header">
+		                                                                <div class="t-logo">
+		                                                                    <img src="{{ asset('images/brand-logo.png') }}" alt="Bwiser" class="t-logo-img" loading="lazy">
+		                                                                    BWISER
+		                                                                </div>
+		                                                                <div class="t-type">Voucher</div>
+		                                                            </div>
 
 	                                                            <div class="t-title">Voucher<br />{{ $voucherCode }}</div>
 	                                                            <div class="t-subtitle">
@@ -1375,13 +1373,22 @@
         color: #fff;
     }
 
-    .t-logo svg {
-        width: 1.5em;
-        height: 1.5em;
-        fill: var(--t-accent);
-        filter: drop-shadow(0 0 5px var(--t-accent));
-        animation: logo-pulse 3s ease-in-out infinite alternate;
-    }
+	    .t-logo svg {
+	        width: 1.5em;
+	        height: 1.5em;
+	        fill: var(--t-accent);
+	        filter: drop-shadow(0 0 5px var(--t-accent));
+	        animation: logo-pulse 3s ease-in-out infinite alternate;
+	    }
+
+	    .t-logo img {
+	        width: 1.55em;
+	        height: 1.55em;
+	        border-radius: 0.45em;
+	        object-fit: cover;
+	        filter: drop-shadow(0 0 5px var(--t-accent));
+	        animation: logo-pulse 3s ease-in-out infinite alternate;
+	    }
 
     @keyframes logo-pulse {
         0% {
