@@ -135,7 +135,7 @@
         </div>
     </div>
 
-    <div class="glass rounded-2xl p-6 mt-8">
+    <div class="glass rounded-2xl p-6 mt-8 hidden">
         <div class="grid gap-6 md:grid-cols-2">
             <div>
                 <div class="relative">
