@@ -239,74 +239,117 @@
 	    <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
 	        <div class="lg:col-span-4">
 	            @php
-	                $ticketRepayment = $repayments->first();
-	                $ticketStation = $ticketRepayment ? (optional(optional($ticketRepayment->lease)->vouchers->first())->fuelStation->name ?? 'N/A') : 'N/A';
-	                $ticketVoucher = $ticketRepayment ? (optional(optional($ticketRepayment->lease)->vouchers->sortByDesc('id')->first())->code) : null;
-	                $ticketDue = $ticketRepayment ? \Illuminate\Support\Carbon::parse($ticketRepayment->due_date)->format('d M Y') : null;
-	                $ticketAmount = $ticketRepayment ? number_format(abs((float) $ticketRepayment->amount), 2) : null;
-	                $ticketStatus = $ticketRepayment ? (string) $ticketRepayment->status : 'N/A';
-	                $ticketStub = $ticketVoucher ?: ($ticketRepayment ? ('RP-' . $ticketRepayment->id) : 'BWISER');
-	                $ticketSeat = $ticketRepayment ? (string) $ticketRepayment->lease_id : '--';
-	                $ticketType = ($autopay['enabled'] ?? false) ? 'AUTO-PAY' : 'MANUAL';
+	                $repaymentsByVoucher = $repayments->getCollection()->groupBy(function ($repayment) {
+	                    $voucher = $repayment->lease?->vouchers?->sortByDesc('id')->first();
+	                    return $voucher?->code ?: ('LEASE-' . (string) $repayment->lease_id);
+	                });
 	            @endphp
 
-	            <div class="ticket-canvas">
-	                <div class="ticket-wrapper">
-	                    <div class="ticket">
-	                        <div class="t-main">
-	                            <div class="t-content">
-	                                <div class="t-header">
-	                                    <div class="t-logo">
-	                                        <svg viewBox="0 0 24 24" aria-hidden="true">
-	                                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-	                                        </svg>
-	                                        BWISER
+	            <div class="space-y-6">
+	                @forelse($repaymentsByVoucher as $voucherKey => $voucherRepayments)
+	                    @php
+	                        $voucher = $voucherRepayments->first()?->lease?->vouchers?->sortByDesc('id')->first();
+	                        $voucherCode = (string) ($voucher?->code ?: $voucherKey);
+	                        $voucherQrValue = (string) ($voucher?->qr_code ?: $voucherCode);
+	                        $voucherQrImage = $voucherQrValue !== ''
+	                            ? ('https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=8&ecc=H&format=png&data=' . urlencode($voucherQrValue))
+	                            : null;
+	                        $stationName = $voucher?->fuelStation?->name
+	                            ?? ($voucherRepayments->first()?->lease?->vouchers?->first()?->fuelStation?->name ?? 'N/A');
+
+	                        $pendingForVoucher = $voucherRepayments->filter(function ($repayment) {
+	                            return in_array((string) $repayment->status, ['pending', 'overdue'], true);
+	                        });
+	                        $pendingCount = $pendingForVoucher->count();
+	                        $pendingAmount = (float) $pendingForVoucher->sum('amount');
+	                        $pendingAmountDisplay = number_format(abs($pendingAmount), 2);
+
+	                        $nextDue = ($pendingForVoucher->sortBy('due_date')->first() ?: $voucherRepayments->sortBy('due_date')->first());
+	                        $nextDueDate = ($nextDue && $nextDue->due_date)
+	                            ? \Illuminate\Support\Carbon::parse($nextDue->due_date)->format('d M Y')
+	                            : 'N/A';
+
+	                        $ticketSeat = $voucherRepayments->first()?->lease_id ? (string) $voucherRepayments->first()->lease_id : '--';
+	                    @endphp
+
+	                    <div class="ticket-canvas">
+	                        <div class="ticket-wrapper">
+	                            <div class="ticket">
+	                                <div class="t-main">
+	                                    <div class="t-content">
+	                                        <div class="t-header">
+	                                            <div class="t-logo">
+	                                                <svg viewBox="0 0 24 24" aria-hidden="true">
+	                                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                                                </svg>
+	                                                BWISER
+	                                            </div>
+	                                            <div class="t-type">Voucher</div>
+	                                        </div>
+
+	                                        <div class="t-title">Voucher<br />{{ $voucherCode }}</div>
+	                                        <div class="t-subtitle">
+	                                            {{ \Illuminate\Support\Str::limit((string) $stationName, 28) }}
+	                                            @if($pendingCount > 0)
+	                                                • {{ $pendingCount }} due • -R {{ $pendingAmountDisplay }}
+	                                            @endif
+	                                        </div>
+
+	                                        <div class="t-details">
+	                                            <div class="t-detail-item">
+	                                                <span class="t-label">Next Due</span>
+	                                                <span class="t-value">{{ $nextDueDate }}</span>
+	                                            </div>
+	                                            <div class="t-detail-item">
+	                                                <span class="t-label">Due Items</span>
+	                                                <span class="t-value">{{ $pendingCount }}</span>
+	                                            </div>
+	                                            <div class="t-detail-item">
+	                                                <span class="t-label">Amount Due</span>
+	                                                <span class="t-value">-R {{ $pendingAmountDisplay }}</span>
+	                                            </div>
+	                                            <div class="t-detail-item">
+	                                                <span class="t-label">Driver</span>
+	                                                <span class="t-value">{{ \Illuminate\Support\Str::limit(auth()->user()->name ?? 'Driver', 18) }}</span>
+	                                            </div>
+	                                        </div>
 	                                    </div>
-	                                    <div class="t-type">{{ $ticketType }}</div>
+
+	                                    <div class="t-perforation" style="position:absolute; bottom:0; left:0; width:100%; transform:translateY(50%);" aria-hidden="true">
+	                                        <div class="t-perf-line"></div>
+	                                    </div>
 	                                </div>
-	                                <div class="t-title">Next<br />Repayment</div>
-	                                <div class="t-subtitle">
-	                                    @if($ticketDue && $ticketAmount)
-	                                        Due {{ $ticketDue }} • -R {{ $ticketAmount }}
-	                                    @else
-	                                        No repayments found yet.
-	                                    @endif
+
+	                                <div class="t-stub">
+	                                    <div class="t-barcode-container">
+	                                        <div class="t-qr-box">
+	                                            @if($voucherQrImage)
+	                                                <img
+	                                                    src="{{ $voucherQrImage }}"
+	                                                    alt="Voucher QR {{ $voucherCode }}"
+	                                                    class="t-qr-img"
+	                                                    loading="lazy"
+	                                                    onerror="this.style.display='none'; const fb=this.parentElement.querySelector('.t-qr-fallback'); if(fb) fb.style.display='grid';"
+	                                                >
+	                                                <span class="t-qr-fallback" style="display:none;">QR</span>
+	                                            @else
+	                                                <span class="t-qr-fallback">QR</span>
+	                                            @endif
+	                                        </div>
+	                                        <div class="t-barcode-id">{{ $voucherCode }}</div>
+	                                    </div>
+
+	                                    <div class="t-admit">
+	                                        <div class="t-admit-text">Lease</div>
+	                                        <div class="t-admit-num">{{ $ticketSeat }}</div>
+	                                    </div>
 	                                </div>
-	                                <div class="t-details">
-	                                    <div class="t-detail-item">
-	                                        <span class="t-label">Status</span>
-	                                        <span class="t-value">{{ $ticketStatus }}</span>
-	                                    </div>
-	                                    <div class="t-detail-item">
-	                                        <span class="t-label">Voucher</span>
-	                                        <span class="t-value">{{ $ticketVoucher ?: 'N/A' }}</span>
-	                                    </div>
-	                                    <div class="t-detail-item">
-	                                        <span class="t-label">Station</span>
-	                                        <span class="t-value">{{ \Illuminate\Support\Str::limit($ticketStation, 18) }}</span>
-	                                    </div>
-	                                    <div class="t-detail-item">
-	                                        <span class="t-label">Driver</span>
-	                                        <span class="t-value">{{ \Illuminate\Support\Str::limit(auth()->user()->name ?? 'Driver', 18) }}</span>
-	                                    </div>
-	                                </div>
-	                            </div>
-	                            <div class="t-perforation" style="position:absolute; bottom:0; left:0; width:100%; transform:translateY(50%);" aria-hidden="true">
-	                                <div class="t-perf-line"></div>
-	                            </div>
-	                        </div>
-	                        <div class="t-stub">
-	                            <div class="t-barcode-container">
-	                                <div class="t-barcode" aria-hidden="true"></div>
-	                                <div class="t-barcode-id">{{ $ticketStub }}</div>
-	                            </div>
-	                            <div class="t-admit">
-	                                <div class="t-admit-text">Lease</div>
-	                                <div class="t-admit-num">{{ $ticketSeat }}</div>
 	                            </div>
 	                        </div>
 	                    </div>
-	                </div>
+	                @empty
+	                    <div class="glass rounded-2xl p-6 text-center text-slate-500">No repayment records found.</div>
+	                @endforelse
 	            </div>
 	        </div>
 
@@ -1195,13 +1238,13 @@
     }
 
     /* Ticket (Unlock-style) */
-    .ticket-canvas {
-        min-height: 100%;
-        display: flex;
-        align-items: flex-start;
-        justify-content: center;
-        padding: 0;
-    }
+	    .ticket-canvas {
+	        min-height: 100%;
+	        display: flex;
+	        align-items: flex-start;
+	        justify-content: flex-start;
+	        padding: 0;
+	    }
 
     .ticket-wrapper {
         --t-bg: #0b1020;
@@ -1423,18 +1466,47 @@
         position: relative;
     }
 
-    .t-barcode-container {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5em;
-        min-width: 0;
-    }
+	    .t-barcode-container {
+	        display: flex;
+	        flex-direction: column;
+	        gap: 0.5em;
+	        min-width: 0;
+	    }
 
-    .t-barcode {
-        width: 10em;
-        height: 3em;
-        background: repeating-linear-gradient(
-            90deg,
+	    .t-qr-box {
+	        width: 7.2em;
+	        height: 7.2em;
+	        border-radius: 0.85em;
+	        background: rgba(255, 255, 255, 0.96);
+	        display: grid;
+	        place-items: center;
+	        padding: 0.35em;
+	        box-shadow: 0 12px 22px -20px rgba(2, 6, 23, 0.65);
+	    }
+
+	    .t-qr-img {
+	        width: 100%;
+	        height: 100%;
+	        display: block;
+	        object-fit: contain;
+	    }
+
+	    .t-qr-fallback {
+	        width: 100%;
+	        height: 100%;
+	        display: grid;
+	        place-items: center;
+	        font-weight: 950;
+	        color: #0b1020;
+	        letter-spacing: 0.18em;
+	        text-transform: uppercase;
+	    }
+
+	    .t-barcode {
+	        width: 10em;
+	        height: 3em;
+	        background: repeating-linear-gradient(
+	            90deg,
             #fff 0,
             #fff 2px,
             transparent 2px,
