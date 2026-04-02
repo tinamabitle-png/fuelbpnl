@@ -1316,14 +1316,14 @@ class DashboardController extends Controller
             ],
         ];
 
-        $optional = [
-            [
-                'key' => 'bank_statement',
-                'label' => 'Bank Statement (Optional)',
-                'required' => false,
-                'hint' => 'Improves your credit assessment and limits.',
-            ],
-        ];
+	        $optional = [
+	            [
+	                'key' => 'bank_statement',
+	                'label' => 'Bank Statement',
+	                'required' => false,
+	                'hint' => 'Improves your credit assessment and limits.',
+	            ],
+	        ];
 
         $items = [];
         foreach (array_merge($required, $optional) as $row) {

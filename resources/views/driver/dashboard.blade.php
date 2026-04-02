@@ -3,21 +3,12 @@
 @section('title', 'Driver Dashboard - Bwiser')
 
 @section('content')
-<section class="max-w-6xl mx-auto px-6 pt-16 pb-20">
-    @php
-        $walletBalance = (float) (auth()->user()?->wallet?->balance ?? 0);
-        $walletTopupEmail = trim((string) (
-            auth()->user()?->autopay_email
-            ?? auth()->user()?->email
-            ?? (function () {
-                $digits = preg_replace('/\\D+/', '', (string) (auth()->user()?->phone ?? ''));
-                return $digits !== '' ? ('driver' . $digits . '@bwiser.co.za') : ('driver+' . (auth()->id() ?? '0') . '@bwiser.co.za');
-            })()
-        ));
-        $compliance = $driverCompliance ?? ['ready' => true, 'items' => [], 'upload_url' => route('registration.complete', ['role' => 'driver'], false)];
-        $complianceReady = (bool) ($compliance['ready'] ?? true);
-        $complianceUploadUrl = (string) ($compliance['upload_url'] ?? route('registration.complete', ['role' => 'driver'], false));
-    @endphp
+	<section class="max-w-6xl mx-auto px-6 pt-16 pb-20">
+	    @php
+	        $compliance = $driverCompliance ?? ['ready' => true, 'items' => [], 'upload_url' => route('registration.complete', ['role' => 'driver'], false)];
+	        $complianceReady = (bool) ($compliance['ready'] ?? true);
+	        $complianceUploadUrl = (string) ($compliance['upload_url'] ?? route('registration.complete', ['role' => 'driver'], false));
+	    @endphp
     <style>
         /* Dashboard quick-link icon animations (hover + active) */
         .driver-quick-icon {
@@ -50,89 +41,12 @@
             70% { transform: translateY(-1px) scale(1.06); }
             100% { transform: translateY(-2px) scale(1.06); }
         }
-        @keyframes driver-pulse {
-            0% { transform: translateY(-2px) scale(1.06); }
-            40% { transform: translateY(-2px) scale(1.14); }
-            100% { transform: translateY(-2px) scale(1.06); }
-        }
-
-        /* Wallet balance card (header) */
-        .walletBalanceCard {
-            width: fit-content;
-            height: 55px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 12px;
-            padding: 0px 12px;
-            font-family: Arial, Helvetica, sans-serif;
-            /* No background fill: keep it clean and lightweight. */
-            box-shadow: none;
-            position: relative;
-            overflow: hidden;
-            background: transparent;
-            border: none;
-        }
-        .walletBalanceCard > * { position: relative; z-index: 1; }
-        .svgwrapper {
-            width: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            filter: drop-shadow(0 8px 18px rgba(236, 72, 153, 0.18));
-        }
-        .svgwrapper svg { width: 100%; }
-        .balancewrapper {
-            display: flex;
-            align-items: flex-start;
-            justify-content: flex-start;
-            flex-direction: column;
-            width: 140px;
-            gap: 0px;
-        }
-        .balanceHeading {
-            font-size: 8px;
-            color: rgba(15, 23, 42, 0.72);
-            font-weight: 100;
-            letter-spacing: 0.6px;
-            text-transform: uppercase;
-        }
-        .balance {
-            font-size: 13.5px;
-            color: #0f172a;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            line-height: 1.1;
-        }
-        .addmoney {
-            padding: 1px 15px;
-            border-radius: 20px;
-            background: #020DFF; /* Bwiser logo blue */
-            color: white;
-            border: none;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            white-space: nowrap;
-            text-decoration: none;
-        }
-        .addmoney:hover { background: #1d29ff; color: #ffffff; }
-        .plussign {
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-        }
-
-        /* Ensure top-up modal is above all dashboard UI. */
-        #walletTopupModal { z-index: 2147483647; }
-    </style>
+	        @keyframes driver-pulse {
+	            0% { transform: translateY(-2px) scale(1.06); }
+	            40% { transform: translateY(-2px) scale(1.14); }
+	            100% { transform: translateY(-2px) scale(1.06); }
+	        }
+	    </style>
 	    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
 	        <div>
 	            <div class="driver-greet-card mt-4">
@@ -231,164 +145,109 @@
 	                </nav>
             </div>
         </div>
-    </div>
-    @include('driver.partials.nav')
+	    </div>
+	    @include('driver.partials.nav')
 
-    <div class="mt-6 flex justify-start">
-        <div class="walletBalanceCard">
-            <div class="svgwrapper" aria-hidden="true">
-                <svg viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="0.539915" y="6.28937" width="21" height="4" rx="1.5" transform="rotate(-4.77865 0.539915 6.28937)" fill="#020DFF" stroke="black"></rect>
-                    <path d="M2.12011 6.64507C7.75028 6.98651 12.7643 6.94947 21.935 6.58499C22.789 6.55105 23.5 7.23329 23.5 8.08585V24C23.5 24.8284 22.8284 25.5 22 25.5H2C1.17157 25.5 0.5 24.8284 0.5 24V8.15475C0.5 7.2846 1.24157 6.59179 2.12011 6.64507Z" fill="#020DFF" stroke="black"></path>
-                    <path d="M16 13.5H23.5V18.5H16C14.6193 18.5 13.5 17.3807 13.5 16C13.5 14.6193 14.6193 13.5 16 13.5Z" fill="#020DFF" stroke="black"></path>
-                </svg>
-            </div>
+		    <div class="mt-4 driver-unlock-voucher-card">
+		        <div class="driver-unlock-voucher-card__text">
+		            <span>Unlock Voucher Applications</span>
+	            <p class="driver-unlock-voucher-card__subtitle">
+	                @if($complianceReady)
+	                    You are ready to apply for a voucher. Keep your documents up to date anytime.
+	                @else
+	                    Upload your required documents. Voucher applications unlock automatically once complete.
+	                @endif
+	            </p>
+	        </div>
 
-            <div class="balancewrapper">
-                <span class="balanceHeading">Wallet balance</span>
-                <p class="balance"><span id="currency">R</span>{{ number_format($walletBalance, 2) }}</p>
-            </div>
+	        <div class="driver-unlock-voucher-card__content">
+		            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+		                @foreach(($compliance['items'] ?? []) as $item)
+		                    @php
+		                        $label = trim((string) ($item['label'] ?? 'Document'));
+		                        $label = trim(preg_replace('/\\s*\\(optional\\)\\s*/i', '', $label) ?? $label);
+		                        $status = (string) ($item['status'] ?? 'missing');
+		                        $isMissing = $status === 'missing';
+		                        $isVerified = $status === 'verified';
+		                        $progress = $isVerified ? 100 : ($isMissing ? 0 : 75);
+		                        $accentFrom = $isMissing ? '#64748b' : ($isVerified ? '#020DFF' : '#7C3AED');
+				                        $accentTo = $isMissing ? '#94a3b8' : ($isVerified ? '#38bdf8' : '#020DFF');
+				                        $statusColor = $isMissing ? '#64748b' : ($isVerified ? '#020DFF' : '#7C3AED');
+				                        $statusLabel = $isMissing ? 'Missing' : ($isVerified ? 'Verified' : 'Uploaded');
+				                    @endphp
+	                    <div
+	                        class="card"
+	                        style="
+	                            --bw-unlock-accent-from: {{ $accentFrom }};
+	                            --bw-unlock-accent-to: {{ $accentTo }};
+	                            --bw-unlock-fill: {{ $progress }}%;
+	                            --bw-unlock-status-color: {{ $statusColor }};
+	                        "
+	                    >
+	                        <div class="title">
+	                            <span aria-hidden="true">
+	                                @if($isMissing)
+	                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+	                                        <path d="M12 9v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+	                                        <path d="M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+	                                        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                                    </svg>
+	                                @else
+	                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+	                                        <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                                    </svg>
+	                                @endif
+		                            </span>
+			                            <p class="title-text">
+			                                {{ $label !== '' ? $label : 'Document' }}
+			                            </p>
+	                            <p class="percent">
+	                                @if($isMissing)
+	                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+	                                        <path d="M12 9v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+	                                        <path d="M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+	                                    </svg>
+	                                @else
+	                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+	                                        <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                                    </svg>
+	                                @endif
+	                                {{ $statusLabel }}
+	                            </p>
+	                        </div>
+	                        <div class="data">
+	                            <p class="value">{{ $progress }}%</p>
+	                            <div class="range">
+	                                <div class="fill" aria-hidden="true"></div>
+	                            </div>
+	                            @if(!empty($item['hint']))
+	                                <p class="hint">{{ $item['hint'] }}</p>
+	                            @endif
+	                            @if($isMissing)
+	                                <a href="{{ $complianceUploadUrl }}" class="action">Upload now</a>
+	                            @endif
+	                        </div>
+	                    </div>
+	                @endforeach
+	            </div>
 
-            <button type="button" class="addmoney" id="walletTopupOpenBtn">
-                <span class="plussign">+</span>Add Money
-            </button>
-        </div>
-    </div>
+	            @if(!$complianceReady)
+	                <p class="text-xs text-white/90 mt-4">
+	                    Voucher applications are locked until your <span class="font-semibold">SA ID</span> and <span class="font-semibold">Driver Licence</span> are uploaded.
+	                </p>
+	            @endif
+	        </div>
 
-    <div
-        id="walletTopupModal"
-        class="fixed inset-0 z-[80] hidden items-center justify-center bg-black/50 p-4"
-        aria-hidden="true"
-    >
-        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-xs uppercase tracking-[0.2em] text-blue-600">Wallet Top-up</p>
-                    <p class="text-lg font-semibold text-slate-900 mt-1">Pay by Card</p>
-                    <p class="text-sm text-slate-600 mt-1">A secure card form will open to complete the payment.</p>
-                </div>
-                <button type="button" id="walletTopupCloseBtn" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                    Close
-                </button>
-            </div>
-
-            <form
-                id="walletTopupForm"
-                method="GET"
-                action="{{ route('driver.wallet.topup.paystack.start', [], false) }}"
-                class="mt-4 space-y-3"
-            >
-                @if ($errors->walletTopup->any())
-                    <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                        <p class="font-semibold">Please fix:</p>
-                        <ul class="mt-2 list-disc pl-5 space-y-1">
-                            @foreach ($errors->walletTopup->all() as $msg)
-                                <li>{{ $msg }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700" for="walletTopupAmount">Amount (R)</label>
-                    <input
-                        id="walletTopupAmount"
-                        name="amount"
-                        type="number"
-                        min="10"
-                        step="0.01"
-                        inputmode="decimal"
-                        required
-                        class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                        placeholder="e.g. 250.00"
-                    />
-                    <p class="mt-1 text-xs text-slate-500">Minimum top-up is R 10.00.</p>
-                </div>
-
-                <input type="hidden" name="payer_email" value="{{ $walletTopupEmail }}">
-
-                <button
-                    type="submit"
-                    id="walletTopupSubmitBtn"
-                    class="w-full rounded-xl py-3 font-semibold text-white"
-                    style="background: #020DFF;"
-                >
-                    Continue to Paystack
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <div class="mt-4 glass rounded-2xl p-5 border border-slate-200">
-        <div class="flex items-start justify-between gap-4">
-            <div>
-                <h3 class="brand-font text-lg text-slate-900 mt-1">Unlock Voucher Applications</h3>
-                <p class="text-sm text-slate-600 mt-1">
-                    Upload your required documents. Voucher applications unlock automatically once complete.
-                </p>
-            </div>
-            <a
-                href="{{ $complianceUploadUrl }}"
-                class="px-4 py-2.5 rounded-xl text-sm font-semibold text-white"
-                style="background:#020DFF;"
-            >
-                Upload
-            </a>
-        </div>
-
-        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            @foreach(($compliance['items'] ?? []) as $item)
-                @php
-                    $status = (string) ($item['status'] ?? 'missing');
-                    $isMissing = $status === 'missing';
-                    $isVerified = $status === 'verified';
-                @endphp
-                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex items-start gap-3">
-                            <div class="mt-0.5 h-6 w-6 rounded-full grid place-items-center {{ $isMissing ? 'bg-rose-50 text-rose-600' : ($isVerified ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600') }}">
-                                @if($isMissing)
-                                    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                        <path d="M12 9v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-                                        <path d="M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-                                        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                                    </svg>
-                                @else
-                                    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                        <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                                    </svg>
-                                @endif
-                            </div>
-                            <div>
-                                <p class="text-sm font-semibold text-slate-900">
-                                    {{ $item['label'] ?? 'Document' }}
-                                    @if(!empty($item['required']))
-                                        <span class="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase">Required</span>
-                                    @else
-                                        <span class="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase">Optional</span>
-                                    @endif
-                                </p>
-                                @if(!empty($item['hint']))
-                                    <p class="text-xs text-slate-500 mt-1">{{ $item['hint'] }}</p>
-                                @endif
-                            </div>
-                        </div>
-                        <span class="text-[11px] px-2 py-1 rounded-full font-semibold uppercase {{ $isMissing ? 'bg-rose-50 text-rose-700' : ($isVerified ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700') }}">
-                            {{ $isMissing ? 'Missing' : ($isVerified ? 'Verified' : 'Uploaded') }}
-                        </span>
-                    </div>
-                    @if($isMissing)
-                        <a href="{{ $complianceUploadUrl }}" class="mt-2 inline-flex text-xs font-semibold text-blue-600 hover:text-blue-700">Upload now</a>
-                    @endif
-                </div>
-            @endforeach
-        </div>
-
-        @if(!$complianceReady)
-            <p class="text-xs text-slate-600 mt-4">
-                Voucher applications are locked until your <span class="font-semibold">SA ID</span> and <span class="font-semibold">Driver Licence</span> are uploaded.
-            </p>
-        @endif
-    </div>
+		        <div class="driver-unlock-voucher-card__icons" aria-label="Unlock voucher actions">
+		            <a class="driver-unlock-voucher-card__btn" href="{{ $complianceUploadUrl }}" aria-label="Upload documents">
+		                <svg viewBox="0 0 24 24" class="driver-unlock-voucher-card__icon" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+		                    <path d="M12 16V3" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+		                    <path d="M7 8l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+		                    <path d="M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+		                </svg>
+		            </a>
+		        </div>
+		    </div>
 
     @if(session('error'))
         <div class="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -1004,10 +863,328 @@
 </section>
 
 <style>
-    .driver-wisdom-card {
-        width: min(100%, 320px);
-        min-height: 156px;
-        background: transparent;
+    /* Unlock Voucher Applications card */
+	    .driver-unlock-voucher-card {
+	        width: 100%;
+	        border-radius: 15px;
+	        background: linear-gradient(135deg, #020DFF, #7C3AED, #EC4899);
+	        display: flex;
+	        flex-direction: column;
+	        position: relative;
+	        overflow: hidden;
+	        box-shadow: 0 16px 34px rgba(2, 6, 23, 0.22);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .driver-unlock-voucher-card::before {
+        content: "";
+        height: 100px;
+        width: 100px;
+        position: absolute;
+        top: -40%;
+        left: -20%;
+        border-radius: 50%;
+        border: 35px solid rgba(255, 255, 255, 0.102);
+        transition: all .8s ease;
+        filter: blur(.5rem);
+        pointer-events: none;
+    }
+
+    .driver-unlock-voucher-card:hover::before {
+        width: 140px;
+        height: 140px;
+        top: -30%;
+        left: 50%;
+        filter: blur(0rem);
+    }
+
+    .driver-unlock-voucher-card__text {
+        flex-grow: 1;
+        padding: 18px 20px 14px;
+        display: flex;
+        flex-direction: column;
+        color: aliceblue;
+        font-weight: 900;
+        font-size: 1.2em;
+        position: relative;
+        z-index: 1;
+    }
+
+    .driver-unlock-voucher-card__subtitle {
+        margin-top: 6px;
+        font-size: .7em;
+        font-weight: 300;
+        color: rgba(240, 248, 255, 0.85);
+    }
+
+    .driver-unlock-voucher-card__content {
+        padding: 0 20px 18px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .driver-unlock-voucher-card__icons {
+        display: flex;
+        justify-items: center;
+        align-items: center;
+        width: 100%;
+        border-radius: 0px 0px 15px 15px;
+        overflow: hidden;
+        position: relative;
+        z-index: 1;
+        border-top: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+	    .driver-unlock-voucher-card__btn {
+	        border: none;
+	        flex: 1;
+	        height: 44px;
+	        background-color: rgba(255, 255, 255, 0.16);
+	        display: flex;
+	        align-items: center;
+	        justify-content: center;
+	        text-decoration: none;
+	        color: #ffffff;
+	    }
+
+	    .driver-unlock-voucher-card__btn:hover {
+	        background-color: rgba(255, 255, 255, 0.24);
+	    }
+
+    .driver-unlock-voucher-card__btn:focus-visible {
+        outline: 2px solid rgba(255, 255, 255, 0.9);
+        outline-offset: -2px;
+    }
+
+    .driver-unlock-voucher-card__btn.is-disabled {
+        opacity: 0.55;
+        pointer-events: none;
+    }
+
+    .driver-unlock-voucher-card__icon {
+        width: 25px;
+        height: 25px;
+        stroke: currentColor;
+    }
+
+	    .driver-unlock-voucher-card__icon--fill {
+	        fill: currentColor;
+	        stroke: none;
+	    }
+
+	    /* Document tiles inside Unlock Voucher Applications */
+	    .driver-unlock-voucher-card .card {
+	        padding: 1.5rem;
+	        background: linear-gradient(180deg, #ffffff, #f9f9f9);
+	        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+	        width: 100%;
+	        max-width: none;
+	        border-radius: 28px;
+	        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+	        transition: transform 0.45s ease, box-shadow 0.45s ease;
+	        transform: translateY(20px);
+	        opacity: 0;
+	        animation: bw-unlock-cardFadeUp 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+	    }
+
+	    .driver-unlock-voucher-card .card:hover {
+	        transform: translateY(-6px);
+	        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12);
+	    }
+
+	    .driver-unlock-voucher-card .title {
+	        display: flex;
+	        align-items: center;
+	    }
+
+	    .driver-unlock-voucher-card .title span {
+	        position: relative;
+	        padding: 0.6rem;
+	        background: linear-gradient(135deg, var(--bw-unlock-accent-from, #020DFF), var(--bw-unlock-accent-to, #7C3AED));
+	        width: 1.6rem;
+	        height: 1.6rem;
+	        border-radius: 50%;
+	        box-shadow: 0 3px 8px color-mix(in srgb, var(--bw-unlock-accent-to, #7C3AED) 35%, transparent);
+	        animation: bw-unlock-pulse 2.4s ease-in-out infinite;
+	    }
+
+	    .driver-unlock-voucher-card .title span svg {
+	        position: absolute;
+	        top: 50%;
+	        left: 50%;
+	        transform: translate(-50%, -50%);
+	        color: #ffffff;
+	        height: 1rem;
+	        width: 1rem;
+	    }
+
+	    .driver-unlock-voucher-card .title-text {
+	        margin: 0 0 0 0.75rem;
+	        color: #1c1c1e;
+	        font-size: 19px;
+	        font-weight: 600;
+	        letter-spacing: -0.02em;
+	        display: flex;
+	        align-items: center;
+	        gap: 0.4rem;
+	        flex-wrap: wrap;
+	        line-height: 1.15;
+	    }
+
+	    .driver-unlock-voucher-card .percent {
+	        margin: 0 0 0 auto;
+	        color: var(--bw-unlock-status-color, #020DFF);
+	        font-weight: 600;
+	        display: flex;
+	        align-items: center;
+	        gap: 0.35rem;
+	        font-size: 13px;
+	        line-height: 1;
+	        white-space: nowrap;
+	    }
+
+	    .driver-unlock-voucher-card .percent svg {
+	        width: 16px;
+	        height: 16px;
+	    }
+
+	    .driver-unlock-voucher-card .data {
+	        display: flex;
+	        flex-direction: column;
+	        justify-content: flex-start;
+	    }
+
+	    .driver-unlock-voucher-card .data .value {
+	        margin-top: 1.15rem;
+	        margin-bottom: 1.1rem;
+	        color: #111827;
+	        font-size: 2.2rem;
+	        line-height: 2.5rem;
+	        font-weight: 800;
+	        text-align: left;
+	        letter-spacing: -0.03em;
+	        opacity: 0;
+	        animation: bw-unlock-fadeIn 0.8s ease forwards 0.3s;
+	    }
+
+	    .driver-unlock-voucher-card .data .hint {
+	        margin-top: 0.7rem;
+	        color: rgba(15, 23, 42, 0.64);
+	        font-size: 12px;
+	        line-height: 1.3;
+	    }
+
+	    .driver-unlock-voucher-card .data .action {
+	        margin-top: 0.6rem;
+	        font-size: 12px;
+	        font-weight: 700;
+	        color: #020DFF;
+	        text-decoration: none;
+	        width: fit-content;
+	    }
+
+	    .driver-unlock-voucher-card .data .action:hover {
+	        text-decoration: underline;
+	    }
+
+	    .driver-unlock-voucher-card .data .range {
+	        position: relative;
+	        background-color: #e5e5ea;
+	        width: 100%;
+	        height: 0.55rem;
+	        border-radius: 9999px;
+	        overflow: hidden;
+	    }
+
+	    .driver-unlock-voucher-card .data .range .fill {
+	        position: absolute;
+	        top: 0;
+	        left: 0;
+	        background: linear-gradient(90deg, var(--bw-unlock-accent-from, #020DFF), var(--bw-unlock-accent-to, #7C3AED));
+	        width: 0%;
+	        height: 100%;
+	        border-radius: inherit;
+	        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15);
+	        animation:
+	            bw-unlock-fillBar 1.6s ease forwards 0.5s,
+	            bw-unlock-pulseFill 4s ease-in-out infinite 2.2s;
+	    }
+
+	    @keyframes bw-unlock-cardFadeUp {
+	        from {
+	            transform: translateY(20px);
+	            opacity: 0;
+	        }
+	        to {
+	            transform: translateY(0);
+	            opacity: 1;
+	        }
+	    }
+
+	    @keyframes bw-unlock-fadeIn {
+	        from {
+	            opacity: 0;
+	            transform: translateY(6px);
+	        }
+	        to {
+	            opacity: 1;
+	            transform: translateY(0);
+	        }
+	    }
+
+	    @keyframes bw-unlock-fillBar {
+	        from {
+	            width: 0%;
+	        }
+	        to {
+	            width: var(--bw-unlock-fill, 76%);
+	        }
+	    }
+
+	    @keyframes bw-unlock-pulseFill {
+	        0%,
+	        100% {
+	            filter: brightness(1);
+	        }
+	        50% {
+	            filter: brightness(1.2);
+	        }
+	    }
+
+	    @keyframes bw-unlock-pulse {
+	        0%,
+	        100% {
+	            transform: scale(1);
+	            box-shadow: 0 3px 8px color-mix(in srgb, var(--bw-unlock-accent-to, #7C3AED) 35%, transparent);
+	        }
+	        50% {
+	            transform: scale(1.08);
+	            box-shadow: 0 6px 14px color-mix(in srgb, var(--bw-unlock-accent-to, #7C3AED) 45%, transparent);
+	        }
+	    }
+
+	    @media (prefers-reduced-motion: reduce) {
+	        .driver-unlock-voucher-card .card,
+	        .driver-unlock-voucher-card .card:hover,
+	        .driver-unlock-voucher-card .title span,
+	        .driver-unlock-voucher-card .data .value,
+	        .driver-unlock-voucher-card .data .range .fill {
+	            animation: none !important;
+	            transition: none !important;
+	            transform: none !important;
+	            opacity: 1 !important;
+	        }
+
+	        .driver-unlock-voucher-card .data .range .fill {
+	            width: var(--bw-unlock-fill, 76%) !important;
+	            filter: none !important;
+	        }
+	    }
+
+	    .driver-wisdom-card {
+	        width: min(100%, 320px);
+	        min-height: 156px;
+	        background: transparent;
         position: relative;
         border-radius: 12px;
         padding: .2rem 0 .15rem;
@@ -3248,49 +3425,4 @@
 
 	</script>
 
-    <script>
-        (function () {
-            const openBtn = document.getElementById('walletTopupOpenBtn');
-            const modal = document.getElementById('walletTopupModal');
-            const closeBtn = document.getElementById('walletTopupCloseBtn');
-            const amountInput = document.getElementById('walletTopupAmount');
-            const submitBtn = document.getElementById('walletTopupSubmitBtn');
-            const form = document.getElementById('walletTopupForm');
-
-            function open() {
-                if (!modal) return;
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-                modal.setAttribute('aria-hidden', 'false');
-                setTimeout(() => amountInput && amountInput.focus(), 0);
-            }
-
-            function close() {
-                if (!modal) return;
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-                modal.setAttribute('aria-hidden', 'true');
-            }
-
-            openBtn && openBtn.addEventListener('click', open);
-            closeBtn && closeBtn.addEventListener('click', close);
-            modal && modal.addEventListener('click', (e) => {
-                if (e.target === modal) close();
-            });
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') close();
-            });
-
-            // Basic UX: disable submit after the form actually submits (prevents blocking the submit).
-            form && form.addEventListener('submit', () => {
-                if (!submitBtn) return;
-                submitBtn.setAttribute('disabled', 'disabled');
-                submitBtn.textContent = 'Redirecting to Paystack...';
-            });
-
-            // If the last attempt failed (validation/Paystack), re-open the modal automatically.
-            const shouldAutoOpen = @json((bool) session('wallet_topup_open', false) || $errors->walletTopup->any());
-            if (shouldAutoOpen) open();
-        })();
-    </script>
 	@endsection
