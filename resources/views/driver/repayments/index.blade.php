@@ -236,7 +236,82 @@
         </div>
     </div>
 
-    <div class="glass rounded-2xl mt-6 overflow-hidden">
+	    <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
+	        <div class="lg:col-span-4">
+	            @php
+	                $ticketRepayment = $repayments->first();
+	                $ticketStation = $ticketRepayment ? (optional(optional($ticketRepayment->lease)->vouchers->first())->fuelStation->name ?? 'N/A') : 'N/A';
+	                $ticketVoucher = $ticketRepayment ? (optional(optional($ticketRepayment->lease)->vouchers->sortByDesc('id')->first())->code) : null;
+	                $ticketDue = $ticketRepayment ? \Illuminate\Support\Carbon::parse($ticketRepayment->due_date)->format('d M Y') : null;
+	                $ticketAmount = $ticketRepayment ? number_format(abs((float) $ticketRepayment->amount), 2) : null;
+	                $ticketStatus = $ticketRepayment ? (string) $ticketRepayment->status : 'N/A';
+	                $ticketStub = $ticketVoucher ?: ($ticketRepayment ? ('RP-' . $ticketRepayment->id) : 'BWISER');
+	                $ticketSeat = $ticketRepayment ? (string) $ticketRepayment->lease_id : '--';
+	                $ticketType = ($autopay['enabled'] ?? false) ? 'AUTO-PAY' : 'MANUAL';
+	            @endphp
+
+	            <div class="ticket-canvas">
+	                <div class="ticket-wrapper">
+	                    <div class="ticket">
+	                        <div class="t-main">
+	                            <div class="t-content">
+	                                <div class="t-header">
+	                                    <div class="t-logo">
+	                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+	                                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                                        </svg>
+	                                        BWISER
+	                                    </div>
+	                                    <div class="t-type">{{ $ticketType }}</div>
+	                                </div>
+	                                <div class="t-title">Next<br />Repayment</div>
+	                                <div class="t-subtitle">
+	                                    @if($ticketDue && $ticketAmount)
+	                                        Due {{ $ticketDue }} • -R {{ $ticketAmount }}
+	                                    @else
+	                                        No repayments found yet.
+	                                    @endif
+	                                </div>
+	                                <div class="t-details">
+	                                    <div class="t-detail-item">
+	                                        <span class="t-label">Status</span>
+	                                        <span class="t-value">{{ $ticketStatus }}</span>
+	                                    </div>
+	                                    <div class="t-detail-item">
+	                                        <span class="t-label">Voucher</span>
+	                                        <span class="t-value">{{ $ticketVoucher ?: 'N/A' }}</span>
+	                                    </div>
+	                                    <div class="t-detail-item">
+	                                        <span class="t-label">Station</span>
+	                                        <span class="t-value">{{ \Illuminate\Support\Str::limit($ticketStation, 18) }}</span>
+	                                    </div>
+	                                    <div class="t-detail-item">
+	                                        <span class="t-label">Driver</span>
+	                                        <span class="t-value">{{ \Illuminate\Support\Str::limit(auth()->user()->name ?? 'Driver', 18) }}</span>
+	                                    </div>
+	                                </div>
+	                            </div>
+	                            <div class="t-perforation" style="position:absolute; bottom:0; left:0; width:100%; transform:translateY(50%);" aria-hidden="true">
+	                                <div class="t-perf-line"></div>
+	                            </div>
+	                        </div>
+	                        <div class="t-stub">
+	                            <div class="t-barcode-container">
+	                                <div class="t-barcode" aria-hidden="true"></div>
+	                                <div class="t-barcode-id">{{ $ticketStub }}</div>
+	                            </div>
+	                            <div class="t-admit">
+	                                <div class="t-admit-text">Lease</div>
+	                                <div class="t-admit-num">{{ $ticketSeat }}</div>
+	                            </div>
+	                        </div>
+	                    </div>
+	                </div>
+	            </div>
+	        </div>
+
+	        <div class="lg:col-span-8">
+	    <div class="glass rounded-2xl overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead class="bg-slate-50 text-slate-600">
@@ -400,6 +475,8 @@
         </div>
         <div class="px-4 py-4 bg-white border-t border-slate-100">
             {{ $repayments->links() }}
+        </div>
+    </div>
         </div>
     </div>
 
@@ -1115,6 +1192,303 @@
         50% {
             transform: translate3d(-50%, 0, 0);
         }
+    }
+
+    /* Ticket (Unlock-style) */
+    .ticket-canvas {
+        min-height: 100%;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 0;
+    }
+
+    .ticket-wrapper {
+        --t-bg: #0b1020;
+        --t-bg-light: #111b3a;
+        --t-accent: #020DFF;
+        --t-accent-glow: rgba(2, 13, 255, 0.45);
+        --t-text-main: #f8fafc;
+        --t-text-muted: #94a3b8;
+        font-size: 10px;
+        perspective: 1000px;
+        display: inline-block;
+        width: 100%;
+    }
+
+    .ticket {
+        position: relative;
+        width: 100%;
+        max-width: 380px;
+        color: var(--t-text-main);
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        transform-style: preserve-3d;
+        transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.6s ease;
+        box-shadow:
+            0 20px 40px rgba(2, 6, 23, 0.45),
+            0 0 0 1px rgba(255, 255, 255, 0.05);
+        background: transparent;
+        filter: drop-shadow(0px 0px 10px rgba(2, 6, 23, 0.35));
+    }
+
+    .ticket-wrapper:hover .ticket {
+        transform: rotateX(5deg) rotateY(-10deg) scale(1.02);
+        box-shadow:
+            20px 20px 40px rgba(2, 6, 23, 0.35),
+            0 0 0 1px rgba(255, 255, 255, 0.1),
+            -5px -5px 20px var(--t-accent-glow);
+    }
+
+    .ticket::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 1em;
+        pointer-events: none;
+        background: linear-gradient(
+            115deg,
+            transparent 0%,
+            transparent 40%,
+            rgba(255, 255, 255, 0.1) 45%,
+            rgba(255, 255, 255, 0.3) 50%,
+            rgba(255, 255, 255, 0.1) 55%,
+            transparent 60%,
+            transparent 100%
+        );
+        z-index: 10;
+        background-size: 250% 250%;
+        background-position: 100% 100%;
+        transition: background-position 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        mix-blend-mode: overlay;
+    }
+
+    .ticket-wrapper:hover .ticket::after {
+        background-position: 0% 0%;
+    }
+
+    .t-main {
+        padding: 2em;
+        position: relative;
+        overflow: hidden;
+        background: radial-gradient(circle at bottom left, transparent 1em, var(--t-bg) 1.05em),
+            radial-gradient(circle at bottom right, transparent 1em, var(--t-bg) 1.05em);
+        background-size: 51% 100%;
+        background-position: bottom left, bottom right;
+        background-repeat: no-repeat;
+        border-top-left-radius: 1em;
+        border-top-right-radius: 1em;
+    }
+
+    .t-main::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: linear-gradient(rgba(2, 13, 255, 0.12) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(2, 13, 255, 0.12) 1px, transparent 1px);
+        background-size: 2em 2em;
+        opacity: 0.55;
+        z-index: 0;
+        pointer-events: none;
+        transform: perspective(500px) rotateX(20deg) scale(1.5);
+        animation: grid-scroll 20s linear infinite;
+    }
+
+    @keyframes grid-scroll {
+        0% {
+            background-position: 0 0;
+        }
+        100% {
+            background-position: 0 4em;
+        }
+    }
+
+    .t-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .t-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 2em;
+    }
+
+    .t-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.55em;
+        font-weight: 900;
+        font-size: 1.15em;
+        letter-spacing: -0.05em;
+        color: #fff;
+    }
+
+    .t-logo svg {
+        width: 1.5em;
+        height: 1.5em;
+        fill: var(--t-accent);
+        filter: drop-shadow(0 0 5px var(--t-accent));
+        animation: logo-pulse 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes logo-pulse {
+        0% {
+            filter: drop-shadow(0 0 2px var(--t-accent));
+        }
+        100% {
+            filter: drop-shadow(0 0 10px var(--t-accent)) brightness(1.15);
+        }
+    }
+
+    .t-type {
+        font-size: 0.6em;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--t-accent);
+        border: 1px solid rgba(2, 13, 255, 0.5);
+        padding: 0.4em 0.8em;
+        border-radius: 99em;
+        font-weight: 800;
+        background: rgba(2, 13, 255, 0.08);
+    }
+
+    .t-title {
+        font-size: 2.3em;
+        font-weight: 950;
+        line-height: 1.1;
+        margin-bottom: 0.2em;
+        text-transform: uppercase;
+        background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .t-subtitle {
+        color: var(--t-text-muted);
+        font-size: 0.9em;
+        margin-bottom: 2.5em;
+    }
+
+    .t-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5em;
+        margin-bottom: 1em;
+    }
+
+    .t-detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2em;
+        min-width: 0;
+    }
+
+    .t-label {
+        font-size: 0.6em;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--t-text-muted);
+    }
+
+    .t-value {
+        font-size: 1.1em;
+        font-weight: 800;
+        color: var(--t-text-main);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .t-perf-line {
+        flex-grow: 1;
+        height: 0;
+        border-top: 2px dashed rgba(255, 255, 255, 0.2);
+        margin: 0 1.5em;
+    }
+
+    .t-stub {
+        padding: 2em;
+        background: radial-gradient(circle at top left, transparent 1em, var(--t-bg-light) 1.05em),
+            radial-gradient(circle at top right, transparent 1em, var(--t-bg-light) 1.05em);
+        background-size: 51% 100%;
+        background-position: top left, top right;
+        background-repeat: no-repeat;
+        border-bottom-left-radius: 1em;
+        border-bottom-right-radius: 1em;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+    }
+
+    .t-barcode-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5em;
+        min-width: 0;
+    }
+
+    .t-barcode {
+        width: 10em;
+        height: 3em;
+        background: repeating-linear-gradient(
+            90deg,
+            #fff 0,
+            #fff 2px,
+            transparent 2px,
+            transparent 4px,
+            #fff 4px,
+            #fff 5px,
+            transparent 5px,
+            transparent 8px,
+            #fff 8px,
+            #fff 12px,
+            transparent 12px,
+            transparent 15px,
+            #fff 15px,
+            #fff 16px,
+            transparent 16px,
+            transparent 18px
+        );
+        opacity: 0.8;
+    }
+
+    .t-barcode-id {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 0.7em;
+        color: var(--t-text-muted);
+        letter-spacing: 0.2em;
+        text-align: left;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 14em;
+    }
+
+    .t-admit {
+        text-align: right;
+        flex: 0 0 auto;
+    }
+
+    .t-admit-text {
+        font-size: 0.7em;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--t-text-muted);
+    }
+
+    .t-admit-num {
+        font-size: 3em;
+        font-weight: 950;
+        line-height: 1;
+        color: var(--t-accent);
+        text-shadow: 0 0 15px var(--t-accent-glow);
+    }
+
+    .ticket-wrapper:active .ticket {
+        transform: rotateX(15deg) rotateY(-5deg) scale(0.98);
     }
 
 </style>
