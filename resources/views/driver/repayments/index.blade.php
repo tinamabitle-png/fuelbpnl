@@ -236,292 +236,249 @@
         </div>
     </div>
 
-	    <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
-	        <div class="lg:col-span-4">
-	            @php
-	                $repaymentsByVoucher = $repayments->getCollection()->groupBy(function ($repayment) {
-	                    $voucher = $repayment->lease?->vouchers?->sortByDesc('id')->first();
-	                    return $voucher?->code ?: ('LEASE-' . (string) $repayment->lease_id);
-	                });
-	            @endphp
+	    @php
+	        $repaymentsByVoucher = $repayments->getCollection()->groupBy(function ($repayment) {
+	            $voucher = $repayment->lease?->vouchers?->sortByDesc('id')->first();
+	            return $voucher?->code ?: ('LEASE-' . (string) $repayment->lease_id);
+	        });
+	    @endphp
 
-	            <div class="space-y-6">
-	                @forelse($repaymentsByVoucher as $voucherKey => $voucherRepayments)
-	                    @php
-	                        $voucher = $voucherRepayments->first()?->lease?->vouchers?->sortByDesc('id')->first();
-	                        $voucherCode = (string) ($voucher?->code ?: $voucherKey);
-	                        $voucherQrValue = (string) ($voucher?->qr_code ?: $voucherCode);
-	                        $voucherQrImage = $voucherQrValue !== ''
-	                            ? ('https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=8&ecc=H&format=png&data=' . urlencode($voucherQrValue))
-	                            : null;
-	                        $stationName = $voucher?->fuelStation?->name
-	                            ?? ($voucherRepayments->first()?->lease?->vouchers?->first()?->fuelStation?->name ?? 'N/A');
+	    <div class="glass rounded-2xl mt-6 overflow-hidden">
+	        <div class="overflow-x-auto">
+		            <table class="min-w-full text-sm">
+		                <thead class="bg-slate-50 text-slate-600">
+		                    <tr>
+		                        <th class="px-4 py-3 text-left w-64">Voucher</th>
+		                        <th class="px-4 py-3 text-left">Due Date</th>
+		                        <th class="px-4 py-3 text-left">Amount</th>
+		                        <th class="px-4 py-3 text-left">Lease</th>
+		                        <th class="px-4 py-3 text-left">Station</th>
+		                        <th class="px-4 py-3 text-left">Status</th>
+	                        <th class="px-4 py-3 text-left">Action</th>
+	                    </tr>
+	                </thead>
+	                <tbody class="divide-y divide-slate-100 bg-white">
+	                    @forelse($repaymentsByVoucher as $voucherKey => $voucherRepayments)
+		                        @php
+		                            $voucher = $voucherRepayments->first()?->lease?->vouchers?->sortByDesc('id')->first();
+		                            $voucherCode = (string) ($voucher?->code ?: $voucherKey);
+		                            $voucherQrValue = (string) ($voucher?->qr_code ?: $voucherCode);
+		                            $voucherQrImage = $voucherQrValue !== ''
+		                                ? ('https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=8&ecc=H&format=png&data=' . urlencode($voucherQrValue))
+		                                : null;
+		                            $stationNameForVoucher = $voucher?->fuelStation?->name
+		                                ?? ($voucherRepayments->first()?->lease?->vouchers?->first()?->fuelStation?->name ?? 'N/A');
+		                            $ticketSeat = $voucherRepayments->first()?->lease_id ? (string) $voucherRepayments->first()->lease_id : '--';
 
-	                        $pendingForVoucher = $voucherRepayments->filter(function ($repayment) {
-	                            return in_array((string) $repayment->status, ['pending', 'overdue'], true);
-	                        });
-	                        $pendingCount = $pendingForVoucher->count();
-	                        $pendingAmount = (float) $pendingForVoucher->sum('amount');
-	                        $pendingAmountDisplay = number_format(abs($pendingAmount), 2);
+	                            $pendingForVoucher = $voucherRepayments->filter(function ($repayment) {
+	                                return in_array((string) $repayment->status, ['pending', 'overdue'], true);
+	                            });
+	                            $pendingCount = $pendingForVoucher->count();
+	                            $pendingAmount = (float) $pendingForVoucher->sum('amount');
+	                            $pendingAmountDisplay = number_format(abs($pendingAmount), 2);
+	                            $nextDue = ($pendingForVoucher->sortBy('due_date')->first() ?: $voucherRepayments->sortBy('due_date')->first());
+	                            $nextDueDate = ($nextDue && $nextDue->due_date)
+	                                ? \Illuminate\Support\Carbon::parse($nextDue->due_date)->format('d M Y')
+	                                : 'N/A';
+	                        @endphp
 
-	                        $nextDue = ($pendingForVoucher->sortBy('due_date')->first() ?: $voucherRepayments->sortBy('due_date')->first());
-	                        $nextDueDate = ($nextDue && $nextDue->due_date)
-	                            ? \Illuminate\Support\Carbon::parse($nextDue->due_date)->format('d M Y')
-	                            : 'N/A';
+	                        @foreach($voucherRepayments as $repayment)
+	                            @php
+	                                $stationName = optional(optional($repayment->lease)->vouchers->first())->fuelStation->name ?? 'N/A';
+	                                $voucherCodeRow = optional(optional($repayment->lease)->vouchers->sortByDesc('id')->first())->code;
+	                            @endphp
+		                            <tr>
+		                                @if($loop->first)
+		                                    <td rowspan="{{ $voucherRepayments->count() }}" class="px-4 py-3 align-middle bg-white w-64">
+		                                        <div class="ticket-canvas">
+		                                            <div class="ticket-wrapper ticket-wrapper--mini">
+		                                                <div class="ticket">
+		                                                    <div class="t-main">
+		                                                        <div class="t-content">
+	                                                            <div class="t-header">
+	                                                                <div class="t-logo">
+	                                                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+	                                                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+	                                                                    </svg>
+	                                                                    BWISER
+	                                                                </div>
+	                                                                <div class="t-type">Voucher</div>
+	                                                            </div>
 
-	                        $ticketSeat = $voucherRepayments->first()?->lease_id ? (string) $voucherRepayments->first()->lease_id : '--';
-	                    @endphp
+	                                                            <div class="t-title">Voucher<br />{{ $voucherCode }}</div>
+	                                                            <div class="t-subtitle">
+	                                                                {{ \Illuminate\Support\Str::limit((string) $stationNameForVoucher, 26) }}
+	                                                                @if($pendingCount > 0)
+	                                                                    • {{ $pendingCount }} due • -R {{ $pendingAmountDisplay }}
+	                                                                @endif
+	                                                            </div>
 
-	                    <div class="ticket-canvas">
-	                        <div class="ticket-wrapper">
-	                            <div class="ticket">
-	                                <div class="t-main">
-	                                    <div class="t-content">
-	                                        <div class="t-header">
-	                                            <div class="t-logo">
-	                                                <svg viewBox="0 0 24 24" aria-hidden="true">
-	                                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-	                                                </svg>
-	                                                BWISER
+	                                                            <div class="t-details">
+	                                                                <div class="t-detail-item">
+	                                                                    <span class="t-label">Next Due</span>
+	                                                                    <span class="t-value">{{ $nextDueDate }}</span>
+	                                                                </div>
+	                                                                <div class="t-detail-item">
+	                                                                    <span class="t-label">Amount Due</span>
+	                                                                    <span class="t-value">-R {{ $pendingAmountDisplay }}</span>
+	                                                                </div>
+	                                                                <div class="t-detail-item">
+	                                                                    <span class="t-label">Due Items</span>
+	                                                                    <span class="t-value">{{ $pendingCount }}</span>
+	                                                                </div>
+	                                                                <div class="t-detail-item">
+	                                                                    <span class="t-label">Driver</span>
+	                                                                    <span class="t-value">{{ \Illuminate\Support\Str::limit(auth()->user()->name ?? 'Driver', 16) }}</span>
+	                                                                </div>
+	                                                            </div>
+	                                                        </div>
+
+	                                                        <div class="t-perforation" style="position:absolute; bottom:0; left:0; width:100%; transform:translateY(50%);" aria-hidden="true">
+	                                                            <div class="t-perf-line"></div>
+	                                                        </div>
+	                                                    </div>
+
+	                                                    <div class="t-stub">
+	                                                        <div class="t-barcode-container">
+	                                                            <div class="t-qr-box">
+	                                                                @if($voucherQrImage)
+	                                                                    <img
+	                                                                        src="{{ $voucherQrImage }}"
+	                                                                        alt="Voucher QR {{ $voucherCode }}"
+	                                                                        class="t-qr-img"
+	                                                                        loading="lazy"
+	                                                                        onerror="this.style.display='none'; const fb=this.parentElement.querySelector('.t-qr-fallback'); if(fb) fb.style.display='grid';"
+	                                                                    >
+	                                                                    <span class="t-qr-fallback" style="display:none;">QR</span>
+	                                                                @else
+	                                                                    <span class="t-qr-fallback">QR</span>
+	                                                                @endif
+	                                                            </div>
+	                                                            <div class="t-barcode-id">{{ $voucherCode }}</div>
+	                                                        </div>
+
+	                                                        <div class="t-admit">
+	                                                            <div class="t-admit-text">Lease</div>
+	                                                            <div class="t-admit-num">{{ $ticketSeat }}</div>
+	                                                        </div>
+	                                                    </div>
+	                                                </div>
 	                                            </div>
-	                                            <div class="t-type">Voucher</div>
 	                                        </div>
+	                                    </td>
+	                                @endif
 
-	                                        <div class="t-title">Voucher<br />{{ $voucherCode }}</div>
-	                                        <div class="t-subtitle">
-	                                            {{ \Illuminate\Support\Str::limit((string) $stationName, 28) }}
-	                                            @if($pendingCount > 0)
-	                                                • {{ $pendingCount }} due • -R {{ $pendingAmountDisplay }}
-	                                            @endif
+	                                <td class="px-4 py-3 text-slate-700">{{ \Illuminate\Support\Carbon::parse($repayment->due_date)->format('d M Y') }}</td>
+	                                <td class="px-4 py-3 font-medium text-slate-900">-R {{ number_format(abs((float) $repayment->amount), 2) }}</td>
+	                                <td class="px-4 py-3 text-slate-700">#{{ $repayment->lease_id }}</td>
+	                                <td class="px-4 py-3 text-slate-700">{{ $stationName }}</td>
+	                                <td class="px-4 py-3">
+	                                    <span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 uppercase">{{ $repayment->status }}</span>
+	                                    <p class="text-[11px] text-slate-500 mt-1">Voucher: {{ $voucherCodeRow ?: 'N/A' }}</p>
+	                                </td>
+	                                <td class="px-4 py-3">
+	                                    @if(in_array($repayment->status, ['pending', 'overdue'], true))
+	                                        @php
+	                                            $requestUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+	                                                'driver.repayments.request.show',
+	                                                now()->addDays(7),
+	                                                ['repayment' => $repayment->id]
+	                                            );
+	                                            $shareText = sprintf(
+	                                                'Please help me settle my Bwiser repayment of -R %s for voucher %s due on %s.',
+	                                                number_format(abs((float) $repayment->amount), 2),
+	                                                $voucherCodeRow ?: ('#' . (string) $repayment->id),
+	                                                \Illuminate\Support\Carbon::parse($repayment->due_date)->format('d M Y')
+	                                            );
+	                                            $shareTextWithUrl = $shareText . ' ' . $requestUrl;
+	                                        @endphp
+		                                        <div class="flex flex-wrap gap-2">
+		                                            <a href="{{ route('driver.repayments.pay-now', $repayment, false) }}" class="pay-btn">
+		                                                <span class="btn-text">Pay Now</span>
+		                                                <div class="icon-container">
+		                                                    <svg viewBox="0 0 24 24" class="icon card-icon">
+		                                                        <path d="M20,8H4V6H20M20,18H4V12H20M20,4H4C2.89,4 2,4.89 2,6V18C2,19.11 2.89,20 4,20H20C21.11,20 22,19.11 22,18V6C22,4.89 21.11,4 20,4Z" fill="currentColor"></path>
+		                                                    </svg>
+		                                                    <svg viewBox="0 0 24 24" class="icon payment-icon">
+		                                                        <path d="M2,17H22V21H2V17M6.25,7H9V6H6V3H18V6H15V7H17.75L19,17H5L6.25,7M9,10H15V8H9V10M9,13H15V11H9V13Z" fill="currentColor"></path>
+		                                                    </svg>
+		                                                    <svg viewBox="0 0 24 24" class="icon dollar-icon">
+		                                                        <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z" fill="currentColor"></path>
+		                                                    </svg>
+		                                                    <svg viewBox="0 0 24 24" class="icon wallet-icon default-icon">
+		                                                        <path d="M21,18V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5A2,2 0 0,1 5,3H19A2,2 0 0,1 21,5V6H12C10.89,6 10,6.9 10,8V16A2,2 0 0,0 12,18M12,16H22V8H12M16,13.5A1.5,1.5 0 0 1 14.5,12A1.5,1.5 0 0 1 16,10.5A1.5,1.5 0 0 1 17.5,12A1.5,1.5 0 0 1 16,13.5Z" fill="currentColor"></path>
+		                                                    </svg>
+		                                                    <svg viewBox="0 0 24 24" class="icon check-icon">
+		                                                        <path d="M9,16.17L4.83,12L3.41,13.41L9,19L21,7L19.59,5.59L9,16.17Z" fill="currentColor"></path>
+		                                                    </svg>
+		                                                </div>
+		                                            </a>
+		                                            <a href="{{ route('driver.repayments.payshap.show', $repayment) }}" class="payshap-chip" aria-label="Pay via PayShap" title="Pay via PayShap">
+		                                                <span class="payshap-logo" aria-hidden="true">
+		                                                    <span class="payshap-logo__word"><span class="payshap-logo__pay">pay</span><span class="payshap-logo__shap">shap</span></span>
+		                                                    <img src="{{ asset('images/shap.png') }}" alt="" class="payshap-logo__mark" loading="lazy" aria-hidden="true">
+		                                                </span>
+		                                            </a>
+		                                            <a href="{{ route('driver.repayments.crypto.show', $repayment) }}?asset=XBT" class="crypto-3d-btn crypto-3d-btn--btc" title="Pay with Bitcoin" aria-label="Pay with Bitcoin">
+		                                                <span class="crypto-3d-coin crypto-3d-coin--btc" aria-hidden="true">
+		                                                    <svg viewBox="0 0 64 64" class="crypto-3d-svg" aria-hidden="true">
+		                                                        <defs>
+		                                                            <linearGradient id="btcG" x1="0" y1="0" x2="1" y2="1">
+		                                                                <stop offset="0" stop-color="#ffb45a"></stop>
+		                                                                <stop offset="0.55" stop-color="#f7931a"></stop>
+		                                                                <stop offset="1" stop-color="#d86e00"></stop>
+		                                                            </linearGradient>
+		                                                        </defs>
+		                                                        <circle cx="32" cy="32" r="28" fill="url(#btcG)"></circle>
+		                                                        <path d="M32 10c-12.15 0-22 9.85-22 22s9.85 22 22 22 22-9.85 22-22S44.15 10 32 10Z" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2"></path>
+		                                                        <path d="M37.8 28.7c1.9-1.1 2.8-2.7 2.4-4.9-.6-3.2-3.9-4.3-7.9-4.5V16h-3v3.2h-2.4V16h-3v3.4h-3.9v3.2h2.1c.9 0 1.2.3 1.3.9v14.1c0 .5-.2.8-.8.8h-2.6V46h3.9V49h3v-3h2.4v3h3v-3.1c4.6-.3 8.2-1.7 8.9-6 .5-3-1-5-3.5-6.2Zm-9.6-5.9c2.1 0 6 .2 6 2.8 0 2.8-3.8 3-6 3v-5.8Zm0 19.2V34c2.6 0 7.2.3 7.2 3.5 0 3.2-4.6 3.6-7.2 3.5Z" fill="#ffffff" opacity="0.95"></path>
+		                                                    </svg>
+		                                                </span>
+		                                            </a>
+		                                            <a href="{{ route('driver.repayments.crypto.show', $repayment) }}?asset=ETH" class="crypto-3d-btn crypto-3d-btn--eth" title="Pay with Ethereum" aria-label="Pay with Ethereum">
+		                                                <span class="crypto-3d-coin crypto-3d-coin--eth" aria-hidden="true">
+		                                                    <svg viewBox="0 0 64 64" class="crypto-3d-svg" aria-hidden="true">
+		                                                        <defs>
+		                                                            <linearGradient id="ethG" x1="0" y1="0" x2="1" y2="1">
+		                                                                <stop offset="0" stop-color="#9aa7ff"></stop>
+		                                                                <stop offset="0.55" stop-color="#627eea"></stop>
+		                                                                <stop offset="1" stop-color="#3557d8"></stop>
+		                                                            </linearGradient>
+		                                                        </defs>
+		                                                        <circle cx="32" cy="32" r="28" fill="url(#ethG)"></circle>
+		                                                        <path d="M32 10c-12.15 0-22 9.85-22 22s9.85 22 22 22 22-9.85 22-22S44.15 10 32 10Z" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2"></path>
+		                                                        <path d="M32 16 22.6 32.2 32 27.8l9.4 4.4L32 16Z" fill="#ffffff" opacity="0.92"></path>
+		                                                        <path d="M32 28.7 22.6 33.1 32 48l9.4-14.9L32 28.7Z" fill="#ffffff" opacity="0.82"></path>
+		                                                        <path d="M32 27.8v20.2l9.4-14.9L32 27.8Z" fill="#dfe6ff" opacity="0.75"></path>
+		                                                    </svg>
+		                                                </span>
+		                                            </a>
+		                                        </div>
+	                                        <div class="mt-2">
+	                                            <a href="https://wa.me/?text={{ urlencode($shareTextWithUrl) }}" target="_blank" rel="noopener" class="pay-for-me-btn">
+	                                                <span class="pay-for-me-btn-label">Pay for me</span>
+	                                                <span class="pay-for-me-btn-sub">Share on WhatsApp</span>
+	                                            </a>
 	                                        </div>
-
-	                                        <div class="t-details">
-	                                            <div class="t-detail-item">
-	                                                <span class="t-label">Next Due</span>
-	                                                <span class="t-value">{{ $nextDueDate }}</span>
-	                                            </div>
-	                                            <div class="t-detail-item">
-	                                                <span class="t-label">Due Items</span>
-	                                                <span class="t-value">{{ $pendingCount }}</span>
-	                                            </div>
-	                                            <div class="t-detail-item">
-	                                                <span class="t-label">Amount Due</span>
-	                                                <span class="t-value">-R {{ $pendingAmountDisplay }}</span>
-	                                            </div>
-	                                            <div class="t-detail-item">
-	                                                <span class="t-label">Driver</span>
-	                                                <span class="t-value">{{ \Illuminate\Support\Str::limit(auth()->user()->name ?? 'Driver', 18) }}</span>
-	                                            </div>
-	                                        </div>
-	                                    </div>
-
-	                                    <div class="t-perforation" style="position:absolute; bottom:0; left:0; width:100%; transform:translateY(50%);" aria-hidden="true">
-	                                        <div class="t-perf-line"></div>
-	                                    </div>
-	                                </div>
-
-	                                <div class="t-stub">
-	                                    <div class="t-barcode-container">
-	                                        <div class="t-qr-box">
-	                                            @if($voucherQrImage)
-	                                                <img
-	                                                    src="{{ $voucherQrImage }}"
-	                                                    alt="Voucher QR {{ $voucherCode }}"
-	                                                    class="t-qr-img"
-	                                                    loading="lazy"
-	                                                    onerror="this.style.display='none'; const fb=this.parentElement.querySelector('.t-qr-fallback'); if(fb) fb.style.display='grid';"
-	                                                >
-	                                                <span class="t-qr-fallback" style="display:none;">QR</span>
-	                                            @else
-	                                                <span class="t-qr-fallback">QR</span>
-	                                            @endif
-	                                        </div>
-	                                        <div class="t-barcode-id">{{ $voucherCode }}</div>
-	                                    </div>
-
-	                                    <div class="t-admit">
-	                                        <div class="t-admit-text">Lease</div>
-	                                        <div class="t-admit-num">{{ $ticketSeat }}</div>
-	                                    </div>
-	                                </div>
-	                            </div>
-	                        </div>
-	                    </div>
-	                @empty
-	                    <div class="glass rounded-2xl p-6 text-center text-slate-500">No repayment records found.</div>
-	                @endforelse
-	            </div>
+	                                        <p class="text-[11px] text-slate-500 mt-2">Voucher {{ $voucherCodeRow ?: 'N/A' }} • Manual buttons perform a one-time override only. Auto-pay remains enabled for upcoming repayments.</p>
+	                                    @else
+	                                        <span class="text-xs text-emerald-600 font-medium">Paid</span>
+	                                    @endif
+	                                </td>
+	                            </tr>
+	                        @endforeach
+	                    @empty
+	                        <tr>
+	                            <td colspan="7" class="px-4 py-8 text-center text-slate-500">No repayment records found.</td>
+	                        </tr>
+	                    @endforelse
+	                </tbody>
+	            </table>
 	        </div>
-
-	        <div class="lg:col-span-8">
-	    <div class="glass rounded-2xl overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-                <thead class="bg-slate-50 text-slate-600">
-                    <tr>
-                        <th class="px-4 py-3 text-left">Due Date</th>
-                        <th class="px-4 py-3 text-left">Amount</th>
-                        <th class="px-4 py-3 text-left">Lease</th>
-                        <th class="px-4 py-3 text-left">Station</th>
-                        <th class="px-4 py-3 text-left">Status</th>
-                        <th class="px-4 py-3 text-left">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 bg-white">
-                    @forelse($repayments as $repayment)
-                        @php
-                            $stationName = optional(optional($repayment->lease)->vouchers->first())->fuelStation->name ?? 'N/A';
-                            $voucherCode = optional(optional($repayment->lease)->vouchers->sortByDesc('id')->first())->code;
-                        @endphp
-                        <tr>
-                            <td class="px-4 py-3 text-slate-700">{{ \Illuminate\Support\Carbon::parse($repayment->due_date)->format('d M Y') }}</td>
-                            <td class="px-4 py-3 font-medium text-slate-900">-R {{ number_format(abs((float) $repayment->amount), 2) }}</td>
-                            <td class="px-4 py-3 text-slate-700">#{{ $repayment->lease_id }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $stationName }}</td>
-                            <td class="px-4 py-3">
-                                <span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 uppercase">{{ $repayment->status }}</span>
-                                <p class="text-[11px] text-slate-500 mt-1">Voucher: {{ $voucherCode ?: 'N/A' }}</p>
-                            </td>
-                            <td class="px-4 py-3">
-                                @if(in_array($repayment->status, ['pending', 'overdue'], true))
-                                    @php
-                                        $requestUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
-                                            'driver.repayments.request.show',
-                                            now()->addDays(7),
-                                            ['repayment' => $repayment->id]
-                                        );
-                                        $shareText = sprintf(
-                                            'Please help me settle my Bwiser repayment of -R %s for voucher %s due on %s.',
-                                            number_format(abs((float) $repayment->amount), 2),
-                                            $voucherCode ?: ('#' . (string) $repayment->id),
-                                            \Illuminate\Support\Carbon::parse($repayment->due_date)->format('d M Y')
-                                        );
-                                        $shareTextWithUrl = $shareText . ' ' . $requestUrl;
-                                    @endphp
-	                                    <div class="flex flex-wrap gap-2">
-	                                        <a href="{{ route('driver.repayments.pay-now', $repayment, false) }}" class="pay-btn">
-	                                            <span class="btn-text">Pay Now</span>
-                                            <div class="icon-container">
-                                                <svg viewBox="0 0 24 24" class="icon card-icon">
-                                                    <path
-                                                        d="M20,8H4V6H20M20,18H4V12H20M20,4H4C2.89,4 2,4.89 2,6V18C2,19.11 2.89,20 4,20H20C21.11,20 22,19.11 22,18V6C22,4.89 21.11,4 20,4Z"
-                                                        fill="currentColor"
-                                                    ></path>
-                                                </svg>
-                                                <svg viewBox="0 0 24 24" class="icon payment-icon">
-                                                    <path
-                                                        d="M2,17H22V21H2V17M6.25,7H9V6H6V3H18V6H15V7H17.75L19,17H5L6.25,7M9,10H15V8H9V10M9,13H15V11H9V13Z"
-                                                        fill="currentColor"
-                                                    ></path>
-                                                </svg>
-                                                <svg viewBox="0 0 24 24" class="icon dollar-icon">
-                                                    <path
-                                                        d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"
-                                                        fill="currentColor"
-                                                    ></path>
-                                                </svg>
-                                                <svg viewBox="0 0 24 24" class="icon wallet-icon default-icon">
-                                                    <path
-                                                        d="M21,18V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5A2,2 0 0,1 5,3H19A2,2 0 0,1 21,5V6H12C10.89,6 10,6.9 10,8V16A2,2 0 0,0 12,18M12,16H22V8H12M16,13.5A1.5,1.5 0 0,1 14.5,12A1.5,1.5 0 0,1 16,10.5A1.5,1.5 0 0,1 17.5,12A1.5,1.5 0 0,1 16,13.5Z"
-                                                        fill="currentColor"
-                                                    ></path>
-                                                </svg>
-                                                <svg viewBox="0 0 24 24" class="icon check-icon">
-                                                    <path
-                                                        d="M9,16.17L4.83,12L3.41,13.41L9,19L21,7L19.59,5.59L9,16.17Z"
-                                                        fill="currentColor"
-                                                    ></path>
-                                                </svg>
-                                            </div>
-	                                        </a>
-	                                        <a
-	                                            href="{{ route('driver.repayments.payshap.show', $repayment) }}"
-	                                            class="payshap-chip"
-	                                            aria-label="Pay via PayShap"
-	                                            title="Pay via PayShap"
-	                                        >
-	                                            <span class="payshap-logo" aria-hidden="true">
-	                                                <span class="payshap-logo__word"><span class="payshap-logo__pay">pay</span><span class="payshap-logo__shap">shap</span></span>
-	                                                <img
-	                                                    src="{{ asset('images/shap.png') }}"
-	                                                    alt=""
-	                                                    class="payshap-logo__mark"
-	                                                    loading="lazy"
-	                                                    aria-hidden="true"
-	                                                >
-	                                            </span>
-	                                        </a>
-                                            <a
-                                                href="{{ route('driver.repayments.crypto.show', $repayment) }}?asset=XBT"
-                                                class="crypto-3d-btn crypto-3d-btn--btc"
-                                                title="Pay with Bitcoin"
-                                                aria-label="Pay with Bitcoin"
-                                            >
-                                                <span class="crypto-3d-coin crypto-3d-coin--btc" aria-hidden="true">
-                                                    <svg viewBox="0 0 64 64" class="crypto-3d-svg" aria-hidden="true">
-                                                        <defs>
-                                                            <linearGradient id="btcG" x1="0" y1="0" x2="1" y2="1">
-                                                                <stop offset="0" stop-color="#ffb45a"></stop>
-                                                                <stop offset="0.55" stop-color="#f7931a"></stop>
-                                                                <stop offset="1" stop-color="#d86e00"></stop>
-                                                            </linearGradient>
-                                                        </defs>
-                                                        <circle cx="32" cy="32" r="28" fill="url(#btcG)"></circle>
-                                                        <path d="M32 10c-12.15 0-22 9.85-22 22s9.85 22 22 22 22-9.85 22-22S44.15 10 32 10Z" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2"></path>
-                                                        <path d="M37.8 28.7c1.9-1.1 2.8-2.7 2.4-4.9-.6-3.2-3.9-4.3-7.9-4.5V16h-3v3.2h-2.4V16h-3v3.4h-3.9v3.2h2.1c.9 0 1.2.3 1.3.9v14.1c0 .5-.2.8-.8.8h-2.6V46h3.9V49h3v-3h2.4v3h3v-3.1c4.6-.3 8.2-1.7 8.9-6 .5-3-1-5-3.5-6.2Zm-9.6-5.9c2.1 0 6 .2 6 2.8 0 2.8-3.8 3-6 3v-5.8Zm0 19.2V34c2.6 0 7.2.3 7.2 3.5 0 3.2-4.6 3.6-7.2 3.5Z" fill="#ffffff" opacity="0.95"></path>
-                                                    </svg>
-                                                </span>
-                                            </a>
-                                            <a
-                                                href="{{ route('driver.repayments.crypto.show', $repayment) }}?asset=ETH"
-                                                class="crypto-3d-btn crypto-3d-btn--eth"
-                                                title="Pay with Ethereum"
-                                                aria-label="Pay with Ethereum"
-                                            >
-                                                <span class="crypto-3d-coin crypto-3d-coin--eth" aria-hidden="true">
-                                                    <svg viewBox="0 0 64 64" class="crypto-3d-svg" aria-hidden="true">
-                                                        <defs>
-                                                            <linearGradient id="ethG" x1="0" y1="0" x2="1" y2="1">
-                                                                <stop offset="0" stop-color="#9aa7ff"></stop>
-                                                                <stop offset="0.55" stop-color="#627eea"></stop>
-                                                                <stop offset="1" stop-color="#3557d8"></stop>
-                                                            </linearGradient>
-                                                        </defs>
-                                                        <circle cx="32" cy="32" r="28" fill="url(#ethG)"></circle>
-                                                        <path d="M32 10c-12.15 0-22 9.85-22 22s9.85 22 22 22 22-9.85 22-22S44.15 10 32 10Z" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2"></path>
-                                                        <path d="M32 16 22.6 32.2 32 27.8l9.4 4.4L32 16Z" fill="#ffffff" opacity="0.92"></path>
-                                                        <path d="M32 28.7 22.6 33.1 32 48l9.4-14.9L32 28.7Z" fill="#ffffff" opacity="0.82"></path>
-                                                        <path d="M32 27.8v20.2l9.4-14.9L32 27.8Z" fill="#dfe6ff" opacity="0.75"></path>
-                                                    </svg>
-                                                </span>
-                                            </a>
-	                                    </div>
-                                    <div class="mt-2">
-                                        <a href="https://wa.me/?text={{ urlencode($shareTextWithUrl) }}" target="_blank" rel="noopener" class="pay-for-me-btn">
-                                            <span class="pay-for-me-btn-label">Pay for me</span>
-                                            <span class="pay-for-me-btn-sub">Share on WhatsApp</span>
-                                        </a>
-                                    </div>
-                                    <p class="text-[11px] text-slate-500 mt-2">Voucher {{ $voucherCode ?: 'N/A' }} • Manual buttons perform a one-time override only. Auto-pay remains enabled for upcoming repayments.</p>
-                                @elseif(!in_array($repayment->status, ['pending', 'overdue'], true))
-                                    <span class="text-xs text-emerald-600 font-medium">Paid</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-slate-500">No repayment records found.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        <div class="px-4 py-4 bg-white border-t border-slate-100">
-            {{ $repayments->links() }}
-        </div>
-    </div>
-        </div>
-    </div>
+	        <div class="px-4 py-4 bg-white border-t border-slate-100">
+	            {{ $repayments->links() }}
+	        </div>
+	    </div>
 
     <div class="glass rounded-2xl mt-6 p-6">
         <div class="flex items-center justify-between gap-3">
@@ -1237,16 +1194,16 @@
         }
     }
 
-    /* Ticket (Unlock-style) */
-	    .ticket-canvas {
-	        min-height: 100%;
-	        display: flex;
-	        align-items: flex-start;
-	        justify-content: flex-start;
-	        padding: 0;
-	    }
+	    /* Ticket (Unlock-style) */
+		    .ticket-canvas {
+		        min-height: 100%;
+		        display: flex;
+		        align-items: flex-start;
+		        justify-content: flex-start;
+		        padding: 0;
+		    }
 
-    .ticket-wrapper {
+	    .ticket-wrapper {
         --t-bg: #0b1020;
         --t-bg-light: #111b3a;
         --t-accent: #020DFF;
@@ -1256,14 +1213,65 @@
         font-size: 10px;
         perspective: 1000px;
         display: inline-block;
-        width: 100%;
-    }
+	        width: 100%;
+	    }
 
-    .ticket {
-        position: relative;
-        width: 100%;
-        max-width: 380px;
-        color: var(--t-text-main);
+		    .ticket-wrapper--mini {
+		        display: block;
+		        width: 100%;
+		        max-width: 260px;
+		        font-size: 9px;
+		        margin: 0 auto;
+		    }
+
+	    .ticket-wrapper.ticket-wrapper--mini:hover .ticket {
+	        transform: none;
+	        box-shadow:
+	            0 18px 30px rgba(2, 6, 23, 0.35),
+	            0 0 0 1px rgba(255, 255, 255, 0.06);
+	    }
+
+	    .ticket-wrapper.ticket-wrapper--mini:hover .ticket::after {
+	        background-position: 100% 100%;
+	    }
+
+	    .ticket-wrapper--mini .t-main,
+	    .ticket-wrapper--mini .t-stub {
+	        padding: 1.35em;
+	    }
+
+	    .ticket-wrapper--mini .t-header {
+	        margin-bottom: 1.35em;
+	    }
+
+	    .ticket-wrapper--mini .t-title {
+	        font-size: 2.05em;
+	    }
+
+	    .ticket-wrapper--mini .t-subtitle {
+	        margin-bottom: 1.55em;
+	    }
+
+	    .ticket-wrapper--mini .t-details {
+	        gap: 1.05em;
+	        margin-bottom: 0.4em;
+	    }
+
+	    .ticket-wrapper--mini .t-qr-box {
+	        width: 6.3em;
+	        height: 6.3em;
+	        border-radius: 0.75em;
+	    }
+
+	    .ticket-wrapper--mini .t-admit-num {
+	        font-size: 2.6em;
+	    }
+
+	    .ticket {
+	        position: relative;
+	        width: 100%;
+	        max-width: 380px;
+	        color: var(--t-text-main);
         font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
         transform-style: preserve-3d;
         transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.6s ease;
