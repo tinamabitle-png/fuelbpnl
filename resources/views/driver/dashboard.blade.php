@@ -2014,13 +2014,13 @@
 		font-size: clamp(0.9rem, 1.5vw, 1.15rem);
 		font-weight: 900;
 		line-height: 1.2;
-		color: #efefef;
+		color: #000000;
 		display: inline-block;
 	}
 
 	@supports ((-webkit-background-clip: text) or (background-clip: text)) {
 		.shine {
-			background-color: #efefef;
+			background-color: #000000;
 			background-image: linear-gradient(
 				-40deg,
 				transparent 0%,
