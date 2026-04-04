@@ -49,20 +49,23 @@
 	    </style>
 	    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
 	        <div>
-	            <div class="driver-greet-card mt-4">
-	                <div class="driver-greet-loader">
-	                    <p>Welcome</p>
-	                    <div class="driver-greet-words">
-	                        <span class="driver-greet-word">{{ auth()->user()->name ?? 'Driver' }}</span>
-	                        <span class="driver-greet-word">to Bwiser</span>
-	                        <span class="driver-greet-word">Driver</span>
-	                        <span class="driver-greet-word"> {{ auth()->user()->name ?? 'Driver' }}</span>
-	                    </div>
-	                </div>
-	            </div>
-	            <x-pending-approval-banner />
-	        </div>
-	        <div class="driver-header-actions flex flex-col items-start md:items-end gap-3">
+		            <div class="driver-greet-card mt-4">
+		                <div class="driver-greet-loader">
+		                    <p>Welcome</p>
+		                    <div class="driver-greet-words">
+		                        <span class="driver-greet-word">{{ auth()->user()->name ?? 'Driver' }}</span>
+		                        <span class="driver-greet-word">to Bwiser</span>
+		                        <span class="driver-greet-word">Driver</span>
+		                        <span class="driver-greet-word"> {{ auth()->user()->name ?? 'Driver' }}</span>
+		                    </div>
+		                </div>
+		            </div>
+		            <div class="mt-1">
+		                <div class="shine">Fuel Infrastructure Finance and Voucher Payments,</div>
+		            </div>
+		            <x-pending-approval-banner />
+		        </div>
+		        <div class="driver-header-actions flex flex-col items-start md:items-end gap-3">
            
             <div class="driver-header-cta flex flex-wrap gap-3 md:justify-end">
                 <a
@@ -2005,6 +2008,57 @@
     .driver-active-voucher-card:hover .footer {
         color: #ffffff;
     }
+
+	/* Shine tagline */
+	.shine {
+		font-size: clamp(0.9rem, 1.5vw, 1.15rem);
+		font-weight: 900;
+		line-height: 1.2;
+		color: #efefef;
+		display: inline-block;
+	}
+
+	@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+		.shine {
+			background-color: #efefef;
+			background-image: linear-gradient(
+				-40deg,
+				transparent 0%,
+				transparent 40%,
+				#020DFF 50%,
+				transparent 60%,
+				transparent 100%
+			);
+			background-repeat: no-repeat;
+			background-size: 50px 100%;
+			background-position: -200px 0;
+			-webkit-background-clip: text;
+			background-clip: text;
+			color: transparent;
+			-webkit-text-fill-color: transparent;
+			animation: zezzz 5s infinite;
+		}
+	}
+
+	@keyframes zezzz {
+		0%,
+		10% {
+			background-position: -200px 0;
+		}
+		20% {
+			background-position: 0 0;
+		}
+		100% {
+			background-position: calc(100% + 200px) 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.shine {
+			animation: none;
+			background-position: 0 0;
+		}
+	}
 
     .driver-greet-card {
         background: transparent;

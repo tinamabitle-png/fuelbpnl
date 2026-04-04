@@ -65,7 +65,7 @@
         <div class="max-w-4xl relative z-[1]">
             <div class="min-w-0">
                 <h1 class="brand-font text-4xl md:text-6xl font-semibold text-slate-900 mt-4 leading-tight">
-                    Fuel Infrastructure Finance and Voucher Payments,
+                    <span class="shine">Fuel Infrastructure Finance and Voucher Payments,</span>
                     <br>
                     <span class="text-white italic">easy as padel</span>
                     <span class="hero-gradient-text block"><span class="inline-block rounded-full bg-white px-3 py-1" style="color: #2563eb;">Built for Real-Time Operations</span></span>
@@ -546,6 +546,54 @@
 	        background-position: center;
 	        background-size: cover;
 	        opacity: 0.9;
+	    }
+
+	    /* Shine headline */
+	    .shine {
+	        display: inline-block;
+	        color: #efefef;
+	    }
+
+	    @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+	        .shine {
+	            background-color: #efefef;
+	            background-image: linear-gradient(
+	                -40deg,
+	                transparent 0%,
+	                transparent 40%,
+	                #020DFF 50%,
+	                transparent 60%,
+	                transparent 100%
+	            );
+	            background-repeat: no-repeat;
+	            background-size: 56px 100%;
+	            background-position: -200px 0;
+	            -webkit-background-clip: text;
+	            background-clip: text;
+	            color: transparent;
+	            -webkit-text-fill-color: transparent;
+	            animation: zezzz 5s infinite;
+	        }
+	    }
+
+	    @keyframes zezzz {
+	        0%,
+	        10% {
+	            background-position: -200px 0;
+	        }
+	        20% {
+	            background-position: 0 0;
+	        }
+	        100% {
+	            background-position: calc(100% + 200px) 0;
+	        }
+	    }
+
+	    @media (prefers-reduced-motion: reduce) {
+	        .shine {
+	            animation: none;
+	            background-position: 0 0;
+	        }
 	    }
 
     .super-button {
