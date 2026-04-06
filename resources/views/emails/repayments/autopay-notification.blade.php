@@ -1,5 +1,5 @@
 @php
-    $appName = config('app.name', 'Bwiser');
+    $appName = 'Bwiser';
     $supportEmail = config('seo.support_email', 'support@bwiser.co.za');
     $ticket = $ticket ?? [];
     $preheader = $preheader ?? ($subject ?? 'Auto-Pay update');
