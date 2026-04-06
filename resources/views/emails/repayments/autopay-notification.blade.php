@@ -35,93 +35,95 @@
                 </p>
             @endif
 
-            <div style="margin-top:10px;">
-                <div style="border-radius:18px;overflow:hidden;border:1px solid rgba(15,23,42,0.12);background:#0b1220;">
-                    <div style="padding:18px 18px 16px 18px;background:#1e1e24;color:#f8fafc;">
-                        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
-                            <tr>
-                                <td style="vertical-align:top;">
-                                    <div style="display:inline-flex;align-items:center;gap:10px;">
-                                        <img src="{{ $logo_url ?? asset('images/brand-logo.png') }}" width="28" height="28" alt="Bwiser" style="display:block;border-radius:9px;">
-                                        <span style="font-weight:900;letter-spacing:-0.02em;font-size:14px;color:#ffffff;">BWISER</span>
-                                    </div>
-                                </td>
-                                <td style="vertical-align:top;text-align:right;">
-                                    <span style="display:inline-block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#a5b4fc;border:1px solid rgba(165,180,252,0.7);padding:6px 10px;border-radius:999px;font-weight:700;">
-                                        Voucher
-                                    </span>
-                                </td>
-                            </tr>
-                        </table>
+            @if(!empty($ticket))
+                <div style="margin-top:10px;">
+                    <div style="border-radius:18px;overflow:hidden;border:1px solid rgba(15,23,42,0.12);background:#0b1220;">
+                        <div style="padding:18px 18px 16px 18px;background:#1e1e24;color:#f8fafc;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
+                                <tr>
+                                    <td style="vertical-align:top;">
+                                        <div style="display:inline-flex;align-items:center;gap:10px;">
+                                            <img src="{{ $logo_url ?? asset('images/brand-logo.png') }}" width="28" height="28" alt="Bwiser" style="display:block;border-radius:9px;">
+                                            <span style="font-weight:900;letter-spacing:-0.02em;font-size:14px;color:#ffffff;">BWISER</span>
+                                        </div>
+                                    </td>
+                                    <td style="vertical-align:top;text-align:right;">
+                                        <span style="display:inline-block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#a5b4fc;border:1px solid rgba(165,180,252,0.7);padding:6px 10px;border-radius:999px;font-weight:700;">
+                                            Voucher
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
 
-                        <div style="margin-top:14px;">
-                            <div style="font-size:26px;line-height:1.05;font-weight:900;text-transform:uppercase;color:#ffffff;">
-                                Voucher<br>
-                                <span style="color:#a5b4fc;">{{ $ticket['voucher_code'] ?? 'N/A' }}</span>
+                            <div style="margin-top:14px;">
+                                <div style="font-size:26px;line-height:1.05;font-weight:900;text-transform:uppercase;color:#ffffff;">
+                                    Voucher<br>
+                                    <span style="color:#a5b4fc;">{{ $ticket['voucher_code'] ?? 'N/A' }}</span>
+                                </div>
+                                <div style="margin-top:10px;font-size:13px;line-height:1.5;color:#94a3b8;">
+                                    {{ $ticket['station_name'] ?? 'N/A' }}
+                                    @if(($ticket['pending_count'] ?? 0) > 0)
+                                        <span style="color:#a5b4fc;"> • {{ (int) $ticket['pending_count'] }} due • -R {{ $ticket['pending_amount_display'] ?? '0.00' }}</span>
+                                    @endif
+                                </div>
                             </div>
-                            <div style="margin-top:10px;font-size:13px;line-height:1.5;color:#94a3b8;">
-                                {{ $ticket['station_name'] ?? 'N/A' }}
-                                @if(($ticket['pending_count'] ?? 0) > 0)
-                                    <span style="color:#a5b4fc;"> • {{ (int) $ticket['pending_count'] }} due • -R {{ $ticket['pending_amount_display'] ?? '0.00' }}</span>
-                                @endif
-                            </div>
+
+                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin-top:14px;">
+                                <tr>
+                                    <td style="width:50%;padding:10px 0;">
+                                        <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Next Due</div>
+                                        <div style="margin-top:4px;font-size:14px;font-weight:800;color:#f8fafc;">{{ $ticket['next_due_date'] ?? 'N/A' }}</div>
+                                    </td>
+                                    <td style="width:50%;padding:10px 0;">
+                                        <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Amount Due</div>
+                                        <div style="margin-top:4px;font-size:14px;font-weight:800;color:#f8fafc;">-R {{ $ticket['pending_amount_display'] ?? '0.00' }}</div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="width:50%;padding:10px 0;">
+                                        <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Due Items</div>
+                                        <div style="margin-top:4px;font-size:14px;font-weight:800;color:#f8fafc;">{{ (int) ($ticket['pending_count'] ?? 0) }}</div>
+                                    </td>
+                                    <td style="width:50%;padding:10px 0;">
+                                        <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Driver</div>
+                                        <div style="margin-top:4px;font-size:14px;font-weight:800;color:#f8fafc;">{{ $ticket['driver_name'] ?? 'Driver' }}</div>
+                                    </td>
+                                </tr>
+                            </table>
                         </div>
 
-                        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin-top:14px;">
-                            <tr>
-                                <td style="width:50%;padding:10px 0;">
-                                    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Next Due</div>
-                                    <div style="margin-top:4px;font-size:14px;font-weight:800;color:#f8fafc;">{{ $ticket['next_due_date'] ?? 'N/A' }}</div>
-                                </td>
-                                <td style="width:50%;padding:10px 0;">
-                                    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Amount Due</div>
-                                    <div style="margin-top:4px;font-size:14px;font-weight:800;color:#f8fafc;">-R {{ $ticket['pending_amount_display'] ?? '0.00' }}</div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width:50%;padding:10px 0;">
-                                    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Due Items</div>
-                                    <div style="margin-top:4px;font-size:14px;font-weight:800;color:#f8fafc;">{{ (int) ($ticket['pending_count'] ?? 0) }}</div>
-                                </td>
-                                <td style="width:50%;padding:10px 0;">
-                                    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Driver</div>
-                                    <div style="margin-top:4px;font-size:14px;font-weight:800;color:#f8fafc;">{{ $ticket['driver_name'] ?? 'Driver' }}</div>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
+                        <div style="height:1px;border-top:2px dashed rgba(255,255,255,0.18);"></div>
 
-                    <div style="height:1px;border-top:2px dashed rgba(255,255,255,0.18);"></div>
-
-                    <div style="background:#2b2b36;color:#f8fafc;padding:16px 18px;">
-                        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
-                            <tr>
-                                <td style="vertical-align:middle;">
-                                    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Voucher QR</div>
-                                    <div style="margin-top:10px;display:inline-block;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:10px;">
-                                        @if(!empty($ticket['voucher_qr_image']))
-                                            <img src="{{ $ticket['voucher_qr_image'] }}" width="120" height="120" alt="Voucher QR {{ $ticket['voucher_code'] ?? '' }}" style="display:block;border-radius:10px;background:#ffffff;">
-                                        @else
-                                            <div style="width:120px;height:120px;border-radius:10px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-weight:900;color:#a5b4fc;">
-                                                QR
-                                            </div>
-                                        @endif
-                                    </div>
-                                    <div style="margin-top:10px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;font-size:12px;letter-spacing:0.14em;color:#94a3b8;">
-                                        {{ $ticket['voucher_code'] ?? 'N/A' }}
-                                    </div>
-                                </td>
-                                <td style="vertical-align:middle;text-align:right;">
-                                    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Lease</div>
-                                    <div style="margin-top:6px;font-size:34px;font-weight:900;line-height:1;color:#a5b4fc;">
-                                        {{ $ticket['lease_id'] ?? '--' }}
-                                    </div>
-                                </td>
-                            </tr>
-                        </table>
+                        <div style="background:#2b2b36;color:#f8fafc;padding:16px 18px;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
+                                <tr>
+                                    <td style="vertical-align:middle;">
+                                        <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Voucher QR</div>
+                                        <div style="margin-top:10px;display:inline-block;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:10px;">
+                                            @if(!empty($ticket['voucher_qr_image']))
+                                                <img src="{{ $ticket['voucher_qr_image'] }}" width="120" height="120" alt="Voucher QR {{ $ticket['voucher_code'] ?? '' }}" style="display:block;border-radius:10px;background:#ffffff;">
+                                            @else
+                                                <div style="width:120px;height:120px;border-radius:10px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-weight:900;color:#a5b4fc;">
+                                                    QR
+                                                </div>
+                                            @endif
+                                        </div>
+                                        <div style="margin-top:10px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;font-size:12px;letter-spacing:0.14em;color:#94a3b8;">
+                                            {{ $ticket['voucher_code'] ?? 'N/A' }}
+                                        </div>
+                                    </td>
+                                    <td style="vertical-align:middle;text-align:right;">
+                                        <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Lease</div>
+                                        <div style="margin-top:6px;font-size:34px;font-weight:900;line-height:1;color:#a5b4fc;">
+                                            {{ $ticket['lease_id'] ?? '--' }}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
+            @endif
 
             @if(!empty($cta_url) && !empty($cta_label))
                 <div style="margin-top:16px;">

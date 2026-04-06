@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Driver;
 
 use App\Http\Controllers\Controller;
 use App\Events\VoucherStatusChanged;
+use App\Mail\RepaymentAutopayNotificationMail;
 use App\Models\FuelStation;
 use App\Models\FuelVoucher;
 use App\Models\Lease;
@@ -18,6 +19,7 @@ use App\Services\FuelPriceService;
 use App\Services\PaystackService;
 use App\Services\RepaymentSettlementService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -1189,7 +1191,8 @@ class DashboardController extends Controller
             $this->notifyRepaymentUser(
                 $user,
                 'Repayment received',
-                "Your repayment of R " . number_format((float) $repayment->amount, 2) . " was received successfully."
+                "Your repayment of R " . number_format((float) $repayment->amount, 2) . " was received successfully.",
+                $repayment
             );
 
             return redirect()
@@ -1199,7 +1202,8 @@ class DashboardController extends Controller
             $this->notifyRepaymentUser(
                 $user,
                 'Repayment verification failed',
-                'We could not verify your Paystack repayment callback. Please retry or contact support.'
+                'We could not verify your Paystack repayment callback. Please retry or contact support.',
+                $repayment ?? null
             );
             return redirect()->route('driver.repayments.index')->with('error', 'Paystack callback verification failed: ' . $e->getMessage());
         }
@@ -1436,14 +1440,27 @@ class DashboardController extends Controller
         return rtrim($request->getSchemeAndHttpHost(), '/') . $path;
     }
 
-    private function notifyRepaymentUser($user, string $subject, string $message): void
+    private function notifyRepaymentUser($user, string $subject, string $message, ?Repayment $repayment = null): void
     {
         $email = trim((string) ($user->email ?? ''));
         if ($email !== '') {
             try {
-                Mail::raw($message, function ($mail) use ($email, $subject) {
-                    $mail->to($email)->subject($subject);
-                });
+                $appUrl = rtrim((string) config('app.url', 'https://bwiser.co.za'), '/');
+                $payload = [
+                    'subject' => $subject,
+                    'heading' => $subject,
+                    'body' => $message,
+                    'preheader' => $subject,
+                    'logo_url' => $appUrl . '/images/brand-logo.png',
+                    'cta_url' => $appUrl . '/driver/repayments',
+                    'cta_label' => 'View repayments',
+                ];
+
+                if ($repayment) {
+                    $payload['ticket'] = $this->buildVoucherTicketPayload($user, $repayment);
+                }
+
+                Mail::to($email)->send(new RepaymentAutopayNotificationMail($payload));
             } catch (\Throwable $e) {
                 // Keep repayment flow non-blocking.
             }
@@ -1456,6 +1473,55 @@ class DashboardController extends Controller
             ['subject' => $subject, 'message' => $message],
             'Repayment notification emitted'
         );
+    }
+
+    private function buildVoucherTicketPayload($user, Repayment $repayment): array
+    {
+        $repayment->loadMissing('lease.vouchers.fuelStation');
+
+        $voucher = $repayment->lease?->vouchers?->sortByDesc('id')->first();
+        $voucherCode = (string) ($voucher?->code ?: ($repayment->lease_id ? ('LEASE-' . (string) $repayment->lease_id) : ('REPAYMENT-' . (string) $repayment->id)));
+        $voucherQrValue = (string) ($voucher?->qr_code ?: $voucherCode);
+        $voucherQrImage = $voucherQrValue !== ''
+            ? ('https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=10&ecc=H&format=png&data=' . urlencode($voucherQrValue))
+            : null;
+
+        $stationName = $voucher?->fuelStation?->name
+            ?? ($repayment->lease?->vouchers?->first()?->fuelStation?->name ?? 'N/A');
+
+        $pendingCount = 0;
+        $pendingAmount = 0.0;
+        $nextDueDate = $repayment->due_date
+            ? \Illuminate\Support\Carbon::parse($repayment->due_date)->format('d M Y')
+            : 'N/A';
+
+        if ($repayment->lease_id) {
+            $pendingForLease = Repayment::query()
+                ->visibleInSystem()
+                ->where('user_id', (int) ($user->id ?? 0))
+                ->where('lease_id', (int) $repayment->lease_id)
+                ->whereIn('status', ['pending', 'overdue'])
+                ->get(['amount', 'due_date', 'status']);
+
+            $pendingCount = $pendingForLease->count();
+            $pendingAmount = (float) $pendingForLease->sum('amount');
+
+            $nextDue = $pendingForLease->sortBy('due_date')->first();
+            if ($nextDue && $nextDue->due_date) {
+                $nextDueDate = \Illuminate\Support\Carbon::parse($nextDue->due_date)->format('d M Y');
+            }
+        }
+
+        return [
+            'voucher_code' => $voucherCode,
+            'voucher_qr_image' => $voucherQrImage,
+            'station_name' => Str::limit((string) $stationName, 32),
+            'pending_count' => $pendingCount,
+            'pending_amount_display' => number_format(abs($pendingAmount), 2),
+            'next_due_date' => $nextDueDate,
+            'driver_name' => Str::limit((string) ($user->name ?? 'Driver'), 26),
+            'lease_id' => $repayment->lease_id ? (string) $repayment->lease_id : '--',
+        ];
     }
 
     private function buildSimpleTextPdf(array $lines): string

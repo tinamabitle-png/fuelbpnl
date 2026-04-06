@@ -297,24 +297,22 @@ class RunDailyRepaymentAutopay extends Command
         $email = trim((string) ($user->email ?? ''));
         if ($email !== '') {
             try {
+                $appUrl = rtrim((string) config('app.url', 'https://bwiser.co.za'), '/');
                 $payload = [
                     'subject' => $subject,
                     'heading' => $subject,
                     'body' => $message,
                     'preheader' => $subject,
-                    'logo_url' => asset('images/brand-logo.png'),
-                    'cta_url' => rtrim((string) config('app.url', 'https://bwiser.co.za'), '/') . '/driver/repayments',
+                    'logo_url' => $appUrl . '/images/brand-logo.png',
+                    'cta_url' => $appUrl . '/driver/repayments',
                     'cta_label' => 'View repayments',
                 ];
 
                 if ($repayment) {
                     $payload['ticket'] = $this->buildVoucherTicketPayload($user, $repayment);
-                    Mail::to($email)->send(new RepaymentAutopayNotificationMail($payload));
-                } else {
-                    Mail::raw($message, function ($mail) use ($email, $subject) {
-                        $mail->to($email)->subject($subject);
-                    });
                 }
+
+                Mail::to($email)->send(new RepaymentAutopayNotificationMail($payload));
             } catch (\Throwable $e) {
                 // Keep autopay flow non-blocking.
             }
