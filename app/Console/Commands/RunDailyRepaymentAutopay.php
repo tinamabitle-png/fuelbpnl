@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Mail\RepaymentAutopayNotificationMail;
 use App\Models\Repayment;
 use App\Models\User;
 use App\Services\AuditTrailService;
@@ -13,6 +14,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class RunDailyRepaymentAutopay extends Command
 {
@@ -63,7 +65,10 @@ class RunDailyRepaymentAutopay extends Command
 
         foreach ($dueRepaymentIds as $id) {
             /** @var Repayment|null $repayment */
-            $repayment = Repayment::query()->visibleInSystem()->with('user')->find($id);
+            $repayment = Repayment::query()
+                ->visibleInSystem()
+                ->with(['user', 'lease.vouchers.fuelStation'])
+                ->find($id);
             if (!$repayment) {
                 $skipped++;
                 $skipReasons['repayment_not_found']++;
@@ -128,7 +133,8 @@ class RunDailyRepaymentAutopay extends Command
                 $this->notifyUser(
                     $user,
                     'AutoPay disabled',
-                    "Your automatic repayments were disabled after {$maxRetries} failed attempts. Please complete a manual payment and re-enable autopay."
+                    "Your automatic repayments were disabled after {$maxRetries} failed attempts. Please complete a manual payment and re-enable autopay.",
+                    $repayment
                 );
                 continue;
             }
@@ -195,7 +201,8 @@ class RunDailyRepaymentAutopay extends Command
                 $this->notifyUser(
                     $user,
                     'Repayment auto-paid',
-                    "Your repayment of R " . number_format((float) $repayment->amount, 2) . " was automatically paid successfully."
+                    "Your repayment of R " . number_format((float) $repayment->amount, 2) . " was automatically paid successfully.",
+                    $repayment->fresh(['lease.vouchers.fuelStation'])
                 );
             } catch (\Throwable $e) {
                 $failed++;
@@ -260,7 +267,8 @@ class RunDailyRepaymentAutopay extends Command
                 $this->notifyUser(
                     $user,
                     'Repayment auto-pay failed',
-                    "Auto-pay failed for repayment R " . number_format((float) $repayment->amount, 2) . ". Retry is scheduled for " . $retryAt->format('Y-m-d H:i') . "."
+                    "Auto-pay failed for repayment R " . number_format((float) $repayment->amount, 2) . ". Retry is scheduled for " . $retryAt->format('Y-m-d H:i') . ".",
+                    $repayment
                 );
             }
         }
@@ -284,14 +292,29 @@ class RunDailyRepaymentAutopay extends Command
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
 
-    private function notifyUser(User $user, string $subject, string $message): void
+    private function notifyUser(User $user, string $subject, string $message, ?Repayment $repayment = null): void
     {
         $email = trim((string) ($user->email ?? ''));
         if ($email !== '') {
             try {
-                Mail::raw($message, function ($mail) use ($email, $subject) {
-                    $mail->to($email)->subject($subject);
-                });
+                $payload = [
+                    'subject' => $subject,
+                    'heading' => $subject,
+                    'message' => $message,
+                    'preheader' => $subject,
+                    'logo_url' => asset('images/brand-logo.png'),
+                    'cta_url' => rtrim((string) config('app.url', 'https://bwiser.co.za'), '/') . '/driver/repayments',
+                    'cta_label' => 'View repayments',
+                ];
+
+                if ($repayment) {
+                    $payload['ticket'] = $this->buildVoucherTicketPayload($user, $repayment);
+                    Mail::to($email)->send(new RepaymentAutopayNotificationMail($payload));
+                } else {
+                    Mail::raw($message, function ($mail) use ($email, $subject) {
+                        $mail->to($email)->subject($subject);
+                    });
+                }
             } catch (\Throwable $e) {
                 // Keep autopay flow non-blocking.
             }
@@ -304,5 +327,54 @@ class RunDailyRepaymentAutopay extends Command
             ['subject' => $subject, 'message' => $message],
             'Repayment user notification emitted'
         );
+    }
+
+    private function buildVoucherTicketPayload(User $user, Repayment $repayment): array
+    {
+        $repayment->loadMissing('lease.vouchers.fuelStation');
+
+        $voucher = $repayment->lease?->vouchers?->sortByDesc('id')->first();
+        $voucherCode = (string) ($voucher?->code ?: ($repayment->lease_id ? ('LEASE-' . (string) $repayment->lease_id) : ('REPAYMENT-' . (string) $repayment->id)));
+        $voucherQrValue = (string) ($voucher?->qr_code ?: $voucherCode);
+        $voucherQrImage = $voucherQrValue !== ''
+            ? ('https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=10&ecc=H&format=png&data=' . urlencode($voucherQrValue))
+            : null;
+
+        $stationName = $voucher?->fuelStation?->name
+            ?? ($repayment->lease?->vouchers?->first()?->fuelStation?->name ?? 'N/A');
+
+        $pendingCount = 0;
+        $pendingAmount = 0.0;
+        $nextDueDate = $repayment->due_date
+            ? \Illuminate\Support\Carbon::parse($repayment->due_date)->format('d M Y')
+            : 'N/A';
+
+        if ($repayment->lease_id) {
+            $pendingForLease = Repayment::query()
+                ->visibleInSystem()
+                ->where('user_id', (int) $user->id)
+                ->where('lease_id', (int) $repayment->lease_id)
+                ->whereIn('status', ['pending', 'overdue'])
+                ->get(['amount', 'due_date', 'status']);
+
+            $pendingCount = $pendingForLease->count();
+            $pendingAmount = (float) $pendingForLease->sum('amount');
+
+            $nextDue = $pendingForLease->sortBy('due_date')->first();
+            if ($nextDue && $nextDue->due_date) {
+                $nextDueDate = \Illuminate\Support\Carbon::parse($nextDue->due_date)->format('d M Y');
+            }
+        }
+
+        return [
+            'voucher_code' => $voucherCode,
+            'voucher_qr_image' => $voucherQrImage,
+            'station_name' => Str::limit((string) $stationName, 32),
+            'pending_count' => $pendingCount,
+            'pending_amount_display' => number_format(abs($pendingAmount), 2),
+            'next_due_date' => $nextDueDate,
+            'driver_name' => Str::limit((string) ($user->name ?? 'Driver'), 26),
+            'lease_id' => $repayment->lease_id ? (string) $repayment->lease_id : '--',
+        ];
     }
 }
