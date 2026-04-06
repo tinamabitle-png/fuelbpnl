@@ -3,6 +3,7 @@
     $supportEmail = config('seo.support_email', 'support@bwiser.co.za');
     $ticket = $ticket ?? [];
     $preheader = $preheader ?? ($subject ?? 'Auto-Pay update');
+    $body = $body ?? null;
 @endphp
 <!doctype html>
 <html lang="en">
@@ -28,9 +29,9 @@
             <h1 style="margin:0 0 8px 0;font-size:18px;line-height:1.3;color:#0f172a;">
                 {{ $heading ?? ($subject ?? 'Auto-Pay update') }}
             </h1>
-            @if(!empty($message))
+            @if(!empty($body))
                 <p style="margin:0 0 14px 0;font-size:13px;line-height:1.6;color:#475569;">
-                    {{ $message }}
+                    {{ $body }}
                 </p>
             @endif
 
@@ -141,4 +142,3 @@
     </div>
 </body>
 </html>
-

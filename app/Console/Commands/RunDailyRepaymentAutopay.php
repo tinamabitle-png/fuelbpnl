@@ -300,7 +300,7 @@ class RunDailyRepaymentAutopay extends Command
                 $payload = [
                     'subject' => $subject,
                     'heading' => $subject,
-                    'message' => $message,
+                    'body' => $message,
                     'preheader' => $subject,
                     'logo_url' => asset('images/brand-logo.png'),
                     'cta_url' => rtrim((string) config('app.url', 'https://bwiser.co.za'), '/') . '/driver/repayments',

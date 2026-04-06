@@ -35,7 +35,7 @@ class SendTestAutopayEmail extends Command
         $payload = [
             'subject' => 'Auto-pay reminder • Voucher ' . $voucherCode,
             'heading' => 'Auto-pay reminder',
-            'message' => 'Your voucher repayments are due. Please ensure your auto-pay method has sufficient funds.',
+            'body' => 'Your voucher repayments are due. Please ensure your auto-pay method has sufficient funds.',
             'preheader' => $voucherCode . ' • ' . $stationName . ' • ' . $pendingCount . ' due • -R ' . number_format($pendingAmount, 2),
             'logo_url' => $appUrl . '/images/brand-logo.png',
             'cta_url' => $appUrl . '/driver/repayments',
@@ -58,4 +58,3 @@ class SendTestAutopayEmail extends Command
         return self::SUCCESS;
     }
 }
-
