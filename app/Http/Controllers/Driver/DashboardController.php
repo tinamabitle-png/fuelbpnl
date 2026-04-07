@@ -1008,6 +1008,78 @@ class DashboardController extends Controller
         ));
     }
 
+    public function publicRepaymentRequestPayNow(Request $request, Repayment $repayment)
+    {
+        if (!in_array((string) $repayment->status, ['pending', 'overdue'], true)) {
+            return view('driver.repayments.request-result', [
+                'success' => false,
+                'title' => 'Repayment not payable',
+                'message' => 'This repayment is already settled or not payable.',
+            ]);
+        }
+
+        $driver = $repayment->user;
+        if (!$driver) {
+            return view('driver.repayments.request-result', [
+                'success' => false,
+                'title' => 'Driver missing',
+                'message' => 'Driver profile is missing for this repayment.',
+            ]);
+        }
+
+        $payerEmail = trim((string) ($request->query('email') ?? $request->query('payer_email') ?? ''));
+        if ($payerEmail !== '' && !filter_var($payerEmail, FILTER_VALIDATE_EMAIL)) {
+            $payerEmail = '';
+        }
+
+        try {
+            $checkout = $this->paystackService->initializeRepaymentCheckout(
+                $driver,
+                $repayment,
+                'card',
+                $this->absoluteRouteForCurrentHost($request, 'driver.repayments.request.callback'),
+                $payerEmail !== '' ? $payerEmail : null,
+                'repayment_request'
+            );
+
+            $repayment->forceFill([
+                'transaction_reference' => (string) ($checkout['reference'] ?? ''),
+                'autopay_status' => 'checkout_initialized',
+                'autopay_last_attempt_at' => now(),
+            ])->save();
+
+            AuditTrailService::record(
+                'repayment_public_request_checkout_initialized',
+                $repayment,
+                [],
+                [
+                    'reference' => (string) ($checkout['reference'] ?? ''),
+                    'amount' => (float) $repayment->amount,
+                    'payer_email' => $payerEmail,
+                ],
+                'Public repayment request checkout initialized'
+            );
+
+            $url = (string) ($checkout['authorization_url'] ?? '');
+            if ($url === '') {
+                return view('driver.repayments.request-result', [
+                    'success' => false,
+                    'title' => 'Paystack error',
+                    'message' => 'Paystack did not return an authorization URL.',
+                ]);
+            }
+
+            return redirect()->away($url);
+        } catch (\Throwable $e) {
+            return view('driver.repayments.request-result', [
+                'success' => false,
+                'title' => 'Payment initialization failed',
+                'message' => 'Failed to initialize Paystack payment. Please retry or contact support.',
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     public function publicRepaymentRequestPay(Request $request, Repayment $repayment)
     {
         $validated = $request->validate([
@@ -1457,7 +1529,12 @@ class DashboardController extends Controller
                 ];
 
                 if ($repayment) {
-                    $payload['ticket'] = $this->buildVoucherTicketPayload($user, $repayment);
+                    $ticket = $this->buildVoucherTicketPayload($user, $repayment);
+                    $payload['ticket'] = $ticket;
+                    if (!empty($ticket['paystack_url'])) {
+                        $payload['paystack_url'] = $ticket['paystack_url'];
+                        $payload['paystack_label'] = 'Pay with Paystack';
+                    }
                 }
 
                 Mail::to($email)->send(new RepaymentAutopayNotificationMail($payload));
@@ -1494,6 +1571,7 @@ class DashboardController extends Controller
         $overdueCount = 0;
         $overdueAmount = 0.0;
         $overdueSince = null;
+        $paystackUrl = null;
         $nextDueDate = $repayment->due_date
             ? \Illuminate\Support\Carbon::parse($repayment->due_date)->format('d M Y')
             : 'N/A';
@@ -1504,7 +1582,7 @@ class DashboardController extends Controller
                 ->where('user_id', (int) ($user->id ?? 0))
                 ->where('lease_id', (int) $repayment->lease_id)
                 ->whereIn('status', ['pending', 'overdue'])
-                ->get(['amount', 'due_date', 'status']);
+                ->get(['id', 'amount', 'due_date', 'status']);
 
             $pendingCount = $pendingForLease->count();
             $pendingAmount = (float) $pendingForLease->sum('amount');
@@ -1528,6 +1606,18 @@ class DashboardController extends Controller
             } else {
                 $nextDueDate = 'N/A';
             }
+
+            $payNowTarget = $overdueCount > 0
+                ? $overdue->sortBy('due_date')->first()
+                : $upcoming->sortBy('due_date')->first();
+
+            if ($payNowTarget && (int) ($payNowTarget->id ?? 0) > 0) {
+                $paystackUrl = URL::temporarySignedRoute(
+                    'driver.repayments.request.pay_now',
+                    now()->addDays(7),
+                    ['repayment' => (int) $payNowTarget->id]
+                );
+            }
         }
 
         return [
@@ -1540,6 +1630,7 @@ class DashboardController extends Controller
             'overdue_count' => $overdueCount,
             'overdue_amount_display' => number_format(abs($overdueAmount), 2),
             'overdue_since' => $overdueSince,
+            'paystack_url' => $paystackUrl,
             'driver_name' => Str::limit((string) ($user->name ?? 'Driver'), 26),
             'lease_id' => $repayment->lease_id ? (string) $repayment->lease_id : '--',
         ];

@@ -384,6 +384,9 @@ foreach ($seoCities as $slug => $city) {
 Route::get('/repayments/request/{repayment}', [DriverDashboardController::class, 'publicRepaymentRequest'])
     ->middleware('signed')
     ->name('driver.repayments.request.show');
+Route::get('/repayments/request/{repayment}/pay-now', [DriverDashboardController::class, 'publicRepaymentRequestPayNow'])
+    ->middleware('signed')
+    ->name('driver.repayments.request.pay_now');
 Route::post('/repayments/request/{repayment}/pay', [DriverDashboardController::class, 'publicRepaymentRequestPay'])
     ->middleware('signed')
     ->name('driver.repayments.request.pay');

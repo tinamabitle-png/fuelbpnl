@@ -14,6 +14,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 class RunDailyRepaymentAutopay extends Command
@@ -309,7 +310,12 @@ class RunDailyRepaymentAutopay extends Command
                 ];
 
                 if ($repayment) {
-                    $payload['ticket'] = $this->buildVoucherTicketPayload($user, $repayment);
+                    $ticket = $this->buildVoucherTicketPayload($user, $repayment);
+                    $payload['ticket'] = $ticket;
+                    if (!empty($ticket['paystack_url'])) {
+                        $payload['paystack_url'] = $ticket['paystack_url'];
+                        $payload['paystack_label'] = 'Pay with Paystack';
+                    }
                 }
 
                 Mail::to($email)->send(new RepaymentAutopayNotificationMail($payload));
@@ -346,6 +352,7 @@ class RunDailyRepaymentAutopay extends Command
         $overdueCount = 0;
         $overdueAmount = 0.0;
         $overdueSince = null;
+        $paystackUrl = null;
         $nextDueDate = $repayment->due_date
             ? \Illuminate\Support\Carbon::parse($repayment->due_date)->format('d M Y')
             : 'N/A';
@@ -356,7 +363,7 @@ class RunDailyRepaymentAutopay extends Command
                 ->where('user_id', (int) $user->id)
                 ->where('lease_id', (int) $repayment->lease_id)
                 ->whereIn('status', ['pending', 'overdue'])
-                ->get(['amount', 'due_date', 'status']);
+                ->get(['id', 'amount', 'due_date', 'status']);
 
             $pendingCount = $pendingForLease->count();
             $pendingAmount = (float) $pendingForLease->sum('amount');
@@ -380,6 +387,18 @@ class RunDailyRepaymentAutopay extends Command
             } else {
                 $nextDueDate = 'N/A';
             }
+
+            $payNowTarget = $overdueCount > 0
+                ? $overdue->sortBy('due_date')->first()
+                : $upcoming->sortBy('due_date')->first();
+
+            if ($payNowTarget && (int) ($payNowTarget->id ?? 0) > 0) {
+                $paystackUrl = URL::temporarySignedRoute(
+                    'driver.repayments.request.pay_now',
+                    now()->addDays(7),
+                    ['repayment' => (int) $payNowTarget->id]
+                );
+            }
         }
 
         return [
@@ -392,6 +411,7 @@ class RunDailyRepaymentAutopay extends Command
             'overdue_count' => $overdueCount,
             'overdue_amount_display' => number_format(abs($overdueAmount), 2),
             'overdue_since' => $overdueSince,
+            'paystack_url' => $paystackUrl,
             'driver_name' => Str::limit((string) ($user->name ?? 'Driver'), 26),
             'lease_id' => $repayment->lease_id ? (string) $repayment->lease_id : '--',
         ];

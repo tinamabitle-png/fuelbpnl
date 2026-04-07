@@ -131,11 +131,21 @@
                 </div>
             @endif
 
-            @if(!empty($cta_url) && !empty($cta_label))
+            @if(!empty($paystack_url) || (!empty($cta_url) && !empty($cta_label)))
                 <div style="margin-top:16px;">
-                    <a href="{{ $cta_url }}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:800;border-radius:12px;padding:11px 14px;font-size:13px;">
-                        {{ $cta_label }}
-                    </a>
+                    @if(!empty($paystack_url))
+                        <a href="{{ $paystack_url }}" style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:900;border-radius:12px;padding:11px 14px;font-size:13px;">
+                            {{ $paystack_label ?? 'Pay with Paystack' }}
+                        </a>
+                    @endif
+                    @if(!empty($paystack_url) && !empty($cta_url) && !empty($cta_label))
+                        <span style="display:inline-block;width:10px;"></span>
+                    @endif
+                    @if(!empty($cta_url) && !empty($cta_label))
+                        <a href="{{ $cta_url }}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:800;border-radius:12px;padding:11px 14px;font-size:13px;">
+                            {{ $cta_label }}
+                        </a>
+                    @endif
                 </div>
             @endif
 
