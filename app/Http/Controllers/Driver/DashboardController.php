@@ -18,6 +18,7 @@ use App\Services\DriverUnderwritingService;
 use App\Services\FuelPriceService;
 use App\Services\PaystackService;
 use App\Services\RepaymentSettlementService;
+use App\Support\StationBrandAssets;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -1565,6 +1566,8 @@ class DashboardController extends Controller
 
         $stationName = $voucher?->fuelStation?->name
             ?? ($repayment->lease?->vouchers?->first()?->fuelStation?->name ?? 'N/A');
+        $stationCompany = trim((string) ($voucher?->fuelStation?->company ?? $repayment->lease?->vouchers?->first()?->fuelStation?->company ?? ''));
+        $stationLogoUrl = StationBrandAssets::resolveLogoUrl((string) $stationName, $stationCompany);
 
         $pendingCount = 0;
         $pendingAmount = 0.0;
@@ -1624,6 +1627,7 @@ class DashboardController extends Controller
             'voucher_code' => $voucherCode,
             'voucher_qr_image' => $voucherQrImage,
             'station_name' => Str::limit((string) $stationName, 32),
+            'station_logo_url' => $stationLogoUrl,
             'pending_count' => $pendingCount,
             'pending_amount_display' => number_format(abs($pendingAmount), 2),
             'next_due_date' => $nextDueDate,

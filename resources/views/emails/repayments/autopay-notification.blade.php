@@ -61,12 +61,27 @@
                                     <span style="color:#a5b4fc;">{{ $ticket['voucher_code'] ?? 'N/A' }}</span>
                                 </div>
                             <div style="margin-top:10px;font-size:13px;line-height:1.5;color:#94a3b8;">
-                                {{ $ticket['station_name'] ?? 'N/A' }}
+                                <table role="presentation" cellpadding="0" cellspacing="0" style="display:inline-table;border-collapse:separate;border-spacing:0;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:999px;">
+                                    <tr>
+                                        <td style="padding:6px 0 6px 10px;vertical-align:middle;">
+                                            @if(!empty($ticket['station_logo_url']))
+                                                <img src="{{ $ticket['station_logo_url'] }}" width="18" height="18" alt="{{ $ticket['station_name'] ?? 'Station' }}" style="display:block;border-radius:999px;background:#ffffff;padding:2px;">
+                                            @else
+                                                <span style="display:inline-block;width:18px;height:18px;border-radius:999px;background:rgba(165,180,252,0.22);color:#a5b4fc;font-weight:900;font-size:11px;line-height:18px;text-align:center;">
+                                                    {{ strtoupper(substr((string) ($ticket['station_name'] ?? 'S'), 0, 1)) }}
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td style="padding:6px 12px 6px 8px;vertical-align:middle;color:#e2e8f0;font-weight:800;font-size:13px;line-height:1;">
+                                            {{ $ticket['station_name'] ?? 'N/A' }}
+                                        </td>
+                                    </tr>
+                                </table>
                                 @if(($ticket['pending_count'] ?? 0) > 0)
-                                    <span style="color:#a5b4fc;"> • {{ (int) $ticket['pending_count'] }} due • -R {{ $ticket['pending_amount_display'] ?? '0.00' }}</span>
+                                    <span style="color:#a5b4fc;">&nbsp;• {{ (int) $ticket['pending_count'] }} due • -R {{ $ticket['pending_amount_display'] ?? '0.00' }}</span>
                                 @endif
                                 @if(($ticket['overdue_count'] ?? 0) > 0)
-                                    <span style="color:#fca5a5;"> • {{ (int) $ticket['overdue_count'] }} overdue</span>
+                                    <span style="color:#fca5a5;">&nbsp;• {{ (int) $ticket['overdue_count'] }} overdue</span>
                                 @endif
                             </div>
                         </div>

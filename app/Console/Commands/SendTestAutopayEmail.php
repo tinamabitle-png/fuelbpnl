@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Mail\RepaymentAutopayNotificationMail;
 use App\Models\Repayment;
 use App\Models\User;
+use App\Support\StationBrandAssets;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
@@ -85,6 +86,8 @@ class SendTestAutopayEmail extends Command
 
         $stationName = $voucher?->fuelStation?->name
             ?? ($repayment->lease?->vouchers?->first()?->fuelStation?->name ?? 'N/A');
+        $stationCompany = trim((string) ($voucher?->fuelStation?->company ?? $repayment->lease?->vouchers?->first()?->fuelStation?->company ?? ''));
+        $stationLogoUrl = StationBrandAssets::resolveLogoUrl((string) $stationName, $stationCompany);
 
         $pendingCount = 0;
         $pendingAmount = 0.0;
@@ -144,6 +147,7 @@ class SendTestAutopayEmail extends Command
             'voucher_code' => $voucherCode,
             'voucher_qr_image' => $voucherQrImage,
             'station_name' => Str::limit((string) $stationName, 32),
+            'station_logo_url' => $stationLogoUrl,
             'pending_count' => $pendingCount,
             'pending_amount_display' => number_format(abs($pendingAmount), 2),
             'next_due_date' => $nextDueDate,
@@ -202,6 +206,7 @@ class SendTestAutopayEmail extends Command
                 'voucher_code' => $voucherCode,
                 'voucher_qr_image' => $voucherQrImage,
                 'station_name' => $stationName,
+                'station_logo_url' => StationBrandAssets::resolveLogoUrl($stationName),
                 'pending_count' => $pendingCount,
                 'pending_amount_display' => number_format($pendingAmount, 2),
                 'next_due_date' => $nextDueDate,

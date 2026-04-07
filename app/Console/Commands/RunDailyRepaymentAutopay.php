@@ -10,6 +10,7 @@ use App\Services\DebiCheckService;
 use App\Services\PaystackService;
 use App\Services\RepaymentPolicyService;
 use App\Services\RepaymentSettlementService;
+use App\Support\StationBrandAssets;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -346,6 +347,8 @@ class RunDailyRepaymentAutopay extends Command
 
         $stationName = $voucher?->fuelStation?->name
             ?? ($repayment->lease?->vouchers?->first()?->fuelStation?->name ?? 'N/A');
+        $stationCompany = trim((string) ($voucher?->fuelStation?->company ?? $repayment->lease?->vouchers?->first()?->fuelStation?->company ?? ''));
+        $stationLogoUrl = StationBrandAssets::resolveLogoUrl((string) $stationName, $stationCompany);
 
         $pendingCount = 0;
         $pendingAmount = 0.0;
@@ -405,6 +408,7 @@ class RunDailyRepaymentAutopay extends Command
             'voucher_code' => $voucherCode,
             'voucher_qr_image' => $voucherQrImage,
             'station_name' => Str::limit((string) $stationName, 32),
+            'station_logo_url' => $stationLogoUrl,
             'pending_count' => $pendingCount,
             'pending_amount_display' => number_format(abs($pendingAmount), 2),
             'next_due_date' => $nextDueDate,
