@@ -304,13 +304,13 @@
                         <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#020DFF]">How Bwiser works</p>
                         <h3 class="mt-1 text-base md:text-lg font-semibold text-slate-900 leading-tight">From voucher to repayment</h3>
                     </div>
-                    <span class="shrink-0 rounded-full border border-[#020DFF]/15 bg-[#020DFF]/8 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#020DFF]">
+                    <span class="shrink-0 rounded-full bg-[#020DFF]/8 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#020DFF]">
                         4 steps
                     </span>
                 </div>
 
                 <div class="mt-5 space-y-3">
-                    <div class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-[0_10px_30px_-24px_rgba(2,13,255,0.45)]">
+                    <div class="relative overflow-hidden rounded-2xl bg-white/80 p-4 shadow-[0_10px_30px_-24px_rgba(2,13,255,0.45)]">
                         <div class="absolute left-[1.15rem] top-12 bottom-0 w-px bg-gradient-to-b from-[#020DFF]/25 via-slate-200 to-transparent"></div>
                         <div class="relative flex gap-3">
                             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#020DFF] text-xs font-bold text-black shadow-sm">01</div>
@@ -323,7 +323,7 @@
                         </div>
                     </div>
 
-                    <div class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50/85 p-4">
+                    <div class="relative overflow-hidden rounded-2xl bg-slate-50/85 p-4">
                         <div class="absolute left-[1.15rem] top-12 bottom-0 w-px bg-gradient-to-b from-[#020DFF]/25 via-slate-200 to-transparent"></div>
                         <div class="relative flex gap-3">
                             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#020DFF]/15 bg-white text-xs font-bold text-[#020DFF]">02</div>
@@ -336,7 +336,7 @@
                         </div>
                     </div>
 
-                    <div class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 p-4">
+                    <div class="relative overflow-hidden rounded-2xl bg-white/80 p-4">
                         <div class="absolute left-[1.15rem] top-12 bottom-0 w-px bg-gradient-to-b from-[#020DFF]/25 via-slate-200 to-transparent"></div>
                         <div class="relative flex gap-3">
                             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#020DFF]/15 bg-white text-xs font-bold text-[#020DFF]">03</div>
@@ -349,20 +349,20 @@
                         </div>
                     </div>
 
-                    <div class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50/85 p-4">
+                    <div class="relative overflow-hidden rounded-2xl bg-slate-50/85 p-4">
                         <div class="relative flex gap-3">
                             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#020DFF]/15 bg-white text-xs font-bold text-[#020DFF]">04</div>
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">Track performance</p>
                                 <p class="mt-1 text-[12px] leading-relaxed text-slate-600">
-                                    Monitor settlement reporting, due items, and performance across drivers, leases, and stations from one flow.
+                                    Monitor settlement reporting, due items, and performance across drivers, leases, and stations from one process.
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-4 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-[#020DFF]/5 p-4">
+                <div class="mt-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-white to-[#020DFF]/5 p-4">
                     <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-700">Success</p>
                     <p class="mt-2 text-sm font-medium leading-relaxed text-slate-800">
                         Fuel payments stay tracked end-to-end with simple vouchers, predictable repayments, and clean reporting.
@@ -429,7 +429,7 @@
                 <div class="mt-4 rounded-2xl bg-gradient-to-r from-[#020DFF]/20 via-cyan-400/18 to-[#020DFF]/10 p-[1px]">
                     <div class="rounded-[15px] bg-white/90 px-4 py-3">
                         <p class="text-[11px] font-medium text-slate-700">
-                            Merchants move from signup to live voucher acceptance in one guided flow.
+                            Merchants move from signup to live voucher acceptance in one guided process.
                         </p>
                     </div>
                 </div>
