@@ -277,7 +277,7 @@
 
         <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden">
             <img
-                src="{{ asset('images/man.jpg') }}"
+                src="{{ asset('images/bench_sign.png') }}"
                 alt="Bwiser preview"
                 class="block w-full h-full object-cover rounded-2xl"
                 loading="lazy"
