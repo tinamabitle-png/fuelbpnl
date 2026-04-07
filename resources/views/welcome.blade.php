@@ -824,14 +824,15 @@
         opacity: 0.9;
     }
 
-    .bw-animated-border::after {
-        content: "";
-        position: absolute;
-        inset: 2px;
-        background: rgba(255, 255, 255, 0.6);
-        border-radius: inherit;
-        z-index: -1;
-    }
+	    .bw-animated-border::after {
+	        content: "";
+	        position: absolute;
+	        inset: 2px;
+	        /* Opaque inner fill so the conic gradient only reads as a border. */
+	        background: rgba(255, 255, 255, 0.96);
+	        border-radius: inherit;
+	        z-index: -1;
+	    }
 
     .bw-animated-border > * {
         position: relative;
