@@ -803,41 +803,38 @@
         box-shadow: 0 0 40px rgba(0, 255, 255, 0.2);
     }
 
-    .bw-animated-border {
-        position: relative;
-        overflow: hidden;
-        isolation: isolate;
-        box-shadow: 0 18px 40px -34px rgba(15, 23, 42, 0.32);
-        backdrop-filter: blur(8px);
-    }
-
-    .bw-animated-border::before {
-        content: "";
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: conic-gradient(from 0deg, #00ffff, #ff00ff, #00ffff);
-        animation: rotate 4s linear infinite;
-        z-index: -2;
-        opacity: 0.9;
-    }
-
-	    .bw-animated-border::after {
-	        content: "";
-	        position: absolute;
-	        inset: 2px;
-	        /* Opaque inner fill so the conic gradient only reads as a border. */
+	    .bw-animated-border {
+	        position: relative;
+	        overflow: hidden;
+	        isolation: isolate;
+	        box-shadow: 0 18px 40px -34px rgba(15, 23, 42, 0.32);
+	        backdrop-filter: blur(8px);
 	        background: rgba(255, 255, 255, 0.96);
-	        border-radius: inherit;
-	        z-index: -1;
 	    }
 
-    .bw-animated-border > * {
-        position: relative;
-        z-index: 1;
-    }
+	    .bw-animated-border::before {
+	        content: "";
+	        position: absolute;
+	        inset: 0;
+	        padding: 2px; /* border thickness */
+	        border-radius: inherit;
+	        background: conic-gradient(from 0deg, #00ffff, #ff00ff, #00ffff);
+	        animation: rotate 4s linear infinite;
+	        z-index: 0;
+	        opacity: 0.9;
+	        pointer-events: none;
+	        /* Mask out the center so the animation stays on the border only. */
+	        -webkit-mask:
+	            linear-gradient(#000 0 0) content-box,
+	            linear-gradient(#000 0 0);
+	        -webkit-mask-composite: xor;
+	        mask-composite: exclude;
+	    }
+
+	    .bw-animated-border > * {
+	        position: relative;
+	        z-index: 1;
+	    }
 
     @media (prefers-reduced-motion: reduce) {
         .bw-animated-border::before {
