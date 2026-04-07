@@ -285,19 +285,101 @@
         </div>
     </div>
 
-    <div class="grid gap-8 md:grid-cols-2 mt-8 items-stretch">
-        <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-tween-card">
-            <img
-                src="{{ asset('images/tsunkebwiser1.jpg') }}"
-                alt="Bwiser preview"
-                class="welcome-tween-image is-in rounded-2xl"
-                loading="lazy"
-                data-welcome-tween="slide-in"
-                onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
-            >
+    <div class="grid gap-8 md:grid-cols-2 mt-8 items-start">
+        <div class="space-y-6">
+            <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-tween-card">
+                <img
+                    src="{{ asset('images/tsunkebwiser1.jpg') }}"
+                    alt="Bwiser preview"
+                    class="welcome-tween-image is-in rounded-2xl"
+                    loading="lazy"
+                    data-welcome-tween="slide-in"
+                    onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
+                >
+            </div>
+
+            <div class="glass rounded-2xl p-4 md:p-6 welcome-tween-card">
+                <p class="text-[10px] font-semibold uppercase tracking-wide text-[#020DFF]">How Bwiser works</p>
+                <h3 class="mt-1 text-sm md:text-[15px] font-semibold text-slate-900 leading-snug">From voucher to repayment</h3>
+
+                <div class="mt-4">
+                    <div class="pb-6 border-l border-slate-200 pl-4">
+                            <p class="mb-1 text-xs font-semibold text-slate-900">Step 1</p>
+                            <p class="text-[11px] text-slate-600 leading-relaxed">
+                                Issue a Bwiser voucher for a driver/lease with amount, station, and due items. Share the voucher ID/QR.
+                            </p>
+                    </div>
+
+                    <div class="pb-6 border-l border-slate-200 pl-4">
+                            <p class="mb-1 text-xs font-semibold text-slate-900">Step 2</p>
+                            <p class="text-[11px] text-slate-600 leading-relaxed">
+                                The station validates the voucher (QR or USSD geofence) on the POS, prints a receipt, and settles the payment.
+                            </p>
+                    </div>
+
+                    <div class="pb-6 border-l border-slate-200 pl-4">
+                            <p class="mb-1 text-xs font-semibold text-slate-900">Step 3</p>
+                            <p class="text-[11px] text-slate-600 leading-relaxed">
+                                Repayments show on the driver dashboard. Auto-pay can settle amounts on due dates and send confirmation emails.
+                            </p>
+                    </div>
+
+                    <div class="pb-6 border-l border-slate-200 pl-4">
+                            <p class="mb-1 text-xs font-semibold text-slate-900">Step 4</p>
+                            <p class="text-[11px] text-slate-600 leading-relaxed">
+                                Track settlement reporting, due items, and performance across drivers and stations.
+                            </p>
+                    </div>
+
+                    <div class="border-l border-slate-200 pl-4">
+                        <p class="mb-1 text-xs font-semibold text-slate-900">Success</p>
+                            <p class="text-[11px] text-slate-600 leading-relaxed">
+                                Fuel payments are tracked end-to-end, with simple vouchers and predictable repayments.
+                            </p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-tween-card">
+            <div class="mb-3 rounded-2xl border border-slate-200/80 bg-white/60 p-3 md:p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-[#020DFF]">Merchant onboarding</p>
+                        <h3 class="mt-1 text-sm md:text-[15px] font-semibold text-slate-900 leading-snug">Get live in 4 quick steps</h3>
+                    </div>
+                    <span class="shrink-0 rounded-full border border-[#020DFF]/20 bg-[#020DFF]/10 px-2 py-1 text-[10px] font-semibold text-[#020DFF]">
+                        4 steps
+                    </span>
+                </div>
+
+                <ol class="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+                    <li class="rounded-xl border border-slate-200/80 border-l-2 border-l-[#020DFF]/35 bg-white/70 p-3 shadow-sm">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Step 1</p>
+                        <p class="mt-1 text-xs font-semibold text-slate-900 leading-snug">Register</p>
+                        <p class="mt-0.5 text-[11px] text-slate-600 leading-snug">Station &amp; merchant details</p>
+                    </li>
+
+                    <li class="rounded-xl border border-slate-200/80 border-l-2 border-l-[#020DFF]/35 bg-white/70 p-3 shadow-sm">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Step 2</p>
+                        <p class="mt-1 text-xs font-semibold text-slate-900 leading-snug">Verify</p>
+                        <p class="mt-0.5 text-[11px] text-slate-600 leading-snug">KYC &amp; onboarding docs</p>
+                    </li>
+
+                    <li class="rounded-xl border border-slate-200/80 border-l-2 border-l-[#020DFF]/35 bg-white/70 p-3 shadow-sm">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Step 3</p>
+                        <p class="mt-1 text-xs font-semibold text-slate-900 leading-snug">Install</p>
+                        <p class="mt-0.5 text-[11px] text-slate-600 leading-snug">POS setup &amp; training</p>
+                    </li>
+
+                    <li class="rounded-xl border border-slate-200/80 border-l-2 border-l-[#020DFF]/35 bg-white/70 p-3 shadow-sm">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Step 4</p>
+                        <p class="mt-1 text-xs font-semibold text-slate-900 leading-snug">Go live</p>
+                        <p class="mt-0.5 text-[11px] text-slate-600 leading-snug">Accept Bwiser vouchers</p>
+                    </li>
+                </ol>
+            </div>
+
             <img
                 src="{{ asset('images/box.png') }}"
                 alt="Bwiser preview"
@@ -306,6 +388,51 @@
                 data-welcome-tween="slide-in"
                 onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
             >
+
+            <div class="prov545-plan mt-4">
+                <div class="prov545-plan__head">
+                    <div>
+                        <h4 class="prov545-plan__title">ProV545</h4>
+                    </div>
+                    <span class="prov545-plan__chip">Available</span>
+                </div>
+
+                <div class="radio-input prov545-plan__radios" role="group" aria-label="ProV545 pricing">
+                    <label class="prov545-plan__option">
+                        <div class="text">
+                            <input value="once" name="prov545_pricing" id="prov545-once" type="checkbox" checked />
+                            <span>Once-off</span>
+                        </div>
+                        <div class="price">
+                            <span>R 1,500</span>
+                            <span class="small">Own the device</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="prov545-plan__features">
+                    <p class="prov545-plan__features-title">Key features</p>
+                    <ul class="prov545-plan__features-list">
+                        <li>USSD geofenced payments</li>
+                        <li>Built-in receipt printing</li>
+                        <li>Portable, battery-powered terminal</li>
+                        <li>Wi‑Fi + 4G connectivity</li>
+                        <li>Fast settlement reporting</li>
+                        <li>Ready for Bwiser voucher payments</li>
+                    </ul>
+                </div>
+
+                <div class="mt-4 flex justify-end">
+                    <a
+                        href="mailto:support@bwiser.co.za?subject=ProV545%20Purchase%20Request"
+                        class="button-86"
+                        role="button"
+                        aria-label="Buy ProV545"
+                    >
+                        Buy now
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1515,6 +1642,239 @@
         box-shadow: 0 18px 40px -30px rgba(15, 23, 42, 0.35);
     }
 
+    .prov545-plan {
+        border-radius: 1rem;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        background: rgba(255, 255, 255, 0.88);
+        padding: 1rem;
+        box-shadow: 0 18px 40px -34px rgba(15, 23, 42, 0.32);
+    }
+
+    .prov545-plan__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .prov545-plan__title {
+        margin: 0;
+        font-size: 1.05rem;
+        line-height: 1.1;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        color: #0f172a;
+    }
+
+    .prov545-plan__chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.18rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: #166534;
+        background: rgba(34, 197, 94, 0.16);
+        border: 1px solid rgba(34, 197, 94, 0.28);
+        white-space: nowrap;
+    }
+
+    .prov545-plan__radios input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        accent-color: #2f64d8;
+        flex: 0 0 auto;
+    }
+
+    .prov545-plan__radios {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: stretch;
+        justify-content: flex-start;
+    }
+
+    .prov545-plan__radios label {
+        --border-color: rgba(148, 163, 184, 0.65);
+        border: 1px solid var(--border-color);
+        border-radius: 0.9rem;
+        width: 100%;
+        padding: 0.9rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        align-items: center;
+        gap: 0.9rem;
+        background: rgba(255, 255, 255, 0.55);
+        cursor: pointer;
+        user-select: none;
+        transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+    }
+
+    .prov545-plan__radios label.is-checked {
+        --border-color: #2f64d8;
+        border-color: var(--border-color);
+        border-width: 2px;
+        background: rgba(239, 246, 255, 0.75);
+        box-shadow: 0 14px 30px -26px rgba(47, 100, 216, 0.65);
+    }
+
+    .prov545-plan__radios label:hover {
+        --border-color: #2f64d8;
+        border-color: var(--border-color);
+        box-shadow: 0 14px 30px -26px rgba(47, 100, 216, 0.55);
+    }
+
+    .prov545-plan__radios .text {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-weight: 800;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+    }
+
+    .prov545-plan__radios .price {
+        display: flex;
+        flex-direction: column;
+        text-align: right;
+        font-weight: 900;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+    }
+
+    .prov545-plan__radios .small {
+        font-size: 0.75rem;
+        color: rgba(71, 85, 105, 0.9);
+        font-weight: 600;
+    }
+
+    .prov545-plan__radios .info {
+        position: absolute;
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.7rem;
+        font-weight: 900;
+        background: rgba(34, 197, 94, 0.18);
+        color: #166534;
+        border: 1px solid rgba(34, 197, 94, 0.28);
+        border-radius: 999px;
+        padding: 0.15rem 0.55rem;
+        top: 0;
+        transform: translateY(-50%);
+        right: 14px;
+        box-shadow: 0 12px 30px -24px rgba(22, 101, 52, 0.45);
+    }
+
+    .prov545-plan__features {
+        margin-top: 1rem;
+    }
+
+    .prov545-plan__features-title {
+        margin: 0 0 0.55rem 0;
+        font-size: 0.85rem;
+        font-weight: 900;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+    }
+
+    .prov545-plan__features-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.4rem;
+    }
+
+    .prov545-plan__features-list li {
+        display: flex;
+        gap: 0.55rem;
+        font-size: 0.85rem;
+        color: rgba(51, 65, 85, 0.95);
+        line-height: 1.4;
+    }
+
+    .prov545-plan__features-list li::before {
+        content: "";
+        width: 0.55rem;
+        height: 0.55rem;
+        border-radius: 999px;
+        margin-top: 0.4rem;
+        flex: 0 0 auto;
+        background: rgba(47, 100, 216, 0.14);
+        border: 1px solid rgba(47, 100, 216, 0.3);
+    }
+
+    .button-86 {
+        all: unset;
+        width: 100px;
+        height: 30px;
+        font-size: 16px;
+        background: transparent;
+        border: none;
+        position: relative;
+        color: #f0f0f0;
+        cursor: pointer;
+        z-index: 1;
+        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+    }
+
+    .button-86::after,
+    .button-86::before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        z-index: -99999;
+        transition: all .4s;
+    }
+
+    .button-86::before {
+        transform: translate(0%, 0%);
+        width: 100%;
+        height: 100%;
+        background: #28282d;
+        border-radius: 10px;
+    }
+
+    .button-86::after {
+        transform: translate(10px, 10px);
+        width: 35px;
+        height: 35px;
+        background: #ffffff15;
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        border-radius: 50px;
+    }
+
+    .button-86:hover::before {
+        transform: translate(5%, 20%);
+        width: 110%;
+        height: 110%;
+    }
+
+    .button-86:hover::after {
+        border-radius: 10px;
+        transform: translate(0, 0);
+        width: 100%;
+        height: 100%;
+    }
+
+    .button-86:active::after {
+        transition: 0s;
+        transform: translate(0, 5%);
+    }
+
     .welcome-video {
         position: relative;
         border-radius: 1rem;
@@ -1879,6 +2239,44 @@
         }
     })();
 </script>
+    <script>
+        (function initProv545PricingCards() {
+            const containers = Array.from(document.querySelectorAll('.prov545-plan__radios'));
+            if (!containers.length) return;
+
+            const setup = (container) => {
+                const options = Array.from(container.querySelectorAll('label.prov545-plan__option'));
+                if (!options.length) return;
+
+                const inputs = options
+                    .map((option) => option.querySelector('input[type="checkbox"]'))
+                    .filter(Boolean);
+
+                if (!inputs.length) return;
+
+                const sync = () => {
+                    options.forEach((option) => {
+                        const input = option.querySelector('input[type="checkbox"]');
+                        option.classList.toggle('is-checked', Boolean(input && input.checked));
+                    });
+                };
+
+                sync();
+
+                inputs.forEach((input) => {
+                    input.addEventListener('change', sync);
+                });
+            };
+
+            const boot = () => containers.forEach(setup);
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', boot);
+            } else {
+                boot();
+            }
+        })();
+    </script>
 @endsection
 
 @push('scripts')
