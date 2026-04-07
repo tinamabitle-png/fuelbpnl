@@ -342,7 +342,7 @@
         </div>
 
         <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-tween-card">
-            <div class="steps-main mb-3 rounded-2xl border border-slate-200/80 bg-white/60 p-3 md:p-4">
+            <div class="steps-main bw-animated-border mb-3 rounded-2xl p-3 md:p-4">
                 <div class="flex items-start justify-between gap-3 mb-3">
                     <div class="min-w-0">
                         <p class="text-[10px] font-semibold uppercase tracking-wide text-[#020DFF]">Merchant onboarding</p>
@@ -801,6 +801,47 @@
     .super-button:hover {
         transform: scale(1.05);
         box-shadow: 0 0 40px rgba(0, 255, 255, 0.2);
+    }
+
+    .bw-animated-border {
+        position: relative;
+        overflow: hidden;
+        isolation: isolate;
+        box-shadow: 0 18px 40px -34px rgba(15, 23, 42, 0.32);
+        backdrop-filter: blur(8px);
+    }
+
+    .bw-animated-border::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: conic-gradient(from 0deg, #00ffff, #ff00ff, #00ffff);
+        animation: rotate 4s linear infinite;
+        z-index: -2;
+        opacity: 0.9;
+    }
+
+    .bw-animated-border::after {
+        content: "";
+        position: absolute;
+        inset: 2px;
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: inherit;
+        z-index: -1;
+    }
+
+    .bw-animated-border > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .bw-animated-border::before {
+            animation: none;
+        }
     }
 
     .playstore-button {
