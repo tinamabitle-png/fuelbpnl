@@ -285,26 +285,28 @@
         </div>
     </div>
 
-    <div class="glass rounded-2xl p-3 md:p-4 mt-8 overflow-hidden welcome-tween-card">
-        <img
-            src="{{ asset('images/tsunkebwiser1.jpg') }}"
-            alt="Bwiser preview"
-            class="welcome-tween-image is-in rounded-2xl"
-            loading="lazy"
-            data-welcome-tween="slide-in"
-            onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
-        >
-    </div>
+    <div class="grid gap-8 md:grid-cols-2 mt-8 items-stretch">
+        <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-tween-card">
+            <img
+                src="{{ asset('images/tsunkebwiser1.jpg') }}"
+                alt="Bwiser preview"
+                class="welcome-tween-image is-in rounded-2xl"
+                loading="lazy"
+                data-welcome-tween="slide-in"
+                onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
+            >
+        </div>
 
-    <div class="glass rounded-2xl p-3 md:p-4 mt-8 overflow-hidden welcome-tween-card">
-        <img
-            src="{{ asset('images/box.png') }}"
-            alt="Bwiser preview"
-            class="welcome-tween-image is-in rounded-2xl"
-            loading="lazy"
-            data-welcome-tween="slide-in"
-            onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
-        >
+        <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-tween-card">
+            <img
+                src="{{ asset('images/box.png') }}"
+                alt="Bwiser preview"
+                class="welcome-tween-image is-in rounded-2xl"
+                loading="lazy"
+                data-welcome-tween="slide-in"
+                onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
+            >
+        </div>
     </div>
 
     @php
