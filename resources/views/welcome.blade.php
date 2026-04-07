@@ -286,14 +286,24 @@
     </div>
 
     <div class="glass rounded-2xl p-3 md:p-4 mt-8 overflow-hidden welcome-tween-card">
-        <img
-            src="{{ asset('images/tsunkebwiser1.jpg') }}"
-            alt="Bwiser preview"
-            class="welcome-tween-image is-in rounded-2xl"
-            loading="lazy"
-            data-welcome-tween="slide-in"
-            onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
-        >
+        <div class="welcome-tween-split" aria-label="Bwiser highlights">
+            <img
+                src="{{ asset('images/tsunkebwiser1.jpg') }}"
+                alt="Bwiser preview"
+                class="welcome-tween-image is-in"
+                loading="lazy"
+                data-welcome-tween="slide-in"
+                onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
+            >
+            <img
+                src="{{ asset('images/box.png') }}"
+                alt="Bwiser preview"
+                class="welcome-tween-image welcome-tween-image--right is-in"
+                loading="lazy"
+                data-welcome-tween="slide-in"
+                onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
+            >
+        </div>
     </div>
 
     @php
@@ -1502,6 +1512,24 @@
         box-shadow: 0 18px 40px -30px rgba(15, 23, 42, 0.35);
     }
 
+    .welcome-tween-split {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        border-radius: 1rem;
+        overflow: hidden;
+        aspect-ratio: 16 / 9;
+        background: rgba(15, 23, 42, 0.06);
+    }
+
+    .welcome-tween-split .welcome-tween-image {
+        height: 100%;
+        border-radius: 0;
+    }
+
+    .welcome-tween-split .welcome-tween-image + .welcome-tween-image {
+        border-left: 1px solid rgba(15, 23, 42, 0.12);
+    }
+
     .welcome-video {
         position: relative;
         border-radius: 1rem;
@@ -1751,6 +1779,10 @@
         will-change: transform, opacity;
     }
 
+    .welcome-tween-image--right {
+        transform: translateX(14px) translateY(8px) scale(0.992);
+    }
+
     .welcome-tween-image.is-in {
         opacity: 1;
         transform: translateX(0) translateY(0) scale(1);
@@ -1819,25 +1851,27 @@
 <script>
     (function () {
         const selector = '[data-welcome-tween="slide-in"]';
-        const target = document.querySelector(selector);
-        if (!target) return;
+        const targets = Array.from(document.querySelectorAll(selector));
+        if (!targets.length) return;
 
         const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        const reveal = () => target.classList.add('is-in');
+        const reveal = () => targets.forEach((t) => t.classList.add('is-in'));
         const resetForTween = () => {
             if (reduceMotion) return;
-            target.classList.remove('is-in');
-            // Force style flush so re-adding triggers the transition reliably.
-            void target.offsetHeight;
+            targets.forEach((t) => {
+                t.classList.remove('is-in');
+                // Force style flush so re-adding triggers the transition reliably.
+                void t.offsetHeight;
+            });
         };
 
         const ready = () => {
-            if (target.dataset.tweenDone === '1') return;
+            if (targets.every((t) => t.dataset.tweenDone === '1')) return;
             if (!('IntersectionObserver' in window)) {
                 resetForTween();
                 window.addEventListener('load', () => {
                     reveal();
-                    target.dataset.tweenDone = '1';
+                    targets.forEach((t) => t.dataset.tweenDone = '1');
                 }, { once: true });
                 return;
             }
@@ -1846,12 +1880,12 @@
                 for (const e of entries) {
                     if (!e.isIntersecting) continue;
                     reveal();
-                    target.dataset.tweenDone = '1';
+                    targets.forEach((t) => t.dataset.tweenDone = '1');
                     io.disconnect();
                     break;
                 }
             }, { threshold: 0.18 });
-            io.observe(target);
+            io.observe(targets[0]);
         };
 
         if (document.readyState === 'loading') {
