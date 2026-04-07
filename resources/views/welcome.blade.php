@@ -392,12 +392,12 @@
             <div class="prov545-plan mt-4">
                 <div class="prov545-plan__head">
                     <div>
-                        <h4 class="prov545-plan__title">ProV545</h4>
+                        <h4 class="prov545-plan__title">Bwiser Pro</h4>
                     </div>
                     <span class="prov545-plan__chip">Available</span>
                 </div>
 
-                <div class="radio-input prov545-plan__radios" role="group" aria-label="ProV545 pricing">
+                <div class="radio-input prov545-plan__radios" role="group" aria-label="Bwiser Pro pricing">
                     <label class="prov545-plan__option">
                         <div class="text">
                             <input value="once" name="prov545_pricing" id="prov545-once" type="checkbox" checked />
@@ -424,10 +424,10 @@
 
                 <div class="mt-4 flex justify-end">
                     <a
-                        href="mailto:support@bwiser.co.za?subject=ProV545%20Purchase%20Request"
+                        href="mailto:support@bwiser.co.za?subject=Bwiser%20Pro%20Purchase%20Request"
                         class="button-86"
                         role="button"
-                        aria-label="Buy ProV545"
+                        aria-label="Buy Bwiser Pro"
                     >
                         Buy now
                     </a>
