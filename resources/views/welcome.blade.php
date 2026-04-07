@@ -299,103 +299,140 @@
             </div>
 
             <div class="glass rounded-2xl p-4 md:p-6 welcome-tween-card">
-                <p class="text-[10px] font-semibold uppercase tracking-wide text-[#020DFF]">How Bwiser works</p>
-                <h3 class="mt-1 text-sm md:text-[15px] font-semibold text-slate-900 leading-snug">From voucher to repayment</h3>
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#020DFF]">How Bwiser works</p>
+                        <h3 class="mt-1 text-base md:text-lg font-semibold text-slate-900 leading-tight">From voucher to repayment</h3>
+                    </div>
+                    <span class="shrink-0 rounded-full border border-[#020DFF]/15 bg-[#020DFF]/8 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#020DFF]">
+                        4 steps
+                    </span>
+                </div>
 
-                <div class="mt-4">
-                    <div class="pb-6 border-l border-slate-200 pl-4">
-                            <p class="mb-1 text-xs font-semibold text-slate-900">Step 1</p>
-                            <p class="text-[11px] text-slate-600 leading-relaxed">
-                                Issue a Bwiser voucher for a driver/lease with amount, station, and due items. Share the voucher ID/QR.
-                            </p>
+                <div class="mt-5 space-y-3">
+                    <div class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-[0_10px_30px_-24px_rgba(2,13,255,0.45)]">
+                        <div class="absolute left-[1.15rem] top-12 bottom-0 w-px bg-gradient-to-b from-[#020DFF]/25 via-slate-200 to-transparent"></div>
+                        <div class="relative flex gap-3">
+                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#020DFF] text-xs font-bold text-black shadow-sm">01</div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">Create voucher</p>
+                                <p class="mt-1 text-[12px] leading-relaxed text-slate-600">
+                                    Issue a Bwiser voucher for a driver or lease with the amount, station, and due items, then share the voucher ID or QR.
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="pb-6 border-l border-slate-200 pl-4">
-                            <p class="mb-1 text-xs font-semibold text-slate-900">Step 2</p>
-                            <p class="text-[11px] text-slate-600 leading-relaxed">
-                                The station validates the voucher (QR or USSD geofence) on the POS, prints a receipt, and settles the payment.
-                            </p>
+                    <div class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50/85 p-4">
+                        <div class="absolute left-[1.15rem] top-12 bottom-0 w-px bg-gradient-to-b from-[#020DFF]/25 via-slate-200 to-transparent"></div>
+                        <div class="relative flex gap-3">
+                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#020DFF]/15 bg-white text-xs font-bold text-[#020DFF]">02</div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">Validate at station</p>
+                                <p class="mt-1 text-[12px] leading-relaxed text-slate-600">
+                                    The station validates the voucher with QR or USSD geofence on the POS, prints a receipt, and settles the payment.
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="pb-6 border-l border-slate-200 pl-4">
-                            <p class="mb-1 text-xs font-semibold text-slate-900">Step 3</p>
-                            <p class="text-[11px] text-slate-600 leading-relaxed">
-                                Repayments show on the driver dashboard. Auto-pay can settle amounts on due dates and send confirmation emails.
-                            </p>
+                    <div class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 p-4">
+                        <div class="absolute left-[1.15rem] top-12 bottom-0 w-px bg-gradient-to-b from-[#020DFF]/25 via-slate-200 to-transparent"></div>
+                        <div class="relative flex gap-3">
+                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#020DFF]/15 bg-white text-xs font-bold text-[#020DFF]">03</div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">Repayment runs</p>
+                                <p class="mt-1 text-[12px] leading-relaxed text-slate-600">
+                                    Repayments appear on the driver dashboard, and auto-pay can settle balances on due dates while sending confirmation emails.
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="pb-6 border-l border-slate-200 pl-4">
-                            <p class="mb-1 text-xs font-semibold text-slate-900">Step 4</p>
-                            <p class="text-[11px] text-slate-600 leading-relaxed">
-                                Track settlement reporting, due items, and performance across drivers and stations.
-                            </p>
+                    <div class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50/85 p-4">
+                        <div class="relative flex gap-3">
+                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#020DFF]/15 bg-white text-xs font-bold text-[#020DFF]">04</div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">Track performance</p>
+                                <p class="mt-1 text-[12px] leading-relaxed text-slate-600">
+                                    Monitor settlement reporting, due items, and performance across drivers, leases, and stations from one flow.
+                                </p>
+                            </div>
+                        </div>
                     </div>
+                </div>
 
-                    <div class="border-l border-slate-200 pl-4">
-                        <p class="mb-1 text-xs font-semibold text-slate-900">Success</p>
-                            <p class="text-[11px] text-slate-600 leading-relaxed">
-                                Fuel payments are tracked end-to-end, with simple vouchers and predictable repayments.
-                            </p>
-                    </div>
+                <div class="mt-4 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-[#020DFF]/5 p-4">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-700">Success</p>
+                    <p class="mt-2 text-sm font-medium leading-relaxed text-slate-800">
+                        Fuel payments stay tracked end-to-end with simple vouchers, predictable repayments, and clean reporting.
+                    </p>
                 </div>
             </div>
         </div>
 
         <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-tween-card">
-            <div class="steps-main bw-animated-border mb-3 rounded-2xl p-3 md:p-4">
-                <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="rounded-[22px] bg-gradient-to-br from-[#020DFF]/20 via-cyan-400/18 to-[#020DFF]/8 p-[1px] shadow-[0_18px_40px_-30px_rgba(2,13,255,0.28)]">
+                <div class="rounded-[21px] bg-gradient-to-br from-white via-white to-blue-50/70 p-4 md:p-5">
+                <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-[#020DFF]">Merchant onboarding</p>
-                        <h3 class="mt-1 text-sm md:text-[15px] font-semibold text-slate-900 leading-snug">Get live in 4 quick steps</h3>
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#020DFF]">Merchant onboarding</p>
+                        <h3 class="mt-1 text-base md:text-lg font-semibold text-slate-900 leading-tight">Get live in 4 quick steps</h3>
+                    </div>
+                    <span class="shrink-0 rounded-full border border-[#020DFF]/15 bg-[#020DFF]/8 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#020DFF]">
+                        Fast setup
+                    </span>
+                </div>
+
+                <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-2xl bg-gradient-to-br from-[#020DFF]/28 via-cyan-400/22 to-[#020DFF]/10 p-[1px] shadow-[0_10px_24px_-22px_rgba(2,13,255,0.45)]">
+                        <div class="rounded-[15px] bg-white p-4">
+                            <div class="inline-flex rounded-xl bg-gradient-to-br from-[#020DFF] via-blue-600 to-blue-400 p-[1px]">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-[11px] bg-white text-xs font-bold text-black">01</div>
+                            </div>
+                            <p class="mt-3 text-sm font-semibold text-slate-900">Register</p>
+                            <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Capture merchant, station, and business details to start onboarding.</p>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl bg-gradient-to-br from-[#020DFF]/22 via-cyan-400/18 to-slate-200/50 p-[1px]">
+                        <div class="rounded-[15px] bg-slate-50/85 p-4">
+                            <div class="inline-flex rounded-xl bg-gradient-to-br from-[#020DFF] via-blue-600 to-blue-400 p-[1px]">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-[11px] bg-white text-xs font-bold text-[#020DFF]">02</div>
+                            </div>
+                            <p class="mt-3 text-sm font-semibold text-slate-900">Verify</p>
+                            <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Submit KYC and onboarding documents so the account can be approved.</p>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl bg-gradient-to-br from-cyan-400/18 via-[#020DFF]/18 to-slate-200/50 p-[1px]">
+                        <div class="rounded-[15px] bg-slate-50/85 p-4">
+                            <div class="inline-flex rounded-xl bg-gradient-to-br from-[#020DFF] via-blue-600 to-blue-400 p-[1px]">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-[11px] bg-white text-xs font-bold text-[#020DFF]">03</div>
+                            </div>
+                            <p class="mt-3 text-sm font-semibold text-slate-900">Install</p>
+                            <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Set up the POS, train staff, and configure voucher validation for the site.</p>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl bg-gradient-to-br from-[#020DFF]/24 via-cyan-400/18 to-emerald-300/35 p-[1px] shadow-[0_10px_24px_-22px_rgba(15,23,42,0.28)]">
+                        <div class="rounded-[15px] bg-white p-4">
+                            <div class="inline-flex rounded-xl bg-gradient-to-br from-[#020DFF] via-blue-600 to-blue-400 p-[1px]">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-[11px] bg-white text-xs font-bold text-[#020DFF]">04</div>
+                            </div>
+                            <p class="mt-3 text-sm font-semibold text-slate-900">Go live</p>
+                            <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Start accepting Bwiser vouchers with reporting and support already in place.</p>
+                        </div>
                     </div>
                 </div>
 
-                <div class="tabs">
-                    <div class="row">
-                        <div class="col-lg-12">
-                            <div aria-label="Merchant onboarding steps" role="group" class="bw-steps-group">
-                                <button type="button" class="bw-step-tab is-active">
-                                    <span class="bw-step-ico" aria-hidden="true">
-                                        <i class="fa-solid fa-user-plus"></i>
-                                    </span>
-                                    <div class="bw-step-text">
-                                        <div class="bw-step-title">Register</div>
-                                        <p>Station &amp; merchant details</p>
-                                    </div>
-                                </button>
-
-                                <button type="button" class="bw-step-tab is-incomplete">
-                                    <span class="bw-step-ico" aria-hidden="true">
-                                        <i class="fa-solid fa-id-card"></i>
-                                    </span>
-                                    <div class="bw-step-text">
-                                        <div class="bw-step-title">Verify</div>
-                                        <p>KYC &amp; onboarding docs</p>
-                                    </div>
-                                </button>
-
-                                <button type="button" class="bw-step-tab is-incomplete">
-                                    <span class="bw-step-ico" aria-hidden="true">
-                                        <i class="fa-solid fa-screwdriver-wrench"></i>
-                                    </span>
-                                    <div class="bw-step-text">
-                                        <div class="bw-step-title">Install</div>
-                                        <p>POS setup &amp; training</p>
-                                    </div>
-                                </button>
-
-                                <button type="button" class="bw-step-tab is-incomplete is-last">
-                                    <span class="bw-step-ico" aria-hidden="true">
-                                        <i class="fa-solid fa-rocket"></i>
-                                    </span>
-                                    <div class="bw-step-text">
-                                        <div class="bw-step-title">Go live</div>
-                                        <p>Accept Bwiser vouchers</p>
-                                    </div>
-                                </button>
-                            </div>
-                        </div>
+                <div class="mt-4 rounded-2xl bg-gradient-to-r from-[#020DFF]/20 via-cyan-400/18 to-[#020DFF]/10 p-[1px]">
+                    <div class="rounded-[15px] bg-white/90 px-4 py-3">
+                        <p class="text-[11px] font-medium text-slate-700">
+                            Merchants move from signup to live voucher acceptance in one guided flow.
+                        </p>
                     </div>
+                </div>
                 </div>
             </div>
 
