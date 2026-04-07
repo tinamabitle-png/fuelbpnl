@@ -811,33 +811,35 @@
         backdrop-filter: blur(8px);
     }
 
-    .bw-animated-border::before {
-        content: "";
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: conic-gradient(from 0deg, #00ffff, #ff00ff, #00ffff);
-        animation: rotate 4s linear infinite;
-        z-index: -2;
-        opacity: 0.9;
-    }
-
-	    .bw-animated-border::after {
+	    .bw-animated-border::before {
 	        content: "";
 	        position: absolute;
-	        inset: 2px;
-	        /* Opaque inner fill so the conic gradient only reads as a border. */
-	        background: rgba(255, 255, 255, 0.96);
-	        border-radius: inherit;
-	        z-index: -1;
+	        top: -50%;
+	        left: -50%;
+	        width: 200%;
+	        height: 200%;
+	        background: conic-gradient(from 0deg, #00ffff, #ff00ff, #00ffff);
+	        animation: rotate 4s linear infinite;
+	        z-index: 0;
+	        opacity: 0.9;
+	        pointer-events: none;
 	    }
 
-    .bw-animated-border > * {
-        position: relative;
-        z-index: 1;
-    }
+		    .bw-animated-border::after {
+		        content: "";
+		        position: absolute;
+		        inset: 2px;
+		        /* Opaque inner fill so the conic gradient only reads as a border. */
+		        background: rgba(255, 255, 255, 0.98);
+		        border-radius: inherit;
+		        z-index: 1;
+		        pointer-events: none;
+		    }
+
+	    .bw-animated-border > * {
+	        position: relative;
+	        z-index: 2;
+	    }
 
     @media (prefers-reduced-motion: reduce) {
         .bw-animated-border::before {
