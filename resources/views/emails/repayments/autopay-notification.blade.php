@@ -60,20 +60,26 @@
                                     Voucher<br>
                                     <span style="color:#a5b4fc;">{{ $ticket['voucher_code'] ?? 'N/A' }}</span>
                                 </div>
-                                <div style="margin-top:10px;font-size:13px;line-height:1.5;color:#94a3b8;">
-                                    {{ $ticket['station_name'] ?? 'N/A' }}
-                                    @if(($ticket['pending_count'] ?? 0) > 0)
-                                        <span style="color:#a5b4fc;"> • {{ (int) $ticket['pending_count'] }} due • -R {{ $ticket['pending_amount_display'] ?? '0.00' }}</span>
-                                    @endif
-                                </div>
+                            <div style="margin-top:10px;font-size:13px;line-height:1.5;color:#94a3b8;">
+                                {{ $ticket['station_name'] ?? 'N/A' }}
+                                @if(($ticket['pending_count'] ?? 0) > 0)
+                                    <span style="color:#a5b4fc;"> • {{ (int) $ticket['pending_count'] }} due • -R {{ $ticket['pending_amount_display'] ?? '0.00' }}</span>
+                                @endif
+                                @if(($ticket['overdue_count'] ?? 0) > 0)
+                                    <span style="color:#fca5a5;"> • {{ (int) $ticket['overdue_count'] }} overdue</span>
+                                @endif
                             </div>
+                        </div>
 
                             <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin-top:14px;">
                                 <tr>
-                                    <td style="width:50%;padding:10px 0;">
-                                        <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Next Due</div>
-                                        <div style="margin-top:4px;font-size:14px;font-weight:800;color:#f8fafc;">{{ $ticket['next_due_date'] ?? 'N/A' }}</div>
-                                    </td>
+                                <td style="width:50%;padding:10px 0;">
+                                    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Next Due</div>
+                                    <div style="margin-top:4px;font-size:14px;font-weight:800;color:#f8fafc;">{{ $ticket['next_due_date'] ?? 'N/A' }}</div>
+                                    @if(!empty($ticket['overdue_since']))
+                                        <div style="margin-top:4px;font-size:11px;line-height:1.4;color:#94a3b8;">Overdue since {{ $ticket['overdue_since'] }}</div>
+                                    @endif
+                                </td>
                                     <td style="width:50%;padding:10px 0;">
                                         <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Amount Due</div>
                                         <div style="margin-top:4px;font-size:14px;font-weight:800;color:#f8fafc;">-R {{ $ticket['pending_amount_display'] ?? '0.00' }}</div>

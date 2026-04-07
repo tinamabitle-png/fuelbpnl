@@ -1491,6 +1491,9 @@ class DashboardController extends Controller
 
         $pendingCount = 0;
         $pendingAmount = 0.0;
+        $overdueCount = 0;
+        $overdueAmount = 0.0;
+        $overdueSince = null;
         $nextDueDate = $repayment->due_date
             ? \Illuminate\Support\Carbon::parse($repayment->due_date)->format('d M Y')
             : 'N/A';
@@ -1506,9 +1509,24 @@ class DashboardController extends Controller
             $pendingCount = $pendingForLease->count();
             $pendingAmount = (float) $pendingForLease->sum('amount');
 
-            $nextDue = $pendingForLease->sortBy('due_date')->first();
-            if ($nextDue && $nextDue->due_date) {
-                $nextDueDate = \Illuminate\Support\Carbon::parse($nextDue->due_date)->format('d M Y');
+            $today = now()->toDateString();
+            $overdue = $pendingForLease->filter(fn ($r) => $r->due_date && (string) $r->due_date < $today);
+            $upcoming = $pendingForLease->filter(fn ($r) => $r->due_date && (string) $r->due_date >= $today);
+
+            $overdueCount = $overdue->count();
+            $overdueAmount = (float) $overdue->sum('amount');
+            $oldestOverdue = $overdue->sortBy('due_date')->first();
+            if ($oldestOverdue && $oldestOverdue->due_date) {
+                $overdueSince = \Illuminate\Support\Carbon::parse($oldestOverdue->due_date)->format('d M Y');
+            }
+
+            $nextUpcoming = $upcoming->sortBy('due_date')->first();
+            if ($nextUpcoming && $nextUpcoming->due_date) {
+                $nextDueDate = \Illuminate\Support\Carbon::parse($nextUpcoming->due_date)->format('d M Y');
+            } elseif ($overdueCount > 0) {
+                $nextDueDate = 'Due now';
+            } else {
+                $nextDueDate = 'N/A';
             }
         }
 
@@ -1519,6 +1537,9 @@ class DashboardController extends Controller
             'pending_count' => $pendingCount,
             'pending_amount_display' => number_format(abs($pendingAmount), 2),
             'next_due_date' => $nextDueDate,
+            'overdue_count' => $overdueCount,
+            'overdue_amount_display' => number_format(abs($overdueAmount), 2),
+            'overdue_since' => $overdueSince,
             'driver_name' => Str::limit((string) ($user->name ?? 'Driver'), 26),
             'lease_id' => $repayment->lease_id ? (string) $repayment->lease_id : '--',
         ];
