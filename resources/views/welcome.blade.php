@@ -342,42 +342,61 @@
         </div>
 
         <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-tween-card">
-            <div class="mb-3 rounded-2xl border border-slate-200/80 bg-white/60 p-3 md:p-4">
-                <div class="flex items-start justify-between gap-3">
+            <div class="steps-main mb-3 rounded-2xl border border-slate-200/80 bg-white/60 p-3 md:p-4">
+                <div class="flex items-start justify-between gap-3 mb-3">
                     <div class="min-w-0">
                         <p class="text-[10px] font-semibold uppercase tracking-wide text-[#020DFF]">Merchant onboarding</p>
                         <h3 class="mt-1 text-sm md:text-[15px] font-semibold text-slate-900 leading-snug">Get live in 4 quick steps</h3>
                     </div>
-                    <span class="shrink-0 rounded-full border border-[#020DFF]/20 bg-[#020DFF]/10 px-2 py-1 text-[10px] font-semibold text-[#020DFF]">
-                        4 steps
-                    </span>
                 </div>
 
-                <ol class="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
-                    <li class="rounded-xl border border-slate-200/80 border-l-2 border-l-[#020DFF]/35 bg-white/70 p-3 shadow-sm">
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Step 1</p>
-                        <p class="mt-1 text-xs font-semibold text-slate-900 leading-snug">Register</p>
-                        <p class="mt-0.5 text-[11px] text-slate-600 leading-snug">Station &amp; merchant details</p>
-                    </li>
+                <div class="tabs">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div aria-label="Merchant onboarding steps" role="group" class="bw-steps-group">
+                                <button type="button" class="bw-step-tab is-active">
+                                    <span class="bw-step-ico" aria-hidden="true">
+                                        <i class="fa-solid fa-user-plus"></i>
+                                    </span>
+                                    <div class="bw-step-text">
+                                        <div class="bw-step-title">Register</div>
+                                        <p>Station &amp; merchant details</p>
+                                    </div>
+                                </button>
 
-                    <li class="rounded-xl border border-slate-200/80 border-l-2 border-l-[#020DFF]/35 bg-white/70 p-3 shadow-sm">
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Step 2</p>
-                        <p class="mt-1 text-xs font-semibold text-slate-900 leading-snug">Verify</p>
-                        <p class="mt-0.5 text-[11px] text-slate-600 leading-snug">KYC &amp; onboarding docs</p>
-                    </li>
+                                <button type="button" class="bw-step-tab is-incomplete">
+                                    <span class="bw-step-ico" aria-hidden="true">
+                                        <i class="fa-solid fa-id-card"></i>
+                                    </span>
+                                    <div class="bw-step-text">
+                                        <div class="bw-step-title">Verify</div>
+                                        <p>KYC &amp; onboarding docs</p>
+                                    </div>
+                                </button>
 
-                    <li class="rounded-xl border border-slate-200/80 border-l-2 border-l-[#020DFF]/35 bg-white/70 p-3 shadow-sm">
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Step 3</p>
-                        <p class="mt-1 text-xs font-semibold text-slate-900 leading-snug">Install</p>
-                        <p class="mt-0.5 text-[11px] text-slate-600 leading-snug">POS setup &amp; training</p>
-                    </li>
+                                <button type="button" class="bw-step-tab is-incomplete">
+                                    <span class="bw-step-ico" aria-hidden="true">
+                                        <i class="fa-solid fa-screwdriver-wrench"></i>
+                                    </span>
+                                    <div class="bw-step-text">
+                                        <div class="bw-step-title">Install</div>
+                                        <p>POS setup &amp; training</p>
+                                    </div>
+                                </button>
 
-                    <li class="rounded-xl border border-slate-200/80 border-l-2 border-l-[#020DFF]/35 bg-white/70 p-3 shadow-sm">
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Step 4</p>
-                        <p class="mt-1 text-xs font-semibold text-slate-900 leading-snug">Go live</p>
-                        <p class="mt-0.5 text-[11px] text-slate-600 leading-snug">Accept Bwiser vouchers</p>
-                    </li>
-                </ol>
+                                <button type="button" class="bw-step-tab is-incomplete is-last">
+                                    <span class="bw-step-ico" aria-hidden="true">
+                                        <i class="fa-solid fa-rocket"></i>
+                                    </span>
+                                    <div class="bw-step-text">
+                                        <div class="bw-step-title">Go live</div>
+                                        <p>Accept Bwiser vouchers</p>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <img
@@ -1806,6 +1825,116 @@
         flex: 0 0 auto;
         background: rgba(47, 100, 216, 0.14);
         border: 1px solid rgba(47, 100, 216, 0.3);
+    }
+
+    .steps-main .bw-steps-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .steps-main .bw-step-tab {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1 1 220px;
+        min-height: 56px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        background: rgba(255, 255, 255, 0.65);
+        color: #0f172a;
+        text-align: left;
+        cursor: default;
+        user-select: none;
+        transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
+    }
+
+    .steps-main .bw-step-tab::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        right: -10px;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-top: 10px solid transparent;
+        border-bottom: 10px solid transparent;
+        border-left: 10px solid rgba(226, 232, 240, 0.95);
+        opacity: 0.8;
+    }
+
+    .steps-main .bw-step-tab::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        right: -9px;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-top: 9px solid transparent;
+        border-bottom: 9px solid transparent;
+        border-left: 9px solid rgba(255, 255, 255, 0.65);
+        opacity: 0.95;
+    }
+
+    .steps-main .bw-step-tab.is-last::after,
+    .steps-main .bw-step-tab.is-last::before {
+        display: none;
+    }
+
+    .steps-main .bw-step-tab.is-active {
+        border-color: rgba(2, 13, 255, 0.35);
+        background: linear-gradient(135deg, rgba(2, 13, 255, 0.12), rgba(0, 221, 235, 0.08));
+        box-shadow: 0 14px 30px -26px rgba(2, 13, 255, 0.55);
+    }
+
+    .steps-main .bw-step-tab.is-incomplete {
+        opacity: 0.88;
+    }
+
+    .steps-main .bw-step-ico {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        background: rgba(2, 13, 255, 0.1);
+        color: #020DFF;
+        flex: 0 0 auto;
+    }
+
+    .steps-main .bw-step-tab.is-incomplete .bw-step-ico {
+        background: rgba(148, 163, 184, 0.2);
+        color: rgba(51, 65, 85, 0.85);
+    }
+
+    .steps-main .bw-step-ico i {
+        font-size: 18px;
+        line-height: 1;
+        display: block;
+    }
+
+    .steps-main .bw-step-title {
+        font-weight: 900;
+        font-size: 0.92rem;
+        letter-spacing: -0.01em;
+        line-height: 1.15;
+    }
+
+    .steps-main .bw-step-text p {
+        margin: 2px 0 0 0;
+        font-size: 0.72rem;
+        color: rgba(71, 85, 105, 0.95);
+        line-height: 1.25;
+    }
+
+    @media (max-width: 768px) {
+        .steps-main .bw-step-tab::after,
+        .steps-main .bw-step-tab::before {
+            display: none;
+        }
     }
 
     .button-86 {
