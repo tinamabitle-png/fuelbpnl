@@ -370,7 +370,7 @@
                 </div>
 
                 <div class="mt-5 flex justify-start">
-                    <a href="#" class="welcome-entry-button welcome-entry-button--type-c">
+                    <a href="{{ asset('images/bwiser.jpg') }}" class="welcome-entry-button welcome-entry-button--type-c" data-tapless-open aria-haspopup="dialog">
                         <div class="welcome-entry-button__line"></div>
                         <div class="welcome-entry-button__line"></div>
                         <span class="welcome-entry-button__text">Tapless payments</span>
@@ -736,6 +736,45 @@
             <button type="button" class="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700" data-coming-soon-close>
                 OK
             </button>
+        </div>
+    </div>
+</div>
+
+<div id="taplessPaymentsModal" class="hidden fixed inset-0 z-[10050] items-start justify-center overflow-y-auto p-4 md:items-center" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-tapless-close></div>
+    <div class="relative my-auto w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 max-h-[calc(100vh-2rem)]">
+        <div class="grid max-h-[calc(100vh-2rem)] gap-0 overflow-y-auto lg:grid-cols-[1.2fr_0.9fr]">
+            <div class="bg-slate-100 lg:max-h-[calc(100vh-2rem)]">
+                <img
+                    src="{{ asset('images/bwiser.jpg') }}"
+                    alt="Bwiser tapless payments"
+                    class="h-64 w-full object-cover lg:h-full"
+                    loading="lazy"
+                >
+            </div>
+            <div class="p-6 md:p-8">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Bwiser</p>
+                        <h3 class="mt-2 text-2xl font-bold text-slate-900">Tapless payments</h3>
+                    </div>
+                    <button type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" data-tapless-close>
+                        Close
+                    </button>
+                </div>
+                <p class="mt-4 text-sm leading-relaxed text-slate-600">
+                    Bwiser tapless payments let merchants validate and process voucher-linked payments without a physical card tap, using USSD, geofencing, and voucher verification to confirm the right user at the right place.
+                </p>
+                <p class="mt-3 text-sm leading-relaxed text-slate-600">
+                    In practice, that means faster checkout, less hardware dependency, and a payment experience built for stations, drivers, and merchant environments where traditional card flows are not always the best fit.
+                </p>
+                <div class="mt-6 rounded-2xl bg-blue-50 p-4">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-700">What it means</p>
+                    <p class="mt-2 text-sm leading-relaxed text-slate-700">
+                        A secure, location-aware payment flow that feels lightweight to the user but still gives merchants strong control and clear reporting.
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -3022,6 +3061,42 @@
 
 	            const openers = Array.from(document.querySelectorAll('[data-coming-soon-open]'));
 	            const closers = Array.from(modal.querySelectorAll('[data-coming-soon-close]'));
+
+	            const open = () => {
+	                modal.classList.remove('hidden');
+	                modal.classList.add('flex');
+	                modal.setAttribute('aria-hidden', 'false');
+	                document.body.style.overflow = 'hidden';
+	            };
+
+	            const close = () => {
+	                modal.classList.add('hidden');
+	                modal.classList.remove('flex');
+	                modal.setAttribute('aria-hidden', 'true');
+	                document.body.style.overflow = '';
+	            };
+
+	            openers.forEach((btn) => {
+	                btn.addEventListener('click', (e) => {
+	                    e.preventDefault();
+	                    open();
+	                });
+	            });
+
+	            closers.forEach((btn) => btn.addEventListener('click', close));
+
+	            document.addEventListener('keydown', (e) => {
+	                if (e.key === 'Escape' && modal.getAttribute('aria-hidden') === 'false') close();
+	            });
+	        })();
+	    </script>
+	    <script>
+	        (function initTaplessPaymentsModal() {
+	            const modal = document.getElementById('taplessPaymentsModal');
+	            if (!modal) return;
+
+	            const openers = Array.from(document.querySelectorAll('[data-tapless-open]'));
+	            const closers = Array.from(modal.querySelectorAll('[data-tapless-close]'));
 
 	            const open = () => {
 	                modal.classList.remove('hidden');
