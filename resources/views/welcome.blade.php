@@ -378,6 +378,20 @@
                         <div class="welcome-entry-button__drow2"></div>
                     </a>
                 </div>
+
+                <div class="mt-5 rounded-2xl bg-white/85 p-4 shadow-[0_12px_30px_-24px_rgba(2,13,255,0.35)]">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#020DFF]">Case study</p>
+                    <h4 class="mt-2 text-sm font-semibold text-slate-900">A founder story behind tapless payments</h4>
+                    <p class="mt-2 text-[12px] leading-relaxed text-slate-600">
+                        After a difficult experience with an earlier payments initiative that Tlhologelo Mabitle felt left him unfairly treated, he decided to build something new for the Flowdosi Merchant Group instead of walking away from the problem.
+                    </p>
+                    <p class="mt-2 text-[12px] leading-relaxed text-slate-600">
+                        That decision led to a novel approach: USSD geofenced tapless payments designed for real fuel and merchant environments, turning a frustrating setback into an unexpected breakthrough for Bwiser.
+                    </p>
+                    <p class="mt-2 text-[12px] leading-relaxed text-slate-700">
+                        In many ways, it was a happy accident: a reaction to a tough moment that opened the path to a first-of-its-kind payment experience.
+                    </p>
+                </div>
             </div>
         </div>
 
