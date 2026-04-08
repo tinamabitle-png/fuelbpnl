@@ -17,6 +17,7 @@
 @section('og_image_alt', 'Bwiser Fuel Buy Now Pay Later')
 
 @push('head')
+    <link rel="stylesheet" href="{{ asset('vendor/sweetalert2/sweetalert2.min.css') }}">
     <script type="application/ld+json">
     {!! json_encode([
         '@context' => 'https://schema.org',
@@ -370,7 +371,7 @@
                 </div>
 
                 <div class="mt-5 flex justify-start">
-                    <a href="{{ asset('images/bwiser.jpg') }}" class="welcome-entry-button welcome-entry-button--type-c" data-tapless-open aria-haspopup="dialog">
+                    <a href="{{ asset('images/BWISER.jpg') }}" class="welcome-entry-button welcome-entry-button--type-c" data-tapless-open aria-haspopup="dialog">
                         <div class="welcome-entry-button__line"></div>
                         <div class="welcome-entry-button__line"></div>
                         <span class="welcome-entry-button__text">Tapless payments</span>
@@ -3051,7 +3052,7 @@
 	            });
 	        })();
 	    </script>
-	    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	    <script src="{{ asset('vendor/sweetalert2/sweetalert2.min.js') }}"></script>
 	    <script>
 	        (function initTaplessPaymentsModal() {
 	            const openers = Array.from(document.querySelectorAll('[data-tapless-open]'));
