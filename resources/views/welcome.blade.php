@@ -3057,7 +3057,7 @@
 	            const openers = Array.from(document.querySelectorAll('[data-tapless-open]'));
 	            if (!openers.length) return;
 
-	            const imageUrl = @json(asset('images/bwiser.jpg'));
+	            const imageUrl = @json(asset('images/BWISER.jpg'));
 	            const modalHtml = `
 	                <div style="text-align:left;">
 	                    <img src="${imageUrl}" alt="Bwiser tapless payments" style="display:block;width:100%;height:100%;min-height:260px;max-height:48vh;object-fit:cover;border-radius:14px;margin-bottom:12px;">
