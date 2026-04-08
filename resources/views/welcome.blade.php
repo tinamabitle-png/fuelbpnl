@@ -303,6 +303,15 @@
                     <div>
                         <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#020DFF]">How Bwiser works</p>
                         <h3 class="mt-1 text-base md:text-lg font-semibold text-slate-900 leading-tight">From voucher to repayment</h3>
+                        <div class="mt-4">
+                            <a href="#" class="welcome-entry-button welcome-entry-button--type-c">
+                                <div class="welcome-entry-button__line"></div>
+                                <div class="welcome-entry-button__line"></div>
+                                <span class="welcome-entry-button__text">Tapless payments</span>
+                                <div class="welcome-entry-button__drow1"></div>
+                                <div class="welcome-entry-button__drow2"></div>
+                            </a>
+                        </div>
                     </div>
                     <span class="shrink-0 rounded-full bg-[#020DFF]/8 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#020DFF]">
                         4 steps
@@ -1751,6 +1760,249 @@
     .welcome-tween-card {
         border: 1px solid rgba(226, 232, 240, 0.9);
         box-shadow: 0 18px 40px -30px rgba(15, 23, 42, 0.35);
+    }
+
+    .welcome-entry-button {
+        --welcome_entry_line_color: #00135c;
+        --welcome_entry_back_color: #defffa;
+        position: relative;
+        z-index: 0;
+        display: inline-block;
+        width: min(240px, 100%);
+        height: 56px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--welcome_entry_line_color);
+        letter-spacing: 2px;
+        transition: all 0.3s ease;
+    }
+
+    .welcome-entry-button__text {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .welcome-entry-button::before,
+    .welcome-entry-button::after,
+    .welcome-entry-button__text::before,
+    .welcome-entry-button__text::after {
+        content: "";
+        position: absolute;
+        height: 3px;
+        border-radius: 2px;
+        background: var(--welcome_entry_line_color);
+        transition: all 0.5s ease;
+    }
+
+    .welcome-entry-button::before {
+        top: 0;
+        left: 54px;
+        width: calc(100% - 56px * 2 - 16px);
+    }
+
+    .welcome-entry-button::after {
+        top: 0;
+        right: 54px;
+        width: 8px;
+    }
+
+    .welcome-entry-button__text::before {
+        bottom: 0;
+        right: 54px;
+        width: calc(100% - 56px * 2 - 16px);
+    }
+
+    .welcome-entry-button__text::after {
+        bottom: 0;
+        left: 54px;
+        width: 8px;
+    }
+
+    .welcome-entry-button__line {
+        position: absolute;
+        top: 0;
+        width: 56px;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .welcome-entry-button__line::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        width: 150%;
+        height: 100%;
+        box-sizing: border-box;
+        border-radius: 300px;
+        border: solid 3px var(--welcome_entry_line_color);
+    }
+
+    .welcome-entry-button__line:nth-child(1),
+    .welcome-entry-button__line:nth-child(1)::before {
+        left: 0;
+    }
+
+    .welcome-entry-button__line:nth-child(2),
+    .welcome-entry-button__line:nth-child(2)::before {
+        right: 0;
+    }
+
+    .welcome-entry-button:hover {
+        letter-spacing: 4px;
+    }
+
+    .welcome-entry-button:hover::before,
+    .welcome-entry-button:hover .welcome-entry-button__text::before {
+        width: 8px;
+    }
+
+    .welcome-entry-button:hover::after,
+    .welcome-entry-button:hover .welcome-entry-button__text::after {
+        width: calc(100% - 56px * 2 - 16px);
+    }
+
+    .welcome-entry-button__drow1,
+    .welcome-entry-button__drow2 {
+        position: absolute;
+        z-index: -1;
+        border-radius: 16px;
+        transform-origin: 16px 16px;
+    }
+
+    .welcome-entry-button__drow1 {
+        top: -16px;
+        left: 40px;
+        width: 32px;
+        height: 0;
+        transform: rotate(30deg);
+    }
+
+    .welcome-entry-button__drow2 {
+        top: 44px;
+        left: 77px;
+        width: 32px;
+        height: 0;
+        transform: rotate(-127deg);
+    }
+
+    .welcome-entry-button__drow1::before,
+    .welcome-entry-button__drow1::after,
+    .welcome-entry-button__drow2::before,
+    .welcome-entry-button__drow2::after {
+        content: "";
+        position: absolute;
+    }
+
+    .welcome-entry-button__drow1::before {
+        bottom: 0;
+        left: 0;
+        width: 0;
+        height: 32px;
+        border-radius: 16px;
+        transform-origin: 16px 16px;
+        transform: rotate(-60deg);
+    }
+
+    .welcome-entry-button__drow1::after {
+        top: -10px;
+        left: 45px;
+        width: 0;
+        height: 32px;
+        border-radius: 16px;
+        transform-origin: 16px 16px;
+        transform: rotate(69deg);
+    }
+
+    .welcome-entry-button__drow2::before {
+        bottom: 0;
+        left: 0;
+        width: 0;
+        height: 32px;
+        border-radius: 16px;
+        transform-origin: 16px 16px;
+        transform: rotate(-146deg);
+    }
+
+    .welcome-entry-button__drow2::after {
+        bottom: 26px;
+        left: -40px;
+        width: 0;
+        height: 32px;
+        border-radius: 16px;
+        transform-origin: 16px 16px;
+        transform: rotate(-262deg);
+    }
+
+    .welcome-entry-button__drow1,
+    .welcome-entry-button__drow1::before,
+    .welcome-entry-button__drow1::after,
+    .welcome-entry-button__drow2,
+    .welcome-entry-button__drow2::before,
+    .welcome-entry-button__drow2::after {
+        background: var(--welcome_entry_back_color);
+    }
+
+    .welcome-entry-button:hover .welcome-entry-button__drow1 {
+        animation: welcome-entry-drow1 ease-in 0.06s;
+        animation-fill-mode: forwards;
+    }
+
+    .welcome-entry-button:hover .welcome-entry-button__drow1::before {
+        animation: welcome-entry-drow2 linear 0.08s 0.06s;
+        animation-fill-mode: forwards;
+    }
+
+    .welcome-entry-button:hover .welcome-entry-button__drow1::after {
+        animation: welcome-entry-drow3 linear 0.03s 0.14s;
+        animation-fill-mode: forwards;
+    }
+
+    .welcome-entry-button:hover .welcome-entry-button__drow2 {
+        animation: welcome-entry-drow4 linear 0.06s 0.2s;
+        animation-fill-mode: forwards;
+    }
+
+    .welcome-entry-button:hover .welcome-entry-button__drow2::before {
+        animation: welcome-entry-drow3 linear 0.03s 0.26s;
+        animation-fill-mode: forwards;
+    }
+
+    .welcome-entry-button:hover .welcome-entry-button__drow2::after {
+        animation: welcome-entry-drow5 linear 0.06s 0.32s;
+        animation-fill-mode: forwards;
+    }
+
+    @keyframes welcome-entry-drow1 {
+        0% { height: 0; }
+        100% { height: 100px; }
+    }
+
+    @keyframes welcome-entry-drow2 {
+        0% { width: 0; opacity: 0; }
+        10% { opacity: 0; }
+        11% { opacity: 1; }
+        100% { width: 120px; }
+    }
+
+    @keyframes welcome-entry-drow3 {
+        0% { width: 0; }
+        100% { width: 80px; }
+    }
+
+    @keyframes welcome-entry-drow4 {
+        0% { height: 0; }
+        100% { height: 120px; }
+    }
+
+    @keyframes welcome-entry-drow5 {
+        0% { width: 0; }
+        100% { width: 124px; }
     }
 
     .prov545-plan {
