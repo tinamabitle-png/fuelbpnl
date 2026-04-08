@@ -740,45 +740,6 @@
     </div>
 </div>
 
-<div id="taplessPaymentsModal" class="hidden fixed inset-0 z-[10050] items-start justify-center overflow-y-auto p-4 md:items-center" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-tapless-close></div>
-    <div class="relative my-auto w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 max-h-[calc(100vh-2rem)]">
-        <div class="grid max-h-[calc(100vh-2rem)] gap-0 overflow-y-auto lg:grid-cols-[1.2fr_0.9fr]">
-            <div class="bg-slate-100 lg:max-h-[calc(100vh-2rem)]">
-                <img
-                    src="{{ asset('images/bwiser.jpg') }}"
-                    alt="Bwiser tapless payments"
-                    class="h-64 w-full object-cover lg:h-full"
-                    loading="lazy"
-                >
-            </div>
-            <div class="p-6 md:p-8">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Bwiser</p>
-                        <h3 class="mt-2 text-2xl font-bold text-slate-900">Tapless payments</h3>
-                    </div>
-                    <button type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" data-tapless-close>
-                        Close
-                    </button>
-                </div>
-                <p class="mt-4 text-sm leading-relaxed text-slate-600">
-                    Bwiser tapless payments let merchants validate and process voucher-linked payments without a physical card tap, using USSD, geofencing, and voucher verification to confirm the right user at the right place.
-                </p>
-                <p class="mt-3 text-sm leading-relaxed text-slate-600">
-                    In practice, that means faster checkout, less hardware dependency, and a payment experience built for stations, drivers, and merchant environments where traditional card flows are not always the best fit.
-                </p>
-                <div class="mt-6 rounded-2xl bg-blue-50 p-4">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-700">What it means</p>
-                    <p class="mt-2 text-sm leading-relaxed text-slate-700">
-                        A secure, location-aware payment flow that feels lightweight to the user but still gives merchants strong control and clear reporting.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div id="cookieConsentBar" class="cookie-bar hidden" role="dialog" aria-live="polite" aria-label="Cookie consent">
 	    <div class="cookie-bar__inner">
 	        <div class="cookie-bar__copy">
@@ -3090,39 +3051,68 @@
 	            });
 	        })();
 	    </script>
+	    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 	    <script>
 	        (function initTaplessPaymentsModal() {
-	            const modal = document.getElementById('taplessPaymentsModal');
-	            if (!modal) return;
-
 	            const openers = Array.from(document.querySelectorAll('[data-tapless-open]'));
-	            const closers = Array.from(modal.querySelectorAll('[data-tapless-close]'));
+	            if (!openers.length) return;
 
-	            const open = () => {
-	                modal.classList.remove('hidden');
-	                modal.classList.add('flex');
-	                modal.setAttribute('aria-hidden', 'false');
-	                document.body.style.overflow = 'hidden';
-	            };
-
-	            const close = () => {
-	                modal.classList.add('hidden');
-	                modal.classList.remove('flex');
-	                modal.setAttribute('aria-hidden', 'true');
-	                document.body.style.overflow = '';
-	            };
+	            const imageUrl = @json(asset('images/bwiser.jpg'));
+	            const modalHtml = `
+	                <div style="text-align:left;">
+	                    <img src="${imageUrl}" alt="Bwiser tapless payments" style="display:block;width:100%;height:100%;min-height:260px;max-height:48vh;object-fit:cover;border-radius:14px;margin-bottom:12px;">
+	                    <p style="margin:0 0 10px;font-size:13px;line-height:1.6;color:#475569;">
+	                        Bwiser tapless payments let merchants validate and process voucher-linked payments without a physical card tap, using USSD, geofencing, and voucher verification to confirm the right user at the right place.
+	                    </p>
+	                    <p style="margin:0 0 12px;font-size:13px;line-height:1.6;color:#475569;">
+	                        In practice, that means faster checkout, less hardware dependency, and a payment experience built for stations, drivers, and merchant environments where traditional card flows are not always the best fit.
+	                    </p>
+	                    <div style="border-radius:14px;background:#eff6ff;padding:12px;">
+	                        <p style="margin:0 0 5px;font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#1d4ed8;">What it means</p>
+	                        <p style="margin:0;font-size:13px;line-height:1.6;color:#334155;">
+	                            A secure, location-aware payment flow that feels lightweight to the user but still gives merchants strong control and clear reporting.
+	                        </p>
+	                    </div>
+	                </div>
+	            `;
 
 	            openers.forEach((btn) => {
 	                btn.addEventListener('click', (e) => {
 	                    e.preventDefault();
-	                    open();
+
+	                    if (typeof Swal !== 'undefined') {
+	                        Swal.fire({
+	                            title: 'Tapless payments',
+	                            html: modalHtml,
+	                            width: window.innerWidth >= 768 ? '32rem' : '90vw',
+	                            padding: '0.875rem',
+	                            confirmButtonText: 'Close',
+	                            confirmButtonColor: '#020DFF',
+	                            background: '#ffffff',
+	                            backdrop: 'rgba(15, 23, 42, 0.58)',
+	                            customClass: {
+	                                popup: 'rounded-[24px]',
+	                                title: 'text-slate-900',
+	                                htmlContainer: '!m-0',
+	                            },
+	                            didOpen: () => {
+	                                const container = Swal.getContainer();
+	                                if (container) {
+	                                    container.style.backdropFilter = 'blur(14px)';
+	                                    container.style.webkitBackdropFilter = 'blur(14px)';
+	                                }
+	                                const popup = Swal.getPopup();
+	                                if (popup) {
+	                                    popup.style.maxHeight = '90vh';
+	                                    popup.style.overflowY = 'auto';
+	                                }
+	                            },
+	                        });
+	                        return;
+	                    }
+
+	                    window.open(btn.getAttribute('href') || imageUrl, '_blank', 'noopener');
 	                });
-	            });
-
-	            closers.forEach((btn) => btn.addEventListener('click', close));
-
-	            document.addEventListener('keydown', (e) => {
-	                if (e.key === 'Escape' && modal.getAttribute('aria-hidden') === 'false') close();
 	            });
 	        })();
 	    </script>
