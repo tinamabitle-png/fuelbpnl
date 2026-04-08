@@ -453,17 +453,28 @@
                     <span class="prov545-plan__chip">Available</span>
                 </div>
 
-                <div class="radio-input prov545-plan__radios" role="group" aria-label="Bwiser Pro pricing">
-                    <label class="prov545-plan__option">
-                        <div class="text">
-                            <input value="once" name="prov545_pricing" id="prov545-once" type="checkbox" checked />
-                            <span>Once-off</span>
+                <div class="prov545-pricing-card" aria-label="Bwiser Pro pricing">
+                    <div class="prov545-pricing-card__content">
+                        <div class="prov545-pricing-card__top">
+                            <span class="prov545-pricing-card__index">Buy now</span>
+                            <p>Once-off</p>
                         </div>
-                        <div class="price">
-                            <span>R 1,500</span>
-                            <span class="small">Own the device</span>
+
+                        <div class="prov545-pricing-card__bottom">
+                            <div>
+                                <p class="prov545-pricing-card__amount">R 1,500</p>
+                                <p class="prov545-pricing-card__note">Own the device</p>
+                            </div>
+                            <svg viewBox="0 -960 960 960" aria-hidden="true">
+                                <path d="M734-160q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19ZM480-160q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19ZM226-160q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19Zm508-254q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19ZM480-414q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19Zm-254 0q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19Zm508-254q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19ZM480-668q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19Zm-254 0q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19Z"></path>
+                            </svg>
                         </div>
-                    </label>
+                    </div>
+                    <div class="prov545-pricing-card__image" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M20,8H4V6H20M20,18H4V12H20M20,4H4C2.89,4 2,4.89 2,6V18C2,19.11 2.89,20 4,20H20C21.11,20 22,19.11 22,18V6C22,4.89 21.11,4 20,4Z"></path>
+                        </svg>
+                    </div>
                 </div>
 
                 <div class="prov545-plan__features">
@@ -1781,92 +1792,108 @@
         white-space: nowrap;
     }
 
-    .prov545-plan__radios input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        margin: 0;
-        accent-color: #2f64d8;
-        flex: 0 0 auto;
-    }
-
-    .prov545-plan__radios {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        align-items: stretch;
-        justify-content: flex-start;
-    }
-
-    .prov545-plan__radios label {
-        --border-color: rgba(148, 163, 184, 0.65);
-        border: 1px solid var(--border-color);
-        border-radius: 0.9rem;
+    .prov545-pricing-card {
         width: 100%;
-        padding: 0.9rem 1rem;
+        position: relative;
+        overflow: hidden;
+        border-radius: 2rem;
+        padding: 1.35rem;
+        background: linear-gradient(135deg, #fff480 0%, #ffe55c 100%);
+        color: #111827;
+        transition: transform 0.4s ease, box-shadow 0.4s ease;
+        box-shadow: 0 18px 40px -28px rgba(202, 138, 4, 0.55);
+    }
+
+    .prov545-pricing-card:hover {
+        transform: scale(0.98);
+        box-shadow: 0 22px 46px -30px rgba(202, 138, 4, 0.6);
+    }
+
+    .prov545-pricing-card:active {
+        transform: scale(0.94);
+    }
+
+    .prov545-pricing-card__content {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        min-height: 175px;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 3.5rem;
+        transition: transform 0.4s ease;
+    }
+
+    .prov545-pricing-card:hover .prov545-pricing-card__content {
+        transform: scale(0.97);
+    }
+
+    .prov545-pricing-card__top,
+    .prov545-pricing-card__bottom {
         display: flex;
         justify-content: space-between;
-        position: relative;
-        align-items: center;
-        gap: 0.9rem;
-        background: rgba(255, 255, 255, 0.55);
-        cursor: pointer;
-        user-select: none;
-        transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+        gap: 1rem;
     }
 
-    .prov545-plan__radios label.is-checked {
-        --border-color: #2f64d8;
-        border-color: var(--border-color);
-        border-width: 2px;
-        background: rgba(239, 246, 255, 0.75);
-        box-shadow: 0 14px 30px -26px rgba(47, 100, 216, 0.65);
+    .prov545-pricing-card__top p,
+    .prov545-pricing-card__bottom p {
+        margin: 0;
+        font-weight: 700;
     }
 
-    .prov545-plan__radios label:hover {
-        --border-color: #2f64d8;
-        border-color: var(--border-color);
-        box-shadow: 0 14px 30px -26px rgba(47, 100, 216, 0.55);
-    }
-
-    .prov545-plan__radios .text {
-        display: flex;
-        align-items: center;
-        gap: 0.55rem;
-        font-weight: 800;
-        color: #0f172a;
-        letter-spacing: -0.01em;
-    }
-
-    .prov545-plan__radios .price {
-        display: flex;
-        flex-direction: column;
-        text-align: right;
+    .prov545-pricing-card__index {
         font-weight: 900;
-        color: #0f172a;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.03em;
     }
 
-    .prov545-plan__radios .small {
-        font-size: 0.75rem;
-        color: rgba(71, 85, 105, 0.9);
-        font-weight: 600;
+    .prov545-pricing-card__bottom {
+        align-items: flex-end;
     }
 
-    .prov545-plan__radios .info {
+    .prov545-pricing-card__amount {
+        font-size: 1.4rem;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        line-height: 1;
+    }
+
+    .prov545-pricing-card__note {
+        margin-top: 0.3rem !important;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: rgba(17, 24, 39, 0.72);
+    }
+
+    .prov545-pricing-card__bottom svg,
+    .prov545-pricing-card__image svg {
+        fill: currentColor;
+    }
+
+    .prov545-pricing-card__bottom svg {
+        width: 1.9rem;
+        height: 1.9rem;
+        color: rgba(17, 24, 39, 0.72);
+        transition: transform 0.4s ease;
+    }
+
+    .prov545-pricing-card__image {
         position: absolute;
-        display: inline-flex;
-        align-items: center;
-        font-size: 0.7rem;
-        font-weight: 900;
-        background: rgba(34, 197, 94, 0.18);
-        color: #166534;
-        border: 1px solid rgba(34, 197, 94, 0.28);
-        border-radius: 999px;
-        padding: 0.15rem 0.55rem;
-        top: 0;
-        transform: translateY(-50%);
-        right: 14px;
-        box-shadow: 0 12px 30px -24px rgba(22, 101, 52, 0.45);
+        inset: 0;
+        display: grid;
+        place-items: center;
+        pointer-events: none;
+    }
+
+    .prov545-pricing-card__image svg {
+        width: 4rem;
+        height: 4rem;
+        color: rgba(17, 24, 39, 0.18);
+        transition: transform 0.4s ease;
+    }
+
+    .prov545-pricing-card:hover .prov545-pricing-card__image svg,
+    .prov545-pricing-card:hover .prov545-pricing-card__bottom svg {
+        transform: scale(1.05);
     }
 
     .prov545-plan__features {
@@ -2449,44 +2476,6 @@
         }
     })();
 </script>
-    <script>
-        (function initProv545PricingCards() {
-            const containers = Array.from(document.querySelectorAll('.prov545-plan__radios'));
-            if (!containers.length) return;
-
-            const setup = (container) => {
-                const options = Array.from(container.querySelectorAll('label.prov545-plan__option'));
-                if (!options.length) return;
-
-                const inputs = options
-                    .map((option) => option.querySelector('input[type="checkbox"]'))
-                    .filter(Boolean);
-
-                if (!inputs.length) return;
-
-                const sync = () => {
-                    options.forEach((option) => {
-                        const input = option.querySelector('input[type="checkbox"]');
-                        option.classList.toggle('is-checked', Boolean(input && input.checked));
-                    });
-                };
-
-                sync();
-
-                inputs.forEach((input) => {
-                    input.addEventListener('change', sync);
-                });
-            };
-
-            const boot = () => containers.forEach(setup);
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', boot);
-            } else {
-                boot();
-            }
-        })();
-    </script>
 @endsection
 
 @push('scripts')
