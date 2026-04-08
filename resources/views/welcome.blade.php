@@ -303,15 +303,6 @@
                     <div>
                         <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#020DFF]">How Bwiser works</p>
                         <h3 class="mt-1 text-base md:text-lg font-semibold text-slate-900 leading-tight">From voucher to repayment</h3>
-                        <div class="mt-4">
-                            <a href="#" class="welcome-entry-button welcome-entry-button--type-c">
-                                <div class="welcome-entry-button__line"></div>
-                                <div class="welcome-entry-button__line"></div>
-                                <span class="welcome-entry-button__text">Tapless payments</span>
-                                <div class="welcome-entry-button__drow1"></div>
-                                <div class="welcome-entry-button__drow2"></div>
-                            </a>
-                        </div>
                     </div>
                     <span class="shrink-0 rounded-full bg-[#020DFF]/8 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#020DFF]">
                         4 steps
@@ -376,6 +367,16 @@
                     <p class="mt-2 text-sm font-medium leading-relaxed text-slate-800">
                         Fuel payments stay tracked end-to-end with simple vouchers, predictable repayments, and clean reporting.
                     </p>
+                </div>
+
+                <div class="mt-5 flex justify-start">
+                    <a href="#" class="welcome-entry-button welcome-entry-button--type-c">
+                        <div class="welcome-entry-button__line"></div>
+                        <div class="welcome-entry-button__line"></div>
+                        <span class="welcome-entry-button__text">Tapless payments</span>
+                        <div class="welcome-entry-button__drow1"></div>
+                        <div class="welcome-entry-button__drow2"></div>
+                    </a>
                 </div>
             </div>
         </div>
