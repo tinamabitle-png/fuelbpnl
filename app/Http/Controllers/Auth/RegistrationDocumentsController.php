@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\BankStatementUpload;
 use App\Models\DriverDocument;
 use App\Services\BankStatementCreditAssessmentService;
-use App\Support\SouthAfricanIdNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -35,20 +34,7 @@ class RegistrationDocumentsController extends Controller
 
         $validated = $request->validate([
             'role' => ['nullable', Rule::in(['driver', 'merchant'])],
-            'id_number' => [
-                'required',
-                'digits:13',
-                Rule::unique('users', 'id_number')->ignore($user->id),
-                function (string $attribute, mixed $value, \Closure $fail): void {
-                    if (!is_string($value) || trim($value) === '') {
-                        return;
-                    }
-
-                    if (!SouthAfricanIdNumber::isValid($value)) {
-                        $fail('Invalid South African ID number.');
-                    }
-                },
-            ],
+            'id_number' => ['required', 'digits:13', Rule::unique('users', 'id_number')->ignore($user->id)],
             'id_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'driver_license_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'bank_statement_document' => 'nullable|file|mimetypes:application/pdf|max:8192',
@@ -62,9 +48,6 @@ class RegistrationDocumentsController extends Controller
         $role = $validated['role'] ?? ($user->getRoleNames()->first() ?: 'driver');
 
         $upload = DB::transaction(function () use ($request, $user, $validated): ?BankStatementUpload {
-            $derivedDob = SouthAfricanIdNumber::deriveDateOfBirth($validated['id_number']);
-            $derivedGender = SouthAfricanIdNumber::deriveGender($validated['id_number']);
-
             $idPath = $request->hasFile('id_document')
                 ? $request->file('id_document')->store('driver_documents/id', 'public')
                 : $user->id_document_path;
@@ -75,7 +58,7 @@ class RegistrationDocumentsController extends Controller
                 ? $request->file('bank_statement_document')->store('driver_documents/bank', 'public')
                 : $user->bank_statement_path;
 
-            $userUpdate = [
+            $user->update([
                 'id_number' => $validated['id_number'],
                 'id_document_path' => $idPath,
                 'driver_license_path' => $licensePath,
@@ -88,17 +71,7 @@ class RegistrationDocumentsController extends Controller
                 'id_verification_status' => 'pending_review',
                 'id_verification_provider' => 'manual',
                 'id_verified_at' => null,
-            ];
-
-            if ($derivedDob && $user->date_of_birth === null) {
-                $userUpdate['date_of_birth'] = $derivedDob;
-            }
-
-            if ($derivedGender && $user->gender !== 'other') {
-                $userUpdate['gender'] = $derivedGender;
-            }
-
-            $user->update($userUpdate);
+            ]);
 
             if ($idPath) {
                 DriverDocument::updateOrCreate(

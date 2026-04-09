@@ -2,12 +2,6 @@
 
 A new Flutter project.
 
-## Play Store release
-
-- Bump `version:` in `pubspec.yaml` (format: `x.y.z+code`)
-- Run `./scripts/build_playstore_release.sh`
-- Upload `releases/bwiser-driverapp-v<version>.aab` to Google Play Console
-
 ## Getting Started
 
 This project is a starting point for a Flutter application.

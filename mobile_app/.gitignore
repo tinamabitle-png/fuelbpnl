@@ -33,9 +33,6 @@ migrate_working_dir/
 /build/
 /coverage/
 
-# Play Store / distribution artifacts (never commit)
-/releases/
-
 # Symbolication related
 app.*.symbols
 

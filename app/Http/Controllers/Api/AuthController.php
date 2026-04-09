@@ -11,7 +11,6 @@ use App\Models\Device;
 use App\Models\Wallet;
 use App\Models\CreditLimit;
 use App\Services\AfricasTalkingSmsService;
-use App\Support\SouthAfricanIdNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -20,6 +19,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -41,20 +41,7 @@ class AuthController extends Controller
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => 'required|string|min:8|confirmed',
             'role' => 'nullable|in:driver,merchant',
-            'id_number' => [
-                'nullable',
-                'digits:13',
-                'unique:users,id_number',
-                function (string $attribute, mixed $value, \Closure $fail): void {
-                    if (!is_string($value) || trim($value) === '') {
-                        return;
-                    }
-
-                    if (!SouthAfricanIdNumber::isValid($value)) {
-                        $fail('Invalid South African ID number.');
-                    }
-                },
-            ],
+            'id_number' => ['nullable', 'digits:13', 'unique:users,id_number'],
             'date_of_birth' => ['nullable', 'date_format:Y-m-d'],
             'gender' => ['nullable', 'in:male,female,other'],
             'device_id' => 'required|string',
@@ -80,12 +67,9 @@ class AuthController extends Controller
         if ($fullName === '') {
             $fullName = trim($rawName) ?: 'Bwiser User';
         }
-
-        $idNumber = trim((string) $request->input('id_number', ''));
         $dob = trim((string) $request->input('date_of_birth', ''));
         if ($dob === '') {
-            $derivedDob = $idNumber !== '' ? SouthAfricanIdNumber::deriveDateOfBirth($idNumber) : null;
-            $dob = (string) ($derivedDob ?: '');
+            $dob = (string) ($this->parseSouthAfricanIdDob((string) $request->input('id_number', '')) ?: '');
         }
         if ($dob === '') {
             $dob = (string) config('services.flutterwave.virtual_cards_date_of_birth', '1990-01-01');
@@ -93,8 +77,7 @@ class AuthController extends Controller
 
         $gender = $this->normalizeGender((string) $request->input('gender', ''));
         if ($gender === '') {
-            $derivedGender = $idNumber !== '' ? SouthAfricanIdNumber::deriveGender($idNumber) : null;
-            $gender = $derivedGender ?: 'male';
+            $gender = 'male';
         }
 
         // Generate OTP for verification
@@ -109,7 +92,7 @@ class AuthController extends Controller
             'gender' => $gender,
             'phone' => $request->phone,
             'email' => $request->email,
-            'id_number' => $idNumber !== '' ? $idNumber : null,
+            'id_number' => $request->input('id_number'),
             'password' => Hash::make($request->password),
             'device_fingerprint' => $request->device_id,
             'status' => 'pending', // Will be activated after OTP verification
@@ -804,4 +787,31 @@ class AuthController extends Controller
         return '';
     }
 
+    private function parseSouthAfricanIdDob(string $idNumber): ?string
+    {
+        $idNumber = preg_replace('/\\D+/', '', $idNumber) ?: '';
+        if (!preg_match('/^\\d{13}$/', $idNumber)) {
+            return null;
+        }
+
+        $yy = (int) substr($idNumber, 0, 2);
+        $mm = (int) substr($idNumber, 2, 2);
+        $dd = (int) substr($idNumber, 4, 2);
+
+        $nowYY = (int) now()->format('y');
+        $century = $yy <= $nowYY ? 2000 : 1900;
+        $yyyy = $century + $yy;
+
+        try {
+            $dob = Carbon::createFromDate($yyyy, $mm, $dd);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if ($dob->isFuture()) {
+            return null;
+        }
+
+        return $dob->toDateString();
+    }
 }

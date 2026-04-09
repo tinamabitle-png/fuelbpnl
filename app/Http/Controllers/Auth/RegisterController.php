@@ -9,7 +9,6 @@ use App\Models\DriverDocument;
 use App\Models\FuelStation;
 use App\Models\MerchantFranchise;
 use App\Models\User;
-use App\Support\SouthAfricanIdNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -18,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use App\Services\FormInteractionService;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 
@@ -90,6 +90,7 @@ class RegisterController extends Controller
                 'id_number' => ['required', 'digits:13', Rule::unique('users', 'id_number')],
                 'home_address' => ['required', 'string', 'max:500'],
                 'city' => ['required', 'string', 'max:120'],
+                'country' => ['required', 'string', 'max:120'],
                 'latitude' => ['nullable', 'numeric', 'between:-90,90'],
                 'longitude' => ['nullable', 'numeric', 'between:-180,180'],
                 'driver_platform' => ['required', Rule::in(['checkers_sixty60', 'mr_d', 'takealot', 'indrive', 'uber', 'bolt', 'other'])],
@@ -107,6 +108,7 @@ class RegisterController extends Controller
                     : ['nullable'],
                 'business_address' => ['required', 'string', 'max:500'],
                 'city' => ['required', 'string', 'max:120'],
+                'country' => ['required', 'string', 'max:120'],
                 'latitude' => ['nullable', 'numeric', 'between:-90,90'],
                 'longitude' => ['nullable', 'numeric', 'between:-180,180'],
                 'station_latitude' => ['nullable', 'numeric', 'between:-90,90'],
@@ -130,22 +132,14 @@ class RegisterController extends Controller
                 ]);
             }
 
-            $country = 'South Africa';
+            $gender = strtolower(trim((string) ($validated['gender'] ?? ''))) ?: 'male';
+            if (!in_array($gender, ['male', 'female', 'other'], true)) {
+                $gender = 'male';
+            }
 
+            $dob = null;
             if ($role === 'driver') {
-                $gender = strtolower(trim((string) ($validated['gender'] ?? '')));
-                if (!in_array($gender, ['male', 'female', 'other'], true)) {
-                    $gender = '';
-                }
-
-                $idNumber = (string) ($validated['id_number'] ?? '');
-                if (!SouthAfricanIdNumber::isValid($idNumber)) {
-                    throw ValidationException::withMessages([
-                        'id_number' => 'Invalid South African ID number.',
-                    ]);
-                }
-
-                $derivedDob = SouthAfricanIdNumber::deriveDateOfBirth($idNumber);
+                $derivedDob = $this->parseSouthAfricanIdDob((string) ($validated['id_number'] ?? ''));
                 $providedDob = trim((string) ($validated['date_of_birth'] ?? '')) ?: null;
                 if ($derivedDob === null) {
                     throw ValidationException::withMessages([
@@ -158,24 +152,11 @@ class RegisterController extends Controller
                     ]);
                 }
                 $dob = $derivedDob;
-
-                if ($gender === '') {
-                    $gender = SouthAfricanIdNumber::deriveGender($idNumber) ?: 'male';
-                }
             } else {
-                $gender = strtolower(trim((string) ($validated['gender'] ?? ''))) ?: 'male';
-                if (!in_array($gender, ['male', 'female', 'other'], true)) {
-                    $gender = 'male';
-                }
-
                 $dob = trim((string) ($validated['date_of_birth'] ?? '')) ?: null;
                 if ($dob === null) {
                     $dob = trim((string) config('services.flutterwave.virtual_cards_date_of_birth', '')) ?: null;
                 }
-            }
-
-            if ($gender === '') {
-                $gender = 'male';
             }
 
             $userPayload = [
@@ -195,8 +176,8 @@ class RegisterController extends Controller
                     ? (isset($validated['franchise_id']) ? (int) $validated['franchise_id'] : null)
                     : null,
                 'home_address' => $role === 'driver' ? ($validated['home_address'] ?? null) : null,
-                'city' => $validated['city'] ?? null,
-                'country' => $country,
+                'city' => $role === 'driver' ? ($validated['city'] ?? null) : null,
+                'country' => $role === 'driver' ? ($validated['country'] ?? null) : null,
                 'latitude' => $role === 'driver' ? ($validated['latitude'] ?? null) : null,
                 'longitude' => $role === 'driver' ? ($validated['longitude'] ?? null) : null,
                 'driver_platform' => $role === 'driver' ? ($validated['driver_platform'] ?? null) : null,
@@ -323,6 +304,7 @@ class RegisterController extends Controller
                 $brandName = (string) ($franchise ? $franchise->name : 'Independent');
                 $address = (string) ($validated['business_address'] ?? '');
                 $city = (string) ($validated['city'] ?? '');
+                $country = (string) ($validated['country'] ?? 'South Africa');
                 $stationLatitude = $validated['station_latitude'] ?? ($validated['latitude'] ?? null);
                 $stationLongitude = $validated['station_longitude'] ?? ($validated['longitude'] ?? null);
 
@@ -368,7 +350,7 @@ class RegisterController extends Controller
                         : null,
                     'business_address' => $role === 'merchant' ? ($validated['business_address'] ?? null) : null,
                     'city' => $validated['city'] ?? null,
-                    'country' => $country,
+                    'country' => $validated['country'] ?? null,
                     'latitude' => $validated['latitude'] ?? null,
                     'longitude' => $validated['longitude'] ?? null,
                     'status' => 'pending',
@@ -379,7 +361,7 @@ class RegisterController extends Controller
                         'business_address' => $role === 'merchant' ? ($validated['business_address'] ?? null) : null,
                         'home_address' => $role === 'driver' ? ($validated['home_address'] ?? null) : null,
                         'city' => $validated['city'] ?? null,
-                        'country' => $country,
+                        'country' => $validated['country'] ?? null,
                         'latitude' => $validated['latitude'] ?? null,
                         'longitude' => $validated['longitude'] ?? null,
                         'driver_platform' => $role === 'driver' ? ($validated['driver_platform'] ?? null) : null,
@@ -412,7 +394,7 @@ class RegisterController extends Controller
             'ok',
             [
                 'submitted_city' => (string) ($request->input('city') ?? ''),
-                'submitted_country' => 'South Africa',
+                'submitted_country' => (string) ($request->input('country') ?? ''),
             ]
         );
 
@@ -494,6 +476,34 @@ class RegisterController extends Controller
         $first = trim((string) ($parts[0] ?? ''));
         $last = count($parts) > 1 ? trim(implode(' ', array_slice($parts, 1))) : '';
         return [$first, $last];
+    }
+
+    private function parseSouthAfricanIdDob(string $idNumber): ?string
+    {
+        $idNumber = preg_replace('/\D+/', '', $idNumber) ?: '';
+        if (!preg_match('/^\d{13}$/', $idNumber)) {
+            return null;
+        }
+
+        $yy = (int) substr($idNumber, 0, 2);
+        $mm = (int) substr($idNumber, 2, 2);
+        $dd = (int) substr($idNumber, 4, 2);
+
+        $nowYY = (int) now()->format('y');
+        $century = $yy <= $nowYY ? 2000 : 1900;
+        $yyyy = $century + $yy;
+
+        try {
+            $dob = Carbon::createFromDate($yyyy, $mm, $dd);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if ($dob->isFuture()) {
+            return null;
+        }
+
+        return $dob->toDateString();
     }
 
     private function onlyExistingColumns(string $table, array $payload): array

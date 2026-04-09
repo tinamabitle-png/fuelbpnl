@@ -1945,8 +1945,6 @@
         --card-accent-a: #1d4ed8;
         --card-accent-b: #0ea5e9;
         --card-accent-c: #16a34a;
-        position: relative;
-        isolation: isolate;
         width: 100%;
         max-width: 320px;
         min-height: 260px;
@@ -1961,72 +1959,6 @@
         transform-origin: center center;
         transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         box-shadow: 0 14px 28px rgba(2, 6, 23, 0.2);
-    }
-
-    /* Animated outline (Uiverse-inspired) */
-    .driver-active-voucher-card::before,
-    .driver-active-voucher-card::after {
-        content: "";
-        position: absolute;
-        inset: -2px;
-        border-radius: inherit;
-        pointer-events: none;
-    }
-
-    .driver-active-voucher-card::before {
-        padding: 2px;
-        background-image: conic-gradient(
-            rgba(0, 0, 0, 0) 0%,
-            #020DFF 7%,
-            rgba(0, 0, 0, 0) 17%,
-            rgba(0, 0, 0, 0) 50%,
-            var(--card-accent-b) 60%,
-            rgba(0, 0, 0, 0) 70%,
-            rgba(0, 0, 0, 0) 100%
-        );
-        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-        filter: blur(0.6px);
-        opacity: 0.85;
-        transform: rotate(70deg);
-        transition: transform 2s ease, opacity 0.35s ease;
-        z-index: -1;
-    }
-
-    .driver-active-voucher-card::after {
-        background-image: conic-gradient(
-            rgba(0, 0, 0, 0) 0%,
-            #020DFF 7%,
-            rgba(0, 0, 0, 0) 17%,
-            rgba(0, 0, 0, 0) 50%,
-            var(--card-accent-b) 60%,
-            rgba(0, 0, 0, 0) 70%,
-            rgba(0, 0, 0, 0) 100%
-        );
-        filter: blur(26px);
-        opacity: 0.22;
-        transform: scale(1.06) rotate(60deg);
-        transition: transform 2s ease, opacity 0.35s ease;
-        z-index: -2;
-    }
-
-    .driver-active-voucher-card:hover::before {
-        transform: rotate(-110deg);
-        opacity: 1;
-    }
-
-    .driver-active-voucher-card:hover::after {
-        transform: scale(1.1) rotate(-130deg);
-        opacity: 0.38;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .driver-active-voucher-card::before,
-        .driver-active-voucher-card::after {
-            transition: none;
-            transform: none;
-        }
     }
 
     .driver-active-voucher-card .main-content {
