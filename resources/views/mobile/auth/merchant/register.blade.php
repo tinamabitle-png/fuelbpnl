@@ -59,14 +59,10 @@
                     <label class="block text-xs font-medium text-slate-700">Business Address</label>
                     <input name="business_address" type="text" value="{{ old('business_address') }}" required placeholder="Street address, suburb" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
                 </div>
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-1 gap-2">
                     <div>
                         <label class="block text-xs font-medium text-slate-700">City</label>
                         <input name="city" type="text" value="{{ old('city') }}" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-700">Country</label>
-                        <input name="country" type="text" value="{{ old('country', 'South Africa') }}" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
                     </div>
                 </div>
                 <input type="hidden" name="latitude" value="{{ old('latitude') }}">

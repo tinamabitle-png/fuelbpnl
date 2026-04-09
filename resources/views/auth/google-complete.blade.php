@@ -53,7 +53,7 @@
                     <label class="block text-sm font-medium text-slate-700">Gender</label>
                     <select id="google_gender" name="gender" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
                         <option value="">Select</option>
-                        <option value="male" @selected(old('gender', $existingUser->gender ?? 'male') === 'male')>Male</option>
+                        <option value="male" @selected(old('gender', $existingUser->gender ?? '') === 'male')>Male</option>
                         <option value="female" @selected(old('gender', $existingUser->gender ?? '') === 'female')>Female</option>
                         <option value="other" @selected(old('gender', $existingUser->gender ?? '') === 'other')>Other</option>
                     </select>
@@ -82,16 +82,11 @@
                     <input name="home_address" type="text" value="{{ old('home_address', $existingUser->home_address ?? '') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
                     @error('home_address')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 gap-3">
                     <div>
                         <label class="block text-sm font-medium text-slate-700">City</label>
                         <input name="city" type="text" value="{{ old('city', $existingUser->city ?? '') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
                         @error('city')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700">Country</label>
-                        <input name="country" type="text" value="{{ old('country', $existingUser->country ?? 'South Africa') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
-                        @error('country')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -154,16 +149,11 @@
                     <input name="business_address" type="text" value="{{ old('business_address') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
                     @error('business_address')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 gap-3">
                     <div>
                         <label class="block text-sm font-medium text-slate-700">City</label>
                         <input name="city" type="text" value="{{ old('city', $existingUser->city ?? '') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
                         @error('city')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700">Country</label>
-                        <input name="country" type="text" value="{{ old('country', $existingUser->country ?? 'South Africa') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
-                        @error('country')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -221,6 +211,13 @@
         const platformOtherWrap = document.getElementById('driver_platform_other_wrap');
         const idEl = document.getElementById('google_id_number');
         const dobEl = document.getElementById('google_dob');
+        const genderEl = document.getElementById('google_gender');
+        let genderTouched = false;
+        if (genderEl) {
+            genderEl.addEventListener('change', () => {
+                genderTouched = true;
+            });
+        }
 
         function toggleRole() {
             const role = roleInput ? roleInput.value : @json($lockedRole);
@@ -230,7 +227,10 @@
                 dobEl.readOnly = role === 'driver';
                 dobEl.classList.toggle('bg-slate-50', role === 'driver');
             }
-            if (role === 'driver') syncDobFromId();
+            if (role === 'driver') syncFromId();
+            if (role !== 'driver' && idEl) {
+                idEl.setCustomValidity('');
+            }
         }
 
         function togglePlatformOther() {
@@ -238,13 +238,14 @@
             platformOtherWrap.classList.toggle('hidden', platformSelect.value !== 'other');
         }
 
-        const deriveDobFromSaId = (raw) => {
-            const digits = String(raw || '').replace(/\D+/g, '');
+        const normalizeDigits = (raw) => String(raw || '').replace(/\D+/g, '');
+
+        const deriveDobFromSaId = (digits) => {
             if (!/^\d{13}$/.test(digits)) return '';
             const yy = Number(digits.slice(0, 2));
             const mm = Number(digits.slice(2, 4));
             const dd = Number(digits.slice(4, 6));
-            if (!yy || !mm || !dd) return '';
+            if (!mm || !dd) return '';
             const now = new Date();
             const nowYY = Number(String(now.getFullYear()).slice(-2));
             const yyyy = (yy <= nowYY ? 2000 : 1900) + yy;
@@ -255,23 +256,71 @@
             return `${String(yyyy).padStart(4, '0')}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
         };
 
-        const syncDobFromId = () => {
+        const deriveGenderFromSaId = (digits) => {
+            if (!/^\d{13}$/.test(digits)) return '';
+            const sequence = Number(digits.slice(6, 10));
+            if (Number.isNaN(sequence)) return '';
+            return sequence >= 5000 ? 'male' : 'female';
+        };
+
+        const passesSaIdLuhnCheckDigit = (digits) => {
+            if (!/^\d{13}$/.test(digits)) return false;
+
+            let oddSum = 0;
+            for (let i = 0; i < 12; i += 2) oddSum += Number(digits[i]);
+
+            let evenDigits = '';
+            for (let i = 1; i < 12; i += 2) evenDigits += digits[i];
+
+            const evenDoubled = String(Number(evenDigits) * 2);
+            let evenSum = 0;
+            for (const ch of evenDoubled) evenSum += Number(ch);
+
+            const total = oddSum + evenSum;
+            const checkDigit = (10 - (total % 10)) % 10;
+            return checkDigit === Number(digits[12]);
+        };
+
+        const isValidSaId = (digits) => {
+            if (!/^\d{13}$/.test(digits)) return false;
+            if (!deriveDobFromSaId(digits)) return false;
+            const citizenshipDigit = Number(digits[10]);
+            if (![0, 1].includes(citizenshipDigit)) return false;
+            return passesSaIdLuhnCheckDigit(digits);
+        };
+
+        const syncFromId = () => {
             const role = roleInput ? roleInput.value : @json($lockedRole);
             if (role !== 'driver') return;
-            if (!idEl || !dobEl) return;
-            const derived = deriveDobFromSaId(idEl.value);
-            if (derived) dobEl.value = derived;
+            if (!idEl) return;
+
+            const digits = normalizeDigits(idEl.value);
+            if (idEl.value !== digits) idEl.value = digits;
+
+            if (digits.length === 13) {
+                idEl.setCustomValidity(isValidSaId(digits) ? '' : 'Invalid South African ID number.');
+            } else {
+                idEl.setCustomValidity('');
+            }
+
+            const derivedDob = deriveDobFromSaId(digits);
+            if (dobEl && derivedDob) dobEl.value = derivedDob;
+
+            const derivedGender = deriveGenderFromSaId(digits);
+            if (genderEl && derivedGender && (!genderTouched || !genderEl.value)) {
+                genderEl.value = derivedGender;
+            }
         };
 
         if (roleInput) roleInput.addEventListener('change', toggleRole);
         if (platformSelect) platformSelect.addEventListener('change', togglePlatformOther);
         if (idEl) {
-            idEl.addEventListener('input', syncDobFromId);
-            idEl.addEventListener('blur', syncDobFromId);
+            idEl.addEventListener('input', syncFromId);
+            idEl.addEventListener('blur', syncFromId);
         }
         toggleRole();
         togglePlatformOther();
-        syncDobFromId();
+        syncFromId();
     })();
 </script>
 @endsection

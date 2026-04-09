@@ -34,7 +34,7 @@
                         <label class="block text-xs font-medium text-slate-700">Gender</label>
                         <select id="m_driver_gender" name="gender" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
                             <option value="">Select</option>
-                            <option value="male" @selected(old('gender', 'male') === 'male')>Male</option>
+                            <option value="male" @selected(old('gender') === 'male')>Male</option>
                             <option value="female" @selected(old('gender') === 'female')>Female</option>
                             <option value="other" @selected(old('gender') === 'other')>Other</option>
                         </select>
@@ -56,14 +56,10 @@
                     <label class="block text-xs font-medium text-slate-700">Home Address</label>
                     <input name="home_address" type="text" value="{{ old('home_address') }}" required placeholder="Street address, suburb" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
                 </div>
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-1 gap-2">
                     <div>
                         <label class="block text-xs font-medium text-slate-700">City</label>
                         <input name="city" type="text" value="{{ old('city') }}" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-700">Country</label>
-                        <input name="country" type="text" value="{{ old('country', 'South Africa') }}" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
                     </div>
                 </div>
                 <input type="hidden" name="latitude" value="{{ old('latitude') }}">
@@ -127,14 +123,22 @@ if (platformSelect) {
 
 (function initIdentityFields() {
     const idEl = document.getElementById('m_driver_id_number');
+    const genderEl = document.getElementById('m_driver_gender');
+    let genderTouched = false;
+    if (genderEl) {
+        genderEl.addEventListener('change', () => {
+            genderTouched = true;
+        });
+    }
 
-    const deriveDobFromSaId = (raw) => {
-        const digits = String(raw || '').replace(/\D+/g, '');
+    const normalizeDigits = (raw) => String(raw || '').replace(/\D+/g, '');
+
+    const deriveDobFromSaId = (digits) => {
         if (!/^\d{13}$/.test(digits)) return '';
         const yy = Number(digits.slice(0, 2));
         const mm = Number(digits.slice(2, 4));
         const dd = Number(digits.slice(4, 6));
-        if (!yy || !mm || !dd) return '';
+        if (!mm || !dd) return '';
         const now = new Date();
         const nowYY = Number(String(now.getFullYear()).slice(-2));
         const yyyy = (yy <= nowYY ? 2000 : 1900) + yy;
@@ -146,10 +150,60 @@ if (platformSelect) {
     };
 
     if (idEl) {
-        const validateDob = () => deriveDobFromSaId(idEl.value);
-        idEl.addEventListener('input', validateDob);
-        idEl.addEventListener('blur', validateDob);
-        validateDob();
+        const deriveGenderFromSaId = (digits) => {
+            if (!/^\d{13}$/.test(digits)) return '';
+            const sequence = Number(digits.slice(6, 10));
+            if (Number.isNaN(sequence)) return '';
+            return sequence >= 5000 ? 'male' : 'female';
+        };
+
+        const passesSaIdLuhnCheckDigit = (digits) => {
+            if (!/^\d{13}$/.test(digits)) return false;
+
+            let oddSum = 0;
+            for (let i = 0; i < 12; i += 2) oddSum += Number(digits[i]);
+
+            let evenDigits = '';
+            for (let i = 1; i < 12; i += 2) evenDigits += digits[i];
+
+            const evenDoubled = String(Number(evenDigits) * 2);
+            let evenSum = 0;
+            for (const ch of evenDoubled) evenSum += Number(ch);
+
+            const total = oddSum + evenSum;
+            const checkDigit = (10 - (total % 10)) % 10;
+            return checkDigit === Number(digits[12]);
+        };
+
+        const isValidSaId = (digits) => {
+            if (!/^\d{13}$/.test(digits)) return false;
+            if (!deriveDobFromSaId(digits)) return false;
+            const citizenshipDigit = Number(digits[10]);
+            if (![0, 1].includes(citizenshipDigit)) return false;
+            return passesSaIdLuhnCheckDigit(digits);
+        };
+
+        const syncFromId = () => {
+            const digits = normalizeDigits(idEl.value);
+            if (idEl.value !== digits) idEl.value = digits;
+
+            if (digits.length === 13) {
+                idEl.setCustomValidity(isValidSaId(digits) ? '' : 'Invalid South African ID number.');
+            } else {
+                idEl.setCustomValidity('');
+            }
+
+            if (genderEl && digits.length === 13) {
+                const derivedGender = deriveGenderFromSaId(digits);
+                if (derivedGender && (!genderTouched || !genderEl.value)) {
+                    genderEl.value = derivedGender;
+                }
+            }
+        };
+
+        idEl.addEventListener('input', syncFromId);
+        idEl.addEventListener('blur', syncFromId);
+        syncFromId();
     }
 })();
 </script>

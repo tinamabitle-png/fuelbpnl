@@ -167,6 +167,7 @@
             <p style="margin:16px 0 0 0;font-size:11px;color:#64748b;line-height:1.6;">
                 Need help? Reply to this email or contact <a href="mailto:{{ $supportEmail }}" style="color:#2563eb;text-decoration:none;font-weight:700;">{{ $supportEmail }}</a>.
             </p>
+
         </div>
 
         <p style="margin:14px 0 0 0;font-size:11px;color:#94a3b8;text-align:center;">

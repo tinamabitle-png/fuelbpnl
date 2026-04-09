@@ -29,7 +29,7 @@
 	                        <label class="block text-sm font-medium text-slate-700">Gender</label>
 	                        <select id="driver_gender" name="gender" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
 	                            <option value="">Select</option>
-	                            <option value="male" @selected(old('gender', 'male') === 'male')>Male</option>
+	                            <option value="male" @selected(old('gender') === 'male')>Male</option>
 	                            <option value="female" @selected(old('gender') === 'female')>Female</option>
 	                            <option value="other" @selected(old('gender') === 'other')>Other</option>
 	                        </select>
@@ -58,16 +58,11 @@
                     <input name="email" type="email" value="{{ old('email') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
                     @error('email')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 gap-3">
                     <div>
                         <label class="block text-sm font-medium text-slate-700">City</label>
                         <input id="driver_city" name="city" type="text" value="{{ old('city') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="Johannesburg">
                         @error('city')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700">Country</label>
-                        <input id="driver_country" name="country" type="text" value="{{ old('country', 'South Africa') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="South Africa">
-                        @error('country')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
                 <div>
@@ -201,35 +196,93 @@ const togglePlatformOther = () => {
 
 	(function initIdentityFields() {
 	    const idEl = document.getElementById('driver_id_number');
+        const genderEl = document.getElementById('driver_gender');
+        let genderTouched = false;
+        if (genderEl) {
+            genderEl.addEventListener('change', () => {
+                genderTouched = true;
+            });
+        }
 
-	    const deriveDobFromSaId = (raw) => {
-	        const digits = String(raw || '').replace(/\D+/g, '');
-	        if (!/^\d{13}$/.test(digits)) return '';
-	        const yy = Number(digits.slice(0, 2));
-	        const mm = Number(digits.slice(2, 4));
-	        const dd = Number(digits.slice(4, 6));
-	        if (!yy || !mm || !dd) return '';
-	        const now = new Date();
-	        const nowYY = Number(String(now.getFullYear()).slice(-2));
-	        const yyyy = (yy <= nowYY ? 2000 : 1900) + yy;
-	        const dt = new Date(yyyy, mm - 1, dd);
-	        if (Number.isNaN(dt.getTime())) return '';
-	        if (dt.getFullYear() !== yyyy || dt.getMonth() !== (mm - 1) || dt.getDate() !== dd) return '';
-	        if (dt.getTime() > now.getTime()) return '';
-	        return `${String(yyyy).padStart(4, '0')}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
-	    };
+        const normalizeDigits = (raw) => String(raw || '').replace(/\D+/g, '');
+
+        const deriveDobFromSaId = (digits) => {
+            if (!/^\d{13}$/.test(digits)) return '';
+            const yy = Number(digits.slice(0, 2));
+            const mm = Number(digits.slice(2, 4));
+            const dd = Number(digits.slice(4, 6));
+            if (!mm || !dd) return '';
+            const now = new Date();
+            const nowYY = Number(String(now.getFullYear()).slice(-2));
+            const yyyy = (yy <= nowYY ? 2000 : 1900) + yy;
+            const dt = new Date(yyyy, mm - 1, dd);
+            if (Number.isNaN(dt.getTime())) return '';
+            if (dt.getFullYear() !== yyyy || dt.getMonth() !== (mm - 1) || dt.getDate() !== dd) return '';
+            if (dt.getTime() > now.getTime()) return '';
+            return `${String(yyyy).padStart(4, '0')}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+        };
+
+        const deriveGenderFromSaId = (digits) => {
+            if (!/^\d{13}$/.test(digits)) return '';
+            const sequence = Number(digits.slice(6, 10));
+            if (Number.isNaN(sequence)) return '';
+            return sequence >= 5000 ? 'male' : 'female';
+        };
+
+        const passesSaIdLuhnCheckDigit = (digits) => {
+            if (!/^\d{13}$/.test(digits)) return false;
+
+            let oddSum = 0;
+            for (let i = 0; i < 12; i += 2) oddSum += Number(digits[i]);
+
+            let evenDigits = '';
+            for (let i = 1; i < 12; i += 2) evenDigits += digits[i];
+
+            const evenDoubled = String(Number(evenDigits) * 2);
+            let evenSum = 0;
+            for (const ch of evenDoubled) evenSum += Number(ch);
+
+            const total = oddSum + evenSum;
+            const checkDigit = (10 - (total % 10)) % 10;
+            return checkDigit === Number(digits[12]);
+        };
+
+        const isValidSaId = (digits) => {
+            if (!/^\d{13}$/.test(digits)) return false;
+            if (!deriveDobFromSaId(digits)) return false;
+            const citizenshipDigit = Number(digits[10]);
+            if (![0, 1].includes(citizenshipDigit)) return false;
+            return passesSaIdLuhnCheckDigit(digits);
+        };
 
 	    if (idEl) {
-	        const validateDob = () => deriveDobFromSaId(idEl.value);
-	        idEl.addEventListener('input', validateDob);
-	        idEl.addEventListener('blur', validateDob);
-	        validateDob();
+            const syncFromId = () => {
+                const digits = normalizeDigits(idEl.value);
+                if (idEl.value !== digits) idEl.value = digits;
+
+                if (digits.length === 13) {
+                    idEl.setCustomValidity(isValidSaId(digits) ? '' : 'Invalid South African ID number.');
+                } else {
+                    idEl.setCustomValidity('');
+                }
+
+                if (genderEl && digits.length === 13) {
+                    const derivedGender = deriveGenderFromSaId(digits);
+                    if (derivedGender && (!genderTouched || !genderEl.value)) {
+                        genderEl.value = derivedGender;
+                    }
+                }
+            };
+
+	        idEl.addEventListener('input', syncFromId);
+	        idEl.addEventListener('blur', syncFromId);
+	        syncFromId();
 	    }
 	})();
 
 	const driverAddressInput = document.getElementById('driver_home_address');
 	const driverCityInput = document.getElementById('driver_city');
-	const driverCountryInput = document.getElementById('driver_country');
+	const driverCountry = 'South Africa';
 const driverLatitudeInput = document.getElementById('driver_latitude');
 const driverLongitudeInput = document.getElementById('driver_longitude');
 const driverMapStatus = document.getElementById('driverMapStatus');
@@ -289,7 +342,6 @@ const fillDriverAddressFields = (components, fallbackAddress = '') => {
     const route = driverComponentValue(components, ['route']);
     const suburb = driverComponentValue(components, ['sublocality', 'sublocality_level_1', 'neighborhood']);
     const city = driverComponentValue(components, ['locality', 'administrative_area_level_2', 'administrative_area_level_1']);
-    const country = driverComponentValue(components, ['country']);
     const line1 = [streetNumber, route].filter(Boolean).join(' ').trim();
     const composedAddress = [line1, suburb].filter(Boolean).join(', ').trim();
 
@@ -297,9 +349,8 @@ const fillDriverAddressFields = (components, fallbackAddress = '') => {
         driverAddressInput.value = composedAddress || fallbackAddress || driverAddressInput.value;
     }
     if (driverCityInput && city) driverCityInput.value = city;
-    if (driverCountryInput && country) driverCountryInput.value = country;
 
-    return { composedAddress: composedAddress || fallbackAddress || '', city, country };
+    return { composedAddress: composedAddress || fallbackAddress || '', city, country: driverCountry };
 };
 
 const fillDriverAddressFromHereItem = (item) => {
@@ -307,7 +358,6 @@ const fillDriverAddressFromHereItem = (item) => {
     const line1 = [address.houseNumber || '', address.street || ''].filter(Boolean).join(' ').trim();
     const area = address.district || address.subdistrict || '';
     const city = address.city || address.county || '';
-    const country = address.countryName || '';
     const fallbackAddress = address.label || item?.title || '';
     const composedAddress = [line1, area].filter(Boolean).join(', ').trim() || fallbackAddress;
 
@@ -315,9 +365,8 @@ const fillDriverAddressFromHereItem = (item) => {
         driverAddressInput.value = composedAddress || fallbackAddress || driverAddressInput.value;
     }
     if (driverCityInput && city) driverCityInput.value = city;
-    if (driverCountryInput && country) driverCountryInput.value = country;
 
-    return { composedAddress: composedAddress || fallbackAddress || '', city, country };
+    return { composedAddress: composedAddress || fallbackAddress || '', city, country: driverCountry };
 };
 
 const driverHereFetchGeocode = async (query) => {
@@ -483,7 +532,7 @@ const scheduleDriverGeocode = () => {
         const parts = [
             driverAddressInput?.value?.trim() || '',
             driverCityInput?.value?.trim() || '',
-            driverCountryInput?.value?.trim() || ''
+            driverCountry
         ].filter(Boolean);
 
         if (!parts.length) {
@@ -537,13 +586,13 @@ const scheduleDriverGeocode = () => {
     }, 550);
 };
 
-[driverAddressInput, driverCityInput, driverCountryInput].forEach((field) => {
+[driverAddressInput, driverCityInput].forEach((field) => {
     if (!field) return;
     field.addEventListener('input', scheduleDriverGeocode);
     field.addEventListener('change', scheduleDriverGeocode);
 });
 
-if ((driverAddressInput?.value || driverCityInput?.value || driverCountryInput?.value) && hasHereMaps) {
+if ((driverAddressInput?.value || driverCityInput?.value) && hasHereMaps) {
     scheduleDriverGeocode();
 }
 

@@ -67,16 +67,11 @@
                     <input name="email" type="email" value="{{ old('email') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
                     @error('email')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 gap-3">
                     <div>
                         <label class="block text-sm font-medium text-slate-700">City</label>
                         <input id="merchant_city" name="city" type="text" value="{{ old('city') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="Johannesburg">
                         @error('city')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700">Country</label>
-                        <input id="merchant_country" name="country" type="text" value="{{ old('country', 'South Africa') }}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="South Africa">
-                        @error('country')<p class="text-xs text-rose-600 mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
                 <div>
@@ -241,7 +236,7 @@ refreshFranchiseChips();
 
 const addressInput = document.getElementById('merchant_address');
 const cityInput = document.getElementById('merchant_city');
-const countryInput = document.getElementById('merchant_country');
+const country = 'South Africa';
 const latitudeInput = document.getElementById('merchant_latitude');
 const longitudeInput = document.getElementById('merchant_longitude');
 const stationLatitudeInput = document.getElementById('merchant_station_latitude');
@@ -303,7 +298,6 @@ const fillAddressFromHereItem = (item) => {
         .trim();
     const suburb = addr.district || addr.subdistrict || addr.county || '';
     const city = addr.city || addr.county || addr.state || '';
-    const country = addr.countryName || addr.countryCode || '';
     const postcode = addr.postalCode || '';
     const longComposedAddress = [line1, suburb, city, postcode].filter(Boolean).join(', ').trim();
     const composedAddress = longComposedAddress || [line1, suburb].filter(Boolean).join(', ').trim() || fallbackAddress;
@@ -312,7 +306,6 @@ const fillAddressFromHereItem = (item) => {
         addressInput.value = composedAddress || fallbackAddress || addressInput.value;
     }
     if (cityInput && city) cityInput.value = city;
-    if (countryInput && country) countryInput.value = country;
 
     return {
         composedAddress: composedAddress || fallbackAddress,
@@ -438,7 +431,7 @@ const scheduleGeocode = () => {
         const parts = [
             addressInput?.value?.trim() || '',
             cityInput?.value?.trim() || '',
-            countryInput?.value?.trim() || ''
+            country
         ].filter(Boolean);
 
         if (!parts.length) {
@@ -488,13 +481,13 @@ const scheduleGeocode = () => {
     }, 550);
 };
 
-[addressInput, cityInput, countryInput].forEach((field) => {
+[addressInput, cityInput].forEach((field) => {
     if (!field) return;
     field.addEventListener('input', scheduleGeocode);
     field.addEventListener('change', scheduleGeocode);
 });
 
-if ((addressInput?.value || cityInput?.value || countryInput?.value)) {
+if ((addressInput?.value || cityInput?.value)) {
     scheduleGeocode();
 }
 
