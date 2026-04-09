@@ -593,13 +593,43 @@
 
                 <div class="prov545-plan__features">
                     <p class="prov545-plan__features-title">Key features</p>
-                    <ul class="prov545-plan__features-list">
-                        <li>USSD geofenced payments</li>
-                        <li>Built-in receipt printing</li>
-                        <li>Portable, battery-powered terminal</li>
-                        <li>Wi‑Fi + 4G connectivity</li>
-                        <li>Fast settlement reporting</li>
-                        <li>Ready for Bwiser voucher payments</li>
+                    <ul class="space-y-3 text-sm">
+                        <li class="flex items-center space-x-3">
+                            <span class="bg-primary/20 text-primary flex items-center justify-center rounded-full p-1">
+                                <span class="icon-[tabler--arrow-right] size-4 rtl:rotate-180"></span>
+                            </span>
+                            <span class="text-base-content/80">USSD geofenced payments</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <span class="bg-primary/20 text-primary flex items-center justify-center rounded-full p-1">
+                                <span class="icon-[tabler--arrow-right] size-4 rtl:rotate-180"></span>
+                            </span>
+                            <span class="text-base-content/80">Built-in receipt printing</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <span class="bg-primary/20 text-primary flex items-center justify-center rounded-full p-1">
+                                <span class="icon-[tabler--arrow-right] size-4 rtl:rotate-180"></span>
+                            </span>
+                            <span class="text-base-content/80">Portable, battery-powered terminal</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <span class="bg-primary/20 text-primary flex items-center justify-center rounded-full p-1">
+                                <span class="icon-[tabler--arrow-right] size-4 rtl:rotate-180"></span>
+                            </span>
+                            <span class="text-base-content/80">Wi‑Fi + 4G connectivity</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <span class="bg-primary/20 text-primary flex items-center justify-center rounded-full p-1">
+                                <span class="icon-[tabler--arrow-right] size-4 rtl:rotate-180"></span>
+                            </span>
+                            <span class="text-base-content/80">Fast settlement reporting</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <span class="bg-primary/20 text-primary flex items-center justify-center rounded-full p-1">
+                                <span class="icon-[tabler--arrow-right] size-4 rtl:rotate-180"></span>
+                            </span>
+                            <span class="text-base-content/80">Ready for Bwiser voucher payments</span>
+                        </li>
                     </ul>
                 </div>
 
