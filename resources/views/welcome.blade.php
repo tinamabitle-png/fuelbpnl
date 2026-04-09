@@ -17,6 +17,7 @@
 @section('og_image_alt', 'Bwiser Fuel Buy Now Pay Later')
 
 @push('head')
+    <link rel="stylesheet" href="{{ asset('vendor/flyonui/flyonui.css') }}">
     <link rel="stylesheet" href="{{ asset('vendor/sweetalert2/sweetalert2.min.css') }}">
     <script type="application/ld+json">
     {!! json_encode([
@@ -401,6 +402,85 @@
                     <p class="mt-2 text-[12px] leading-relaxed text-slate-700">
                         In many ways, it was a happy accident: a reaction to a tough moment that opened the path to a first-of-its-kind payment experience.
                     </p>
+                </div>
+
+            </div>
+
+            <div class="glass rounded-2xl p-4 md:p-6 welcome-tween-card">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#020DFF]">FAQ</p>
+                <h4 class="mt-2 text-sm font-semibold text-slate-900">How USSD tapless payments work</h4>
+                <div class="mt-4 rounded-2xl bg-white/80 p-4 space-y-3">
+                    <div class="chat chat-receiver max-w-full">
+                        <div class="chat-avatar avatar">
+                            <div class="h-7 w-7 shrink-0 overflow-hidden rounded-full">
+                                <img src="{{ asset('images/ask.jpg') }}" alt="Question asker" class="h-full w-full object-cover" loading="lazy" />
+                            </div>
+                        </div>
+                        <div class="chat-header text-base-content text-[11px] font-medium">
+                            Merchant
+                            <time class="text-base-content/50 ml-1 text-[10px]">12:45</time>
+                        </div>
+                        <div class="chat-bubble max-w-[15rem] rounded-2xl px-3 py-2 text-[11px] leading-relaxed shadow-sm">
+                            How do USSD tapless payments work if there is no physical card tap?
+                        </div>
+                        <div class="chat-footer text-base-content/50 text-[10px]">
+                            Delivered
+                        </div>
+                    </div>
+
+                    <div class="chat chat-sender max-w-full">
+                        <div class="chat-avatar avatar">
+                            <div class="h-7 w-7 shrink-0 overflow-hidden rounded-full">
+                                <img src="{{ asset('images/ans.jpg') }}" alt="Answer" class="h-full w-full object-cover" loading="lazy" />
+                            </div>
+                        </div>
+                        <div class="chat-header text-base-content text-[11px] font-medium">
+                            Bwiser
+                            <time class="text-base-content/50 ml-1 text-[10px]">12:46</time>
+                        </div>
+                        <div class="chat-bubble max-w-[15rem] rounded-2xl bg-[#020DFF] px-3 py-2 text-[11px] leading-relaxed text-white shadow-sm">
+                            The driver or merchant starts the payment process with USSD, and Bwiser checks the voucher, the user, and the geofenced station context before the transaction is approved.
+                        </div>
+                        <div class="chat-footer text-base-content/50 text-[10px]">
+                            Seen
+                        </div>
+                    </div>
+
+                    <div class="chat chat-receiver max-w-full">
+                        <div class="chat-avatar avatar">
+                            <div class="h-7 w-7 shrink-0 overflow-hidden rounded-full">
+                                <img src="{{ asset('images/ask.jpg') }}" alt="Question asker" class="h-full w-full object-cover" loading="lazy" />
+                            </div>
+                        </div>
+                        <div class="chat-header text-base-content text-[11px] font-medium">
+                            Merchant
+                            <time class="text-base-content/50 ml-1 text-[10px]">12:47</time>
+                        </div>
+                        <div class="chat-bubble max-w-[15rem] rounded-2xl px-3 py-2 text-[11px] leading-relaxed shadow-sm">
+                            So what makes it secure?
+                        </div>
+                        <div class="chat-footer text-base-content/50 text-[10px]">
+                            Delivered
+                        </div>
+                    </div>
+
+                    <div class="chat chat-sender max-w-full">
+                        <div class="chat-avatar avatar">
+                            <div class="h-7 w-7 shrink-0 overflow-hidden rounded-full">
+                                <img src="{{ asset('images/ans.jpg') }}" alt="Answer" class="h-full w-full object-cover" loading="lazy" />
+                            </div>
+                        </div>
+                        <div class="chat-header text-base-content text-[11px] font-medium">
+                            Bwiser
+                            <time class="text-base-content/50 ml-1 text-[10px]">12:48</time>
+                        </div>
+                        <div class="chat-bubble max-w-[15rem] rounded-2xl bg-[#020DFF] px-3 py-2 text-[11px] leading-relaxed text-white shadow-sm">
+                            Security comes from combining voucher validation, location awareness, merchant rules, and repayment tracking instead of relying only on a plastic card tap.
+                        </div>
+                        <div class="chat-footer text-base-content/50 text-[10px]">
+                            Seen
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3075,12 +3155,12 @@
 	                        Bwiser tapless payments let merchants validate and process voucher-linked payments without a physical card tap, using USSD, geofencing, and voucher verification to confirm the right user at the right place.
 	                    </p>
 	                    <p style="margin:0 0 12px;font-size:13px;line-height:1.6;color:#475569;">
-	                        In practice, that means faster checkout, less hardware dependency, and a payment experience built for stations, drivers, and merchant environments where traditional card flows are not always the best fit.
+	                        In practice, that means faster checkout, less hardware dependency, and a payment experience built for stations, drivers, and merchant environments where traditional card processes are not always the best fit.
 	                    </p>
 	                    <div style="border-radius:14px;background:#eff6ff;padding:12px;">
 	                        <p style="margin:0 0 5px;font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#1d4ed8;">What it means</p>
 	                        <p style="margin:0;font-size:13px;line-height:1.6;color:#334155;">
-	                            A secure, location-aware payment flow that feels lightweight to the user but still gives merchants strong control and clear reporting.
+	                            A secure, location-aware payment process that feels lightweight to the user but still gives merchants strong control and clear reporting.
 	                        </p>
 	                    </div>
 	                </div>
