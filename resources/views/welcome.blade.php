@@ -272,6 +272,15 @@
                             <span>Request Slack Access</span>
                         </a>
                     </div>
+                    <div class="mt-4 inline-flex max-w-sm items-center gap-3 rounded-2xl border border-slate-200 bg-white/85 px-3 py-3 shadow-sm">
+                        <div class="h-10 w-10 overflow-hidden rounded-full ring-2 ring-blue-100">
+                            <img src="{{ asset('images/tony.jpg') }}" alt="Tony" class="h-full w-full object-cover" loading="lazy" />
+                        </div>
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-semibold text-slate-900">Finance Lead</p>
+                            <p class="text-[11px] leading-5 text-slate-600">Talk to Tony about funding, settlements, and repayments.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
