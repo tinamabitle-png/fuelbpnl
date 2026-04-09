@@ -487,7 +487,7 @@
 
                         <div class="prov545-pricing-card__bottom">
                             <div>
-                                <p class="prov545-pricing-card__amount">R 1,500</p>
+                                <p class="prov545-pricing-card__amount">R 4,000</p>
                                 <p class="prov545-pricing-card__note">Own the device</p>
                             </div>
                             <svg viewBox="0 -960 960 960" aria-hidden="true">
