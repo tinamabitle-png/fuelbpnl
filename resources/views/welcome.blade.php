@@ -644,6 +644,36 @@
                     </a>
                 </div>
             </div>
+
+            <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden mt-4">
+                <div class="bw-merchant-story-card">
+                    <div class="bw-merchant-story-card__details">
+                        <div class="bw-merchant-story-card__header">Merchant-ready</div>
+                        <div class="bw-merchant-story-card__text">
+                            Built for onboarding, payments, and settlement operations so stations can go live with less friction and stronger control from day one.
+                        </div>
+                        <div class="bw-merchant-story-card__button">Go live now</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="mt-8 glass rounded-2xl p-4 md:p-6">
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <h4 class="mt-1 text-sm font-semibold text-slate-900">Countries where Bwiser operates</h4>
+            </div>
+            <span class="rounded-full bg-[#020DFF]/8 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#020DFF]">
+                South Africa
+            </span>
+        </div>
+        <p class="mt-2 text-[12px] leading-relaxed text-slate-600">
+            Bwiser is currently active in South Africa, shown here in the wider global payments map.
+        </p>
+        <div class="mt-4 overflow-hidden rounded-2xl bg-transparent">
+            <div id="bwiser-countries-datamap" class="h-[280px] w-full md:h-[340px]"></div>
         </div>
     </div>
 
@@ -1897,6 +1927,122 @@
         box-shadow: 0 18px 40px -30px rgba(15, 23, 42, 0.35);
     }
 
+    .bw-merchant-story-card {
+        position: relative;
+        width: 100%;
+        min-height: 260px;
+        border-radius: 18px;
+        padding: 1rem;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        background: rgba(2, 13, 255, 0.58);
+        color: #fff;
+        transition: transform 0.5s ease, border-radius 0.5s ease;
+        box-shadow: 0 20px 42px -28px rgba(2, 13, 255, 0.45);
+    }
+
+    .bw-merchant-story-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(35.36% 35.36% at 100% 25%, transparent 66%, #c79013 68% 70%, transparent 72%) 32px 32px / 64px 64px,
+            radial-gradient(35.36% 35.36% at 0 75%, transparent 66%, #c79013 68% 70%, transparent 72%) 32px 32px / 64px 64px,
+            radial-gradient(35.36% 35.36% at 100% 25%, transparent 66%, #c79013 68% 70%, transparent 72%) 0 0 / 64px 64px,
+            radial-gradient(35.36% 35.36% at 0 75%, transparent 66%, #c79013 68% 70%, transparent 72%) 0 0 / 64px 64px,
+            repeating-conic-gradient(rgba(7, 28, 141, 0.88) 0 25%, transparent 0 50%) 0 0 / 64px 64px,
+            radial-gradient(transparent 66%, #c79013 68% 70%, transparent 72%) 0 16px / 32px 32px #06208a;
+        opacity: 0.52;
+        transition: opacity 0.3s ease;
+    }
+
+    .bw-merchant-story-card:hover {
+        transform: scale(1.03);
+        border-radius: 22px;
+    }
+
+    .bw-merchant-story-card:hover::after {
+        opacity: 0.28;
+    }
+
+    .bw-merchant-story-card__details {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        transform: translateY(58%);
+        transition: transform 0.5s ease;
+    }
+
+    .bw-merchant-story-card:hover .bw-merchant-story-card__details {
+        transform: translateY(0);
+        transition-delay: 0.22s;
+    }
+
+    .bw-merchant-story-card__header {
+        position: relative;
+        width: max-content;
+        font-size: 0.9rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .bw-merchant-story-card__header::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        bottom: -4px;
+        width: calc(100% + 1rem);
+        height: 2.5px;
+        background: #67e8f9;
+        opacity: 0;
+        transform: translateX(calc(-100% - 1rem));
+        transition: transform 0.5s ease, opacity 0.5s ease;
+    }
+
+    .bw-merchant-story-card:hover .bw-merchant-story-card__header::after {
+        opacity: 1;
+        transform: translateX(-1rem);
+    }
+
+    .bw-merchant-story-card__text {
+        max-width: 28rem;
+        font-size: 0.92rem;
+        line-height: 1.65;
+        color: rgba(255, 255, 255, 0.92);
+    }
+
+    .bw-merchant-story-card__button {
+        width: max-content;
+        border-radius: 999px;
+        background: #67e8f9;
+        color: #020617;
+        padding: 0.3rem 0.7rem;
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    @media (max-width: 768px) {
+        .bw-merchant-story-card {
+            min-height: 220px;
+        }
+
+        .bw-merchant-story-card__details {
+            transform: translateY(0);
+        }
+
+        .bw-merchant-story-card__header::after {
+            opacity: 1;
+            transform: translateX(-1rem);
+        }
+    }
+
     .welcome-entry-button {
         --welcome_entry_line_color: #00135c;
         --welcome_entry_back_color: #defffa;
@@ -2874,6 +3020,9 @@
             : 'https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js';
     @endphp
 	    <script src="{{ $chartSrc }}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.9/topojson.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/datamaps@0.5.9/dist/datamaps.world.min.js"></script>
 	    <script>
 	        (function initVoucherSplitSlider() {
 	            const boot = () => {
@@ -3102,6 +3251,63 @@
 	            }
 	        })();
 	    </script>
+        <script>
+            (function initBwiserOperatingMap() {
+                const boot = () => {
+                    const el = document.getElementById('bwiser-countries-datamap');
+                    if (!el || typeof Datamap === 'undefined') return;
+                    if (el.dataset.loaded === 'true') return;
+
+                    const data = {
+                        ZAF: {
+                            fillKey: 'LIVE',
+                            description: 'Bwiser is currently operating in South Africa.'
+                        }
+                    };
+
+                    const map = new Datamap({
+                        element: el,
+                        projection: 'mercator',
+                        responsive: true,
+                        fills: {
+                            defaultFill: '#E2E8F0',
+                            LIVE: '#020DFF'
+                        },
+                        data,
+                        geographyConfig: {
+                            borderColor: 'rgba(148, 163, 184, 0.45)',
+                            highlightFillColor: '#1D4ED8',
+                            highlightBorderColor: '#020DFF',
+                            popupTemplate: function (geo, countryData) {
+                                const name = geo && geo.properties ? geo.properties.name : 'Country';
+                                const message = countryData && countryData.description
+                                    ? countryData.description
+                                    : 'Bwiser is preparing for rollout in this market.';
+
+                                return `
+                                    <div style="min-width:180px;border-radius:14px;background:#ffffff;padding:12px;box-shadow:0 18px 42px -24px rgba(15,23,42,0.35);border:1px solid rgba(226,232,240,0.9);">
+                                        <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#020DFF;">Bwiser</p>
+                                        <p style="margin:0 0 6px;font-size:14px;font-weight:600;color:#0f172a;">${name}</p>
+                                        <p style="margin:0;font-size:12px;line-height:1.55;color:#475569;">${message}</p>
+                                    </div>
+                                `;
+                            }
+                        }
+                    });
+
+                    el.dataset.loaded = 'true';
+                    window.addEventListener('resize', function () {
+                        map.resize();
+                    });
+                };
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', boot);
+                } else {
+                    boot();
+                }
+            })();
+        </script>
 	    <script>
 	        (function initMrdSpecialLoader() {
 	            const boot = () => {
