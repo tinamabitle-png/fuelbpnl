@@ -3020,9 +3020,9 @@
             : 'https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js';
     @endphp
 	    <script src="{{ $chartSrc }}"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.9/topojson.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/datamaps@0.5.9/dist/datamaps.world.min.js"></script>
+        <script src="{{ asset('vendor/datamaps/d3.min.js') }}"></script>
+        <script src="{{ asset('vendor/datamaps/topojson.min.js') }}"></script>
+        <script src="{{ asset('vendor/datamaps/datamaps.world.min.js') }}"></script>
 	    <script>
 	        (function initVoucherSplitSlider() {
 	            const boot = () => {
