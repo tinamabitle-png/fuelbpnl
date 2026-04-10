@@ -652,7 +652,7 @@
                         <div class="bw-merchant-story-card__text">
                             Built for onboarding, payments, and settlement operations so stations can go live with less friction and stronger control from day one.
                         </div>
-                        <div class="bw-merchant-story-card__button">Go live now</div>
+                        <a href="{{ route('register.merchant') }}" class="bw-merchant-story-card__button">Go live now</a>
                     </div>
                 </div>
             </div>
@@ -2017,6 +2017,9 @@
     }
 
     .bw-merchant-story-card__button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         width: max-content;
         border-radius: 999px;
         background: #67e8f9;
@@ -2026,6 +2029,7 @@
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.08em;
+        text-decoration: none;
     }
 
     @media (max-width: 768px) {
