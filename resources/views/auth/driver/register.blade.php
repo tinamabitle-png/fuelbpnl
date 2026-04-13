@@ -10,7 +10,7 @@
             <h1 class="text-2xl font-semibold text-slate-900">Register as Driver</h1>
             <p class="text-sm text-slate-600 mt-1">Create your driver account to apply for vouchers.</p>
 
-	            <form method="POST" action="{{ route('register.driver.store') }}" enctype="multipart/form-data" class="mt-6 space-y-4">
+	            <form id="driverRegisterForm" method="POST" action="{{ route('register.driver.store') }}" enctype="multipart/form-data" class="mt-6 space-y-4">
 	                @csrf
 	                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 	                    <div>
@@ -117,9 +117,21 @@
                             Document uploads happen after signup in your dashboard. Voucher applications are enabled once documents are uploaded.
                         </p>
 	                </div>
+                    <input type="hidden" id="driverDriverTermsAccepted" name="driver_terms_accepted" value="{{ old('driver_terms_accepted') ? '1' : '' }}">
+                    <input type="hidden" id="driverDriverCreditConsent" name="driver_credit_consent" value="{{ old('driver_credit_consent') ? '1' : '' }}">
+                    <input type="hidden" id="driverDriverAgreementVersion" name="driver_agreement_version" value="{{ old('driver_agreement_version', 'driver-platform-v1-2026-04-13') }}">
 
-                <button type="submit" class="w-full rounded-xl bg-blue-600 text-white py-2.5 font-semibold hover:bg-blue-700">Create Driver Account</button>
+                <button type="button" data-driver-agreement-open="driverRegisterForm" class="w-full rounded-xl bg-blue-600 text-white py-2.5 font-semibold hover:bg-blue-700">Create Driver Account</button>
+                <p class="text-xs leading-5 text-slate-500">
+                    Before your account is created, you’ll need to accept the driver agreement, POPIA processing notice, and NCR-aligned verification consent.
+                </p>
             </form>
+
+            @include('auth.driver.partials.agreement-modal', [
+                'formId' => 'driverRegisterForm',
+                'prefix' => 'driver',
+                'agreementVersion' => 'driver-platform-v1-2026-04-13',
+            ])
 
             <div class="mt-5 text-sm text-slate-600">
                 Already have an account?

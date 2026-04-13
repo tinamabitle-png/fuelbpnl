@@ -17,7 +17,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('register.driver.store') }}" enctype="multipart/form-data" class="mt-4 space-y-3">
+            <form id="mobileDriverRegisterForm" method="POST" action="{{ route('register.driver.store') }}" enctype="multipart/form-data" class="mt-4 space-y-3">
                 @csrf
                 <div class="grid grid-cols-2 gap-2">
                     <div>
@@ -96,9 +96,21 @@
                 <p class="text-[11px] text-slate-500">
                     Upload your documents after signup in your dashboard. Voucher applications are enabled once documents are uploaded.
                 </p>
+                <input type="hidden" id="mobileDriverDriverTermsAccepted" name="driver_terms_accepted" value="{{ old('driver_terms_accepted') ? '1' : '' }}">
+                <input type="hidden" id="mobileDriverDriverCreditConsent" name="driver_credit_consent" value="{{ old('driver_credit_consent') ? '1' : '' }}">
+                <input type="hidden" id="mobileDriverDriverAgreementVersion" name="driver_agreement_version" value="{{ old('driver_agreement_version', 'driver-platform-v1-2026-04-13') }}">
 
-                <button type="submit" class="w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white">Create Driver Account</button>
+                <button type="button" data-driver-agreement-open="mobileDriverRegisterForm" class="w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white">Create Driver Account</button>
+                <p class="text-[11px] leading-5 text-slate-500">
+                    You’ll review and accept the driver contract, POPIA processing notice, and NCR-aligned verification consent before account creation.
+                </p>
             </form>
+
+            @include('auth.driver.partials.agreement-modal', [
+                'formId' => 'mobileDriverRegisterForm',
+                'prefix' => 'mobileDriver',
+                'agreementVersion' => 'driver-platform-v1-2026-04-13',
+            ])
         </section>
 
         <section class="mobile-card p-4">

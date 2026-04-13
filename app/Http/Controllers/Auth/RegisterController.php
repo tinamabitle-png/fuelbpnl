@@ -91,6 +91,9 @@ class RegisterController extends Controller
                 'home_address' => ['required', 'string', 'max:500'],
                 'city' => ['required', 'string', 'max:120'],
                 'country' => ['required', 'string', 'max:120'],
+                'driver_terms_accepted' => ['accepted'],
+                'driver_credit_consent' => ['accepted'],
+                'driver_agreement_version' => ['required', 'string', 'max:80'],
                 'latitude' => ['nullable', 'numeric', 'between:-90,90'],
                 'longitude' => ['nullable', 'numeric', 'between:-180,180'],
                 'driver_platform' => ['required', Rule::in(['checkers_sixty60', 'mr_d', 'takealot', 'indrive', 'uber', 'bolt', 'other'])],
@@ -364,12 +367,19 @@ class RegisterController extends Controller
                         'country' => $validated['country'] ?? null,
                         'latitude' => $validated['latitude'] ?? null,
                         'longitude' => $validated['longitude'] ?? null,
+                        'driver_agreement_version' => $role === 'driver' ? ($validated['driver_agreement_version'] ?? null) : null,
+                        'driver_terms_accepted' => $role === 'driver' ? true : null,
+                        'driver_credit_consent' => $role === 'driver' ? true : null,
                         'driver_platform' => $role === 'driver' ? ($validated['driver_platform'] ?? null) : null,
                         'driver_platform_other' => $role === 'driver'
                             ? (($validated['driver_platform'] ?? null) === 'other' ? ($validated['driver_platform_other'] ?? null) : null)
                             : null,
                     ],
                 ]));
+            }
+
+            if ($role === 'driver' && Schema::hasTable('credit_consents')) {
+                $this->recordDriverRegistrationConsents($user, $request, $validated);
             }
 
             return $user;
@@ -524,5 +534,55 @@ class RegisterController extends Controller
         $this->columnCache[$key] = $exists;
 
         return $exists;
+    }
+
+    private function recordDriverRegistrationConsents(User $user, Request $request, array $validated): void
+    {
+        $version = (string) ($validated['driver_agreement_version'] ?? 'driver-platform-v1-2026-04-13');
+        $now = now();
+        $metadata = [
+            'agreement_version' => $version,
+            'jurisdiction' => 'South Africa',
+            'ip' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+            'registered_via' => 'web_driver_registration',
+            'legal_links' => [
+                'terms' => url('/legal/terms'),
+                'privacy' => url('/legal/privacy'),
+                'poppia' => url('/legal/poppia'),
+                'paia' => url('/legal/paia-manual'),
+            ],
+        ];
+
+        DB::table('credit_consents')->insert([
+            [
+                'user_id' => $user->id,
+                'source' => 'web_driver_registration',
+                'scope' => 'driver_platform_agreement_acceptance',
+                'granted_at' => $now,
+                'expires_at' => null,
+                'revoked_at' => null,
+                'evidence_ref' => $request->ip(),
+                'metadata' => json_encode($metadata + [
+                    'consent_type' => 'platform_terms_and_policies',
+                ], JSON_UNESCAPED_SLASHES),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'user_id' => $user->id,
+                'source' => 'web_driver_registration',
+                'scope' => 'driver_popia_and_ncr_aligned_checks_consent',
+                'granted_at' => $now,
+                'expires_at' => null,
+                'revoked_at' => null,
+                'evidence_ref' => $request->ip(),
+                'metadata' => json_encode($metadata + [
+                    'consent_type' => 'identity_affordability_fraud_and_compliance_checks',
+                ], JSON_UNESCAPED_SLASHES),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        ]);
     }
 }
