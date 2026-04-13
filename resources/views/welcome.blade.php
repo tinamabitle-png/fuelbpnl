@@ -771,65 +771,12 @@
         </div>
 
         <div class="glass rounded-2xl p-6 overflow-hidden">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div>
-                    <p class="text-xs uppercase tracking-[1px] text-blue-600">Site Stats</p>
-                    <h3 class="brand-font leading-5 text-base md:text-xl font-bold text-slate-900 mt-2">Operations Overview</h3>
-                </div>
-                <div class="flex items-center justify-between lg:justify-start mt-2 md:mt-4 lg:mt-0">
-                    <div class="flex items-center">
-                        <button type="button" class="welcome-stats-btn welcome-stats-btn--ghost" data-series="drivers">Drivers</button>
-                        <button type="button" class="welcome-stats-btn welcome-stats-btn--active" data-series="vouchers">Vouchers</button>
-                    </div>
-                    <div class="lg:ml-6">
-                        <div class="bg-slate-100 ease-in duration-150 hover:bg-slate-200 pb-2 pt-1 px-3 rounded-sm">
-                            <span class="text-xs text-slate-600">Last 12 months</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                    <p class="text-xs uppercase tracking-[1px] text-slate-500">Total vouchers</p>
-                    <div class="flex items-end mt-3">
-                        <h3 class="text-blue-600 leading-5 text-xl md:text-3xl font-semibold">{{ number_format($totalVouchers) }}</h3>
-                        @if($showVoucherPct)
-                            <div class="flex items-center md:ml-4 ml-2 {{ $voucherUp ? 'text-emerald-700' : 'text-rose-700' }}">
-                                <p class="text-xs md:text-base font-semibold">{{ $voucherUp ? '+' : '-' }}{{ $voucherPctAbs }}%</p>
-                                <svg role="img" class="ml-1" aria-label="trend" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                                    <path d="M6 2.5V9.5" stroke="currentColor" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round"></path>
-                                    <path d="M8 4.5L6 2.5" stroke="currentColor" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round"></path>
-                                    <path d="M4 4.5L6 2.5" stroke="currentColor" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round"></path>
-                                </svg>
-                            </div>
-                        @endif
-                    </div>
-                    <p class="text-xs text-slate-500 mt-2">30-day change vs previous 30 days.</p>
-                </div>
-                <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                    <p class="text-xs uppercase tracking-[1px] text-slate-500">Drivers</p>
-                    <p class="text-2xl md:text-3xl font-semibold text-slate-900 mt-3">{{ number_format((int) ($totals['drivers'] ?? 0)) }}</p>
-                    <p class="text-xs text-slate-500 mt-2">Registered drivers on the network.</p>
-                </div>
-                <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                    <p class="text-xs uppercase tracking-[1px] text-slate-500">Stations</p>
-                    <p class="text-2xl md:text-3xl font-semibold text-slate-900 mt-3">{{ number_format((int) ($totals['stations'] ?? 0)) }}</p>
-                    <p class="text-xs text-slate-500 mt-2">Fuel stations available for redemption.</p>
-                </div>
-            </div>
-
-            <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
-                <canvas
-                    id="welcomeStatsChart"
-                    height="120"
-                    role="img"
-                    aria-label="Activity chart"
-                    data-labels='@json((array) ($series["labels"] ?? []))'
-                    data-series-vouchers='@json((array) ($series["vouchers"] ?? []))'
-                    data-series-drivers='@json((array) ($series["drivers"] ?? []))'
-                ></canvas>
-            </div>
+            <img
+                src="{{ asset('images/stripes.png') }}"
+                alt="Bwiser stripes"
+                class="w-full h-full object-cover rounded-2xl"
+                loading="lazy"
+            >
         </div>
     </div>
 
