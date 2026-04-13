@@ -551,7 +551,7 @@
             </div>
 
             <img
-                src="{{ asset('images/kubukubu.png') }}"
+                src="{{ asset('images/kubukubu_img.png') }}"
                 alt="Bwiser preview"
                 class="welcome-tween-image is-in rounded-2xl"
                 loading="lazy"
