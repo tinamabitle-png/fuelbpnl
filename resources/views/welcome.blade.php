@@ -772,7 +772,7 @@
 
         <div class="glass rounded-2xl p-6 overflow-hidden">
             <img
-                src="{{ asset('images/stripes.png') }}"
+                src="{{ asset('images/thestripes.png') }}"
                 alt="Bwiser stripes"
                 class="w-full h-full object-cover rounded-2xl"
                 loading="lazy"
