@@ -27,6 +27,36 @@
             margin: 0 !important;
             padding: 0 !important;
         }
+
+        .driver-agreement-scroll-btn {
+            position: absolute;
+            right: 1rem;
+            bottom: 1rem;
+            z-index: 5;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.75rem;
+            height: 2.75rem;
+            border: 0;
+            border-radius: 999px;
+            background: rgba(2, 13, 255, 0.94);
+            color: #fff;
+            box-shadow: 0 18px 30px -18px rgba(2, 13, 255, 0.75);
+            transition: transform 0.18s ease, opacity 0.18s ease, background-color 0.18s ease;
+            cursor: pointer;
+        }
+
+        .driver-agreement-scroll-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(29, 78, 216, 0.96);
+        }
+
+        .driver-agreement-scroll-btn.is-hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(8px);
+        }
     </style>
 @endpush
 
@@ -42,86 +72,93 @@
             </p>
         </div>
 
-        <div class="max-h-[52vh] space-y-5 overflow-y-auto px-5 py-5 text-sm leading-6 text-slate-700 md:px-6">
-            <div class="rounded-2xl bg-blue-50/80 p-4 text-[13px] leading-6 text-slate-700">
-                This contract is designed to align with Bwiser’s South African onboarding, credit-risk, and data-protection obligations,
-                including the <span class="font-semibold">National Credit Act / NCR affordability principles where applicable</span> and the
-                <span class="font-semibold">Protection of Personal Information Act (POPIA)</span>.
-            </div>
+        <div class="relative">
+            <div data-driver-agreement-scrollable class="max-h-[52vh] space-y-5 overflow-y-auto px-5 py-5 text-sm leading-6 text-slate-700 md:px-6">
+                <div class="rounded-2xl bg-blue-50/80 p-4 text-[13px] leading-6 text-slate-700">
+                    This contract is designed to align with Bwiser’s South African onboarding, credit-risk, and data-protection obligations,
+                    including the <span class="font-semibold">National Credit Act / NCR affordability principles where applicable</span> and the
+                    <span class="font-semibold">Protection of Personal Information Act (POPIA)</span>.
+                </div>
 
-            <div class="space-y-2">
-                <h4 class="text-sm font-semibold text-slate-900">1. Account creation and platform use</h4>
-                <p>
-                    By creating a driver account, you confirm that the information you submit is true, current, and belongs to you. You
-                    agree to use the Bwiser platform only for lawful voucher, repayment, and onboarding activities and to keep your login
-                    credentials secure.
-                </p>
-            </div>
+                <div class="space-y-2">
+                    <h4 class="text-sm font-semibold text-slate-900">1. Account creation and platform use</h4>
+                    <p>
+                        By creating a driver account, you confirm that the information you submit is true, current, and belongs to you. You
+                        agree to use the Bwiser platform only for lawful voucher, repayment, and onboarding activities and to keep your login
+                        credentials secure.
+                    </p>
+                </div>
 
-            <div class="space-y-2">
-                <h4 class="text-sm font-semibold text-slate-900">2. Voucher and finance-related decisions</h4>
-                <p>
-                    Account registration does <span class="font-semibold">not by itself guarantee approval</span> for vouchers, payment terms,
-                    or any credit-based product. Where you later apply for a product that falls within South African credit regulation,
-                    Bwiser may perform affordability, fraud, identity, and risk checks and may present additional disclosures or terms before
-                    any regulated transaction is concluded.
-                </p>
-            </div>
+                <div class="space-y-2">
+                    <h4 class="text-sm font-semibold text-slate-900">2. Voucher and finance-related decisions</h4>
+                    <p>
+                        Account registration does <span class="font-semibold">not by itself guarantee approval</span> for vouchers, payment terms,
+                        or any credit-based product. Where you later apply for a product that falls within South African credit regulation,
+                        Bwiser may perform affordability, fraud, identity, and risk checks and may present additional disclosures or terms before
+                        any regulated transaction is concluded.
+                    </p>
+                </div>
 
-            <div class="space-y-2">
-                <h4 class="text-sm font-semibold text-slate-900">3. POPIA and personal information processing</h4>
-                <p>
-                    You authorise Bwiser to collect and process the personal information needed to onboard and manage your account, including
-                    identity details, contact details, ID number, address, location data, uploaded documents, operational activity, payment
-                    metadata, and support records. This processing is used to provide the platform, verify your identity, detect fraud,
-                    manage repayments, keep audit trails, and comply with South African law.
-                </p>
-                <p>
-                    Where lawful and necessary, Bwiser may share relevant information with stations, payment providers, mapping or messaging
-                    operators, compliance service providers, and regulators or authorities. Processing remains subject to POPIA-aligned
-                    safeguards, purpose limitation, and security controls.
-                </p>
-            </div>
+                <div class="space-y-2">
+                    <h4 class="text-sm font-semibold text-slate-900">3. POPIA and personal information processing</h4>
+                    <p>
+                        You authorise Bwiser to collect and process the personal information needed to onboard and manage your account, including
+                        identity details, contact details, ID number, address, location data, uploaded documents, operational activity, payment
+                        metadata, and support records. This processing is used to provide the platform, verify your identity, detect fraud,
+                        manage repayments, keep audit trails, and comply with South African law.
+                    </p>
+                    <p>
+                        Where lawful and necessary, Bwiser may share relevant information with stations, payment providers, mapping or messaging
+                        operators, compliance service providers, and regulators or authorities. Processing remains subject to POPIA-aligned
+                        safeguards, purpose limitation, and security controls.
+                    </p>
+                </div>
 
-            <div class="space-y-2">
-                <h4 class="text-sm font-semibold text-slate-900">4. Consent to verification, affordability, and compliance checks</h4>
-                <p>
-                    You consent to identity verification, document review, fraud screening, and—where applicable—affordability or other
-                    responsible-lending checks needed to assess your eligibility for voucher and finance workflows. These checks may use the
-                    information you provide directly, along with operational history and supporting records submitted through the platform.
-                </p>
-            </div>
+                <div class="space-y-2">
+                    <h4 class="text-sm font-semibold text-slate-900">4. Consent to verification, affordability, and compliance checks</h4>
+                    <p>
+                        You consent to identity verification, document review, fraud screening, and—where applicable—affordability or other
+                        responsible-lending checks needed to assess your eligibility for voucher and finance workflows. These checks may use the
+                        information you provide directly, along with operational history and supporting records submitted through the platform.
+                    </p>
+                </div>
 
-            <div class="space-y-2">
-                <h4 class="text-sm font-semibold text-slate-900">5. Communications, records, and audit trail</h4>
-                <p>
-                    You agree that Bwiser may send operational notices by email, SMS, WhatsApp, push notification, or in-app messaging,
-                    including verification notices, approval outcomes, repayment reminders, and security alerts. You also acknowledge that
-                    important actions on the platform are logged for audit, compliance, dispute resolution, and security purposes.
-                </p>
-            </div>
+                <div class="space-y-2">
+                    <h4 class="text-sm font-semibold text-slate-900">5. Communications, records, and audit trail</h4>
+                    <p>
+                        You agree that Bwiser may send operational notices by email, SMS, WhatsApp, push notification, or in-app messaging,
+                        including verification notices, approval outcomes, repayment reminders, and security alerts. You also acknowledge that
+                        important actions on the platform are logged for audit, compliance, dispute resolution, and security purposes.
+                    </p>
+                </div>
 
-            <div class="space-y-2">
-                <h4 class="text-sm font-semibold text-slate-900">6. Driver responsibilities</h4>
-                <p>
-                    You agree to keep your details accurate, update them when they change, upload only authentic documents, and avoid any
-                    misuse of vouchers, merchant systems, or repayment tools. False information, impersonation, or fraudulent activity may
-                    lead to rejection, suspension, recovery action, or reporting to the appropriate authorities.
-                </p>
-            </div>
+                <div class="space-y-2">
+                    <h4 class="text-sm font-semibold text-slate-900">6. Driver responsibilities</h4>
+                    <p>
+                        You agree to keep your details accurate, update them when they change, upload only authentic documents, and avoid any
+                        misuse of vouchers, merchant systems, or repayment tools. False information, impersonation, or fraudulent activity may
+                        lead to rejection, suspension, recovery action, or reporting to the appropriate authorities.
+                    </p>
+                </div>
 
-            <div class="space-y-2">
-                <h4 class="text-sm font-semibold text-slate-900">7. Legal documents incorporated by reference</h4>
-                <p>
-                    This acceptance works together with Bwiser’s platform legal documents. Please review them as part of this agreement:
-                </p>
-                <div class="flex flex-wrap gap-2 text-xs">
-                    <a href="{{ route('legal.terms') }}" target="_blank" rel="noopener" class="rounded-full border border-slate-200 px-3 py-1 font-medium text-slate-700 hover:border-blue-200 hover:text-blue-700">Terms & Conditions</a>
-                    <a href="{{ route('legal.privacy') }}" target="_blank" rel="noopener" class="rounded-full border border-slate-200 px-3 py-1 font-medium text-slate-700 hover:border-blue-200 hover:text-blue-700">Privacy Policy</a>
-                    <a href="{{ route('legal.poppia') }}" target="_blank" rel="noopener" class="rounded-full border border-slate-200 px-3 py-1 font-medium text-slate-700 hover:border-blue-200 hover:text-blue-700">POPIA Notice</a>
-                    <a href="{{ route('legal.paia') }}" target="_blank" rel="noopener" class="rounded-full border border-slate-200 px-3 py-1 font-medium text-slate-700 hover:border-blue-200 hover:text-blue-700">PAIA Manual</a>
+                <div class="space-y-2">
+                    <h4 class="text-sm font-semibold text-slate-900">7. Legal documents incorporated by reference</h4>
+                    <p>
+                        This acceptance works together with Bwiser’s platform legal documents. Please review them as part of this agreement:
+                    </p>
+                    <div class="flex flex-wrap gap-2 text-xs">
+                        <a href="{{ route('legal.terms') }}" target="_blank" rel="noopener" class="rounded-full border border-slate-200 px-3 py-1 font-medium text-slate-700 hover:border-blue-200 hover:text-blue-700">Terms & Conditions</a>
+                        <a href="{{ route('legal.privacy') }}" target="_blank" rel="noopener" class="rounded-full border border-slate-200 px-3 py-1 font-medium text-slate-700 hover:border-blue-200 hover:text-blue-700">Privacy Policy</a>
+                        <a href="{{ route('legal.poppia') }}" target="_blank" rel="noopener" class="rounded-full border border-slate-200 px-3 py-1 font-medium text-slate-700 hover:border-blue-200 hover:text-blue-700">POPIA Notice</a>
+                        <a href="{{ route('legal.paia') }}" target="_blank" rel="noopener" class="rounded-full border border-slate-200 px-3 py-1 font-medium text-slate-700 hover:border-blue-200 hover:text-blue-700">PAIA Manual</a>
+                    </div>
                 </div>
             </div>
+            <button type="button" class="driver-agreement-scroll-btn" data-driver-agreement-scroll-btn aria-label="Scroll down">
+                <svg viewBox="0 0 24 24" class="h-5 w-5" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M12 16.6 5.7 10.3l1.4-1.4 4.9 4.9 4.9-4.9 1.4 1.4z"/>
+                </svg>
+            </button>
         </div>
 
         <div class="border-t border-slate-200 bg-slate-50 px-5 py-4 md:px-6">
@@ -195,6 +232,27 @@
                             container.style.zIndex = '2147483647';
                             container.style.backdropFilter = 'blur(14px)';
                             container.style.webkitBackdropFilter = 'blur(14px)';
+                        }
+
+                        const popup = Swal.getPopup();
+                        const scrollable = popup?.querySelector('[data-driver-agreement-scrollable]');
+                        const scrollButton = popup?.querySelector('[data-driver-agreement-scroll-btn]');
+
+                        if (scrollable && scrollButton) {
+                            const syncScrollButton = () => {
+                                const nearBottom = scrollable.scrollTop + scrollable.clientHeight >= scrollable.scrollHeight - 12;
+                                scrollButton.classList.toggle('is-hidden', nearBottom);
+                            };
+
+                            scrollButton.addEventListener('click', () => {
+                                scrollable.scrollBy({
+                                    top: Math.max(scrollable.clientHeight * 0.8, 220),
+                                    behavior: 'smooth'
+                                });
+                            });
+
+                            scrollable.addEventListener('scroll', syncScrollButton);
+                            syncScrollButton();
                         }
                     },
                     preConfirm: () => {
