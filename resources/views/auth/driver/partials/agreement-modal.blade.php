@@ -1,44 +1,45 @@
 @php
     $prefix = $prefix ?? 'driver';
     $formId = $formId ?? 'driverRegisterForm';
-    $modalId = $prefix . 'AgreementModal';
+    $templateId = $prefix . 'AgreementTemplate';
     $termsHiddenId = $prefix . 'DriverTermsAccepted';
     $creditHiddenId = $prefix . 'DriverCreditConsent';
     $versionHiddenId = $prefix . 'DriverAgreementVersion';
-    $termsCheckboxId = $prefix . 'AgreementTermsCheckbox';
-    $creditCheckboxId = $prefix . 'AgreementCreditCheckbox';
-    $acceptBtnId = $prefix . 'AgreementAcceptBtn';
     $agreementVersion = $agreementVersion ?? 'driver-platform-v1-2026-04-13';
     $hasAgreementErrors = $errors->has('driver_terms_accepted') || $errors->has('driver_credit_consent');
 @endphp
 
-<div
-    id="{{ $modalId }}"
-    class="fixed inset-0 z-[120] hidden items-end justify-center bg-slate-950/70 p-4 md:items-center"
-    aria-hidden="true"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="{{ $prefix }}AgreementTitle"
->
-    <div class="w-full max-w-3xl overflow-hidden rounded-[28px] bg-white shadow-[0_40px_90px_-35px_rgba(15,23,42,0.55)]">
-        <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 md:px-6">
-            <div>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#020DFF]">Driver agreement</p>
-                <h3 id="{{ $prefix }}AgreementTitle" class="mt-1 text-lg font-semibold text-slate-900">
-                    Bwiser Driver Account Contract & Consent
-                </h3>
-                <p class="mt-1 text-xs leading-5 text-slate-600">
-                    Review and accept these terms before we create your driver account.
-                </p>
-            </div>
-            <button
-                type="button"
-                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
-                data-driver-agreement-close="{{ $modalId }}"
-                aria-label="Close agreement"
-            >
-                ✕
-            </button>
+@push('head')
+    <link rel="stylesheet" href="{{ asset('vendor/sweetalert2/sweetalert2.min.css') }}">
+    <style>
+        .driver-agreement-popup {
+            border-radius: 28px !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+        }
+
+        .driver-agreement-html {
+            margin: 0 !important;
+            text-align: left !important;
+        }
+
+        .driver-agreement-actions {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+    </style>
+@endpush
+
+<template id="{{ $templateId }}">
+    <div class="bg-white text-left">
+        <div class="border-b border-slate-200 px-5 py-4 md:px-6">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#020DFF]">Driver agreement</p>
+            <h3 class="mt-1 text-lg font-semibold text-slate-900">
+                Bwiser Driver Account Contract & Consent
+            </h3>
+            <p class="mt-1 text-xs leading-5 text-slate-600">
+                Review and accept these terms before we create your driver account.
+            </p>
         </div>
 
         <div class="max-h-[52vh] space-y-5 overflow-y-auto px-5 py-5 text-sm leading-6 text-slate-700 md:px-6">
@@ -126,131 +127,118 @@
         <div class="border-t border-slate-200 bg-slate-50 px-5 py-4 md:px-6">
             <div class="space-y-3">
                 <label class="flex items-start gap-3 text-sm text-slate-700">
-                    <input id="{{ $termsCheckboxId }}" type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                    <input data-driver-agreement-terms type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                     <span>I accept the Bwiser Driver Account Contract and the linked legal documents.</span>
                 </label>
                 <label class="flex items-start gap-3 text-sm text-slate-700">
-                    <input id="{{ $creditCheckboxId }}" type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                    <input data-driver-agreement-credit type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                     <span>I consent to POPIA-governed processing, verification, fraud screening, and where applicable affordability / credit-related checks for onboarding and product decisions.</span>
                 </label>
 
-                @if($errors->has('driver_terms_accepted') || $errors->has('driver_credit_consent'))
+                @if($hasAgreementErrors)
                     <div class="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
                         {{ $errors->first('driver_terms_accepted') ?: $errors->first('driver_credit_consent') }}
                     </div>
                 @endif
-
-                <div class="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
-                    <button
-                        type="button"
-                        class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                        data-driver-agreement-close="{{ $modalId }}"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="button"
-                        id="{{ $acceptBtnId }}"
-                        class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
-                    >
-                        Accept and create account
-                    </button>
-                </div>
             </div>
         </div>
     </div>
-</div>
+</template>
 
-<script>
-    (function initDriverAgreementModal() {
-        const form = document.getElementById(@json($formId));
-        const modal = document.getElementById(@json($modalId));
-        const acceptButton = document.getElementById(@json($acceptBtnId));
-        const termsHidden = document.getElementById(@json($termsHiddenId));
-        const creditHidden = document.getElementById(@json($creditHiddenId));
-        const versionHidden = document.getElementById(@json($versionHiddenId));
-        const termsCheckbox = document.getElementById(@json($termsCheckboxId));
-        const creditCheckbox = document.getElementById(@json($creditCheckboxId));
-        const openers = document.querySelectorAll('[data-driver-agreement-open="{{ $formId }}"]');
-        const closers = modal ? modal.querySelectorAll('[data-driver-agreement-close="{{ $modalId }}"]') : [];
+@push('scripts')
+    <script src="{{ asset('vendor/sweetalert2/sweetalert2.min.js') }}"></script>
+    <script>
+        (function initDriverAgreementModal() {
+            const form = document.getElementById(@json($formId));
+            const template = document.getElementById(@json($templateId));
+            const termsHidden = document.getElementById(@json($termsHiddenId));
+            const creditHidden = document.getElementById(@json($creditHiddenId));
+            const versionHidden = document.getElementById(@json($versionHiddenId));
+            const openers = document.querySelectorAll('[data-driver-agreement-open="{{ $formId }}"]');
 
-        if (!form || !modal || !acceptButton || !termsHidden || !creditHidden || !versionHidden || !termsCheckbox || !creditCheckbox) {
-            return;
-        }
+            if (!form || !template || !termsHidden || !creditHidden || !versionHidden || typeof Swal === 'undefined') {
+                return;
+            }
 
-        const syncFromHidden = () => {
-            const accepted = termsHidden.value === '1';
-            const creditAccepted = creditHidden.value === '1';
-            termsCheckbox.checked = accepted;
-            creditCheckbox.checked = creditAccepted;
-            form.dataset.agreementAccepted = accepted && creditAccepted ? 'true' : 'false';
-        };
+            const markAccepted = () => {
+                termsHidden.value = '1';
+                creditHidden.value = '1';
+                versionHidden.value = @json($agreementVersion);
+                form.dataset.agreementAccepted = 'true';
+            };
 
-        const openModal = () => {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            modal.setAttribute('aria-hidden', 'false');
-            document.body.style.overflow = 'hidden';
-        };
+            const isAccepted = () => form.dataset.agreementAccepted === 'true';
 
-        const closeModal = () => {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            modal.setAttribute('aria-hidden', 'true');
-            document.body.style.overflow = '';
-        };
+            const openModal = async () => {
+                const result = await Swal.fire({
+                    html: template.innerHTML,
+                    width: window.innerWidth >= 768 ? '56rem' : '94vw',
+                    padding: '0',
+                    background: '#ffffff',
+                    backdrop: 'rgba(15, 23, 42, 0.62)',
+                    showCancelButton: true,
+                    confirmButtonText: 'Accept and create account',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true,
+                    focusConfirm: false,
+                    allowOutsideClick: true,
+                    customClass: {
+                        popup: 'driver-agreement-popup',
+                        htmlContainer: 'driver-agreement-html',
+                        actions: 'driver-agreement-actions',
+                        confirmButton: '!rounded-xl !bg-blue-600 !px-4 !py-2.5 !text-sm !font-semibold',
+                        cancelButton: '!rounded-xl !border !border-slate-200 !bg-white !px-4 !py-2.5 !text-sm !font-semibold !text-slate-700'
+                    },
+                    didOpen: () => {
+                        const container = Swal.getContainer();
+                        if (container) {
+                            container.style.zIndex = '2147483647';
+                            container.style.backdropFilter = 'blur(14px)';
+                            container.style.webkitBackdropFilter = 'blur(14px)';
+                        }
+                    },
+                    preConfirm: () => {
+                        const popup = Swal.getPopup();
+                        const termsCheckbox = popup?.querySelector('[data-driver-agreement-terms]');
+                        const creditCheckbox = popup?.querySelector('[data-driver-agreement-credit]');
 
-        syncFromHidden();
+                        if (!termsCheckbox?.checked) {
+                            Swal.showValidationMessage('Please accept the driver contract before continuing.');
+                            return false;
+                        }
 
-        openers.forEach((opener) => {
-            opener.addEventListener('click', function () {
+                        if (!creditCheckbox?.checked) {
+                            Swal.showValidationMessage('Please consent to the POPIA and verification checks before continuing.');
+                            return false;
+                        }
+
+                        return true;
+                    }
+                });
+
+                if (result.isConfirmed) {
+                    markAccepted();
+                    form.requestSubmit();
+                }
+            };
+
+            openers.forEach((opener) => {
+                opener.addEventListener('click', function () {
+                    if (!form.reportValidity()) return;
+                    openModal();
+                });
+            });
+
+            form.addEventListener('submit', function (event) {
+                if (isAccepted()) return;
+                event.preventDefault();
                 if (!form.reportValidity()) return;
                 openModal();
             });
-        });
 
-        closers.forEach((closer) => {
-            closer.addEventListener('click', closeModal);
-        });
-
-        modal.addEventListener('click', function (event) {
-            if (event.target === modal) closeModal();
-        });
-
-        document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape' && modal.getAttribute('aria-hidden') === 'false') {
-                closeModal();
+            if (@json($hasAgreementErrors)) {
+                openModal();
             }
-        });
-
-        form.addEventListener('submit', function (event) {
-            if (form.dataset.agreementAccepted === 'true') return;
-            event.preventDefault();
-            if (!form.reportValidity()) return;
-            openModal();
-        });
-
-        acceptButton.addEventListener('click', function () {
-            if (!termsCheckbox.checked) {
-                termsCheckbox.focus();
-                return;
-            }
-
-            if (!creditCheckbox.checked) {
-                creditCheckbox.focus();
-                return;
-            }
-
-            termsHidden.value = '1';
-            creditHidden.value = '1';
-            versionHidden.value = @json($agreementVersion);
-            form.dataset.agreementAccepted = 'true';
-            closeModal();
-            form.requestSubmit();
-        });
-
-        if (@json($hasAgreementErrors)) {
-            openModal();
-        }
-    })();
-</script>
+        })();
+    </script>
+@endpush
