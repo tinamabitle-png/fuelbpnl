@@ -657,6 +657,15 @@
                 </div>
             </div>
 
+            <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden mt-4">
+                <img
+                    src="{{ asset('images/Bwiser_cool.png') }}"
+                    alt="Bwiser merchant preview"
+                    class="block w-full h-full rounded-2xl object-cover"
+                    loading="lazy"
+                >
+            </div>
+
         </div>
     </div>
 
