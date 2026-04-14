@@ -454,6 +454,24 @@
                         </div>
                         <div class="chat-header text-base-content text-[11px] font-medium">
                             Merchant
+                            <time class="text-base-content/50 ml-1 text-[10px]">12:46</time>
+                        </div>
+                        <div class="chat-bubble max-w-[15rem] rounded-2xl px-3 py-2 text-[11px] leading-relaxed shadow-sm">
+                            Wow that is quite novel, it's a really fresh take on frictionless payments.
+                        </div>
+                        <div class="chat-footer text-base-content/50 text-[10px]">
+                            Delivered
+                        </div>
+                    </div>
+
+                    <div class="chat chat-receiver max-w-full">
+                        <div class="chat-avatar avatar">
+                            <div class="h-7 w-7 shrink-0 overflow-hidden rounded-full">
+                                <img src="{{ asset('images/ask.jpg') }}" alt="Question asker" class="h-full w-full object-cover" loading="lazy" />
+                            </div>
+                        </div>
+                        <div class="chat-header text-base-content text-[11px] font-medium">
+                            Merchant
                             <time class="text-base-content/50 ml-1 text-[10px]">12:47</time>
                         </div>
                         <div class="chat-bubble max-w-[15rem] rounded-2xl px-3 py-2 text-[11px] leading-relaxed shadow-sm">
