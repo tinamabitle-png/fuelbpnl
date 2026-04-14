@@ -1,7 +1,7 @@
 @extends('mobile.layouts.app')
 
-@section('title', 'Driver Registration - Bwiser Mobile')
-@section('meta_robots', 'noindex,nofollow')
+@section('title', 'Driver Registration')
+@section('meta_description', 'Register as a driver on Bwiser to access vouchers, fuel finance, and onboarding workflows.')
 
 @section('content')
 <main class="px-4 pb-10 pt-6">

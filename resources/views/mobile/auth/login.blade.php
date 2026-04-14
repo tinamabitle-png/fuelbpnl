@@ -1,7 +1,7 @@
 @extends('mobile.layouts.app')
 
-@section('title', 'Sign In - Bwiser Mobile')
-@section('meta_robots', 'noindex,nofollow')
+@section('title', 'Login')
+@section('meta_description', 'Secure login page for Bwiser drivers, merchants, admins, and operations teams.')
 
 @section('content')
 <main class="px-4 pb-8 pt-6">

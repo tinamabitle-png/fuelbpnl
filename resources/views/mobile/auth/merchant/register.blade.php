@@ -1,7 +1,7 @@
 @extends('mobile.layouts.app')
 
-@section('title', 'Merchant Registration - Bwiser Mobile')
-@section('meta_robots', 'noindex,nofollow')
+@section('title', 'Merchant Registration')
+@section('meta_description', 'Register your fuel station or merchant account on Bwiser for voucher redemption and settlements.')
 
 @section('content')
 <main class="px-4 pb-10 pt-6">

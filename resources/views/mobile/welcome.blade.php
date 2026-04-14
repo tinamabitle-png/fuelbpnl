@@ -1,7 +1,47 @@
 @extends('mobile.layouts.app')
 
-@section('title', 'Bwiser Mobile')
-@section('meta_description', 'Bwiser fuel finance and payments platform for drivers and merchants in South Africa.')
+@section('title', 'Bwiser Fuel Buy Now Pay Later')
+@section('meta_description', 'Bwiser fuel finance, login, and registration platform for drivers and merchants in South Africa.')
+
+@push('head')
+    <script type="application/ld+json">
+    {!! json_encode([
+        '@context' => 'https://schema.org',
+        '@graph' => [
+            [
+                '@type' => 'WebPage',
+                'name' => 'Bwiser Fuel Buy Now Pay Later',
+                'url' => url('/'),
+                'description' => 'Bwiser fuel finance, login, and registration platform for drivers and merchants in South Africa.',
+            ],
+            [
+                '@type' => 'ItemList',
+                'name' => 'Primary navigation',
+                'itemListElement' => array_values(array_filter([
+                    [
+                        '@type' => 'SiteNavigationElement',
+                        'position' => 1,
+                        'name' => 'Login',
+                        'url' => route('login'),
+                    ],
+                    [
+                        '@type' => 'SiteNavigationElement',
+                        'position' => 2,
+                        'name' => 'Register Driver',
+                        'url' => route('register.driver'),
+                    ],
+                    config('services.registration.public_merchant_enabled') ? [
+                        '@type' => 'SiteNavigationElement',
+                        'position' => 3,
+                        'name' => 'Register Merchant',
+                        'url' => route('register.merchant'),
+                    ] : null,
+                ])),
+            ],
+        ],
+    ], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}
+    </script>
+@endpush
 
 @section('content')
 <main class="px-4 pb-8 pt-6">

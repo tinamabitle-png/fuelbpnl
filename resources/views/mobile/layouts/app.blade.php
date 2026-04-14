@@ -6,11 +6,11 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @php
         $siteName = (string) config('seo.site_name', 'Bwiser');
-        $metaTitle = trim($__env->yieldContent('title', $siteName.' Mobile'));
+        $metaTitle = trim($__env->yieldContent('title', $siteName));
         if (!str_contains(strtolower($metaTitle), strtolower($siteName))) {
             $metaTitle .= ' | '.$siteName;
         }
-        $metaDescription = trim($__env->yieldContent('meta_description', 'Bwiser mobile web experience for fuel finance and voucher operations.'));
+        $metaDescription = trim($__env->yieldContent('meta_description', 'Bwiser fuel finance and voucher operations for drivers and merchants in South Africa.'));
         $metaRobots = trim($__env->yieldContent('meta_robots', 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1'));
         $canonical = trim($__env->yieldContent('canonical', url()->current()));
         $ogImage = trim($__env->yieldContent('og_image', asset('images/brand-logo.png')));
@@ -24,7 +24,7 @@
     <meta name="description" content="{{ $metaDescription }}">
     <meta name="robots" content="{{ $metaRobots }}">
     <meta name="theme-color" content="{{ $themeColor }}">
-    <meta name="application-name" content="{{ $siteName }} Mobile">
+    <meta name="application-name" content="{{ $siteName }}">
     <link rel="canonical" href="{{ $canonical }}">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{{ $siteName }}">

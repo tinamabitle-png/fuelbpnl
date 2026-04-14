@@ -7,6 +7,29 @@
     $welcomeOgImage = 'images/tsunkebwiser1.jpg';
     $welcomeOgImagePath = public_path($welcomeOgImage);
     $welcomeOgImageUrl = asset($welcomeOgImage);
+    $welcomeNavigation = [
+        [
+            '@type' => 'SiteNavigationElement',
+            'position' => 1,
+            'name' => 'Login',
+            'url' => route('login'),
+        ],
+        [
+            '@type' => 'SiteNavigationElement',
+            'position' => 2,
+            'name' => 'Register Driver',
+            'url' => route('register.driver'),
+        ],
+    ];
+
+    if (config('services.registration.public_merchant_enabled')) {
+        $welcomeNavigation[] = [
+            '@type' => 'SiteNavigationElement',
+            'position' => 3,
+            'name' => 'Register Merchant',
+            'url' => route('register.merchant'),
+        ];
+    }
 
     if (is_file($welcomeOgImagePath)) {
         $welcomeOgImageUrl .= '?v=' . filemtime($welcomeOgImagePath);
@@ -37,6 +60,11 @@
                 'url' => 'https://bwiser.co.za',
                 'installUrl' => 'https://play.google.com/store/apps/details?id=za.bwiser.driverapp',
                 'downloadUrl' => 'https://play.google.com/store/apps/details?id=za.bwiser.driverapp',
+            ],
+            [
+                '@type' => 'ItemList',
+                'name' => 'Primary navigation',
+                'itemListElement' => $welcomeNavigation,
             ],
         ],
     ], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}
