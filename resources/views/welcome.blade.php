@@ -17,8 +17,8 @@
         [
             '@type' => 'SiteNavigationElement',
             'position' => 2,
-            'name' => 'Register Driver',
-            'url' => route('register.driver'),
+            'name' => 'Register',
+            'url' => route('register'),
         ],
     ];
 
@@ -26,7 +26,7 @@
         $welcomeNavigation[] = [
             '@type' => 'SiteNavigationElement',
             'position' => 3,
-            'name' => 'Register Merchant',
+            'name' => 'Merchant Registration',
             'url' => route('register.merchant'),
         ];
     }
@@ -113,8 +113,8 @@
                         @endif
                     @endauth
                     @guest
-                        <a class="super-button" href="{{ Route::has('login') ? route('login') : '/login' }}">
-                            <span>Get Started</span>
+                        <a class="super-button" href="{{ route('register') }}">
+                            <span>Register</span>
                         </a>
                     @endguest
                     <a

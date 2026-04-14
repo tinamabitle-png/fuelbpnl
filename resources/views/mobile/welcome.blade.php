@@ -27,13 +27,13 @@
                     [
                         '@type' => 'SiteNavigationElement',
                         'position' => 2,
-                        'name' => 'Register Driver',
-                        'url' => route('register.driver'),
+                        'name' => 'Register',
+                        'url' => route('register'),
                     ],
                     config('services.registration.public_merchant_enabled') ? [
                         '@type' => 'SiteNavigationElement',
                         'position' => 3,
-                        'name' => 'Register Merchant',
+                        'name' => 'Merchant Registration',
                         'url' => route('register.merchant'),
                     ] : null,
                 ])),
@@ -80,16 +80,16 @@
                     @endif
                 @endauth
                 @guest
-                    <a href="{{ route('register.driver') }}" class="rounded-xl bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white">
-                        Register Driver
+                    <a href="{{ route('register') }}" class="rounded-xl bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white">
+                        Register
                     </a>
                     @if(config('services.registration.public_merchant_enabled'))
                         <a href="{{ route('register.merchant') }}" class="rounded-xl border border-blue-200 px-4 py-3 text-center text-sm font-semibold text-blue-700 bg-white">
-                            Register Merchant
+                            Merchant Registration
                         </a>
                     @endif
                     <a href="{{ route('login') }}" class="rounded-xl border border-slate-300 px-4 py-3 text-center text-sm font-semibold text-slate-700 bg-white">
-                        Sign In
+                        Login
                     </a>
                 @endguest
             </div>
