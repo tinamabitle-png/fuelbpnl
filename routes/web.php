@@ -316,7 +316,7 @@ Route::get('/sitemap.xml', function () {
     $pages = app(SitemapBuilder::class)->build();
 
     return response()
-        ->view('sitemap', ['pages' => $pages, 'lastmod' => now()->toAtomString()])
+        ->view('sitemap', ['pages' => $pages])
         ->header('Content-Type', 'application/xml');
 })->name('sitemap');
 
