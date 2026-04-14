@@ -569,7 +569,7 @@
             </div>
 
             <img
-                src="{{ asset('images/kubu.png') }}"
+                src="{{ asset('images/compressed.png') }}"
                 alt="Bwiser preview"
                 class="welcome-tween-image is-in rounded-2xl"
                 loading="lazy"
