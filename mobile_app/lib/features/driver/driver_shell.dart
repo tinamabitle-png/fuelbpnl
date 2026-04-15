@@ -13,6 +13,7 @@ import '../../core/app_loader.dart';
 import '../../core/feedback_panel.dart';
 import '../../core/fx_button.dart';
 import '../../core/nfc_hce_bridge.dart';
+import '../../core/ussd_call_bridge.dart';
 import '../../core/logo_mark.dart';
 import '../../core/theme.dart';
 import '../../data/api_client.dart';
@@ -969,10 +970,13 @@ class DriverVouchersPage extends StatefulWidget {
 
 class _DriverVouchersPageState extends State<DriverVouchersPage> {
   bool loading = true;
+  bool ussdConfigLoading = true;
   String? error;
   String? warning;
+  int? launchingUssdVoucherId;
   List<VoucherItem> vouchers = [];
   List<Map<String, dynamic>> stations = [];
+  String? ussdServiceCode;
 
   @override
   void initState() {
@@ -988,11 +992,21 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
     });
     try {
       final list = await widget.api.driverVouchers();
+      String serviceCode = '';
+      try {
+        final settings = await widget.api.driverSettings();
+        serviceCode = (settings['ussd_service_code'] ?? '').toString().trim();
+      } catch (_) {
+        serviceCode = '';
+      }
+      if (!mounted) return;
       setState(() {
         vouchers = list;
         stations = _inferStationsFromVouchers(list);
+        ussdServiceCode = serviceCode;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         vouchers = const [];
         stations = const [];
@@ -1001,7 +1015,12 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
             'Could not load vouchers from server right now. Pull to refresh.';
       });
     } finally {
-      if (mounted) setState(() => loading = false);
+      if (mounted) {
+        setState(() {
+          loading = false;
+          ussdConfigLoading = false;
+        });
+      }
     }
   }
 
@@ -1189,6 +1208,35 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
                       'Show voucher',
                       style: TextStyle(
                         color: AppTheme.primaryBlue,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              InkWell(
+                onTap: launchingUssdVoucherId == v.id
+                    ? null
+                    : () => _launchTaplessPayment(v),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.phone_forwarded_rounded,
+                      color: launchingUssdVoucherId == v.id
+                          ? const Color(0xFF64748B)
+                          : const Color(0xFF10B981),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      launchingUssdVoucherId == v.id
+                          ? 'Starting tapless...'
+                          : 'Tapless Payment',
+                      style: TextStyle(
+                        color: launchingUssdVoucherId == v.id
+                            ? const Color(0xFF64748B)
+                            : const Color(0xFF10B981),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -1567,6 +1615,120 @@ class _DriverVouchersPageState extends State<DriverVouchersPage> {
         ),
       ),
     );
+  }
+
+  String _buildUssdDialCode(String serviceCode, int voucherId) {
+    final compact = serviceCode.replaceAll(RegExp(r'\s+'), '');
+    if (compact.isEmpty || !RegExp(r'^[0-9*#]+$').hasMatch(compact)) {
+      throw Exception('Admin USSD service code is invalid.');
+    }
+
+    final base = compact.endsWith('#')
+        ? compact.substring(0, compact.length - 1)
+        : compact;
+    if (base.isEmpty) {
+      throw Exception('Admin USSD service code is invalid.');
+    }
+
+    return '$base*1*$voucherId*1#';
+  }
+
+  Future<bool> _confirmTaplessPayment(
+    VoucherItem voucher,
+    String dialCode,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Start Tapless Payment'),
+          content: Text(
+            'Start the driver USSD tapless payment for voucher ${voucher.code} '
+            '(voucher number ${voucher.id})?\n\n'
+            'Dial string: $dialCode',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Start'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return confirmed ?? false;
+  }
+
+  Future<void> _launchTaplessPayment(VoucherItem voucher) async {
+    if (voucher.status.toLowerCase().trim() != 'approved') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only approved vouchers can start tapless payment.'),
+        ),
+      );
+      return;
+    }
+
+    final serviceCode = (ussdServiceCode ?? '').trim();
+    if (serviceCode.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ussdConfigLoading
+                ? 'Loading tapless payment configuration...'
+                : 'No admin USSD service code has been configured yet.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final supported = await UssdCallBridge.isSupported();
+      if (!supported) {
+        throw Exception('This device cannot place USSD calls.');
+      }
+
+      final dialCode = _buildUssdDialCode(serviceCode, voucher.id);
+      final confirmed = await _confirmTaplessPayment(voucher, dialCode);
+      if (!confirmed || !mounted) return;
+
+      setState(() => launchingUssdVoucherId = voucher.id);
+
+      var hasPermission = await UssdCallBridge.hasCallPermission();
+      if (!hasPermission) {
+        hasPermission = await UssdCallBridge.requestCallPermission();
+      }
+      if (!hasPermission) {
+        throw Exception(
+          'Phone call permission is required to start tapless payment.',
+        );
+      }
+
+      await UssdCallBridge.launchUssdCall(dialCode);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Tapless payment started for ${voucher.code}. Complete the USSD steps on your phone.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => launchingUssdVoucherId = null);
+      }
+    }
   }
 
   Future<void> _showVoucherSheet(VoucherItem v) async {

@@ -184,6 +184,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware(['role:driver'])->group(function () {
             Route::get('/driver/dashboard', [UserController::class, 'dashboard']);
             Route::get('/driver/leases', [UserController::class, 'leases']);
+            Route::get('/driver/settings', [UserController::class, 'settings']);
         });
 
         // Merchant routes

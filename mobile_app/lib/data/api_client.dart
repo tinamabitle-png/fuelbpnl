@@ -525,6 +525,22 @@ class ApiClient {
     }
   }
 
+  Future<Map<String, dynamic>> driverSettings() async {
+    if (mockMode) {
+      return const {
+        'ussd_service_code': '*123#',
+        'ussd_identifier_mode': 'voucher_id',
+        'ussd_default_choice': 'fuel_only',
+      };
+    }
+
+    final response = await _request(method: 'GET', path: '/driver/settings');
+    final data = _extractData(response.body);
+    return Map<String, dynamic>.from(
+      (data['data'] as Map?)?.cast<String, dynamic>() ?? data,
+    );
+  }
+
   Future<void> applyVoucher({
     required int stationId,
     required double amount,
