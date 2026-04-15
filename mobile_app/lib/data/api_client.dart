@@ -838,6 +838,25 @@ class ApiClient {
     return _asList(data['data'] ?? data);
   }
 
+  Future<Map<String, dynamic>> stationSettings() async {
+    if (mockMode) {
+      return const {
+        'ussd_service_code': '*123#',
+        'ussd_identifier_mode': 'voucher_id',
+        'ussd_default_choice': 'fuel_only',
+      };
+    }
+
+    final response = await _request(
+      method: 'GET',
+      path: '/merchant/developer/settings',
+    );
+    final data = _extractData(response.body);
+    return Map<String, dynamic>.from(
+      (data['data'] as Map?)?.cast<String, dynamic>() ?? data,
+    );
+  }
+
   Future<Map<String, dynamic>> stationRedeem({
     required String scanInput,
   }) async {

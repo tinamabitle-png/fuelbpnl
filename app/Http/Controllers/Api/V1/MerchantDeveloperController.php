@@ -65,6 +65,26 @@ class MerchantDeveloperController extends Controller
         ]);
     }
 
+    public function settings(Request $request): JsonResponse
+    {
+        if ($error = $this->enforceTokenAbility($request, 'vouchers.read')) {
+            return $error;
+        }
+
+        $serviceCode = trim((string) DB::table('settings')
+            ->where('key', 'merchant_ussd_service_code')
+            ->value('value'));
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'ussd_service_code' => $serviceCode,
+                'ussd_identifier_mode' => 'voucher_id',
+                'ussd_default_choice' => 'fuel_only',
+            ],
+        ]);
+    }
+
     public function vouchers(Request $request): JsonResponse
     {
         if ($error = $this->enforceTokenAbility($request, 'vouchers.read')) {

@@ -37,7 +37,7 @@ class AfricasTalkingUssdService
 
         $command = strtolower($steps[0]);
         if (in_array($command, ['2', 'help'], true)) {
-            return "END Enter your voucher code and confirm redemption.\nContact support if voucher is not found.";
+            return "END Enter your voucher number or voucher code and confirm redemption.\nContact support if voucher is not found.";
         }
 
         if (!in_array($command, ['1', 'redeem'], true)) {
@@ -56,14 +56,14 @@ class AfricasTalkingUssdService
             : strtoupper($secondStep);
 
         $voucher = $voucherCode !== ''
-            ? $this->findVoucherByCodeAndPhone($voucherCode, $phoneNormalized)
+            ? $this->findVoucherByIdentifierAndPhone($voucherCode, $phoneNormalized)
             : $this->findLatestApprovedVoucherByPhone($phoneNormalized);
 
         if (!$voucher && $voucherCode === '') {
             return 'END No approved, unexpired voucher available for this driver.';
         }
 
-        if ($voucherCode === '' && $voucher) {
+        if ($voucher) {
             $voucherCode = (string) $voucher->code;
         }
 
@@ -300,29 +300,47 @@ class AfricasTalkingUssdService
         return $digits;
     }
 
-    private function findVoucherByCodeAndPhone(string $voucherCode, string $phoneNormalized): ?FuelVoucher
+    private function findVoucherByIdentifierAndPhone(string $voucherIdentifier, string $phoneNormalized): ?FuelVoucher
     {
+        $voucherIdentifier = trim($voucherIdentifier);
+        $normalizedIdentifier = strtoupper($voucherIdentifier);
+
         $candidates = FuelVoucher::query()
-            ->with(['user:id,name,phone', 'fuelStation:id,name,city,owner_id'])
-            ->where(function ($query) use ($voucherCode) {
-                $query->where('code', $voucherCode)
-                    ->orWhere('qr_code', $voucherCode);
+            ->with(['user:id,name,phone', 'fuelStation:id,name,city,owner_id', 'fuelStation.owner:id,phone'])
+            ->where(function ($query) use ($normalizedIdentifier, $voucherIdentifier) {
+                $query->where('code', $normalizedIdentifier)
+                    ->orWhere('qr_code', $normalizedIdentifier);
+
+                if (ctype_digit($voucherIdentifier)) {
+                    $query->orWhereKey((int) $voucherIdentifier);
+                }
             })
             ->latest()
             ->get();
 
         foreach ($candidates as $voucher) {
-            if (!$voucher->user) {
-                continue;
-            }
-
-            $driverPhone = $this->normalizePhone((string) $voucher->user->phone);
-            if ($driverPhone !== '' && $driverPhone === $phoneNormalized) {
+            if ($this->callerMatchesVoucher($voucher, $phoneNormalized)) {
                 return $voucher;
             }
         }
 
         return null;
+    }
+
+    private function callerMatchesVoucher(FuelVoucher $voucher, string $phoneNormalized): bool
+    {
+        if ($phoneNormalized === '') {
+            return false;
+        }
+
+        $driverPhone = $this->normalizePhone((string) ($voucher->user?->phone ?? ''));
+        if ($driverPhone !== '' && $driverPhone === $phoneNormalized) {
+            return true;
+        }
+
+        $merchantPhone = $this->normalizePhone((string) ($voucher->fuelStation?->owner?->phone ?? ''));
+
+        return $merchantPhone !== '' && $merchantPhone === $phoneNormalized;
     }
 
     private function findLatestApprovedVoucherByPhone(string $phoneNormalized): ?FuelVoucher

@@ -193,6 +193,7 @@ Route::prefix('v1')->group(function () {
 
             Route::prefix('merchant/developer')->group(function () {
                 Route::get('/stations', [MerchantDeveloperController::class, 'stations']);
+                Route::get('/settings', [MerchantDeveloperController::class, 'settings']);
                 Route::get('/summary', [MerchantDeveloperController::class, 'summary']);
                 Route::get('/vouchers', [MerchantDeveloperController::class, 'vouchers']);
                 Route::get('/vouchers/latest', [MerchantDeveloperController::class, 'latestVouchers']);

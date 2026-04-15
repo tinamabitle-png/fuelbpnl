@@ -648,6 +648,18 @@
                     </div>
 
                     <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Station USSD Service Code
+                        </label>
+                        <input type="text"
+                               name="merchant_ussd_service_code"
+                               value="{{ old('merchant_ussd_service_code', $settings['vouchers']['merchant_ussd_service_code']) }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="*123#">
+                        <p class="text-xs text-gray-500 mt-1">Used by the station mobile app when launching the secure USSD voucher payment flow.</p>
+                    </div>
+
+                    <div class="md:col-span-2">
                         <label class="flex items-center">
                             <input type="checkbox" 
                                    name="auto_approve_vouchers" 

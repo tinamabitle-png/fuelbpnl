@@ -16,6 +16,7 @@ import '../../core/app_sfx.dart';
 import '../../core/fx_button.dart';
 import '../../core/logo_mark.dart';
 import '../../core/theme.dart';
+import '../../core/ussd_call_bridge.dart';
 import '../../data/api_client.dart';
 import '../../data/models.dart';
 
@@ -1053,12 +1054,18 @@ class _StationRedeemPageState extends State<StationRedeemPage>
   bool scanMode = false;
   bool ussdListening = false;
   bool stationLoading = true;
+  bool approvedVoucherLoading = true;
+  bool ussdConfigLoading = true;
+  bool ussdLaunching = false;
   List<Map<String, dynamic>> stations = [];
+  List<VoucherItem> approvedVouchers = [];
   int? selectedStationId;
+  int? selectedUssdVoucherId;
   Printer? selectedPrinter;
   final Set<int> seenUssdEventIds = <int>{};
   late final AnimationController _laserController;
   String _lastSubmittedScan = '';
+  String? ussdServiceCode;
   DateTime _lastSubmittedAt = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
@@ -1069,6 +1076,8 @@ class _StationRedeemPageState extends State<StationRedeemPage>
       duration: const Duration(milliseconds: 2000),
     )..repeat();
     _loadStations();
+    _loadApprovedVouchers();
+    _loadUssdConfiguration();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         scannerFocusNode.requestFocus();
@@ -1187,11 +1196,96 @@ class _StationRedeemPageState extends State<StationRedeemPage>
         if (selectedStationId == null && stations.isNotEmpty) {
           selectedStationId = int.tryParse('${stations.first['id']}');
         }
+        _syncSelectedUssdVoucher();
       });
     } catch (_) {
       // Keep UI usable without hard failing.
     } finally {
       if (mounted) setState(() => stationLoading = false);
+    }
+  }
+
+  Future<void> _loadApprovedVouchers() async {
+    setState(() => approvedVoucherLoading = true);
+    try {
+      final list = await widget.api.stationApprovedVouchers();
+      if (!mounted) return;
+      setState(() {
+        approvedVouchers = list
+            .where((voucher) => voucher.status == 'approved')
+            .toList();
+        _syncSelectedUssdVoucher();
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        approvedVouchers = const [];
+        selectedUssdVoucherId = null;
+      });
+    } finally {
+      if (mounted) setState(() => approvedVoucherLoading = false);
+    }
+  }
+
+  Future<void> _loadUssdConfiguration() async {
+    setState(() => ussdConfigLoading = true);
+    try {
+      final settings = await widget.api.stationSettings();
+      if (!mounted) return;
+      setState(() {
+        ussdServiceCode = (settings['ussd_service_code'] ?? '')
+            .toString()
+            .trim();
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => ussdServiceCode = '');
+    } finally {
+      if (mounted) setState(() => ussdConfigLoading = false);
+    }
+  }
+
+  List<VoucherItem> get _filteredApprovedVouchers {
+    if (selectedStationId == null) {
+      return approvedVouchers;
+    }
+
+    final stationSpecific = approvedVouchers
+        .where((voucher) => voucher.stationId == selectedStationId)
+        .toList();
+    if (stationSpecific.isNotEmpty) {
+      return stationSpecific;
+    }
+
+    return approvedVouchers
+        .where((voucher) => voucher.stationId == null)
+        .toList();
+  }
+
+  VoucherItem? get _selectedUssdVoucher {
+    if (selectedUssdVoucherId == null) return null;
+
+    for (final voucher in _filteredApprovedVouchers) {
+      if (voucher.id == selectedUssdVoucherId) {
+        return voucher;
+      }
+    }
+
+    return null;
+  }
+
+  void _syncSelectedUssdVoucher() {
+    final options = _filteredApprovedVouchers;
+    if (options.isEmpty) {
+      selectedUssdVoucherId = null;
+      return;
+    }
+
+    final stillAvailable = options.any(
+      (voucher) => voucher.id == selectedUssdVoucherId,
+    );
+    if (!stillAvailable) {
+      selectedUssdVoucherId = options.first.id;
     }
   }
 
@@ -1220,6 +1314,13 @@ class _StationRedeemPageState extends State<StationRedeemPage>
         ),
       ),
     );
+  }
+
+  Future<void> _ensureUssdListening() async {
+    if (ussdListening) return;
+    setState(() => ussdListening = true);
+    await _primeUssdListener();
+    _startUssdPolling();
   }
 
   void _startUssdPolling() {
@@ -1312,6 +1413,116 @@ class _StationRedeemPageState extends State<StationRedeemPage>
     );
     final name = (station['name'] ?? 'Station').toString();
     return '$name (Wallet)';
+  }
+
+  String _buildUssdDialCode(String serviceCode, int voucherId) {
+    final compact = serviceCode.replaceAll(RegExp(r'\s+'), '');
+    if (compact.isEmpty || !RegExp(r'^[0-9*#]+$').hasMatch(compact)) {
+      throw Exception('Admin USSD service code is invalid.');
+    }
+
+    final base = compact.endsWith('#')
+        ? compact.substring(0, compact.length - 1)
+        : compact;
+    if (base.isEmpty) {
+      throw Exception('Admin USSD service code is invalid.');
+    }
+
+    return '$base*1*$voucherId*1#';
+  }
+
+  Future<bool> _confirmUssdLaunch(VoucherItem voucher, String dialCode) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Start USSD Payment'),
+          content: Text(
+            'Launch the secure USSD payment for voucher ${voucher.code} '
+            '(voucher number ${voucher.id})?\n\n'
+            'Dial string: $dialCode',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Start'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return confirmed ?? false;
+  }
+
+  Future<void> _launchUssdPayment() async {
+    final voucher = _selectedUssdVoucher;
+    if (voucher == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Choose an approved voucher before starting USSD.'),
+        ),
+      );
+      return;
+    }
+
+    final serviceCode = (ussdServiceCode ?? '').trim();
+    if (serviceCode.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No admin USSD service code has been configured yet.'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final supported = await UssdCallBridge.isSupported();
+      if (!supported) {
+        throw Exception('This device cannot place USSD calls.');
+      }
+
+      final dialCode = _buildUssdDialCode(serviceCode, voucher.id);
+      final confirmed = await _confirmUssdLaunch(voucher, dialCode);
+      if (!confirmed || !mounted) return;
+
+      setState(() => ussdLaunching = true);
+      await _ensureUssdListening();
+
+      var hasPermission = await UssdCallBridge.hasCallPermission();
+      if (!hasPermission) {
+        hasPermission = await UssdCallBridge.requestCallPermission();
+      }
+      if (!hasPermission) {
+        throw Exception(
+          'Phone call permission is required to start USSD payments.',
+        );
+      }
+
+      await UssdCallBridge.launchUssdCall(dialCode);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'USSD started for ${voucher.code}. Return here for the receipt once the network completes the flow.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => ussdLaunching = false);
+        scannerFocusNode.requestFocus();
+      }
+    }
   }
 
   Future<void> redeem(String value) async {
@@ -2242,8 +2453,10 @@ class _StationRedeemPageState extends State<StationRedeemPage>
                               .toList(),
                           onChanged: stationLoading
                               ? null
-                              : (value) =>
-                                    setState(() => selectedStationId = value),
+                              : (value) => setState(() {
+                                  selectedStationId = value;
+                                  _syncSelectedUssdVoucher();
+                                }),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -2286,6 +2499,76 @@ class _StationRedeemPageState extends State<StationRedeemPage>
                     onPressed: (submitting || nfcListening)
                         ? null
                         : scanNfcAndRedeem,
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<int>(
+                    isExpanded: true,
+                    initialValue:
+                        _filteredApprovedVouchers.any(
+                          (voucher) => voucher.id == selectedUssdVoucherId,
+                        )
+                        ? selectedUssdVoucherId
+                        : null,
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                    iconEnabledColor: Colors.white,
+                    decoration: const InputDecoration(
+                      labelText: 'Approved Voucher for USSD',
+                      labelStyle: TextStyle(
+                        color: Color(0xFFE2E8F0),
+                        fontSize: 12,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                    ),
+                    items: _filteredApprovedVouchers
+                        .map(
+                          (voucher) => DropdownMenuItem<int>(
+                            value: voucher.id,
+                            child: Text(
+                              '${voucher.id} • ${voucher.code} • ${voucher.stationName ?? 'Station'} • R ${voucher.amount.toStringAsFixed(2)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged:
+                        approvedVoucherLoading ||
+                            _filteredApprovedVouchers.isEmpty
+                        ? null
+                        : (value) =>
+                              setState(() => selectedUssdVoucherId = value),
+                  ),
+                  const SizedBox(height: 8),
+                  FxButton(
+                    label: ussdLaunching
+                        ? 'Starting USSD...'
+                        : 'Start USSD Payment',
+                    icon: Icons.call_rounded,
+                    fullWidth: true,
+                    onPressed:
+                        (ussdLaunching ||
+                            approvedVoucherLoading ||
+                            ussdConfigLoading)
+                        ? null
+                        : _launchUssdPayment,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    ussdConfigLoading
+                        ? 'Loading admin USSD configuration...'
+                        : (ussdServiceCode ?? '').trim().isEmpty
+                        ? 'No admin USSD service code is configured yet.'
+                        : _selectedUssdVoucher == null
+                        ? 'Choose an approved voucher to start the USSD payment flow.'
+                        : 'USSD will call ${(ussdServiceCode ?? '').trim()} for voucher number ${_selectedUssdVoucher!.id}.',
+                    style: const TextStyle(color: Color(0xFF94A3B8)),
                   ),
                   const SizedBox(height: 8),
                   FxButton(

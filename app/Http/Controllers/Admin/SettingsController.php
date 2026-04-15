@@ -49,6 +49,7 @@ class SettingsController extends Controller
                 'max_voucher_amount' => config('services.vouchers.max_amount', 50000),
                 'min_voucher_amount' => config('services.vouchers.min_amount', 100),
                 'min_repayment_amount' => config('credit.min_repayment_amount', 50),
+                'merchant_ussd_service_code' => $this->getDbSetting('merchant_ussd_service_code', ''),
             ],
             'system' => [
                 'cache_driver' => config('cache.default'),
@@ -190,6 +191,7 @@ class SettingsController extends Controller
             'min_voucher_amount' => 'required|numeric|min:10',
             'min_repayment_amount' => 'required|numeric|min:1',
             'require_approval_threshold' => 'nullable|numeric|min:0',
+            'merchant_ussd_service_code' => ['nullable', 'string', 'max:32', 'regex:/^[*#0-9]+$/'],
         ]);
 
         $this->updateEnvironmentValue('VOUCHER_EXPIRY_DAYS', $validated['voucher_expiry_days']);
@@ -197,6 +199,11 @@ class SettingsController extends Controller
         $this->updateEnvironmentValue('MAX_VOUCHER_AMOUNT', $validated['max_voucher_amount']);
         $this->updateEnvironmentValue('MIN_VOUCHER_AMOUNT', $validated['min_voucher_amount']);
         $this->updateEnvironmentValue('MIN_REPAYMENT_AMOUNT', $validated['min_repayment_amount']);
+        $this->upsertDbSetting(
+            'merchant_ussd_service_code',
+            trim((string) ($validated['merchant_ussd_service_code'] ?? '')),
+            'vouchers'
+        );
         
         if ($request->filled('require_approval_threshold')) {
             $this->updateEnvironmentValue('REQUIRE_APPROVAL_THRESHOLD', $validated['require_approval_threshold']);
