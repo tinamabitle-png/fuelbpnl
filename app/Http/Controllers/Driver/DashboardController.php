@@ -394,10 +394,8 @@ class DashboardController extends Controller
             'amount' => 'required|numeric|min:100|max:100000',
             'fuel_type' => 'required|in:petrol,diesel,super',
             'repayment_frequency' => 'nullable|in:daily,weekly',
-            'liters' => 'nullable|numeric|min:0.1|max:5000',
             'repayment_days' => 'nullable|integer|min:7|max:60',
             'voucher_reference' => 'nullable|string|max:120',
-            'card_reference' => 'nullable|string|max:50',
         ]);
 
         $resolvedPrice = $this->fuelPriceService->resolvePriceForStationFuel(
@@ -407,11 +405,8 @@ class DashboardController extends Controller
         );
         $pricePerLiter = (float) ($resolvedPrice['price'] ?? 25.00);
 
-        $liters = (float) ($validated['liters'] ?? 0);
-        if ($liters <= 0) {
-            $basePrice = (float) ($pricePerLiter ?: 25.00);
-            $liters = round(((float) $validated['amount']) / max($basePrice, 0.01), 3);
-        }
+        $basePrice = (float) ($pricePerLiter ?: 25.00);
+        $liters = round(((float) $validated['amount']) / max($basePrice, 0.01), 3);
 
         $settingMap = DB::table('settings')
             ->whereIn('key', ['lease_interest_rate', 'lease_term_days'])
@@ -522,7 +517,6 @@ class DashboardController extends Controller
                 'issued_at' => now(),
                 'expires_at' => now()->addHours(24),
                 'transaction_reference' => $validated['voucher_reference'] ?? null,
-                'pump_number' => $validated['card_reference'] ?? null,
             ]);
         });
 

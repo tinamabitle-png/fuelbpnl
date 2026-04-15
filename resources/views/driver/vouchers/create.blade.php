@@ -8,7 +8,7 @@
         <div>
             <p class="text-sm uppercase tracking-[0.2em] text-blue-600">Driver Portal</p>
             <h1 class="brand-font text-3xl font-semibold text-slate-900 mt-2">Apply for Fuel Voucher</h1>
-            <p class="text-slate-600 mt-2">Select a station, estimate liters by fuel type, and request a voucher.</p>
+            <p class="text-slate-600 mt-2">Select a station, choose fuel type, and request a voucher.</p>
         </div>
         <a href="{{ route('driver.vouchers.index') }}" class="btn-ghost px-4 py-2.5 rounded-xl text-sm font-semibold">Back to Vouchers</a>
     </div>
@@ -122,21 +122,14 @@
                     @enderror
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2">Liters (optional)</label>
-                        <input id="liters" type="number" step="0.01" min="0.1" name="liters" value="{{ old('liters') }}" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl">
-                        <p class="text-xs text-slate-500 mt-1">Leave empty to auto-calculate from station price.</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2">Estimated Station Price</label>
-                        <div id="stationPriceCard" class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600">
-                            Select station and fuel type
-                        </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Estimated Station Price</label>
+                    <div id="stationPriceCard" class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600">
+                        Select station and fuel type
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">Voucher Reference (optional)</label>
                         <input id="voucher_reference"
@@ -147,19 +140,6 @@
                                class="w-full px-4 py-2.5 border border-slate-300 rounded-xl"
                                placeholder="e.g. TRIP-8433 / SHIFT-A">
                         @error('voucher_reference')
-                            <p class="text-sm text-rose-600 mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2">Card / Fleet Details (optional)</label>
-                        <input id="card_reference"
-                               type="text"
-                               name="card_reference"
-                               maxlength="50"
-                               value="{{ old('card_reference') }}"
-                               class="w-full px-4 py-2.5 border border-slate-300 rounded-xl"
-                               placeholder="e.g. Shell card ****1234">
-                        @error('card_reference')
                             <p class="text-sm text-rose-600 mt-1">{{ $message }}</p>
                         @enderror
                     </div>
@@ -601,7 +581,6 @@
     const fuelTypeSelect = document.getElementById('fuel_type');
     const repaymentFrequencySelect = document.getElementById('repayment_frequency');
     const amountInput = document.getElementById('amount');
-    const litersInput = document.getElementById('liters');
     const stationPriceCard = document.getElementById('stationPriceCard');
     const stationCapacityHint = document.getElementById('stationCapacityHint');
     const amountEligibilityHint = document.getElementById('amountEligibilityHint');
@@ -1128,13 +1107,7 @@
             return;
         }
 
-        const amount = parseFloat(amountInput.value || '0');
-        const estimatedLiters = amount > 0 ? (amount / price) : null;
-        stationPriceCard.textContent = `R ${Number(price).toFixed(2)} / L` + (estimatedLiters ? ` • ~${estimatedLiters.toFixed(2)} L` : '');
-
-        if (!litersInput.value && estimatedLiters) {
-            litersInput.placeholder = estimatedLiters.toFixed(2);
-        }
+        stationPriceCard.textContent = `R ${Number(price).toFixed(2)} / L`;
 
         updateEligibilityAndCapacityHints();
         refreshSubmitState();
