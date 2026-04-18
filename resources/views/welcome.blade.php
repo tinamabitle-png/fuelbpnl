@@ -119,9 +119,6 @@
                         @endif
                     @endauth
                     @guest
-                        <a class="btn-ghost px-4 py-2 rounded-xl" href="{{ route('developers.docs') }}">
-                            Developers
-                        </a>
                         <a class="super-button" href="{{ route('register') }}">
                             <span>Register</span>
                         </a>

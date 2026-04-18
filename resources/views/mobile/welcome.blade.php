@@ -86,9 +86,6 @@
                     @endif
                 @endauth
                 @guest
-                    <a href="{{ route('developers.docs') }}" class="rounded-xl border border-slate-300 px-4 py-3 text-center text-sm font-semibold text-slate-700 bg-white">
-                        Developers
-                    </a>
                     <a href="{{ route('register') }}" class="rounded-xl bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white">
                         Register
                     </a>
