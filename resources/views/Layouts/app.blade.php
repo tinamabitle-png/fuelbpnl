@@ -570,6 +570,13 @@
 	                            </form>
 	                        @else
                                 <a
+                                    href="{{ route('developers.docs') }}"
+                                    class="btn-ghost px-4 py-2 rounded-xl hidden md:inline-flex"
+                                    aria-label="Developers"
+                                >
+                                    Developers
+                                </a>
+                                <a
                                     href="{{ route('register') }}"
                                     class="btn-ghost px-4 py-2 rounded-xl"
                                     aria-label="Register"

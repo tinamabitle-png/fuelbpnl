@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\VoucherController;
 use App\Http\Controllers\Api\V1\StationController;
 use App\Http\Controllers\Api\V1\MerchantDeveloperController;
+use App\Http\Controllers\Api\V1\TaplessPartnerController;
 use App\Http\Controllers\Api\UssdController;
 
 Route::get('/', function () {
@@ -70,6 +71,17 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
         Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
     });
+
+    Route::prefix('partner/tapless')
+        ->middleware(['tapless.partner', 'throttle:api'])
+        ->group(function () {
+            Route::get('/health', [TaplessPartnerController::class, 'health']);
+            Route::get('/stations', [TaplessPartnerController::class, 'stations']);
+            Route::post('/intents', [TaplessPartnerController::class, 'createIntent']);
+            Route::get('/intents/{publicId}', [TaplessPartnerController::class, 'showIntent']);
+            Route::post('/intents/{publicId}/authorize', [TaplessPartnerController::class, 'authorizeIntent']);
+            Route::post('/intents/{publicId}/redeem', [TaplessPartnerController::class, 'redeemIntent']);
+        });
 
     // Protected routes
     Route::middleware(['auth:sanctum'])->group(function () {

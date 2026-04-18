@@ -312,6 +312,12 @@ Route::get('/', function () {
     ]);
 });
 
+Route::get('/developers', function () {
+    return view('public.developers', [
+        'baseUrl' => rtrim(config('app.url') ?: url('/'), '/'),
+    ]);
+})->name('developers.docs');
+
 Route::get('/sitemap.xml', function () {
     $pages = app(SitemapBuilder::class)->build();
 

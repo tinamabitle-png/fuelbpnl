@@ -30,9 +30,15 @@
                         'name' => 'Register',
                         'url' => route('register'),
                     ],
-                    config('services.registration.public_merchant_enabled') ? [
+                    [
                         '@type' => 'SiteNavigationElement',
                         'position' => 3,
+                        'name' => 'Developers',
+                        'url' => route('developers.docs'),
+                    ],
+                    config('services.registration.public_merchant_enabled') ? [
+                        '@type' => 'SiteNavigationElement',
+                        'position' => 4,
                         'name' => 'Merchant Registration',
                         'url' => route('register.merchant'),
                     ] : null,
@@ -80,6 +86,9 @@
                     @endif
                 @endauth
                 @guest
+                    <a href="{{ route('developers.docs') }}" class="rounded-xl border border-slate-300 px-4 py-3 text-center text-sm font-semibold text-slate-700 bg-white">
+                        Developers
+                    </a>
                     <a href="{{ route('register') }}" class="rounded-xl bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white">
                         Register
                     </a>
