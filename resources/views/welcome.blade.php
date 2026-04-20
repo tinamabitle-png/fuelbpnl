@@ -210,7 +210,7 @@
                         <div class="stepper-line"></div>
                         <div class="stepper-content">
                             <div class="stepper-title">Merchant Registration</div>
-                            <div class="stepper-status">Merchant Flow</div>
+                            <div class="stepper-status">Merchant Process</div>
                             <div class="stepper-time">Register a station or merchant account for vouchers and settlements.</div>
                         </div>
                     </a>

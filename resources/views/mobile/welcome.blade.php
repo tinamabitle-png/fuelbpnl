@@ -134,7 +134,7 @@
                                 </div>
                                 <div class="min-w-0">
                                     <p class="text-sm font-semibold text-slate-900">Merchant Registration</p>
-                                    <span class="mt-1 inline-flex rounded-full bg-[#020DFF]/10 px-2.5 py-1 text-[11px] font-semibold text-[#020DFF]">Merchant Flow</span>
+                                    <span class="mt-1 inline-flex rounded-full bg-[#020DFF]/10 px-2.5 py-1 text-[11px] font-semibold text-[#020DFF]">Merchant Process</span>
                                     <p class="mt-2 text-xs leading-relaxed text-slate-600">Register a station or merchant account for vouchers and settlements.</p>
                                 </div>
                             </div>
