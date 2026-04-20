@@ -178,8 +178,7 @@
         <div id="auth-section" class="auth-stepper-box glass rounded-2xl p-6 md:p-8 mt-8 scroll-mt-24">
             <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
-                    <p class="text-xs uppercase tracking-[1px] text-blue-600">Get Started</p>
-                    <h2 class="mt-2 brand-font text-2xl font-semibold text-slate-900">Choose your Bwiser path</h2>
+                    <h2 class="brand-font text-2xl font-semibold text-slate-900">Choose your Bwiser path</h2>
                     <p class="mt-2 max-w-2xl text-sm text-slate-600">
                         Start with registration, jump into merchant onboarding, or sign in if you already have access.
                     </p>
@@ -3187,15 +3186,6 @@
             min-height: 100%;
         }
 
-        .auth-stepper-track .stepper-step:not(:last-child)::after {
-            content: "";
-            position: absolute;
-            top: 39px;
-            right: -0.95rem;
-            width: 1.2rem;
-            height: 2px;
-            background: linear-gradient(90deg, rgba(2, 13, 255, 0.25), rgba(191, 219, 254, 0.75));
-        }
     }
 
     @media (max-width: 767px) {

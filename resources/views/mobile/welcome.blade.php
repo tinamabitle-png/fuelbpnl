@@ -106,8 +106,7 @@
                 $authLoginStep = config('services.registration.public_merchant_enabled') ? 3 : 2;
             @endphp
             <section id="auth-section" class="mobile-card p-4 scroll-mt-20">
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Get Started</p>
-                <h2 class="mt-2 text-xl font-semibold text-slate-900">Choose your Bwiser path</h2>
+                <h2 class="text-xl font-semibold text-slate-900">Choose your Bwiser path</h2>
                 <p class="mt-2 text-sm text-slate-600">
                     Start with registration, jump into merchant onboarding, or sign in if you already have access.
                 </p>
