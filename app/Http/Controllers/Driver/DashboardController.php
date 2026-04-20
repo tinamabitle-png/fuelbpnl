@@ -1219,14 +1219,25 @@ class DashboardController extends Controller
         try {
             $verified = $this->paystackService->verifyTransaction($reference);
             $metadata = (array) ($verified['metadata'] ?? []);
+            $scope = strtolower((string) ($metadata['scope'] ?? ''));
             $repaymentId = (int) ($metadata['repayment_id'] ?? 0);
             if ($repaymentId <= 0) {
                 return redirect()->route('driver.repayments.index')->with('error', 'Paystack callback is missing repayment metadata.');
             }
 
+            if ($scope !== 'repayment') {
+                return redirect()->route('driver.repayments.index')->with('error', 'Paystack callback is not linked to a repayment checkout.');
+            }
+
             $repayment = Repayment::findOrFail($repaymentId);
             if ((int) $repayment->user_id !== (int) $user->id) {
                 abort(403);
+            }
+
+            $expectedMinor = (int) round((float) $repayment->amount * 100);
+            $paidMinor = (int) ($verified['amount'] ?? 0);
+            if ($paidMinor < $expectedMinor) {
+                return redirect()->route('driver.repayments.index')->with('error', 'Paystack callback amount does not cover this repayment.');
             }
 
             $this->repaymentSettlementService->settleRepayment(

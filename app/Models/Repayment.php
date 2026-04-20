@@ -66,10 +66,12 @@ class Repayment extends Model
 
     public function scopeOverdue($query)
     {
-        return $query->where('status', 'overdue')
-            ->orWhere(function ($q) {
-                $q->where('status', 'pending')
-                  ->where('due_date', '<', now());
+        return $query->where(function ($q) {
+            $q->where('status', 'overdue')
+                ->orWhere(function ($overdueQuery) {
+                    $overdueQuery->where('status', 'pending')
+                        ->whereDate('due_date', '<', now()->toDateString());
+                });
             });
     }
 
@@ -92,7 +94,7 @@ class Repayment extends Model
     public function getIsOverdueAttribute()
     {
         return $this->status === 'overdue' || 
-               ($this->status === 'pending' && $this->due_date < now());
+               ($this->status === 'pending' && $this->hasPastDueDate());
     }
 
     public function getIsPaidAttribute()
@@ -136,10 +138,16 @@ class Repayment extends Model
 
     public function markAsOverdue()
     {
-        if ($this->status === 'pending' && $this->due_date < now()) {
+        if ($this->status === 'pending' && $this->hasPastDueDate()) {
             $this->update(['status' => 'overdue']);
         }
 
         return $this;
+    }
+
+    private function hasPastDueDate(): bool
+    {
+        return $this->due_date !== null
+            && $this->due_date->lt(now()->startOfDay());
     }
 }

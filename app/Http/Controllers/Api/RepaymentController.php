@@ -8,6 +8,7 @@ use App\Models\Lease;
 use App\Models\Repayment;
 use App\Services\DebiCheckService;
 use App\Services\PaystackService;
+use App\Services\RepaymentSettlementService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
@@ -66,7 +67,7 @@ class RepaymentController extends Controller
         }
     }
 
-    public function verifyPaystack(Request $request, PaystackService $paystack)
+    public function verifyPaystack(Request $request, PaystackService $paystack, RepaymentSettlementService $repaymentSettlement)
     {
         $validator = Validator::make($request->all(), [
             'reference' => 'required|string|max:255',
@@ -103,23 +104,37 @@ class RepaymentController extends Controller
         try {
             $verified = $paystack->verifyTransaction((string) $request->input('reference'));
             $metadata = (array) ($verified['metadata'] ?? []);
+            $scope = strtolower((string) ($metadata['scope'] ?? ''));
             $metadataRepaymentId = (int) ($metadata['repayment_id'] ?? 0);
-            if ($metadataRepaymentId > 0 && $metadataRepaymentId !== (int) $repayment->id) {
+            if ($scope !== 'repayment') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment reference is not a repayment checkout.',
+                ], 422);
+            }
+
+            if ($metadataRepaymentId !== (int) $repayment->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Payment reference does not match selected repayment.',
                 ], 422);
             }
 
-            DB::transaction(function () use ($repayment, $verified) {
-                $locked = Repayment::whereKey($repayment->id)->lockForUpdate()->firstOrFail();
-                if ((string) $locked->status !== 'paid') {
-                    $locked->markAsPaid(
-                        'paystack_card',
-                        (string) ($verified['reference'] ?? $locked->transaction_reference ?? '')
-                    );
-                }
-            });
+            $expectedMinor = (int) round((float) $repayment->amount * 100);
+            $paidMinor = (int) ($verified['amount'] ?? 0);
+            if ($paidMinor < $expectedMinor) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment amount does not cover the repayment.',
+                ], 422);
+            }
+
+            $repaymentSettlement->settleRepayment(
+                $repayment,
+                'paystack_card',
+                (string) ($verified['reference'] ?? $repayment->transaction_reference ?? ''),
+                ['source' => 'api_paystack_verify']
+            );
 
             $paystack->storeAuthorizationFromTransaction($user, $verified);
 
@@ -147,25 +162,27 @@ class RepaymentController extends Controller
         $user = $request->user();
         $limit = $request->query('limit', 10);
         $days = $request->query('days', 30);
+        $today = now()->toDateString();
+        $windowEnd = now()->addDays($days)->toDateString();
 
         $repayments = $user->repayments()
             ->with('lease')
             ->where('status', 'pending')
-            ->where('due_date', '>=', now())
-            ->where('due_date', '<=', now()->addDays($days))
+            ->whereDate('due_date', '>=', $today)
+            ->whereDate('due_date', '<=', $windowEnd)
             ->orderBy('due_date')
             ->paginate($limit);
 
         // Calculate summary
         $totalUpcoming = $user->repayments()
             ->where('status', 'pending')
-            ->where('due_date', '>=', now())
+            ->whereDate('due_date', '>=', $today)
             ->sum('amount');
 
         $dueThisWeek = $user->repayments()
             ->where('status', 'pending')
-            ->where('due_date', '>=', now())
-            ->where('due_date', '<=', now()->addDays(7))
+            ->whereDate('due_date', '>=', $today)
+            ->whereDate('due_date', '<=', now()->addDays(7)->toDateString())
             ->sum('amount');
 
         return response()->json([
@@ -192,6 +209,7 @@ class RepaymentController extends Controller
     public function overdue(Request $request)
     {
         $user = $request->user();
+        $today = now()->toDateString();
 
         $repayments = $user->repayments()
             ->with('lease')
@@ -199,7 +217,7 @@ class RepaymentController extends Controller
                 $query->where('status', 'overdue')
                       ->orWhere(function ($q) {
                           $q->where('status', 'pending')
-                            ->where('due_date', '<', now());
+                            ->whereDate('due_date', '<', now()->toDateString());
                       });
             })
             ->orderBy('due_date')
@@ -294,7 +312,7 @@ class RepaymentController extends Controller
     /**
      * Make a repayment
      */
-    public function makePayment(Request $request)
+    public function makePayment(Request $request, RepaymentSettlementService $repaymentSettlement)
     {
         $user = $request->user();
         
@@ -314,11 +332,20 @@ class RepaymentController extends Controller
             ], 422);
         }
 
+        if ((string) $request->payment_method !== 'wallet') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only wallet repayments are supported on this endpoint. Use the dedicated checkout flow for external payments.',
+            ], 422);
+        }
+
         DB::beginTransaction();
 
         try {
             $totalPaid = 0;
-            $processedRepayments = [];
+            $unappliedAmount = 0.0;
+            $processedRepayments = collect();
+            $today = now()->toDateString();
 
             if ($request->filled('repayment_ids')) {
                 // Pay specific repayments
@@ -327,15 +354,12 @@ class RepaymentController extends Controller
                     ->whereIn('status', ['pending', 'overdue'])
                     ->get();
 
-                foreach ($repayments as $repayment) {
-                    $repayment->markAsPaid(
-                        $request->payment_method,
-                        'PAY-' . time() . '-' . $repayment->id
-                    );
-                    
-                    $totalPaid += $repayment->amount;
-                    $processedRepayments[] = $repayment;
+                if ($repayments->count() !== count(array_unique(array_map('intval', (array) $request->repayment_ids)))) {
+                    throw new \RuntimeException('One or more selected repayments are not payable.');
                 }
+
+                $processedRepayments = $repayments->values();
+                $totalPaid = (float) $processedRepayments->sum('amount');
 
             } elseif ($request->pay_all_overdue) {
                 // Pay all overdue repayments
@@ -344,29 +368,27 @@ class RepaymentController extends Controller
                         $query->where('status', 'overdue')
                               ->orWhere(function ($q) {
                                   $q->where('status', 'pending')
-                                    ->where('due_date', '<', now());
+                                    ->whereDate('due_date', '<', now()->toDateString());
                               });
                     })
                     ->get();
 
-                foreach ($overdueRepayments as $repayment) {
-                    $repayment->markAsPaid(
-                        $request->payment_method,
-                        'PAY-' . time() . '-' . $repayment->id
-                    );
-                    
-                    $totalPaid += $repayment->amount;
-                    $processedRepayments[] = $repayment;
-                }
+                $processedRepayments = $overdueRepayments->values();
+                $totalPaid = (float) $processedRepayments->sum('amount');
 
             } else {
                 // Make a general payment
-                $amount = $request->amount;
-                $totalPaid = $amount;
+                $amount = (float) $request->amount;
                 
                 // Distribute to oldest overdue first, then upcoming
                 $distribution = $this->distributeRepayment($user, $amount);
-                $processedRepayments = $distribution['repayments'];
+                $processedRepayments = collect($distribution['repayments']);
+                $totalPaid = (float) $distribution['total_processed'];
+                $unappliedAmount = (float) $distribution['remaining_amount'];
+            }
+
+            if ($processedRepayments->isEmpty() || $totalPaid <= 0) {
+                throw new \RuntimeException('No payable repayments matched this request.');
             }
 
             // Process the payment
@@ -374,15 +396,18 @@ class RepaymentController extends Controller
                 $user,
                 $totalPaid,
                 $request->payment_method,
-                $request->all()
+                array_merge($request->all(), [
+                    'repayment_ids' => $processedRepayments->pluck('id')->all(),
+                ])
             );
 
-            // Update user's wallet if paid from wallet
-            if ($request->payment_method === 'wallet') {
-                $user->wallet->decrement('balance', $totalPaid);
-                $user->wallet->decrement('outstanding_balance', $totalPaid);
-                $user->wallet->increment('total_repayments', $totalPaid);
-                $user->creditLimit->releaseCredit($totalPaid);
+            foreach ($processedRepayments as $repayment) {
+                $repaymentSettlement->settleRepayment(
+                    $repayment,
+                    'wallet',
+                    (string) $paymentResult['reference'],
+                    ['source' => 'api_make_payment']
+                );
             }
 
             // Log the activity
@@ -405,19 +430,23 @@ class RepaymentController extends Controller
                 'data' => [
                     'payment_reference' => $paymentResult['reference'],
                     'total_paid' => $totalPaid,
-                    'processed_repayments' => $processedRepayments,
+                    'requested_amount' => $request->filled('amount') ? (float) $request->amount : null,
+                    'unapplied_amount' => $unappliedAmount,
+                    'processed_repayments' => $processedRepayments->values(),
                     'remaining_overdue' => $user->repayments()
-                        ->where('status', 'overdue')
-                        ->orWhere(function ($query) {
-                            $query->where('status', 'pending')
-                                  ->where('due_date', '<', now());
+                        ->where(function ($query) use ($today) {
+                            $query->where('status', 'overdue')
+                                ->orWhere(function ($overdueQuery) use ($today) {
+                                    $overdueQuery->where('status', 'pending')
+                                        ->whereDate('due_date', '<', $today);
+                                });
                         })
                         ->sum('amount'),
-                    'next_due_date' => $user->repayments()
+                    'next_due_date' => optional($user->repayments()
                         ->where('status', 'pending')
-                        ->where('due_date', '>=', now())
+                        ->whereDate('due_date', '>=', $today)
                         ->orderBy('due_date')
-                        ->first()->due_date ?? null,
+                        ->first())->due_date,
                     'receipt' => [
                         'reference' => $paymentResult['reference'],
                         'date' => now()->format('Y-m-d H:i:s'),
@@ -750,8 +779,8 @@ class RepaymentController extends Controller
         $upcomingRepayments = $user->repayments()
             ->with('lease')
             ->where('status', 'pending')
-            ->where('due_date', '>=', now())
-            ->where('due_date', '<=', now()->addDays(7))
+            ->whereDate('due_date', '>=', now()->toDateString())
+            ->whereDate('due_date', '<=', now()->addDays(7)->toDateString())
             ->orderBy('due_date')
             ->get();
 
@@ -780,7 +809,7 @@ class RepaymentController extends Controller
                 $query->where('status', 'overdue')
                       ->orWhere(function ($q) {
                           $q->where('status', 'pending')
-                            ->where('due_date', '<', now());
+                            ->whereDate('due_date', '<', now()->toDateString());
                       });
             })
             ->count();
@@ -875,7 +904,7 @@ class RepaymentController extends Controller
                 $query->where('status', 'overdue')
                       ->orWhere(function ($q) {
                           $q->where('status', 'pending')
-                            ->where('due_date', '<', now());
+                            ->whereDate('due_date', '<', now()->toDateString());
                       });
             })
             ->orderBy('due_date')
@@ -885,7 +914,6 @@ class RepaymentController extends Controller
             if ($remainingAmount <= 0) break;
 
             if ($repayment->amount <= $remainingAmount) {
-                $repayment->markAsPaid('manual_distributed', 'DIST-' . time());
                 $processedRepayments[] = $repayment;
                 $remainingAmount -= $repayment->amount;
             }
@@ -895,7 +923,7 @@ class RepaymentController extends Controller
         if ($remainingAmount > 0) {
             $upcomingRepayments = $user->repayments()
                 ->where('status', 'pending')
-                ->where('due_date', '>=', now())
+                ->whereDate('due_date', '>=', now()->toDateString())
                 ->orderBy('due_date')
                 ->get();
 
@@ -903,7 +931,6 @@ class RepaymentController extends Controller
                 if ($remainingAmount <= 0) break;
 
                 if ($repayment->amount <= $remainingAmount) {
-                    $repayment->markAsPaid('manual_distributed', 'DIST-' . time());
                     $processedRepayments[] = $repayment;
                     $remainingAmount -= $repayment->amount;
                 }
@@ -922,27 +949,25 @@ class RepaymentController extends Controller
      */
     private function processPayment($user, $amount, $method, $details)
     {
-        if ($method === 'wallet') {
-            if (!$user->wallet->canAfford($amount)) {
-                throw new \Exception('Insufficient wallet balance');
-            }
-            
-            return [
-                'success' => true,
-                'reference' => 'WALLET-' . time() . rand(1000, 9999),
-            ];
+        if ($method !== 'wallet') {
+            throw new \RuntimeException('External repayment processing must use the dedicated checkout flow.');
         }
 
-        // In production, integrate with payment gateway
-        $prefixes = [
-            'mpesa' => 'MPE',
-            'bank_transfer' => 'BNK',
-            'paystack' => 'PST',
-        ];
+        if (!$user->wallet) {
+            throw new \RuntimeException('Wallet not found for this user.');
+        }
+
+        if (!$user->wallet->canAfford($amount)) {
+            throw new \Exception('Insufficient wallet balance');
+        }
+
+        $transaction = $user->wallet->deductFunds($amount, 'Repayment payment', [
+            'repayment_ids' => (array) ($details['repayment_ids'] ?? []),
+        ]);
 
         return [
             'success' => true,
-            'reference' => ($prefixes[$method] ?? 'PAY') . time() . rand(1000, 9999),
+            'reference' => (string) ($transaction->reference ?? ('WALLET-' . time() . rand(1000, 9999))),
         ];
     }
 
@@ -954,8 +979,8 @@ class RepaymentController extends Controller
         $totalFees = 0;
         
         foreach ($repayments as $repayment) {
-            if ($repayment->due_date < now()) {
-                $daysLate = now()->diffInDays($repayment->due_date);
+            if ($repayment->due_date && $repayment->due_date->lt(now()->startOfDay())) {
+                $daysLate = now()->startOfDay()->diffInDays($repayment->due_date);
                 $lateFee = min(1000, $repayment->amount * 0.01 * $daysLate); // 1% per day, max KES 1000
                 $totalFees += $lateFee;
             }
@@ -980,10 +1005,16 @@ class RepaymentController extends Controller
      */
     private function calculateOnTimePercentage($user)
     {
-        $totalPaid = $user->repayments()->where('status', 'paid')->count();
-        $onTimePaid = $user->repayments()
+        $paidRepayments = $user->repayments()
             ->where('status', 'paid')
-            ->whereColumn('paid_at', '<=', 'due_date')
+            ->get();
+        $totalPaid = $paidRepayments->count();
+        $onTimePaid = $paidRepayments
+            ->filter(function ($repayment) {
+                return $repayment->paid_at !== null
+                    && $repayment->due_date !== null
+                    && $repayment->paid_at->toDateString() <= $repayment->due_date->toDateString();
+            })
             ->count();
         
         if ($totalPaid === 0) return 100;
@@ -1003,8 +1034,7 @@ class RepaymentController extends Controller
                 $query->where('status', 'overdue')
                       ->orWhere(function ($q) {
                           $q->where('status', 'pending')
-                            ->where('due_date', '<', now())
-                            ->where('paid_at', '>', 'due_date');
+                            ->whereDate('due_date', '<', now()->toDateString());
                       });
             })
             ->get();
@@ -1017,10 +1047,16 @@ class RepaymentController extends Controller
      */
     private function calculatePrepaymentRate($user)
     {
-        $totalRepayments = $user->repayments()->where('status', 'paid')->count();
-        $prepayments = $user->repayments()
+        $paidRepayments = $user->repayments()
             ->where('status', 'paid')
-            ->whereColumn('paid_at', '<', 'due_date')
+            ->get();
+        $totalRepayments = $paidRepayments->count();
+        $prepayments = $paidRepayments
+            ->filter(function ($repayment) {
+                return $repayment->paid_at !== null
+                    && $repayment->due_date !== null
+                    && $repayment->paid_at->toDateString() < $repayment->due_date->toDateString();
+            })
             ->count();
         
         if ($totalRepayments === 0) return 0;
@@ -1035,8 +1071,8 @@ class RepaymentController extends Controller
     {
         $nextRepayment = $user->repayments()
             ->where('status', 'pending')
-            ->where('due_date', '>=', now())
-            ->where('due_date', '<=', now()->addDays($settings['threshold_days']))
+            ->whereDate('due_date', '>=', now()->toDateString())
+            ->whereDate('due_date', '<=', now()->addDays($settings['threshold_days'])->toDateString())
             ->orderBy('due_date')
             ->first();
         
@@ -1098,7 +1134,7 @@ class RepaymentController extends Controller
                 $query->where('status', 'overdue')
                       ->orWhere(function ($q) {
                           $q->where('status', 'pending')
-                            ->where('due_date', '<', now());
+                            ->whereDate('due_date', '<', now()->toDateString());
                       });
             })
             ->count();

@@ -5,8 +5,8 @@ namespace Tests\Feature\Driver;
 use App\Models\Lease;
 use App\Models\Repayment;
 use App\Models\User;
-use App\Services\PaystackService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -14,17 +14,26 @@ class RepaymentForcePayTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_manual_checkout_requires_force_now_intent(): void
+    public function test_missing_payment_intent_defaults_to_force_now_checkout(): void
     {
         $user = $this->makeDriverUser();
         $repayment = $this->makeRepaymentForUser($user);
+
+        Http::fake([
+            '*transaction/initialize*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'authorization_url' => 'https://paystack.test/default-checkout',
+                    'access_code' => 'ACC_DEFAULT',
+                ],
+            ]),
+        ]);
 
         $response = $this->actingAs($user)->post(route('payments.paystack.repayment', $repayment), [
             'payment_method' => 'card',
         ]);
 
-        $response->assertRedirect();
-        $response->assertSessionHas('error', 'Manual checkout is disabled unless you explicitly choose Force Pay Now.');
+        $response->assertRedirect('https://paystack.test/default-checkout');
     }
 
     public function test_force_now_initializes_paystack_and_redirects(): void
@@ -32,15 +41,15 @@ class RepaymentForcePayTest extends TestCase
         $user = $this->makeDriverUser();
         $repayment = $this->makeRepaymentForUser($user);
 
-        $mock = \Mockery::mock(PaystackService::class);
-        $mock->shouldReceive('initializeRepaymentCheckout')
-            ->once()
-            ->andReturn([
-                'reference' => 'RPY-TEST-001',
-                'authorization_url' => 'https://paystack.test/checkout',
-                'access_code' => 'ACC_TEST',
-            ]);
-        $this->app->instance(PaystackService::class, $mock);
+        Http::fake([
+            '*transaction/initialize*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'authorization_url' => 'https://paystack.test/checkout',
+                    'access_code' => 'ACC_TEST',
+                ],
+            ]),
+        ]);
 
         $response = $this->actingAs($user)->post(route('payments.paystack.repayment', $repayment), [
             'payment_intent' => 'force_now',
@@ -83,4 +92,3 @@ class RepaymentForcePayTest extends TestCase
         ]);
     }
 }
-
