@@ -102,24 +102,54 @@
         </section>
 
         @guest
+            @php
+                $authLoginStep = config('services.registration.public_merchant_enabled') ? 3 : 2;
+            @endphp
             <section id="auth-section" class="mobile-card p-4 scroll-mt-20">
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Auth</p>
-                <h2 class="mt-2 text-xl font-semibold text-slate-900">Get started with Bwiser</h2>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Get Started</p>
+                <h2 class="mt-2 text-xl font-semibold text-slate-900">Choose your Bwiser path</h2>
                 <p class="mt-2 text-sm text-slate-600">
-                    Pick the path you need, then continue with signup or login.
+                    Start with registration, jump into merchant onboarding, or sign in if you already have access.
                 </p>
 
                 <div class="mt-4 grid gap-3">
-                    <a href="{{ route('register') }}" class="rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900">
-                        Register
+                    <a href="{{ route('register') }}" class="rounded-2xl border border-blue-200 bg-white px-4 py-4 shadow-sm">
+                        <div class="flex items-start gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#020DFF] bg-[#020DFF]/5 text-sm font-bold text-[#020DFF]">1</div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-slate-900">Register</p>
+                                <span class="mt-1 inline-flex rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-semibold text-sky-700">Start Here</span>
+                                <p class="mt-2 text-xs leading-relaxed text-slate-600">Create your account and continue into onboarding.</p>
+                            </div>
+                        </div>
                     </a>
+
                     @if(config('services.registration.public_merchant_enabled'))
-                        <a href="{{ route('register.merchant') }}" class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900">
-                            Merchant Registration
+                        <a href="{{ route('register.merchant') }}" class="rounded-2xl border border-blue-200 bg-white px-4 py-4 shadow-sm">
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#020DFF] text-white">
+                                    <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16" aria-hidden="true" focusable="false">
+                                        <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"></path>
+                                    </svg>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-slate-900">Merchant Registration</p>
+                                    <span class="mt-1 inline-flex rounded-full bg-[#020DFF]/10 px-2.5 py-1 text-[11px] font-semibold text-[#020DFF]">Merchant Flow</span>
+                                    <p class="mt-2 text-xs leading-relaxed text-slate-600">Register a station or merchant account for vouchers and settlements.</p>
+                                </div>
+                            </div>
                         </a>
                     @endif
-                    <a href="{{ route('login') }}" class="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900">
-                        Login
+
+                    <a href="{{ route('login') }}" class="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+                        <div class="flex items-start gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-slate-300 bg-white text-sm font-bold text-slate-500">{{ $authLoginStep }}</div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-slate-900">Login</p>
+                                <span class="mt-1 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">Returning Users</span>
+                                <p class="mt-2 text-xs leading-relaxed text-slate-600">Sign in to reach your dashboard, vouchers, and settlement tools.</p>
+                            </div>
+                        </div>
                     </a>
                 </div>
             </section>

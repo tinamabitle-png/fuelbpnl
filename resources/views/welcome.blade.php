@@ -172,13 +172,16 @@
     </div>
 
     @guest
-        <div id="auth-section" class="glass rounded-2xl p-6 mt-8 scroll-mt-24">
-            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        @php
+            $authLoginStep = config('services.registration.public_merchant_enabled') ? 3 : 2;
+        @endphp
+        <div id="auth-section" class="auth-stepper-box glass rounded-2xl p-6 md:p-8 mt-8 scroll-mt-24">
+            <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
-                    <p class="text-xs uppercase tracking-[1px] text-blue-600">Auth</p>
-                    <h2 class="mt-2 brand-font text-2xl font-semibold text-slate-900">Get started with Bwiser</h2>
+                    <p class="text-xs uppercase tracking-[1px] text-blue-600">Get Started</p>
+                    <h2 class="mt-2 brand-font text-2xl font-semibold text-slate-900">Choose your Bwiser path</h2>
                     <p class="mt-2 max-w-2xl text-sm text-slate-600">
-                        Choose how you want to enter the platform, then continue with signup or login.
+                        Start with registration, jump into merchant onboarding, or sign in if you already have access.
                     </p>
                 </div>
                 <a href="{{ route('login') }}" class="text-sm font-semibold text-blue-700 hover:text-blue-800">
@@ -186,25 +189,40 @@
                 </a>
             </div>
 
-            <div class="mt-5 grid gap-4 md:grid-cols-3">
-                <a href="{{ route('register') }}" class="rounded-2xl border border-blue-200 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-600">Start here</p>
-                    <h3 class="mt-2 text-base font-semibold text-slate-900">Register</h3>
-                    <p class="mt-2 text-sm leading-relaxed text-slate-600">Create your account and continue into the onboarding flow.</p>
+            <div class="auth-stepper-track mt-6">
+                <a href="{{ route('register') }}" class="stepper-step stepper-active">
+                    <div class="stepper-circle">1</div>
+                    <div class="stepper-line"></div>
+                    <div class="stepper-content">
+                        <div class="stepper-title">Register</div>
+                        <div class="stepper-status">Start Here</div>
+                        <div class="stepper-time">Create your account and continue into onboarding.</div>
+                    </div>
                 </a>
 
                 @if(config('services.registration.public_merchant_enabled'))
-                    <a href="{{ route('register.merchant') }}" class="rounded-2xl border border-slate-200 bg-slate-50/80 px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">Merchants</p>
-                        <h3 class="mt-2 text-base font-semibold text-slate-900">Merchant Registration</h3>
-                        <p class="mt-2 text-sm leading-relaxed text-slate-600">Register a station or merchant account for voucher redemption and settlements.</p>
+                    <a href="{{ route('register.merchant') }}" class="stepper-step stepper-completed">
+                        <div class="stepper-circle">
+                            <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16" aria-hidden="true" focusable="false">
+                                <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"></path>
+                            </svg>
+                        </div>
+                        <div class="stepper-line"></div>
+                        <div class="stepper-content">
+                            <div class="stepper-title">Merchant Registration</div>
+                            <div class="stepper-status">Merchant Flow</div>
+                            <div class="stepper-time">Register a station or merchant account for vouchers and settlements.</div>
+                        </div>
                     </a>
                 @endif
 
-                <a href="{{ route('login') }}" class="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Returning users</p>
-                    <h3 class="mt-2 text-base font-semibold text-slate-900">Login</h3>
-                    <p class="mt-2 text-sm leading-relaxed text-slate-600">Sign in to reach your dashboard, vouchers, and settlement tools.</p>
+                <a href="{{ route('login') }}" class="stepper-step stepper-pending">
+                    <div class="stepper-circle">{{ $authLoginStep }}</div>
+                    <div class="stepper-content">
+                        <div class="stepper-title">Login</div>
+                        <div class="stepper-status">Returning Users</div>
+                        <div class="stepper-time">Sign in to reach your dashboard, vouchers, and settlement tools.</div>
+                    </div>
                 </a>
             </div>
         </div>
@@ -1139,9 +1157,9 @@
 	        color: rgba(0, 0, 0, 1);
 	    }
 
-        .welcome-media-shell {
-            position: relative;
-            isolation: isolate;
+    .welcome-media-shell {
+        position: relative;
+        isolation: isolate;
             background:
                 radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 48%),
                 linear-gradient(135deg, rgba(226, 232, 240, 0.78), rgba(248, 250, 252, 0.94));
@@ -1192,6 +1210,132 @@
             100% {
                 background-position: -120% 0, 0 0;
             }
+        }
+
+        .auth-stepper-box {
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.95)),
+                radial-gradient(circle at top left, rgba(2, 13, 255, 0.08), transparent 42%);
+            border: 1px solid rgba(191, 219, 254, 0.9);
+            box-shadow: 0 20px 40px -32px rgba(15, 23, 42, 0.24);
+        }
+
+        .auth-stepper-track {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .stepper-step {
+            position: relative;
+            display: flex;
+            gap: 1rem;
+            text-decoration: none;
+            padding: 1.1rem 1rem;
+            border-radius: 1.1rem;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            box-shadow: 0 10px 24px -24px rgba(15, 23, 42, 0.35);
+            transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+        }
+
+        .stepper-step:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 32px -26px rgba(2, 13, 255, 0.22);
+        }
+
+        .stepper-line {
+            display: none;
+        }
+
+        .stepper-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+            z-index: 2;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .stepper-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .stepper-title {
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+            line-height: 1.2;
+        }
+
+        .stepper-status {
+            font-size: 12px;
+            display: inline-block;
+            padding: 0.28rem 0.65rem;
+            border-radius: 999px;
+            margin-top: 0.15rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+        }
+
+        .stepper-time {
+            font-size: 13px;
+            line-height: 1.55;
+            margin-top: 0.65rem;
+        }
+
+        .stepper-completed .stepper-circle {
+            background-color: #020dff;
+            color: white;
+        }
+
+        .stepper-active {
+            border-color: rgba(2, 13, 255, 0.22);
+            box-shadow: 0 18px 34px -28px rgba(2, 13, 255, 0.32);
+        }
+
+        .stepper-active .stepper-circle {
+            border: 2px solid #020dff;
+            color: #020dff;
+            background: rgba(2, 13, 255, 0.06);
+        }
+
+        .stepper-pending .stepper-circle {
+            border: 2px solid #cbd5e1;
+            color: #64748b;
+            background: #ffffff;
+        }
+
+        .stepper-completed .stepper-title,
+        .stepper-active .stepper-title {
+            color: #0f172a;
+        }
+
+        .stepper-pending .stepper-title {
+            color: #334155;
+        }
+
+        .stepper-completed .stepper-status {
+            background-color: rgba(2, 13, 255, 0.1);
+            color: #020dff;
+        }
+
+        .stepper-active .stepper-status {
+            background-color: rgba(14, 165, 233, 0.12);
+            color: #0369a1;
+        }
+
+        .stepper-pending .stepper-status {
+            background-color: #f1f5f9;
+            color: #64748b;
+        }
+
+        .stepper-time {
+            color: #64748b;
         }
 
 	    .playstore-button .icon {
@@ -3033,11 +3177,34 @@
         .voucher-split-card__content {
             padding: 2.4rem 2.2rem;
         }
+
+        .auth-stepper-track {
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            align-items: stretch;
+        }
+
+        .stepper-step {
+            min-height: 100%;
+        }
+
+        .auth-stepper-track .stepper-step:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            top: 39px;
+            right: -0.95rem;
+            width: 1.2rem;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(2, 13, 255, 0.25), rgba(191, 219, 254, 0.75));
+        }
     }
 
     @media (max-width: 767px) {
         .voucher-split-card__media {
             min-height: 260px;
+        }
+
+        .stepper-step {
+            padding: 1rem 0.95rem;
         }
     }
 </style>
