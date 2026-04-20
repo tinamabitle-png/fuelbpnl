@@ -167,7 +167,7 @@
                 </div>
 
                 <div class="rounded-xl border border-slate-200 p-4 bg-slate-50">
-                    <p class="text-sm font-medium text-slate-700">Repayment Flow Selector</p>
+                    <p class="text-sm font-medium text-slate-700">Repayment Selector</p>
                     <p class="text-sm text-slate-600 mt-2">
                         Move the slider to choose repayment days. Longer repayment duration increases the interest rate.
                     </p>
