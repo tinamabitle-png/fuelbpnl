@@ -119,8 +119,8 @@
                         @endif
                     @endauth
                     @guest
-                        <a class="super-button" href="{{ route('register') }}">
-                            <span>Register</span>
+                        <a class="super-button" href="#auth-section">
+                            <span>Get Started</span>
                         </a>
                     @endguest
                     <a
@@ -170,6 +170,45 @@
             </div>
         </div>
     </div>
+
+    @guest
+        <div id="auth-section" class="glass rounded-2xl p-6 mt-8 scroll-mt-24">
+            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-[1px] text-blue-600">Auth</p>
+                    <h2 class="mt-2 brand-font text-2xl font-semibold text-slate-900">Get started with Bwiser</h2>
+                    <p class="mt-2 max-w-2xl text-sm text-slate-600">
+                        Choose how you want to enter the platform, then continue with signup or login.
+                    </p>
+                </div>
+                <a href="{{ route('login') }}" class="text-sm font-semibold text-blue-700 hover:text-blue-800">
+                    Already have an account? Sign in
+                </a>
+            </div>
+
+            <div class="mt-5 grid gap-4 md:grid-cols-3">
+                <a href="{{ route('register') }}" class="rounded-2xl border border-blue-200 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-600">Start here</p>
+                    <h3 class="mt-2 text-base font-semibold text-slate-900">Register</h3>
+                    <p class="mt-2 text-sm leading-relaxed text-slate-600">Create your account and continue into the onboarding flow.</p>
+                </a>
+
+                @if(config('services.registration.public_merchant_enabled'))
+                    <a href="{{ route('register.merchant') }}" class="rounded-2xl border border-slate-200 bg-slate-50/80 px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">Merchants</p>
+                        <h3 class="mt-2 text-base font-semibold text-slate-900">Merchant Registration</h3>
+                        <p class="mt-2 text-sm leading-relaxed text-slate-600">Register a station or merchant account for voucher redemption and settlements.</p>
+                    </a>
+                @endif
+
+                <a href="{{ route('login') }}" class="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Returning users</p>
+                    <h3 class="mt-2 text-base font-semibold text-slate-900">Login</h3>
+                    <p class="mt-2 text-sm leading-relaxed text-slate-600">Sign in to reach your dashboard, vouchers, and settlement tools.</p>
+                </a>
+            </div>
+        </div>
+    @endguest
 
     <div class="glass rounded-2xl p-6 mt-8 hidden">
         <div class="grid gap-6 md:grid-cols-2">
@@ -320,11 +359,12 @@
             </div>
         </div>
 
-        <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden">
+        <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-media-shell" data-welcome-media>
             <img
                 src="{{ asset('images/bench_sign.png') }}"
                 alt="Bwiser preview"
-                class="block w-full h-full object-cover rounded-2xl"
+                class="block w-full h-full object-cover rounded-2xl welcome-media-shell__media"
+                data-welcome-media-target
                 loading="lazy"
             >
         </div>
@@ -709,11 +749,12 @@
                 </div>
             </div>
 
-            <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden mt-4">
+            <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden mt-4 welcome-media-shell" data-welcome-media>
                 <img
                     src="{{ asset('images/Bwiser_cool.png') }}"
                     alt="Bwiser merchant preview"
-                    class="block w-full h-full rounded-2xl object-cover"
+                    class="block w-full h-full rounded-2xl object-cover welcome-media-shell__media"
+                    data-welcome-media-target
                     loading="lazy"
                 >
             </div>
@@ -751,7 +792,7 @@
     @endphp
 
     <div class="glass rounded-2xl p-3 md:p-4 mt-8 overflow-hidden">
-        <div class="welcome-video" data-welcome-video data-poster-seconds="22">
+        <div class="welcome-video welcome-media-shell" data-welcome-video data-poster-seconds="22">
             <img class="welcome-video__poster" alt="Badserve preview" loading="lazy">
             <video
                 class="welcome-video__media"
@@ -831,11 +872,12 @@
             </div>
         </div>
 
-        <div class="glass rounded-2xl p-6 overflow-hidden">
+        <div class="glass rounded-2xl p-6 overflow-hidden welcome-media-shell" data-welcome-media>
             <img
                 src="{{ asset('images/thestripes.png') }}"
                 alt="Bwiser stripes"
-                class="w-full h-full object-cover rounded-2xl"
+                class="w-full h-full object-cover rounded-2xl welcome-media-shell__media"
+                data-welcome-media-target
                 loading="lazy"
             >
         </div>
@@ -1092,10 +1134,65 @@
         text-decoration: none;
     }
 
-    .playstore-button:hover {
-        background-color: transparent;
-        color: rgba(0, 0, 0, 1);
-    }
+	    .playstore-button:hover {
+	        background-color: transparent;
+	        color: rgba(0, 0, 0, 1);
+	    }
+
+        .welcome-media-shell {
+            position: relative;
+            isolation: isolate;
+            background:
+                radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 48%),
+                linear-gradient(135deg, rgba(226, 232, 240, 0.78), rgba(248, 250, 252, 0.94));
+        }
+
+        .welcome-media-shell::before,
+        .welcome-media-shell::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            transition: opacity 320ms ease;
+        }
+
+        .welcome-media-shell::before {
+            z-index: 0;
+            background:
+                linear-gradient(110deg, rgba(255, 255, 255, 0) 12%, rgba(255, 255, 255, 0.68) 32%, rgba(255, 255, 255, 0) 52%),
+                linear-gradient(135deg, rgba(191, 219, 254, 0.55), rgba(226, 232, 240, 0.45), rgba(255, 255, 255, 0.6));
+            background-size: 220% 100%, 100% 100%;
+            animation: welcomeSkeletonShimmer 1.35s linear infinite;
+            opacity: 1;
+        }
+
+        .welcome-media-shell::after {
+            z-index: 1;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(15, 23, 42, 0.06));
+            opacity: 0.9;
+        }
+
+        .welcome-media-shell.is-media-loaded::before,
+        .welcome-media-shell.is-media-loaded::after {
+            opacity: 0;
+            animation: none;
+        }
+
+        .welcome-media-shell__media,
+        .welcome-video__poster {
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes welcomeSkeletonShimmer {
+            0% {
+                background-position: 120% 0, 0 0;
+            }
+            100% {
+                background-position: -120% 0, 0 0;
+            }
+        }
 
 	    .playstore-button .icon {
 	        height: 1.5rem;
@@ -2673,6 +2770,7 @@
         height: 100%;
         object-fit: cover;
         display: block;
+        z-index: 2;
     }
 
     .welcome-video__media {
@@ -2698,6 +2796,7 @@
         background: transparent;
         cursor: pointer;
         color: #ffffff;
+        z-index: 3;
     }
 
     .welcome-video__play::before {
@@ -2748,6 +2847,7 @@
         pointer-events: none;
         transition: opacity 180ms ease, transform 180ms ease, background-color 180ms ease;
         backdrop-filter: blur(10px);
+        z-index: 3;
     }
 
     .welcome-video.is-playing .welcome-video__sound {
@@ -2786,6 +2886,7 @@
         animation: welcomeVideoSpin 1s linear infinite;
         opacity: 0;
         pointer-events: none;
+        z-index: 3;
     }
 
     .welcome-video.is-loading .welcome-video__loader {
@@ -3083,6 +3184,7 @@
 
                 const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
                 const posterSeconds = Number(container.getAttribute('data-poster-seconds') || '22');
+                const markMediaLoaded = () => container.classList.add('is-media-loaded');
 
                 const setLoading = (loading) => {
                     container.classList.toggle('is-loading', Boolean(loading));
@@ -3101,6 +3203,7 @@
 
                     try {
                         poster.src = canvas.toDataURL('image/jpeg', 0.86);
+                        markMediaLoaded();
                     } catch (e) {
                         // Some browsers can block toDataURL in edge cases; just keep the default background.
                     }
@@ -3136,7 +3239,11 @@
                 video.addEventListener('loadstart', () => setLoading(true));
                 video.addEventListener('waiting', () => setLoading(true));
                 video.addEventListener('playing', () => setLoading(false));
-                video.addEventListener('canplay', () => setLoading(false));
+                video.addEventListener('canplay', () => {
+                    setLoading(false);
+                    markMediaLoaded();
+                });
+                video.addEventListener('loadeddata', markMediaLoaded, { once: true });
 
                 play.addEventListener('click', async () => {
                     container.classList.add('is-playing');
@@ -3167,6 +3274,43 @@
                 });
 
                 video.addEventListener('volumechange', syncMuteUi);
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', boot);
+            } else {
+                boot();
+            }
+        })();
+
+        (function initWelcomeMediaSkeletons() {
+            const boot = () => {
+                const shells = Array.from(document.querySelectorAll('[data-welcome-media]'));
+                shells.forEach((shell) => {
+                    const media = shell.querySelector('[data-welcome-media-target]');
+                    if (!media) return;
+
+                    const done = () => shell.classList.add('is-media-loaded');
+
+                    media.addEventListener('error', done, { once: true });
+
+                    if (media.complete) {
+                        if (typeof media.decode === 'function') {
+                            media.decode().then(done).catch(done);
+                        } else {
+                            done();
+                        }
+                        return;
+                    }
+
+                    media.addEventListener('load', () => {
+                        if (typeof media.decode === 'function') {
+                            media.decode().then(done).catch(done);
+                        } else {
+                            done();
+                        }
+                    }, { once: true });
+                });
             };
 
             if (document.readyState === 'loading') {

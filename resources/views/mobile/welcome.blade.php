@@ -86,8 +86,8 @@
                     @endif
                 @endauth
                 @guest
-                    <a href="{{ route('register') }}" class="rounded-xl bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white">
-                        Register
+                    <a href="#auth-section" class="rounded-xl bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white">
+                        Get Started
                     </a>
                     @if(config('services.registration.public_merchant_enabled'))
                         <a href="{{ route('register.merchant') }}" class="rounded-xl border border-blue-200 px-4 py-3 text-center text-sm font-semibold text-blue-700 bg-white">
@@ -100,6 +100,30 @@
                 @endguest
             </div>
         </section>
+
+        @guest
+            <section id="auth-section" class="mobile-card p-4 scroll-mt-20">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Auth</p>
+                <h2 class="mt-2 text-xl font-semibold text-slate-900">Get started with Bwiser</h2>
+                <p class="mt-2 text-sm text-slate-600">
+                    Pick the path you need, then continue with signup or login.
+                </p>
+
+                <div class="mt-4 grid gap-3">
+                    <a href="{{ route('register') }}" class="rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900">
+                        Register
+                    </a>
+                    @if(config('services.registration.public_merchant_enabled'))
+                        <a href="{{ route('register.merchant') }}" class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900">
+                            Merchant Registration
+                        </a>
+                    @endif
+                    <a href="{{ route('login') }}" class="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900">
+                        Login
+                    </a>
+                </div>
+            </section>
+        @endguest
 
         <section class="mobile-card p-4">
             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Trusted Network</p>
