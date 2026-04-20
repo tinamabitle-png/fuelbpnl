@@ -155,11 +155,7 @@
                     @if(config('services.registration.public_merchant_enabled'))
                         <a href="{{ route('register.merchant') }}" class="mobile-auth-step--merchant rounded-2xl border border-blue-200 bg-white px-4 py-4 shadow-sm">
                             <div class="flex items-start gap-3">
-                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan-300 text-slate-950">
-                                    <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16" aria-hidden="true" focusable="false">
-                                        <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"></path>
-                                    </svg>
-                                </div>
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan-300 text-slate-950">2</div>
                                 <div class="min-w-0">
                                     <p class="text-sm font-semibold text-white">Merchant Registration</p>
                                     <span class="mt-1 inline-flex rounded-full bg-cyan-300/15 px-2.5 py-1 text-[11px] font-semibold text-cyan-100">Merchant Process</span>

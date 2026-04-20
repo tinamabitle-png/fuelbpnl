@@ -201,11 +201,7 @@
 
                 @if(config('services.registration.public_merchant_enabled'))
                     <a href="{{ route('register.merchant') }}" class="stepper-step stepper-completed stepper-step--merchant">
-                        <div class="stepper-circle">
-                            <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16" aria-hidden="true" focusable="false">
-                                <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"></path>
-                            </svg>
-                        </div>
+                        <div class="stepper-circle">2</div>
                         <div class="stepper-line"></div>
                         <div class="stepper-content">
                             <div class="stepper-title">Merchant Registration</div>
