@@ -145,7 +145,7 @@
     @stack('head')
 </head>
 <body class="mobile-shell">
-    <header class="px-4 pt-4">
+    <header class="relative z-[2147483647] px-4 pt-4">
         <div class="mx-auto max-w-md mobile-card px-4 py-3">
             <div class="flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
