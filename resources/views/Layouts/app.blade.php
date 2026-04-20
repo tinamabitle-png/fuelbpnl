@@ -462,7 +462,7 @@
 </head>
 <body>
     <div class="min-h-screen flex flex-col">
-        <header class="sticky top-0 isolate z-[2147483647]">
+        <header class="relative isolate z-[2147483647]">
             <div class="glass">
                 <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
                     <a href="{{ url('/') }}" class="flex items-center gap-3 hover:opacity-95" aria-label="Bwiser home">
