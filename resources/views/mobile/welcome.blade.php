@@ -115,7 +115,12 @@
                     @endif
                 @endauth
                 @guest
-                    <a href="#auth-section" class="rounded-xl bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white">
+                    <a
+                        href="{{ route('register') }}"
+                        class="rounded-xl bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white"
+                        data-auth-scroll-trigger
+                        data-auth-scroll-target="auth-section"
+                    >
                         Get Started
                     </a>
                     @if(config('services.registration.public_merchant_enabled'))
@@ -215,3 +220,33 @@
     </div>
 </main>
 @endsection
+
+@push('scripts')
+    <script>
+        (function initAuthSectionScroll() {
+            const boot = () => {
+                const triggers = document.querySelectorAll('[data-auth-scroll-trigger]');
+                if (!triggers.length) return;
+
+                triggers.forEach((trigger) => {
+                    trigger.addEventListener('click', (event) => {
+                        const targetId = trigger.getAttribute('data-auth-scroll-target');
+                        if (!targetId) return;
+
+                        const target = document.getElementById(targetId);
+                        if (!target) return;
+
+                        event.preventDefault();
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    });
+                });
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', boot);
+            } else {
+                boot();
+            }
+        })();
+    </script>
+@endpush

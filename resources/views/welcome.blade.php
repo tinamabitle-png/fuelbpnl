@@ -119,7 +119,12 @@
                         @endif
                     @endauth
                     @guest
-                        <a class="super-button" href="#auth-section">
+                        <a
+                            class="super-button"
+                            href="{{ route('register') }}"
+                            data-auth-scroll-trigger
+                            data-auth-scroll-target="auth-section"
+                        >
                             <span>Get Started</span>
                         </a>
                     @endguest
@@ -367,6 +372,14 @@
                             <p class="truncate text-sm font-semibold text-slate-900">Finance Lead</p>
                             <p class="text-[11px] leading-5 text-slate-600">Talk to Tony about funding, settlements, and repayments.</p>
                         </div>
+                    </div>
+                    <div class="mt-4 max-w-sm">
+                        <img
+                            src="{{ asset('images/bwiser_fuel.png') }}"
+                            alt="Bwiser fuel preview"
+                            class="finance-lead-preview"
+                            loading="lazy"
+                        />
                     </div>
                 </div>
             </div>
@@ -1828,6 +1841,16 @@
 
     .slack-loader::after {
         animation: slack-loader-after 2s infinite;
+    }
+
+    .finance-lead-preview {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 5px;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        box-shadow: 0 16px 32px -24px rgba(15, 23, 42, 0.45);
+        object-fit: cover;
     }
 
     @keyframes slack-loader-before {
@@ -3331,7 +3354,34 @@
         <script src="{{ asset('vendor/datamaps/d3.min.js') }}"></script>
         <script src="{{ asset('vendor/datamaps/topojson.min.js') }}"></script>
         <script src="{{ asset('vendor/datamaps/datamaps.world.min.js') }}"></script>
-	    <script>
+        <script>
+            (function initAuthSectionScroll() {
+                const boot = () => {
+                    const triggers = document.querySelectorAll('[data-auth-scroll-trigger]');
+                    if (!triggers.length) return;
+
+                    triggers.forEach((trigger) => {
+                        trigger.addEventListener('click', (event) => {
+                            const targetId = trigger.getAttribute('data-auth-scroll-target');
+                            if (!targetId) return;
+
+                            const target = document.getElementById(targetId);
+                            if (!target) return;
+
+                            event.preventDefault();
+                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        });
+                    });
+                };
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', boot);
+                } else {
+                    boot();
+                }
+            })();
+        </script>
+        <script>
 	        (function initVoucherSplitSlider() {
 	            const boot = () => {
                 const slider = document.querySelector('[data-voucher-slider]');
