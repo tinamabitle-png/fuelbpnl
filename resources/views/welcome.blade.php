@@ -200,7 +200,7 @@
                 </a>
 
                 @if(config('services.registration.public_merchant_enabled'))
-                    <a href="{{ route('register.merchant') }}" class="stepper-step stepper-completed">
+                    <a href="{{ route('register.merchant') }}" class="stepper-step stepper-completed stepper-step--merchant">
                         <div class="stepper-circle">
                             <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16" aria-hidden="true" focusable="false">
                                 <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"></path>
@@ -1287,6 +1287,33 @@
             margin-top: 0.65rem;
         }
 
+        .stepper-step--merchant {
+            overflow: hidden;
+            background: rgba(2, 13, 255, 0.6);
+            border-color: rgba(103, 232, 249, 0.22);
+            box-shadow: 0 20px 38px -30px rgba(2, 13, 255, 0.42);
+        }
+
+        .stepper-step--merchant::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(35.36% 35.36% at 100% 25%, transparent 66%, #c79013 68% 70%, transparent 72%) 32px 32px / 64px 64px,
+                radial-gradient(35.36% 35.36% at 0 75%, transparent 66%, #c79013 68% 70%, transparent 72%) 32px 32px / 64px 64px,
+                radial-gradient(35.36% 35.36% at 100% 25%, transparent 66%, #c79013 68% 70%, transparent 72%) 0 0 / 64px 64px,
+                radial-gradient(35.36% 35.36% at 0 75%, transparent 66%, #c79013 68% 70%, transparent 72%) 0 0 / 64px 64px,
+                repeating-conic-gradient(rgba(7, 28, 141, 0.88) 0 25%, transparent 0 50%) 0 0 / 64px 64px,
+                radial-gradient(transparent 66%, #c79013 68% 70%, transparent 72%) 0 16px / 32px 32px #06208a;
+            opacity: 0.52;
+            pointer-events: none;
+        }
+
+        .stepper-step--merchant > * {
+            position: relative;
+            z-index: 1;
+        }
+
         .stepper-completed .stepper-circle {
             background-color: #020dff;
             color: white;
@@ -1321,6 +1348,21 @@
         .stepper-completed .stepper-status {
             background-color: rgba(2, 13, 255, 0.1);
             color: #020dff;
+        }
+
+        .stepper-step--merchant .stepper-circle {
+            background: #67e8f9;
+            color: #020617;
+        }
+
+        .stepper-step--merchant .stepper-title,
+        .stepper-step--merchant .stepper-time {
+            color: rgba(255, 255, 255, 0.96);
+        }
+
+        .stepper-step--merchant .stepper-status {
+            background: rgba(103, 232, 249, 0.16);
+            color: #cffafe;
         }
 
         .stepper-active .stepper-status {

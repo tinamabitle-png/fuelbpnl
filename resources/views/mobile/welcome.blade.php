@@ -47,6 +47,35 @@
         ],
     ], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}
     </script>
+    <style>
+        .mobile-auth-step--merchant {
+            position: relative;
+            overflow: hidden;
+            background: rgba(2, 13, 255, 0.6);
+            border-color: rgba(103, 232, 249, 0.22);
+            box-shadow: 0 20px 38px -30px rgba(2, 13, 255, 0.42);
+        }
+
+        .mobile-auth-step--merchant::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(35.36% 35.36% at 100% 25%, transparent 66%, #c79013 68% 70%, transparent 72%) 32px 32px / 64px 64px,
+                radial-gradient(35.36% 35.36% at 0 75%, transparent 66%, #c79013 68% 70%, transparent 72%) 32px 32px / 64px 64px,
+                radial-gradient(35.36% 35.36% at 100% 25%, transparent 66%, #c79013 68% 70%, transparent 72%) 0 0 / 64px 64px,
+                radial-gradient(35.36% 35.36% at 0 75%, transparent 66%, #c79013 68% 70%, transparent 72%) 0 0 / 64px 64px,
+                repeating-conic-gradient(rgba(7, 28, 141, 0.88) 0 25%, transparent 0 50%) 0 0 / 64px 64px,
+                radial-gradient(transparent 66%, #c79013 68% 70%, transparent 72%) 0 16px / 32px 32px #06208a;
+            opacity: 0.52;
+            pointer-events: none;
+        }
+
+        .mobile-auth-step--merchant > * {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
 @endpush
 
 @section('content')
@@ -124,17 +153,17 @@
                     </a>
 
                     @if(config('services.registration.public_merchant_enabled'))
-                        <a href="{{ route('register.merchant') }}" class="rounded-2xl border border-blue-200 bg-white px-4 py-4 shadow-sm">
+                        <a href="{{ route('register.merchant') }}" class="mobile-auth-step--merchant rounded-2xl border border-blue-200 bg-white px-4 py-4 shadow-sm">
                             <div class="flex items-start gap-3">
-                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#020DFF] text-white">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan-300 text-slate-950">
                                     <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16" aria-hidden="true" focusable="false">
                                         <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"></path>
                                     </svg>
                                 </div>
                                 <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-slate-900">Merchant Registration</p>
-                                    <span class="mt-1 inline-flex rounded-full bg-[#020DFF]/10 px-2.5 py-1 text-[11px] font-semibold text-[#020DFF]">Merchant Process</span>
-                                    <p class="mt-2 text-xs leading-relaxed text-slate-600">Register a station or merchant account for vouchers and settlements.</p>
+                                    <p class="text-sm font-semibold text-white">Merchant Registration</p>
+                                    <span class="mt-1 inline-flex rounded-full bg-cyan-300/15 px-2.5 py-1 text-[11px] font-semibold text-cyan-100">Merchant Process</span>
+                                    <p class="mt-2 text-xs leading-relaxed text-white/90">Register a station or merchant account for vouchers and settlements.</p>
                                 </div>
                             </div>
                         </a>
