@@ -42,12 +42,33 @@
         <div class="glass rounded-2xl p-6">
             <h2 class="brand-font text-xl text-slate-900">Voucher Request Form</h2>
             <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
-                    <p class="text-[11px] uppercase tracking-wide text-emerald-700 font-semibold">Your Eligible Limit</p>
-                    <p class="text-sm font-semibold text-emerald-800 mt-1">R {{ number_format((float) ($maxEligibleAmount ?? 0), 2) }}</p>
+                <div class="rounded-md border-l-4 border-[#1d4ed8] bg-[#eff6ff] p-4">
+                    <div class="flex gap-3">
+                        <div class="shrink-0">
+                            <svg class="h-5 w-5 text-[#1d4ed8]/70" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[11px] uppercase tracking-[0.22em] font-semibold text-[#1d4ed8]">Your Eligible Limit</p>
+                            <p class="mt-1 text-lg font-semibold text-[#001d6e]">R {{ number_format((float) ($maxEligibleAmount ?? 0), 2) }}</p>
+                            <p class="mt-2 text-sm leading-6 text-[#1d4ed8]">Maximum voucher amount currently available on your profile.</p>
+                        </div>
+                    </div>
                 </div>
-                <div id="stationCapacityHint" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                    Select a station to view its available voucher capacity.
+                <div id="stationCapacityHint" class="rounded-md border-l-4 border-[#1d4ed8] bg-[#eff6ff] p-4">
+                    <div class="flex gap-3">
+                        <div class="shrink-0">
+                            <svg id="stationCapacityIcon" class="h-5 w-5 text-[#1d4ed8]/70" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p id="stationCapacityEyebrow" class="text-[11px] uppercase tracking-[0.22em] font-semibold text-[#1d4ed8]">Station Capacity</p>
+                            <p id="stationCapacityTitle" class="mt-1 text-sm font-semibold text-[#001d6e]">Select a station</p>
+                            <p id="stationCapacityText" class="mt-2 text-sm leading-6 text-[#1d4ed8]">Select a station to view its available voucher capacity.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -583,6 +604,10 @@
     const amountInput = document.getElementById('amount');
     const stationPriceCard = document.getElementById('stationPriceCard');
     const stationCapacityHint = document.getElementById('stationCapacityHint');
+    const stationCapacityIcon = document.getElementById('stationCapacityIcon');
+    const stationCapacityEyebrow = document.getElementById('stationCapacityEyebrow');
+    const stationCapacityTitle = document.getElementById('stationCapacityTitle');
+    const stationCapacityText = document.getElementById('stationCapacityText');
     const amountEligibilityHint = document.getElementById('amountEligibilityHint');
     const repaymentDaysInput = document.getElementById('repayment_days');
     const repaymentDaysTrack = document.getElementById('repaymentDaysTrack');
@@ -765,17 +790,51 @@
 
         if (stationCapacityHint) {
             if (!station) {
-                stationCapacityHint.textContent = 'Select a station to view its available voucher capacity.';
-                stationCapacityHint.className = 'rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600';
+                if (stationCapacityTitle) {
+                    stationCapacityTitle.textContent = 'Select a station';
+                    stationCapacityTitle.className = 'mt-1 text-sm font-semibold text-[#001d6e]';
+                }
+                if (stationCapacityText) {
+                    stationCapacityText.textContent = 'Select a station to view its available voucher capacity.';
+                    stationCapacityText.className = 'mt-2 text-sm leading-6 text-[#1d4ed8]';
+                }
+                if (stationCapacityEyebrow) {
+                    stationCapacityEyebrow.className = 'text-[11px] uppercase tracking-[0.22em] font-semibold text-[#1d4ed8]';
+                }
+                if (stationCapacityIcon) {
+                    stationCapacityIcon.className = 'h-5 w-5 text-[#1d4ed8]/70';
+                }
+                stationCapacityHint.className = 'rounded-md border-l-4 border-[#1d4ed8] bg-[#eff6ff] p-4';
             } else {
                 const available = Number(station.available_capacity ?? 0);
                 const openExposure = Number(station.open_exposure ?? 0);
                 const walletBalance = Number(station.wallet_balance ?? 0);
                 const overCapacity = amount > available;
-                stationCapacityHint.textContent = `${station.name}: Available capacity R ${available.toFixed(2)} (Wallet R ${walletBalance.toFixed(2)} • Open exposure R ${openExposure.toFixed(2)}).`;
+                if (stationCapacityTitle) {
+                    stationCapacityTitle.textContent = station.name;
+                    stationCapacityTitle.className = overCapacity
+                        ? 'mt-1 text-sm font-semibold text-rose-900'
+                        : 'mt-1 text-sm font-semibold text-[#001d6e]';
+                }
+                if (stationCapacityText) {
+                    stationCapacityText.textContent = `Available capacity R ${available.toFixed(2)} (Wallet R ${walletBalance.toFixed(2)} • Open exposure R ${openExposure.toFixed(2)}).`;
+                    stationCapacityText.className = overCapacity
+                        ? 'mt-2 text-sm leading-6 text-rose-700'
+                        : 'mt-2 text-sm leading-6 text-[#1d4ed8]';
+                }
+                if (stationCapacityEyebrow) {
+                    stationCapacityEyebrow.className = overCapacity
+                        ? 'text-[11px] uppercase tracking-[0.22em] font-semibold text-rose-700'
+                        : 'text-[11px] uppercase tracking-[0.22em] font-semibold text-[#1d4ed8]';
+                }
+                if (stationCapacityIcon) {
+                    stationCapacityIcon.className = overCapacity
+                        ? 'h-5 w-5 text-rose-600/70'
+                        : 'h-5 w-5 text-[#1d4ed8]/70';
+                }
                 stationCapacityHint.className = overCapacity
-                    ? 'rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 font-medium'
-                    : 'rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600';
+                    ? 'rounded-md border-l-4 border-rose-500 bg-rose-50 p-4'
+                    : 'rounded-md border-l-4 border-[#1d4ed8] bg-[#eff6ff] p-4';
             }
         }
     }
