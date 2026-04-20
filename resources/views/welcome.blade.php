@@ -378,9 +378,17 @@
                 </div>
             </div>
 
+            @php
+                $bwiserFuelImage = 'images/bwiser_fuel.png';
+                $bwiserFuelImagePath = public_path($bwiserFuelImage);
+                $bwiserFuelImageUrl = asset($bwiserFuelImage);
+                if (is_file($bwiserFuelImagePath)) {
+                    $bwiserFuelImageUrl .= '?v=' . filemtime($bwiserFuelImagePath);
+                }
+            @endphp
             <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-media-shell" data-welcome-media>
                 <img
-                    src="{{ asset('images/bwiser_fuel.png') }}"
+                    src="{{ $bwiserFuelImageUrl }}"
                     alt="Bwiser fuel preview"
                     class="finance-lead-preview welcome-media-shell__media"
                     data-welcome-media-target
