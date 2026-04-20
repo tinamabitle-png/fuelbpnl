@@ -346,42 +346,46 @@
 	    </div>
 
     <div class="grid gap-8 lg:grid-cols-2 mt-8 items-stretch">
-        <div class="glass rounded-2xl p-6">
-            <div class="flex items-start gap-5">
-                <div class="slack-loader-shell" aria-hidden="true">
-                    <div class="slack-loader"></div>
-                </div>
-                <div class="flex-1">
-                    <h3 class="brand-font text-xl md:text-2xl font-semibold text-slate-900">Request your place in the Bwiser merchant Slack</h3>
-                    <p class="text-sm text-slate-600 mt-2 max-w-2xl">
-                        Merchants can request early access to the Bwiser Slack workspace for rollout updates, onboarding help, and support coordination.
-                    </p>
-                    <div class="mt-5">
-                        <a
-                            href="mailto:support@bwiser.co.za?subject=Slack%20Access%20Request&body=Hi%20Bwiser%2C%20I%20would%20like%20merchant%20Slack%20access.%0A%0ABusiness%20name%3A%0AContact%20name%3A%0AContact%20number%3A%0A"
-                            class="super-button whitespace-nowrap"
-                        >
-                            <span>Request Slack Access</span>
-                        </a>
+        <div class="space-y-4">
+            <div class="glass rounded-2xl p-6">
+                <div class="flex items-start gap-5">
+                    <div class="slack-loader-shell" aria-hidden="true">
+                        <div class="slack-loader"></div>
                     </div>
-                    <div class="mt-4 inline-flex max-w-sm items-center gap-3 rounded-2xl border border-slate-200 bg-white/85 px-3 py-3 shadow-sm">
-                        <div class="h-10 w-10 overflow-hidden rounded-full ring-2 ring-blue-100">
-                            <img src="{{ asset('images/tony.jpg') }}" alt="Tony" class="h-full w-full object-cover" loading="lazy" />
+                    <div class="flex-1">
+                        <h3 class="brand-font text-xl md:text-2xl font-semibold text-slate-900">Request your place in the Bwiser merchant Slack</h3>
+                        <p class="text-sm text-slate-600 mt-2 max-w-2xl">
+                            Merchants can request early access to the Bwiser Slack workspace for rollout updates, onboarding help, and support coordination.
+                        </p>
+                        <div class="mt-5">
+                            <a
+                                href="mailto:support@bwiser.co.za?subject=Slack%20Access%20Request&body=Hi%20Bwiser%2C%20I%20would%20like%20merchant%20Slack%20access.%0A%0ABusiness%20name%3A%0AContact%20name%3A%0AContact%20number%3A%0A"
+                                class="super-button whitespace-nowrap"
+                            >
+                                <span>Request Slack Access</span>
+                            </a>
                         </div>
-                        <div class="min-w-0">
-                            <p class="truncate text-sm font-semibold text-slate-900">Finance Lead</p>
-                            <p class="text-[11px] leading-5 text-slate-600">Talk to Tony about funding, settlements, and repayments.</p>
+                        <div class="mt-4 inline-flex max-w-sm items-center gap-3 rounded-2xl border border-slate-200 bg-white/85 px-3 py-3 shadow-sm">
+                            <div class="h-10 w-10 overflow-hidden rounded-full ring-2 ring-blue-100">
+                                <img src="{{ asset('images/tony.jpg') }}" alt="Tony" class="h-full w-full object-cover" loading="lazy" />
+                            </div>
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold text-slate-900">Finance Lead</p>
+                                <p class="text-[11px] leading-5 text-slate-600">Talk to Tony about funding, settlements, and repayments.</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="mt-4 max-w-sm">
-                        <img
-                            src="{{ asset('images/bwiser_fuel.png') }}"
-                            alt="Bwiser fuel preview"
-                            class="finance-lead-preview"
-                            loading="lazy"
-                        />
                     </div>
                 </div>
+            </div>
+
+            <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-media-shell" data-welcome-media>
+                <img
+                    src="{{ asset('images/bwiser_fuel.png') }}"
+                    alt="Bwiser fuel preview"
+                    class="finance-lead-preview welcome-media-shell__media"
+                    data-welcome-media-target
+                    loading="lazy"
+                />
             </div>
         </div>
 
