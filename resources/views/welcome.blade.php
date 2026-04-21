@@ -436,7 +436,7 @@
                     <div class="relative overflow-hidden rounded-2xl bg-white/80 p-4 shadow-[0_10px_30px_-24px_rgba(2,13,255,0.45)]">
                         <div class="absolute left-[1.15rem] top-12 bottom-0 w-px bg-gradient-to-b from-[#020DFF]/25 via-slate-200 to-transparent"></div>
                         <div class="relative flex gap-3">
-                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#020DFF] text-xs font-bold text-black shadow-sm">01</div>
+                            <div class="stepper-circle repayment-flow-circle">01</div>
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">Create voucher</p>
                                 <p class="mt-1 text-[12px] leading-relaxed text-slate-600">
@@ -449,7 +449,7 @@
                     <div class="relative overflow-hidden rounded-2xl bg-slate-50/85 p-4">
                         <div class="absolute left-[1.15rem] top-12 bottom-0 w-px bg-gradient-to-b from-[#020DFF]/25 via-slate-200 to-transparent"></div>
                         <div class="relative flex gap-3">
-                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#020DFF]/15 bg-white text-xs font-bold text-[#020DFF]">02</div>
+                            <div class="stepper-circle repayment-flow-circle">02</div>
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">Validate at station</p>
                                 <p class="mt-1 text-[12px] leading-relaxed text-slate-600">
@@ -462,7 +462,7 @@
                     <div class="relative overflow-hidden rounded-2xl bg-white/80 p-4">
                         <div class="absolute left-[1.15rem] top-12 bottom-0 w-px bg-gradient-to-b from-[#020DFF]/25 via-slate-200 to-transparent"></div>
                         <div class="relative flex gap-3">
-                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#020DFF]/15 bg-white text-xs font-bold text-[#020DFF]">03</div>
+                            <div class="stepper-circle repayment-flow-circle">03</div>
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">Repayment runs</p>
                                 <p class="mt-1 text-[12px] leading-relaxed text-slate-600">
@@ -474,7 +474,7 @@
 
                     <div class="relative overflow-hidden rounded-2xl bg-slate-50/85 p-4">
                         <div class="relative flex gap-3">
-                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#020DFF]/15 bg-white text-xs font-bold text-[#020DFF]">04</div>
+                            <div class="stepper-circle repayment-flow-circle">04</div>
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">Track performance</p>
                                 <p class="mt-1 text-[12px] leading-relaxed text-slate-600">
@@ -631,9 +631,7 @@
                 <div class="mt-5 grid gap-3 sm:grid-cols-2">
                     <div class="rounded-2xl bg-gradient-to-br from-[#020DFF]/28 via-cyan-400/22 to-[#020DFF]/10 p-[1px] shadow-[0_10px_24px_-22px_rgba(2,13,255,0.45)]">
                         <div class="rounded-[15px] bg-white p-4">
-                            <div class="inline-flex rounded-xl bg-gradient-to-br from-[#020DFF] via-blue-600 to-blue-400 p-[1px]">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-[11px] bg-white text-xs font-bold text-black">01</div>
-                            </div>
+                            <div class="stepper-circle repayment-flow-circle">01</div>
                             <p class="mt-3 text-sm font-semibold text-slate-900">Register</p>
                             <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Capture merchant, station, and business details to start onboarding.</p>
                         </div>
@@ -641,9 +639,7 @@
 
                     <div class="rounded-2xl bg-gradient-to-br from-[#020DFF]/22 via-cyan-400/18 to-slate-200/50 p-[1px]">
                         <div class="rounded-[15px] bg-slate-50/85 p-4">
-                            <div class="inline-flex rounded-xl bg-gradient-to-br from-[#020DFF] via-blue-600 to-blue-400 p-[1px]">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-[11px] bg-white text-xs font-bold text-[#020DFF]">02</div>
-                            </div>
+                            <div class="stepper-circle repayment-flow-circle">02</div>
                             <p class="mt-3 text-sm font-semibold text-slate-900">Verify</p>
                             <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Submit KYC and onboarding documents so the account can be approved.</p>
                         </div>
@@ -651,9 +647,7 @@
 
                     <div class="rounded-2xl bg-gradient-to-br from-cyan-400/18 via-[#020DFF]/18 to-slate-200/50 p-[1px]">
                         <div class="rounded-[15px] bg-slate-50/85 p-4">
-                            <div class="inline-flex rounded-xl bg-gradient-to-br from-[#020DFF] via-blue-600 to-blue-400 p-[1px]">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-[11px] bg-white text-xs font-bold text-[#020DFF]">03</div>
-                            </div>
+                            <div class="stepper-circle repayment-flow-circle">03</div>
                             <p class="mt-3 text-sm font-semibold text-slate-900">Install</p>
                             <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Set up the POS, train staff, and configure voucher validation for the site.</p>
                         </div>
@@ -661,9 +655,7 @@
 
                     <div class="rounded-2xl bg-gradient-to-br from-[#020DFF]/24 via-cyan-400/18 to-emerald-300/35 p-[1px] shadow-[0_10px_24px_-22px_rgba(15,23,42,0.28)]">
                         <div class="rounded-[15px] bg-white p-4">
-                            <div class="inline-flex rounded-xl bg-gradient-to-br from-[#020DFF] via-blue-600 to-blue-400 p-[1px]">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-[11px] bg-white text-xs font-bold text-[#020DFF]">04</div>
-                            </div>
+                            <div class="stepper-circle repayment-flow-circle">04</div>
                             <p class="mt-3 text-sm font-semibold text-slate-900">Go live</p>
                             <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Start accepting Bwiser vouchers with reporting and support already in place.</p>
                         </div>
@@ -1374,6 +1366,13 @@
         .stepper-step--merchant .stepper-circle {
             background: #67e8f9;
             color: #020617;
+        }
+
+        .repayment-flow-circle {
+            margin-top: 0;
+            background: #67e8f9;
+            color: #020617;
+            box-shadow: 0 12px 24px -18px rgba(6, 182, 212, 0.75);
         }
 
         .stepper-step--merchant .stepper-title,
