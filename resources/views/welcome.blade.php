@@ -947,6 +947,10 @@
 
 </section>
 
+<div class="scroll-nav-rail" data-scroll-nav-rail hidden aria-hidden="true">
+    <span class="scroll-nav-rail__thumb" data-scroll-nav-thumb></span>
+</div>
+
 <button
     type="button"
     class="scroll-nav-fab"
@@ -1067,8 +1071,10 @@
             box-shadow: 0 22px 36px -24px rgba(2, 13, 255, 0.42);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            z-index: 60;
+            z-index: 2147483600;
             cursor: pointer;
+            pointer-events: auto;
+            touch-action: manipulation;
             transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
         }
 
@@ -1080,6 +1086,35 @@
 
         .scroll-nav-fab[hidden] {
             display: none;
+        }
+
+        .scroll-nav-rail {
+            position: fixed;
+            top: clamp(7rem, 10vh, 8.75rem);
+            right: 0.45rem;
+            bottom: calc(var(--scroll-nav-bottom, 1.25rem) + env(safe-area-inset-bottom, 0px));
+            width: 0.7rem;
+            border-radius: 999px;
+            background: rgba(226, 232, 240, 0.9);
+            box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
+            z-index: 2147483590;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .scroll-nav-rail[hidden] {
+            display: none;
+        }
+
+        .scroll-nav-rail__thumb {
+            display: block;
+            width: 100%;
+            min-height: 2.75rem;
+            border-radius: inherit;
+            background: linear-gradient(180deg, #020dff 0%, #38bdf8 100%);
+            box-shadow: 0 12px 20px -16px rgba(2, 13, 255, 0.72);
+            transform: translateY(0);
+            transition: transform 0.12s linear, height 0.16s ease;
         }
 
         .scroll-nav-fab__icon {
@@ -3455,12 +3490,15 @@
                 const boot = () => {
                     const button = document.querySelector('[data-scroll-nav-button]');
                     const root = document.querySelector('[data-scroll-nav-root]');
-                    if (!button || !root) return;
+                    const rail = document.querySelector('[data-scroll-nav-rail]');
+                    const thumb = document.querySelector('[data-scroll-nav-thumb]');
+                    if (!button || !root || !rail || !thumb) return;
 
                     const cookieBar = document.getElementById('cookieConsentBar');
                     const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
                     const isCookieBarVisible = () => cookieBar && !cookieBar.classList.contains('hidden') && window.getComputedStyle(cookieBar).display !== 'none';
+                    const getMaxScroll = () => Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
 
                     const setBottomOffset = () => {
                         let offset = window.innerWidth < 768 ? 16 : 20;
@@ -3470,13 +3508,21 @@
                         }
 
                         button.style.setProperty('--scroll-nav-bottom', `${offset}px`);
+                        rail.style.setProperty('--scroll-nav-bottom', `${offset}px`);
                     };
 
-                    const hasOverflow = () => document.documentElement.scrollHeight - window.innerHeight > 120;
+                    const hasOverflow = () => getMaxScroll() > 120;
                     const isNearBottom = () => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 140;
 
                     const scrollToTop = () => {
                         window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+                    };
+
+                    const scrollToProgress = (progress) => {
+                        window.scrollTo({
+                            top: progress * getMaxScroll(),
+                            behavior: prefersReducedMotion ? 'auto' : 'smooth',
+                        });
                     };
 
                     const scrollToNextSection = () => {
@@ -3491,8 +3537,26 @@
                         window.scrollTo({ top, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
                     };
 
+                    const updateThumb = () => {
+                        const railHeight = rail.clientHeight;
+                        const maxScroll = getMaxScroll();
+                        const visibleRatio = document.documentElement.scrollHeight > 0
+                            ? window.innerHeight / document.documentElement.scrollHeight
+                            : 1;
+                        const thumbHeight = maxScroll > 0
+                            ? Math.max(Math.round(railHeight * visibleRatio), 44)
+                            : railHeight;
+                        const maxTravel = Math.max(railHeight - thumbHeight, 0);
+                        const progress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+
+                        thumb.style.height = `${thumbHeight}px`;
+                        thumb.style.transform = `translateY(${maxTravel * progress}px)`;
+                    };
+
                     const update = () => {
-                        button.hidden = !hasOverflow();
+                        const hideNav = !hasOverflow();
+                        button.hidden = hideNav;
+                        rail.hidden = hideNav;
                         button.classList.toggle('is-returning', isNearBottom());
 
                         const label = isNearBottom() ? 'Back to top' : 'Scroll to next section';
@@ -3500,6 +3564,7 @@
                         button.title = label;
 
                         setBottomOffset();
+                        updateThumb();
                     };
 
                     button.addEventListener('click', () => {
@@ -3509,6 +3574,14 @@
                         }
 
                         scrollToNextSection();
+                    });
+
+                    rail.addEventListener('click', (event) => {
+                        const rect = rail.getBoundingClientRect();
+                        const thumbHeight = thumb.getBoundingClientRect().height;
+                        const rawProgress = (event.clientY - rect.top - (thumbHeight / 2)) / Math.max(rect.height - thumbHeight, 1);
+                        const progress = Math.min(Math.max(rawProgress, 0), 1);
+                        scrollToProgress(progress);
                     });
 
                     window.addEventListener('scroll', update, { passive: true });
