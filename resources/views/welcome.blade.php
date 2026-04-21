@@ -78,7 +78,7 @@
 @endpush
 
 	@section('content')
-	<section class="max-w-7xl mx-auto px-6 pt-16 pb-20">
+	<section class="max-w-7xl mx-auto px-6 pt-16 pb-20" data-scroll-nav-root>
 	    <div class="glass welcome-hero-surface rounded-3xl p-8 md:p-12">
 	        <div class="welcome-hero-image" aria-hidden="true"></div>
 	        @php
@@ -947,6 +947,19 @@
 
 </section>
 
+<button
+    type="button"
+    class="scroll-nav-fab"
+    data-scroll-nav-button
+    aria-label="Scroll to next section"
+    title="Scroll to next section"
+    hidden
+>
+    <svg class="scroll-nav-fab__icon" data-scroll-nav-icon viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 16.4a1 1 0 0 1-.7-.29l-6-6a1 1 0 1 1 1.4-1.42L12 13.99l5.3-5.3a1 1 0 1 1 1.4 1.42l-6 6a1 1 0 0 1-.7.29Z" fill="currentColor"></path>
+    </svg>
+</button>
+
 <div id="comingSoonModal" class="hidden fixed inset-0 z-[9999] items-center justify-center p-4" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="absolute inset-0 bg-black/55 backdrop-blur-sm" data-coming-soon-close></div>
     <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/10">
@@ -988,6 +1001,35 @@
 </div>
 
 	<style>
+        html {
+            scroll-behavior: smooth;
+            scrollbar-gutter: stable both-edges;
+            scrollbar-width: auto;
+            scrollbar-color: rgba(2, 13, 255, 0.75) rgba(226, 232, 240, 0.88);
+        }
+
+        html::-webkit-scrollbar {
+            width: 14px;
+        }
+
+        html::-webkit-scrollbar-track {
+            background: rgba(226, 232, 240, 0.88);
+        }
+
+        html::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #020dff 0%, #38bdf8 100%);
+            border: 3px solid rgba(248, 250, 252, 0.96);
+            border-radius: 999px;
+        }
+
+        html::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #1d4ed8 0%, #0ea5e9 100%);
+        }
+
+        body {
+            overflow-y: scroll;
+        }
+
 	    .welcome-hero-surface {
 	        position: relative;
 	        overflow: hidden;
@@ -1008,6 +1050,60 @@
 	        background-size: cover;
 	        opacity: 0.9;
 	    }
+
+        .scroll-nav-fab {
+            position: fixed;
+            right: clamp(1rem, 2vw, 1.5rem);
+            bottom: calc(var(--scroll-nav-bottom, 1.25rem) + env(safe-area-inset-bottom, 0px));
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 999px;
+            border: 1px solid rgba(2, 13, 255, 0.16);
+            background: rgba(255, 255, 255, 0.92);
+            color: #020dff;
+            box-shadow: 0 22px 36px -24px rgba(2, 13, 255, 0.42);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 60;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        }
+
+        .scroll-nav-fab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 24px 40px -22px rgba(2, 13, 255, 0.5);
+            background: rgba(255, 255, 255, 0.98);
+        }
+
+        .scroll-nav-fab[hidden] {
+            display: none;
+        }
+
+        .scroll-nav-fab__icon {
+            width: 1.4rem;
+            height: 1.4rem;
+            animation: scroll-nav-bounce 1.8s ease-in-out infinite;
+            transition: transform 0.25s ease;
+        }
+
+        .scroll-nav-fab.is-returning .scroll-nav-fab__icon {
+            animation: none;
+            transform: rotate(180deg);
+        }
+
+        @keyframes scroll-nav-bounce {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(4px);
+            }
+        }
 
 	    /* Shine headline */
 	    .shine {
@@ -3354,9 +3450,94 @@
 @endsection
 
 @push('scripts')
-    @php
-        $chartLocal = 'vendor/chart.js/Chart.min.js';
-        $chartLocalPath = public_path($chartLocal);
+        <script>
+            (function initScrollNavigator() {
+                const boot = () => {
+                    const button = document.querySelector('[data-scroll-nav-button]');
+                    const root = document.querySelector('[data-scroll-nav-root]');
+                    if (!button || !root) return;
+
+                    const cookieBar = document.getElementById('cookieConsentBar');
+                    const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+                    const isCookieBarVisible = () => cookieBar && !cookieBar.classList.contains('hidden') && window.getComputedStyle(cookieBar).display !== 'none';
+
+                    const setBottomOffset = () => {
+                        let offset = window.innerWidth < 768 ? 16 : 20;
+
+                        if (isCookieBarVisible()) {
+                            offset += cookieBar.getBoundingClientRect().height + 12;
+                        }
+
+                        button.style.setProperty('--scroll-nav-bottom', `${offset}px`);
+                    };
+
+                    const hasOverflow = () => document.documentElement.scrollHeight - window.innerHeight > 120;
+                    const isNearBottom = () => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 140;
+
+                    const scrollToTop = () => {
+                        window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+                    };
+
+                    const scrollToNextSection = () => {
+                        const nextSection = Array.from(root.children).find((section) => section.getBoundingClientRect().top > 110);
+
+                        if (!nextSection) {
+                            window.scrollTo({ top: document.documentElement.scrollHeight, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+                            return;
+                        }
+
+                        const top = Math.max(window.scrollY + nextSection.getBoundingClientRect().top - 24, 0);
+                        window.scrollTo({ top, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+                    };
+
+                    const update = () => {
+                        button.hidden = !hasOverflow();
+                        button.classList.toggle('is-returning', isNearBottom());
+
+                        const label = isNearBottom() ? 'Back to top' : 'Scroll to next section';
+                        button.setAttribute('aria-label', label);
+                        button.title = label;
+
+                        setBottomOffset();
+                    };
+
+                    button.addEventListener('click', () => {
+                        if (isNearBottom()) {
+                            scrollToTop();
+                            return;
+                        }
+
+                        scrollToNextSection();
+                    });
+
+                    window.addEventListener('scroll', update, { passive: true });
+                    window.addEventListener('resize', update);
+
+                    if (cookieBar && 'ResizeObserver' in window) {
+                        new ResizeObserver(update).observe(cookieBar);
+                    }
+
+                    if (cookieBar && 'MutationObserver' in window) {
+                        new MutationObserver(update).observe(cookieBar, {
+                            attributes: true,
+                            attributeFilter: ['class', 'style'],
+                        });
+                    }
+
+                    update();
+                };
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', boot);
+                } else {
+                    boot();
+                }
+            })();
+        </script>
+        @php
+            $chartLocal = 'vendor/chart.js/Chart.min.js';
+            $chartLocalPath = public_path($chartLocal);
         $chartSrc = is_file($chartLocalPath)
             ? asset($chartLocal).'?v='.filemtime($chartLocalPath)
             : 'https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js';

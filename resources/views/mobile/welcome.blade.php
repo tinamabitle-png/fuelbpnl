@@ -48,6 +48,31 @@
     ], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}
     </script>
     <style>
+        html {
+            scroll-behavior: smooth;
+            scrollbar-gutter: stable;
+            scrollbar-width: auto;
+            scrollbar-color: rgba(2, 13, 255, 0.72) rgba(226, 232, 240, 0.88);
+        }
+
+        html::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        html::-webkit-scrollbar-track {
+            background: rgba(226, 232, 240, 0.88);
+        }
+
+        html::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #020dff 0%, #38bdf8 100%);
+            border: 2px solid rgba(248, 250, 252, 0.96);
+            border-radius: 999px;
+        }
+
+        body.mobile-shell {
+            overflow-y: scroll;
+        }
+
         .mobile-auth-step--merchant {
             position: relative;
             overflow: hidden;
@@ -75,12 +100,59 @@
             position: relative;
             z-index: 1;
         }
+
+        .scroll-nav-fab {
+            position: fixed;
+            right: 1rem;
+            bottom: calc(var(--scroll-nav-bottom, 1rem) + env(safe-area-inset-bottom, 0px));
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 3.15rem;
+            height: 3.15rem;
+            border-radius: 999px;
+            border: 1px solid rgba(2, 13, 255, 0.16);
+            background: rgba(255, 255, 255, 0.94);
+            color: #020dff;
+            box-shadow: 0 22px 36px -24px rgba(2, 13, 255, 0.42);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 60;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .scroll-nav-fab[hidden] {
+            display: none;
+        }
+
+        .scroll-nav-fab__icon {
+            width: 1.3rem;
+            height: 1.3rem;
+            animation: scroll-nav-bounce 1.8s ease-in-out infinite;
+            transition: transform 0.25s ease;
+        }
+
+        .scroll-nav-fab.is-returning .scroll-nav-fab__icon {
+            animation: none;
+            transform: rotate(180deg);
+        }
+
+        @keyframes scroll-nav-bounce {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(4px);
+            }
+        }
     </style>
 @endpush
 
 @section('content')
 <main class="px-4 pb-8 pt-6">
-    <div class="mx-auto max-w-md space-y-4">
+    <div class="mx-auto max-w-md space-y-4" data-scroll-nav-root>
         <section class="mobile-card p-5">
             @php
                 $dashboardUrl = null;
@@ -219,9 +291,72 @@
 	        </section>
     </div>
 </main>
+
+<button
+    type="button"
+    class="scroll-nav-fab"
+    data-scroll-nav-button
+    aria-label="Scroll to next section"
+    title="Scroll to next section"
+    hidden
+>
+    <svg class="scroll-nav-fab__icon" data-scroll-nav-icon viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 16.4a1 1 0 0 1-.7-.29l-6-6a1 1 0 1 1 1.4-1.42L12 13.99l5.3-5.3a1 1 0 1 1 1.4 1.42l-6 6a1 1 0 0 1-.7.29Z" fill="currentColor"></path>
+    </svg>
+</button>
 @endsection
 
 @push('scripts')
+    <script>
+        (function initScrollNavigator() {
+            const boot = () => {
+                const button = document.querySelector('[data-scroll-nav-button]');
+                const root = document.querySelector('[data-scroll-nav-root]');
+                if (!button || !root) return;
+
+                const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+                const hasOverflow = () => document.documentElement.scrollHeight - window.innerHeight > 120;
+                const isNearBottom = () => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 140;
+
+                const update = () => {
+                    button.hidden = !hasOverflow();
+                    button.classList.toggle('is-returning', isNearBottom());
+
+                    const label = isNearBottom() ? 'Back to top' : 'Scroll to next section';
+                    button.setAttribute('aria-label', label);
+                    button.title = label;
+                };
+
+                button.addEventListener('click', () => {
+                    if (isNearBottom()) {
+                        window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+                        return;
+                    }
+
+                    const nextSection = Array.from(root.children).find((section) => section.getBoundingClientRect().top > 96);
+
+                    if (!nextSection) {
+                        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+                        return;
+                    }
+
+                    const top = Math.max(window.scrollY + nextSection.getBoundingClientRect().top - 16, 0);
+                    window.scrollTo({ top, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+                });
+
+                window.addEventListener('scroll', update, { passive: true });
+                window.addEventListener('resize', update);
+                update();
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', boot);
+            } else {
+                boot();
+            }
+        })();
+    </script>
     <script>
         (function initAuthSectionScroll() {
             const boot = () => {
