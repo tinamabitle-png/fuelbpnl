@@ -50,23 +50,13 @@
     <style>
         html {
             scroll-behavior: smooth;
-            scrollbar-gutter: stable;
-            scrollbar-width: auto;
-            scrollbar-color: rgba(2, 13, 255, 0.72) rgba(226, 232, 240, 0.88);
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
 
         html::-webkit-scrollbar {
-            width: 12px;
-        }
-
-        html::-webkit-scrollbar-track {
-            background: rgba(226, 232, 240, 0.88);
-        }
-
-        html::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, #020dff 0%, #38bdf8 100%);
-            border: 2px solid rgba(248, 250, 252, 0.96);
-            border-radius: 999px;
+            width: 0;
+            height: 0;
         }
 
         body.mobile-shell {
@@ -153,7 +143,19 @@
             background: linear-gradient(180deg, #020dff 0%, #38bdf8 100%);
             box-shadow: 0 12px 20px -16px rgba(2, 13, 255, 0.72);
             transform: translateY(0);
-            transition: transform 0.12s linear, height 0.16s ease;
+            will-change: transform;
+            transition: height 0.16s ease;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        .scroll-nav-rail.is-dragging,
+        .scroll-nav-rail.is-dragging .scroll-nav-rail__thumb {
+            cursor: grabbing;
+        }
+
+        body.scroll-nav-dragging {
+            user-select: none;
         }
 
         .scroll-nav-fab__icon {
@@ -356,10 +358,13 @@
 
                 const hasOverflow = () => getMaxScroll() > 120;
                 const isNearBottom = () => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 140;
-                const scrollToProgress = (progress) => {
+                let updateFrame = null;
+                let dragPointerId = null;
+                let dragThumbOffset = 0;
+                const scrollToProgress = (progress, smooth = false) => {
                     window.scrollTo({
                         top: progress * getMaxScroll(),
-                        behavior: prefersReducedMotion ? 'auto' : 'smooth',
+                        behavior: smooth && !prefersReducedMotion ? 'smooth' : 'auto',
                     });
                 };
 
@@ -376,7 +381,7 @@
                     const progress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
 
                     thumb.style.height = `${thumbHeight}px`;
-                    thumb.style.transform = `translateY(${maxTravel * progress}px)`;
+                    thumb.style.transform = `translate3d(0, ${maxTravel * progress}px, 0)`;
                 };
 
                 const update = () => {
@@ -389,6 +394,27 @@
                     button.setAttribute('aria-label', label);
                     button.title = label;
                     updateThumb();
+                };
+
+                const setScrollFromClientY = (clientY) => {
+                    const rect = rail.getBoundingClientRect();
+                    const thumbHeight = thumb.getBoundingClientRect().height;
+                    const maxTravel = Math.max(rect.height - thumbHeight, 1);
+                    const thumbTop = Math.min(
+                        Math.max(clientY - rect.top - dragThumbOffset, 0),
+                        maxTravel
+                    );
+
+                    scrollToProgress(thumbTop / maxTravel, false);
+                };
+
+                const scheduleUpdate = () => {
+                    if (updateFrame !== null) return;
+
+                    updateFrame = window.requestAnimationFrame(() => {
+                        updateFrame = null;
+                        update();
+                    });
                 };
 
                 button.addEventListener('click', () => {
@@ -408,16 +434,50 @@
                     window.scrollTo({ top, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
                 });
 
-                rail.addEventListener('click', (event) => {
-                    const rect = rail.getBoundingClientRect();
-                    const thumbHeight = thumb.getBoundingClientRect().height;
-                    const rawProgress = (event.clientY - rect.top - (thumbHeight / 2)) / Math.max(rect.height - thumbHeight, 1);
-                    const progress = Math.min(Math.max(rawProgress, 0), 1);
-                    scrollToProgress(progress);
+                rail.addEventListener('pointerdown', (event) => {
+                    if (button.hidden) return;
+
+                    const thumbRect = thumb.getBoundingClientRect();
+                    const clickedThumb = thumb.contains(event.target);
+                    dragPointerId = event.pointerId;
+                    dragThumbOffset = clickedThumb
+                        ? Math.min(Math.max(event.clientY - thumbRect.top, 0), thumbRect.height)
+                        : thumbRect.height / 2;
+
+                    rail.classList.add('is-dragging');
+                    document.body.classList.add('scroll-nav-dragging');
+
+                    if (typeof rail.setPointerCapture === 'function') {
+                        rail.setPointerCapture(event.pointerId);
+                    }
+
+                    setScrollFromClientY(event.clientY);
+                    event.preventDefault();
                 });
 
-                window.addEventListener('scroll', update, { passive: true });
-                window.addEventListener('resize', update);
+                rail.addEventListener('pointermove', (event) => {
+                    if (dragPointerId !== event.pointerId) return;
+                    setScrollFromClientY(event.clientY);
+                    event.preventDefault();
+                });
+
+                const stopDragging = (event) => {
+                    if (dragPointerId === null || dragPointerId !== event.pointerId) return;
+
+                    if (typeof rail.hasPointerCapture === 'function' && rail.hasPointerCapture(event.pointerId)) {
+                        rail.releasePointerCapture(event.pointerId);
+                    }
+
+                    dragPointerId = null;
+                    rail.classList.remove('is-dragging');
+                    document.body.classList.remove('scroll-nav-dragging');
+                };
+
+                rail.addEventListener('pointerup', stopDragging);
+                rail.addEventListener('pointercancel', stopDragging);
+
+                window.addEventListener('scroll', scheduleUpdate, { passive: true });
+                window.addEventListener('resize', scheduleUpdate);
                 update();
             };
 
