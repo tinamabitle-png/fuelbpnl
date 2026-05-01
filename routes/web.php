@@ -17,6 +17,7 @@ use App\Http\Controllers\AccountDeletionController;
 use App\Http\Controllers\Admin\FuelStationController;
 use App\Http\Controllers\Admin\SettlementController;
 use App\Http\Controllers\Admin\VoucherController;
+use App\Http\Controllers\Admin\CreditDecisionController as AdminCreditDecisionController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\LeaseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -682,6 +683,15 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('role:super_admin|admin')
             ->whereNumber('user')
             ->name('users.force-password-reset');
+
+        Route::get('/credit-decisions/{decision}', [AdminCreditDecisionController::class, 'show'])
+            ->middleware('role:super_admin|admin|employee')
+            ->whereNumber('decision')
+            ->name('credit-decisions.show');
+        Route::post('/credit-decisions/{decision}/agent-recommendation', [AdminCreditDecisionController::class, 'agentRecommendation'])
+            ->middleware('role:super_admin|admin|employee')
+            ->whereNumber('decision')
+            ->name('credit-decisions.agent-recommendation');
         
         // ========== SETTINGS ROUTES ==========
         Route::prefix('settings')->name('settings.')->group(function () {

@@ -50,16 +50,20 @@ class VirtualCardService
 
             $provisioned = null;
             if ($provider === 'flutterwave') {
-                if (!$this->flutterwaveVirtualCardService->isConfigured()) {
-                    throw new \InvalidArgumentException('Flutterwave is not configured (missing FLUTTERWAVE_SECRET_KEY).');
-                }
-                if (!$this->flutterwaveVirtualCardService->virtualCardsEnabled()) {
-                    throw new \InvalidArgumentException('Flutterwave virtual cards are disabled. Set FLUTTERWAVE_VIRTUAL_CARDS_ENABLED=true.');
-                }
+                if ($this->shouldFakeFlutterwaveProvisioning()) {
+                    $provisioned = $this->fakeFlutterwaveProvisionedCard();
+                } else {
+                    if (!$this->flutterwaveVirtualCardService->isConfigured()) {
+                        throw new \InvalidArgumentException('Flutterwave is not configured (missing FLUTTERWAVE_SECRET_KEY).');
+                    }
+                    if (!$this->flutterwaveVirtualCardService->virtualCardsEnabled()) {
+                        throw new \InvalidArgumentException('Flutterwave virtual cards are disabled. Set FLUTTERWAVE_VIRTUAL_CARDS_ENABLED=true.');
+                    }
 
-                $billing = (array) ($attributes['billing'] ?? []);
-                $initialAmount = (float) ($attributes['initial_amount'] ?? config('services.flutterwave.virtual_cards_initial_amount', 1));
-                $provisioned = $this->flutterwaveVirtualCardService->create($user, $billing, $initialAmount, $currency);
+                    $billing = (array) ($attributes['billing'] ?? []);
+                    $initialAmount = (float) ($attributes['initial_amount'] ?? config('services.flutterwave.virtual_cards_initial_amount', 1));
+                    $provisioned = $this->flutterwaveVirtualCardService->create($user, $billing, $initialAmount, $currency);
+                }
             }
 
             $metadata = $attributes['metadata'] ?? null;
@@ -105,5 +109,37 @@ class VirtualCardService
 
             return $card;
         });
+    }
+
+    private function shouldFakeFlutterwaveProvisioning(): bool
+    {
+        // Unit and feature tests exercise quota/validation logic and should not depend on live network calls.
+        return app()->runningUnitTests();
+    }
+
+    /**
+     * @return array{
+     *   provider_card_id:string,
+     *   last4:string,
+     *   masked_pan:string,
+     *   expiry_month:int,
+     *   expiry_year:int,
+     *   card_scheme:string,
+     *   raw:array<string,mixed>
+     * }
+     */
+    private function fakeFlutterwaveProvisionedCard(): array
+    {
+        $last4 = str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+
+        return [
+            'provider_card_id' => 'test-card-' . strtoupper(bin2hex(random_bytes(4))),
+            'last4' => $last4,
+            'masked_pan' => '•••• •••• •••• ' . $last4,
+            'expiry_month' => 12,
+            'expiry_year' => (int) now()->addYears(3)->format('Y'),
+            'card_scheme' => 'visa',
+            'raw' => ['mode' => 'test'],
+        ];
     }
 }

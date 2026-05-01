@@ -185,6 +185,11 @@ Route::prefix('v1')->group(function () {
 
         // Credit Assessment
         Route::prefix('credit')->group(function () {
+            Route::post('/consents', [CreditAssessmentController::class, 'recordConsent']);
+            Route::post('/score', [CreditAssessmentController::class, 'score']);
+            Route::post('/score/{user}', [CreditAssessmentController::class, 'score'])->whereNumber('user');
+            Route::post('/decision', [CreditAssessmentController::class, 'decide']);
+            Route::get('/decision/{decision}/explanation', [CreditAssessmentController::class, 'explanation'])->whereNumber('decision');
             Route::get('/eligibility', [CreditAssessmentController::class, 'checkEligibility']);
             Route::post('/apply-increase', [CreditAssessmentController::class, 'applyForIncrease']);
             Route::get('/factors', [CreditAssessmentController::class, 'getCreditFactors']);

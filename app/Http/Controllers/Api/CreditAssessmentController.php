@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CreditConsent;
+use App\Models\CreditDecision;
 use App\Models\User;
 use App\Models\CreditLimit;
+use App\Models\CreditScore;
 use App\Models\Lease;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -15,6 +18,136 @@ class CreditAssessmentController extends Controller
     private function minRepaymentAmount(): float
     {
         return (float) config('credit.min_repayment_amount', 50);
+    }
+
+    public function recordConsent(Request $request)
+    {
+        $validated = $request->validate([
+            'source' => ['required', 'string', 'max:60'],
+            'scope' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $consent = CreditConsent::create([
+            'user_id' => $request->user()->id,
+            'source' => $validated['source'],
+            'scope' => $validated['scope'],
+            'granted_at' => now(),
+            'evidence_ref' => $request->ip(),
+            'metadata' => [
+                'user_agent' => (string) $request->userAgent(),
+                'recorded_via' => 'api_v1_credit_consents',
+            ],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $consent->id,
+                'user_id' => $consent->user_id,
+                'source' => $consent->source,
+                'scope' => $consent->scope,
+                'granted_at' => optional($consent->granted_at)->toIso8601String(),
+            ],
+        ], 201);
+    }
+
+    public function score(Request $request, ?User $user = null)
+    {
+        $actor = $request->user();
+        $subject = $user ?? $actor;
+
+        if (!$this->canAccessCreditProfile($actor, $subject)) {
+            return $this->creditForbiddenResponse();
+        }
+
+        $score = $this->createCreditScoreRecord($subject);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $score->id,
+                'user_id' => $score->user_id,
+                'score' => $score->score,
+                'band' => $score->band,
+                'version' => $score->version,
+                'scored_at' => optional($score->scored_at)->toIso8601String(),
+            ],
+        ]);
+    }
+
+    public function decide(Request $request)
+    {
+        $validated = $request->validate([
+            'requested_amount' => ['required', 'numeric', 'min:1', 'max:50000'],
+            'application_type' => ['nullable', 'string', 'max:60'],
+        ]);
+
+        $user = $request->user();
+        $score = $this->latestOrCreateCreditScore($user);
+        $requestedAmount = (float) $validated['requested_amount'];
+        $applicationType = (string) ($validated['application_type'] ?? 'voucher_bnpl');
+        $decisionValue = $this->resolveCreditDecision($user, (int) $score->score, $requestedAmount);
+        $reasons = $this->resolveCreditDecisionReasons($user, (int) $score->score, $requestedAmount);
+
+        $decision = CreditDecision::create([
+            'user_id' => $user->id,
+            'score_id' => $score->id,
+            'score' => (int) $score->score,
+            'decision' => $decisionValue,
+            'application_type' => $applicationType,
+            'reasons' => $reasons,
+            'explanation_json' => [
+                'summary' => [
+                    'decision' => $decisionValue,
+                    'score_band' => $score->band,
+                    'requested_amount' => $requestedAmount,
+                    'available_credit' => (float) $user->available_credit,
+                ],
+                'reasons' => $reasons,
+                'score_snapshot' => [
+                    'score_id' => $score->id,
+                    'score' => $score->score,
+                    'band' => $score->band,
+                    'version' => $score->version,
+                ],
+            ],
+            'model_version' => $score->version,
+            'policy_version' => 'policy-v1',
+            'source' => 'internal_credit_engine',
+            'decided_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $decision->id,
+                'decision' => $decision->decision,
+                'score' => $decision->score,
+                'application_type' => $decision->application_type,
+            ],
+        ]);
+    }
+
+    public function explanation(Request $request, CreditDecision $decision)
+    {
+        $actor = $request->user();
+        $owner = $decision->user;
+
+        if (!$owner || !$this->canAccessCreditProfile($actor, $owner)) {
+            return $this->creditForbiddenResponse();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'decision_id' => $decision->id,
+                'decision' => $decision->decision,
+                'score' => $decision->score,
+                'application_type' => $decision->application_type,
+                'reasons' => $decision->reasons ?? [],
+                'explanation' => $decision->explanation_json ?? [],
+            ],
+        ]);
     }
 
     /**
@@ -609,5 +742,98 @@ class CreditAssessmentController extends Controller
         if ($creditScore >= 500) return 8000;
         if ($creditScore >= 400) return 3000;
         return 1000;
+    }
+
+    private function canAccessCreditProfile(User $actor, User $subject): bool
+    {
+        return $actor->id === $subject->id
+            || $actor->hasAnyRole(['employee', 'super_admin']);
+    }
+
+    private function creditForbiddenResponse()
+    {
+        return response()->json([
+            'success' => false,
+            'message' => 'You are not allowed to access this credit profile.',
+        ], 403);
+    }
+
+    private function latestOrCreateCreditScore(User $user): CreditScore
+    {
+        return CreditScore::query()
+            ->where('user_id', $user->id)
+            ->latest('scored_at')
+            ->latest('id')
+            ->first() ?? $this->createCreditScoreRecord($user);
+    }
+
+    private function createCreditScoreRecord(User $user): CreditScore
+    {
+        $scoreValue = max(300, min(850, (int) ($user->credit_score ?? 500)));
+
+        return CreditScore::create([
+            'user_id' => $user->id,
+            'score' => $scoreValue,
+            'band' => $this->creditBand($scoreValue),
+            'version' => 'rules-v1',
+            'reasons_json' => [
+                'status' => (string) ($user->status ?? 'unknown'),
+                'available_credit' => (float) $user->available_credit,
+            ],
+            'metadata' => [
+                'generated_via' => 'api_v1_credit_score',
+            ],
+            'scored_at' => now(),
+        ]);
+    }
+
+    private function creditBand(int $score): string
+    {
+        if ($score >= 750) return 'excellent';
+        if ($score >= 650) return 'good';
+        if ($score >= 550) return 'fair';
+        return 'high_risk';
+    }
+
+    private function resolveCreditDecision(User $user, int $score, float $requestedAmount): string
+    {
+        $availableCredit = (float) $user->available_credit;
+
+        if ($requestedAmount > $availableCredit) {
+            return 'deny';
+        }
+
+        if ($score >= 650) {
+            return 'approve';
+        }
+
+        if ($score >= 500) {
+            return 'review';
+        }
+
+        return 'deny';
+    }
+
+    private function resolveCreditDecisionReasons(User $user, int $score, float $requestedAmount): array
+    {
+        $reasons = [];
+
+        if ((string) $user->status !== 'active') {
+            $reasons[] = 'Account is not active.';
+        }
+
+        if ($requestedAmount > (float) $user->available_credit) {
+            $reasons[] = 'Requested amount exceeds available credit.';
+        }
+
+        if ($score >= 650) {
+            $reasons[] = 'Credit score is within the auto-approval range.';
+        } elseif ($score >= 500) {
+            $reasons[] = 'Credit score needs manual review.';
+        } else {
+            $reasons[] = 'Credit score is below the approval threshold.';
+        }
+
+        return $reasons;
     }
 }
