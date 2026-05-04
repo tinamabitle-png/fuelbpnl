@@ -920,8 +920,8 @@
 
         <div class="glass rounded-2xl p-6 overflow-hidden welcome-media-shell" data-welcome-media>
             <img
-                src="{{ asset('images/thestripes.png') }}"
-                alt="Bwiser stripes"
+                src="{{ asset('images/KIOSK.png') }}"
+                alt="Bwiser kiosk"
                 class="w-full h-full object-cover rounded-2xl welcome-media-shell__media"
                 data-welcome-media-target
                 loading="lazy"
