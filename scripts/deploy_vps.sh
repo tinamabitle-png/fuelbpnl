@@ -191,9 +191,38 @@ check_mail() {
   fi
 }
 
+ensure_production_env() {
+  local env_file=".env"
+
+  if [[ ! -f "$env_file" ]]; then
+    echo "No .env file found on VPS; skipping production env hardening."
+    return 0
+  fi
+
+  echo "Enforcing production-safe Laravel env flags..."
+
+  upsert_env_value() {
+    local key="$1"
+    local value="$2"
+
+    if grep -qE "^${key}=" "$env_file"; then
+      sed -i "s/^${key}=.*/${key}=${value}/" "$env_file"
+    else
+      printf "\n%s=%s\n" "$key" "$value" >> "$env_file"
+    fi
+  }
+
+  upsert_env_value "APP_ENV" "production"
+  upsert_env_value "APP_DEBUG" "false"
+
+  rm -f bootstrap/cache/config.php bootstrap/cache/packages.php bootstrap/cache/services.php bootstrap/cache/routes-v7.php 2>/dev/null || true
+}
+
 if [[ "'"${CHECK_MAIL}"'" == "true" ]]; then
   check_mail || true
 fi
+
+ensure_production_env
 
 echo "Composer install..."
 if command -v "$REMOTE_COMPOSER" >/dev/null 2>&1; then

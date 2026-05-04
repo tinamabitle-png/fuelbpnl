@@ -857,6 +857,14 @@
             <div class="welcome-driver-stack-wrap">
                 <ul class="welcome-driver-stack" aria-label="Last 4 drivers">
                     @forelse($recentDrivers as $index => $driver)
+                        @php
+                            $rawDriverName = trim((string) ($driver['name'] ?? ''));
+                            $driverNameParts = preg_split('/\s+/', $rawDriverName) ?: [];
+                            $driverFirstName = trim((string) ($driverNameParts[0] ?? ''));
+                            $driverFirstName = $driverFirstName !== ''
+                                ? mb_convert_case(mb_strtolower($driverFirstName, 'UTF-8'), MB_CASE_TITLE, 'UTF-8')
+                                : 'Driver';
+                        @endphp
                         <li style="--i: {{ $index + 1 }};">
                             <div class="welcome-driver-avatar" aria-hidden="true">
                                 <img
@@ -867,8 +875,8 @@
                                 >
                             </div>
                             <div class="content">
-                                <h3>{{ $driver['name'] }}</h3>
-                                <p>{{ $driver['name'] }} is now driving wiser</p>
+                                <h3>{{ $driverFirstName }}</h3>
+                                <p>{{ $driverFirstName }} is now driving wiser</p>
                             </div>
                         </li>
                     @empty
@@ -878,6 +886,14 @@
                             ['name' => 'Thabo Maseko', 'initials' => 'TM'],
                             ['name' => 'Lerato Nkosi', 'initials' => 'LN'],
                         ] as $index => $driver)
+                            @php
+                                $rawDriverName = trim((string) ($driver['name'] ?? ''));
+                                $driverNameParts = preg_split('/\s+/', $rawDriverName) ?: [];
+                                $driverFirstName = trim((string) ($driverNameParts[0] ?? ''));
+                                $driverFirstName = $driverFirstName !== ''
+                                    ? mb_convert_case(mb_strtolower($driverFirstName, 'UTF-8'), MB_CASE_TITLE, 'UTF-8')
+                                    : 'Driver';
+                            @endphp
                             <li style="--i: {{ $index + 1 }};">
                                 @php
                                     $fallbackLogos = ['sixty60.png', 'uber-eats.svg', 'uber.svg', 'indrive.png'];
@@ -892,8 +908,8 @@
                                     >
                                 </div>
                                 <div class="content">
-                                    <h3>{{ $driver['name'] }}</h3>
-                                    <p>{{ $driver['name'] }} is now driving wiser</p>
+                                    <h3>{{ $driverFirstName }}</h3>
+                                    <p>{{ $driverFirstName }} is now driving wiser</p>
                                 </div>
                             </li>
                         @endforeach
