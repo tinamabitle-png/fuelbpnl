@@ -821,36 +821,6 @@
         $showVoucherPct = (bool) ($growth['show_pct'] ?? false);
     @endphp
 
-    <div class="glass rounded-2xl p-3 md:p-4 mt-8 overflow-hidden">
-        <div class="welcome-video welcome-media-shell" data-welcome-video data-poster-seconds="22">
-            <img class="welcome-video__poster" alt="Badserve preview" loading="lazy">
-            <video
-                class="welcome-video__media"
-                muted
-                loop
-                playsinline
-                preload="metadata"
-            >
-                <source src="{{ asset('images/badserve.mp4') }}" type="video/mp4">
-            </video>
-            <button class="welcome-video__play" type="button" aria-label="Play video">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M8 5v14l11-7z" fill="currentColor"></path>
-                </svg>
-            </button>
-            <button class="welcome-video__sound" type="button" aria-label="Unmute video" title="Unmute">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M11 5L6.8 8.5H4a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h2.8L11 19V5z" fill="currentColor"></path>
-                    <path class="welcome-video__sound-waves" d="M14.5 8.5a1 1 0 0 1 1.4 0 5 5 0 0 1 0 7.1 1 1 0 1 1-1.4-1.4 3 3 0 0 0 0-4.2 1 1 0 0 1 0-1.5z" fill="currentColor"></path>
-                    <path class="welcome-video__sound-waves" d="M16.8 6.2a1 1 0 0 1 1.4 0 8 8 0 0 1 0 11.3 1 1 0 1 1-1.4-1.4 6 6 0 0 0 0-8.5 1 1 0 0 1 0-1.4z" fill="currentColor"></path>
-                    <path class="welcome-video__sound-mute" d="M20 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path>
-                    <path class="welcome-video__sound-mute" d="M14 9l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path>
-                </svg>
-            </button>
-            <div class="welcome-video__loader" aria-hidden="true"></div>
-        </div>
-    </div>
-
     <div class="grid gap-8 lg:grid-cols-2 mt-8 items-start">
         <div class="glass rounded-2xl p-6 overflow-hidden">
             <p class="text-xs uppercase tracking-[1px] text-blue-600 mb-4">Latest Drivers</p>
