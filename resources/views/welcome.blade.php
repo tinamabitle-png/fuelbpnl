@@ -888,12 +888,11 @@
             </div>
         </div>
 
-        <div class="glass rounded-2xl p-6 overflow-hidden welcome-media-shell" data-welcome-media>
+        <div class="flex justify-center">
             <img
                 src="{{ asset('images/KIOSK.png') }}"
                 alt="Bwiser kiosk"
-                class="w-full h-full object-cover rounded-2xl welcome-media-shell__media welcome-kiosk-image"
-                data-welcome-media-target
+                class="welcome-kiosk-image"
                 loading="lazy"
             >
         </div>
@@ -1331,6 +1330,10 @@
         }
 
         .welcome-kiosk-image {
+            display: block;
+            width: 90%;
+            height: auto;
+            object-fit: contain;
             -webkit-border-radius: 180px;
             -webkit-border-bottom-right-radius: 10px;
             -moz-border-radius: 180px;
