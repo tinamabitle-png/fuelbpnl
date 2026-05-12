@@ -892,7 +892,7 @@
             <img
                 src="{{ asset('images/KIOSK.png') }}"
                 alt="Bwiser kiosk"
-                class="w-full h-full object-cover rounded-2xl welcome-media-shell__media"
+                class="w-full h-full object-cover rounded-2xl welcome-media-shell__media welcome-kiosk-image"
                 data-welcome-media-target
                 loading="lazy"
             >
@@ -1328,6 +1328,15 @@
         .welcome-video__poster {
             position: relative;
             z-index: 2;
+        }
+
+        .welcome-kiosk-image {
+            -webkit-border-radius: 180px;
+            -webkit-border-bottom-right-radius: 10px;
+            -moz-border-radius: 180px;
+            -moz-border-radius-bottomright: 10px;
+            border-radius: 180px;
+            border-bottom-right-radius: 10px;
         }
 
         @keyframes welcomeSkeletonShimmer {
