@@ -2782,7 +2782,7 @@
         overflow: hidden;
         border-radius: 2rem;
         padding: 1.35rem;
-        background: linear-gradient(135deg, #fff480 0%, #ffe55c 100%);
+        background: rgba(2, 13, 255, 0.58);
         color: #111827;
         transition: transform 0.4s ease, box-shadow 0.4s ease;
         box-shadow: 0 18px 40px -28px rgba(202, 138, 4, 0.55);
