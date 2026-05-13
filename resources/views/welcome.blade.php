@@ -681,7 +681,7 @@
             </div>
 
             <img
-                src="{{ asset('images/BwiserPOS1transformed.png') }}"
+                src="{{ asset('images/pos4.jpg') }}"
                 alt="Bwiser preview"
                 class="welcome-tween-image is-in rounded-2xl"
                 loading="lazy"
