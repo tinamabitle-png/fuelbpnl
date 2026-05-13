@@ -401,7 +401,20 @@ class UserController extends Controller
             ->first();
 
         if ($action === 'reassess') {
-            $latestDecision = $assessmentService->assessAndStore($user, $upload);
+            try {
+                $latestDecision = $assessmentService->assessAndStore($user, $upload);
+            } catch (\Throwable $e) {
+                report($e);
+
+                $upload->forceFill([
+                    'status' => 'failed',
+                    'error_message' => 'AI extraction failed: ' . $e->getMessage(),
+                    'processed_at' => now(),
+                ])->save();
+
+                return back()->with('error', 'AI extraction failed. The upload was marked as failed so you can retry after the issue is fixed.');
+            }
+
             AuditTrailService::record(
                 'bank_statement_reassessed_by_admin',
                 $upload,

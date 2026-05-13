@@ -329,7 +329,7 @@ CREATE TABLE `credit_decisions` (
   `user_id` bigint(20) unsigned DEFAULT NULL,
   `upload_id` bigint(20) unsigned DEFAULT NULL,
   `score_id` bigint(20) unsigned DEFAULT NULL,
-  `score` tinyint(3) unsigned DEFAULT NULL,
+  `score` smallint(5) unsigned DEFAULT NULL,
   `decision` enum('approve','review','deny') DEFAULT NULL,
   `application_type` varchar(60) NOT NULL DEFAULT 'voucher_bnpl',
   `reasons` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`reasons`)),

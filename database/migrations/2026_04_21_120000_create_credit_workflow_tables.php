@@ -72,7 +72,7 @@ return new class extends Migration
                 $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
                 $table->foreignId('upload_id')->nullable()->constrained('bank_statement_uploads')->nullOnDelete();
                 $table->foreignId('score_id')->nullable()->constrained('credit_scores')->nullOnDelete();
-                $table->unsignedTinyInteger('score')->nullable();
+                $table->unsignedSmallInteger('score')->nullable();
                 $table->enum('decision', ['approve', 'review', 'deny'])->nullable();
                 $table->string('application_type', 60)->default('voucher_bnpl');
                 $table->json('reasons')->nullable();
