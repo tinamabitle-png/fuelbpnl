@@ -4,7 +4,7 @@
 @section('page-title', 'Dashboard Overview')
 
 @section('content')
-<div class="space-y-8">
+<div class="space-y-8 adminhub-dashboard">
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
     <!-- Stats Cards -->
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
@@ -94,6 +94,13 @@
                             @else bg-gray-100 text-gray-800 @endif">
                             {{ ucfirst($voucher->status) }}
                         </span>
+                        @if($voucher->status === 'issued')
+                            <div class="mt-1">
+                                <span class="inline-flex rounded-md bg-slate-800 py-0.5 px-2.5 border border-transparent text-sm text-white transition-all shadow-sm">
+                                    Pending Approval
+                                </span>
+                            </div>
+                        @endif
                     </div>
                 </div>
                 @endforeach
@@ -307,6 +314,46 @@
 </div>
 
 @endsection
+
+@push('styles')
+<style>
+    .adminhub-dashboard {
+        --adminhub-blue: #3c91e6;
+        --adminhub-ink: #342e37;
+        --adminhub-surface: #ffffff;
+        --adminhub-line: rgba(203, 213, 225, 0.72);
+    }
+
+    .adminhub-dashboard .rounded-xl.bg-white {
+        border-radius: 1.35rem;
+        border-color: var(--adminhub-line);
+        box-shadow: 0 20px 46px -36px rgba(15, 23, 42, 0.38);
+    }
+
+    .adminhub-dashboard .rounded-lg {
+        border-radius: 1rem;
+    }
+
+    .adminhub-dashboard .grid:first-child > div {
+        transition: transform 180ms ease, box-shadow 180ms ease;
+    }
+
+    .adminhub-dashboard .grid:first-child > div:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 26px 54px -36px rgba(60, 145, 230, 0.42);
+    }
+
+    .adminhub-dashboard .grid:first-child i {
+        color: currentColor;
+    }
+
+    .adminhub-dashboard h3,
+    .adminhub-dashboard .font-bold,
+    .adminhub-dashboard .font-semibold {
+        color: var(--adminhub-ink);
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>

@@ -406,6 +406,13 @@
                                     <i class="fas {{ $status[2] }} mr-1.5"></i>
                                     {{ ucfirst($voucher->status) }}
                                 </span>
+                                @if($voucher->status === 'issued')
+                                    <div class="mt-1">
+                                        <span class="inline-flex rounded-md bg-slate-800 py-0.5 px-2.5 border border-transparent text-sm text-white transition-all shadow-sm">
+                                            Pending Approval
+                                        </span>
+                                    </div>
+                                @endif
                                 
                                 <!-- Dates -->
                                 <div class="space-y-1 text-xs text-gray-500">

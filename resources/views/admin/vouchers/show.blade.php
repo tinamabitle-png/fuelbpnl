@@ -36,10 +36,19 @@
                         ];
                         $status = $statusColors[$voucher->status] ?? $statusColors['issued'];
                     @endphp
-                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold {{ $status[0] }} {{ $status[1] }}">
-                        <i class="fas {{ $status[2] }} mr-1.5"></i>
-                        {{ ucfirst($voucher->status) }}
-                    </span>
+                    <div>
+                        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold {{ $status[0] }} {{ $status[1] }}">
+                            <i class="fas {{ $status[2] }} mr-1.5"></i>
+                            {{ ucfirst($voucher->status) }}
+                        </span>
+                        @if($voucher->status === 'issued')
+                            <div class="mt-1">
+                                <span class="inline-flex rounded-md bg-slate-800 py-0.5 px-2.5 border border-transparent text-sm text-white transition-all shadow-sm">
+                                    Pending Approval
+                                </span>
+                            </div>
+                        @endif
+                    </div>
                     
                     <!-- Actions -->
                     @if($voucher->status === 'issued')
