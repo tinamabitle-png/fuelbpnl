@@ -898,7 +898,7 @@
 
         <div class="flex justify-center">
             <img
-                src="{{ asset('images/KIOSK.png') }}"
+                src="{{ asset('images/cups.png') }}"
                 alt="Bwiser kiosk"
                 class="welcome-kiosk-image"
                 loading="lazy"
