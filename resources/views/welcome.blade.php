@@ -2747,30 +2747,11 @@
     }
 
     .prov545-plan {
-        position: relative;
-        overflow: hidden;
         border-radius: 1rem;
         border: 1px solid rgba(226, 232, 240, 0.9);
         background: rgba(255, 255, 255, 0.88);
         padding: 1rem;
         box-shadow: 0 18px 40px -34px rgba(15, 23, 42, 0.32);
-    }
-
-    .prov545-plan::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.9)),
-            url("{{ asset('images/bwiseroverlay.jpg') }}") center / cover no-repeat;
-        opacity: 0.34;
-        pointer-events: none;
-        z-index: 0;
-    }
-
-    .prov545-plan > * {
-        position: relative;
-        z-index: 1;
     }
 
     .prov545-plan__head {
