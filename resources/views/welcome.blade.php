@@ -789,7 +789,7 @@
 
             <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden mt-4 welcome-media-shell" data-welcome-media>
                 <img
-                    src="{{ asset('images/bwiser_africa.png') }}"
+                    src="{{ asset('images/pos6.jpg') }}"
                     alt="Bwiser merchant preview"
                     class="block w-full h-full rounded-2xl object-cover welcome-media-shell__media"
                     data-welcome-media-target
