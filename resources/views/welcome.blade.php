@@ -84,8 +84,10 @@
 	        @php
 	            $recentDrivers = collect((array) (($welcomeStats ?? [])['recent_drivers'] ?? []))->take(4);
 	            $dashboardUrl = null;
+	            $dashboardUserName = null;
 	            if (auth()->check()) {
                 $user = auth()->user();
+                $dashboardUserName = trim((string) ($user->name ?? $user->email ?? 'User'));
 
                 if ($user?->hasAnyRole(['super_admin', 'admin', 'employee'])) {
                     $dashboardUrl = route('employee.dashboard');
@@ -116,6 +118,13 @@
                                 <span class="bw-dashboard-label">Go to Dashboard</span>
                                 <span class="bw-dashboard-arrow" aria-hidden="true">›</span>
                             </a>
+                            @if($dashboardUserName)
+                                <span class="bw-dashboard-user" aria-label="Signed in as {{ $dashboardUserName }}">
+                                    <span class="bw-dashboard-user__dot" aria-hidden="true"></span>
+                                    <span class="bw-dashboard-user__label">Signed in</span>
+                                    <span class="bw-dashboard-user__name">{{ $dashboardUserName }}</span>
+                                </span>
+                            @endif
                         @endif
                     @endauth
                     @guest
@@ -1932,6 +1941,47 @@
 
     .bw-dashboard-button:hover .bw-dashboard-arrow {
         animation: bw-slide-right .6s ease-out both;
+    }
+
+    .bw-dashboard-user {
+        min-height: 46px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0 0.9rem;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.34);
+        background: rgba(255, 255, 255, 0.82);
+        color: #0f172a;
+        box-shadow: 0 12px 26px -22px rgba(15, 23, 42, 0.42);
+        backdrop-filter: blur(12px);
+    }
+
+    .bw-dashboard-user__dot {
+        width: 0.55rem;
+        height: 0.55rem;
+        border-radius: 999px;
+        background: #22c55e;
+        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.16);
+        flex: 0 0 auto;
+    }
+
+    .bw-dashboard-user__label {
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+
+    .bw-dashboard-user__name {
+        max-width: 11rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.9rem;
+        font-weight: 900;
+        color: #0f172a;
     }
 
     @keyframes bw-slide-right {
