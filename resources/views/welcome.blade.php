@@ -1339,7 +1339,7 @@
 
         .welcome-kiosk-image {
             display: block;
-            width: 117%;
+            width: 150%;
             height: auto;
             object-fit: contain;
             -webkit-border-radius: 180px;
