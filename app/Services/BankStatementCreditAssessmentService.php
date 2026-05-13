@@ -40,6 +40,8 @@ class BankStatementCreditAssessmentService
         $upload->forceFill([
             'status' => 'needs_review',
             'processed_at' => now(),
+            'ocr_provider' => strpos((string) $recommendation['model_version'], 'openai-') === 0 ? 'openai' : 'rules',
+            'ocr_processor_type' => 'credit_analyst_agent',
             'ocr_confidence' => $recommendation['confidence'],
             'error_message' => null,
         ])->save();
@@ -77,14 +79,14 @@ class BankStatementCreditAssessmentService
         return [
             'credit_score' => (int) ($user->credit_score ?? 500),
             'statement_size_bytes' => (int) ($upload->file_size ?? 0),
-            'avg_monthly_income' => (float) ($feature?->avg_monthly_income ?? 0),
-            'avg_monthly_expenses' => (float) ($feature?->avg_monthly_expenses ?? 0),
-            'avg_daily_balance' => (float) ($feature?->avg_daily_balance ?? 0),
-            'cash_buffer_days' => (float) ($feature?->cash_buffer_days ?? 0),
-            'nsf_count' => (int) ($feature?->nsf_count ?? 0),
-            'overdraft_count' => (int) ($feature?->overdraft_count ?? 0),
-            'risk_score' => $feature?->risk_score !== null ? (int) $feature->risk_score : null,
-            'risk_band' => (string) ($feature?->risk_band ?? ''),
+            'avg_monthly_income' => (float) (optional($feature)->avg_monthly_income ?? 0),
+            'avg_monthly_expenses' => (float) (optional($feature)->avg_monthly_expenses ?? 0),
+            'avg_daily_balance' => (float) (optional($feature)->avg_daily_balance ?? 0),
+            'cash_buffer_days' => (float) (optional($feature)->cash_buffer_days ?? 0),
+            'nsf_count' => (int) (optional($feature)->nsf_count ?? 0),
+            'overdraft_count' => (int) (optional($feature)->overdraft_count ?? 0),
+            'risk_score' => optional($feature)->risk_score !== null ? (int) $feature->risk_score : null,
+            'risk_band' => (string) (optional($feature)->risk_band ?? ''),
         ];
     }
 
@@ -112,13 +114,17 @@ class BankStatementCreditAssessmentService
 
         $score = max(300, min(850, $score));
 
-        $baseLimit = match (true) {
-            $score >= 780 => 30000,
-            $score >= 700 => 22000,
-            $score >= 640 => 15000,
-            $score >= 580 => 9000,
-            default => 3000,
-        };
+        if ($score >= 780) {
+            $baseLimit = 30000;
+        } elseif ($score >= 700) {
+            $baseLimit = 22000;
+        } elseif ($score >= 640) {
+            $baseLimit = 15000;
+        } elseif ($score >= 580) {
+            $baseLimit = 9000;
+        } else {
+            $baseLimit = 3000;
+        }
 
         $recommended = max($minimum, min($threshold, $baseLimit));
         $decision = $score >= 680 ? 'approve' : ($score >= 560 ? 'review' : 'deny');
@@ -216,4 +222,3 @@ class BankStatementCreditAssessmentService
         }
     }
 }
-

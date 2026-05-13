@@ -117,7 +117,8 @@ class RegistrationDocumentsController extends Controller
                 'file_size' => (int) $bankFile->getSize(),
                 'temporary_path' => $bankPath,
                 'status' => 'processing',
-                'ocr_provider' => 'document_ai',
+                'ocr_provider' => 'openai',
+                'ocr_processor_type' => 'credit_analyst_agent',
             ]);
         });
 

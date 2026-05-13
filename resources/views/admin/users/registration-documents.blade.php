@@ -117,6 +117,8 @@
                                 <td class="px-4 py-3 align-top">
                                     @php
                                         $uploads = $user->bankStatementUploads;
+                                        $latestUpload = $uploads->sortByDesc('id')->first();
+                                        $latestDecision = $latestUpload ? $latestUpload->creditDecisions->sortByDesc('decided_at')->first() : null;
                                         $hasExtracted = $uploads->contains(function ($upload) {
                                             return $upload->creditDecisions->isNotEmpty();
                                         });
@@ -129,7 +131,7 @@
 
                                         if ($hasExtracted) {
                                             $extractBadgeClass = 'bg-green-100 text-green-700';
-                                            $extractLabel = 'Available';
+                                            $extractLabel = 'AI extracted';
                                         } elseif ($hasProcessing) {
                                             $extractBadgeClass = 'bg-yellow-100 text-yellow-700';
                                             $extractLabel = 'Processing';
@@ -147,10 +149,27 @@
                                     <span class="inline-flex px-2 py-1 rounded-full text-xs {{ $extractBadgeClass }}">
                                         {{ $extractLabel }}
                                     </span>
+                                    @if($latestDecision)
+                                        <div class="mt-1 text-xs text-gray-500">
+                                            {{ strtoupper((string) $latestDecision->decision) }} | score {{ (int) $latestDecision->score }}
+                                        </div>
+                                    @endif
+                                    @if($user->bank_statement_path && (!$hasProcessing || $hasFailed))
+                                        <form action="{{ route('admin.users.bank-statement.review', $user) }}" method="POST" class="mt-2">
+                                            @csrf
+                                            <input type="hidden" name="action" value="reassess">
+                                            @if($latestUpload)
+                                                <input type="hidden" name="upload_id" value="{{ $latestUpload->id }}">
+                                            @endif
+                                            <button type="submit" class="text-xs px-2 py-1 rounded border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100">
+                                                {{ $hasFailed ? 'Retry AI extraction' : 'Run AI extraction' }}
+                                            </button>
+                                        </form>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-3 align-top text-sm text-gray-700">
-                                    <div>{{ $user->created_at?->format('Y-m-d H:i') }}</div>
-                                    <div class="text-xs text-gray-500">{{ $user->created_at?->diffForHumans() }}</div>
+                                    <div>{{ optional($user->created_at)->format('Y-m-d H:i') }}</div>
+                                    <div class="text-xs text-gray-500">{{ optional($user->created_at)->diffForHumans() }}</div>
                                 </td>
                                 <td class="px-4 py-3 align-top">
                                     <a href="{{ route('admin.users.show', $user) }}" class="text-sm text-blue-600 hover:text-blue-800">

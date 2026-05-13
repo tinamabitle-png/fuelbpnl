@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Illuminate\Validation\Rule;
@@ -363,6 +364,8 @@ class UserController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
+        $action = (string) $validated['action'];
+
         $upload = BankStatementUpload::query()
             ->where('user_id', $user->id)
             ->when(!empty($validated['upload_id']), function ($q) use ($validated) {
@@ -370,6 +373,22 @@ class UserController extends Controller
             })
             ->latest('id')
             ->first();
+
+        if (!$upload && $action === 'reassess' && !empty($user->bank_statement_path)) {
+            $disk = Storage::disk('public');
+            $upload = BankStatementUpload::create([
+                'user_id' => $user->id,
+                'source' => 'admin',
+                'source_reference' => 'registration-documents-admin',
+                'original_filename' => basename((string) $user->bank_statement_path),
+                'mime_type' => 'application/pdf',
+                'file_size' => $disk->exists($user->bank_statement_path) ? (int) $disk->size($user->bank_statement_path) : null,
+                'temporary_path' => $user->bank_statement_path,
+                'status' => 'processing',
+                'ocr_provider' => 'openai',
+                'ocr_processor_type' => 'credit_analyst_agent',
+            ]);
+        }
 
         if (!$upload) {
             return back()->with('error', 'No bank statement upload found for this user.');
@@ -381,7 +400,6 @@ class UserController extends Controller
             ->latest('decided_at')
             ->first();
 
-        $action = (string) $validated['action'];
         if ($action === 'reassess') {
             $latestDecision = $assessmentService->assessAndStore($user, $upload);
             AuditTrailService::record(

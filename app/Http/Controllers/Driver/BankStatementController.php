@@ -40,7 +40,8 @@ class BankStatementController extends Controller
             'file_size' => (int) $file->getSize(),
             'temporary_path' => $storedPath,
             'status' => 'processing',
-            'ocr_provider' => 'document_ai',
+            'ocr_provider' => 'openai',
+            'ocr_processor_type' => 'credit_analyst_agent',
         ]);
 
         $user->forceFill([
@@ -85,4 +86,3 @@ class BankStatementController extends Controller
         return back()->with('success', 'Bank statement uploaded. AI recommendation is ready for admin review.');
     }
 }
-
