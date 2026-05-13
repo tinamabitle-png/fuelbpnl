@@ -183,7 +183,15 @@
         <div id="auth-section" class="auth-stepper-box glass rounded-2xl p-6 md:p-8 mt-8 scroll-mt-24">
             <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
-                    <h2 class="brand-font text-2xl font-semibold text-slate-900">Choose your Bwiser path</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="brand-font text-2xl font-semibold text-slate-900">Choose your Bwiser path</h2>
+                        <div class="rounded-md flex items-center bg-slate-100 py-0.5 px-2.5 border border-transparent text-sm text-slate-600 transition-all shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 mr-1.5" aria-hidden="true" focusable="false">
+                                <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM12.735 14c.618 0 1.093-.561.872-1.139a6.002 6.002 0 0 0-11.215 0c-.22.578.254 1.139.872 1.139h9.47Z" />
+                            </svg>
+                            driver or merchant
+                        </div>
+                    </div>
                     <p class="mt-2 max-w-2xl text-sm text-slate-600">
                         Start with registration, jump into merchant onboarding, or sign in if you already have access.
                     </p>
