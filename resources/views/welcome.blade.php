@@ -387,7 +387,7 @@
             </div>
 
             @php
-                $bwiserFuelImage = 'images/bwiser_fuel.png';
+                $bwiserFuelImage = 'images/bwiserpngvoucher.png';
                 $bwiserFuelImagePath = public_path($bwiserFuelImage);
                 $bwiserFuelImageUrl = asset($bwiserFuelImage);
                 if (is_file($bwiserFuelImagePath)) {
