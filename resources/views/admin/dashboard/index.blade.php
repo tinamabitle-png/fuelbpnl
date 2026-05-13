@@ -321,7 +321,7 @@
 
     const toast = (() => {
         const node = document.createElement('div');
-        node.className = 'fixed right-4 top-4 z-[100] hidden w-[min(420px,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white p-4 shadow-xl';
+        node.className = 'mt-3 hidden w-[min(420px,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white p-4 shadow-xl';
         node.innerHTML = `
           <div class="flex items-start justify-between gap-3">
             <div>
@@ -332,7 +332,8 @@
             <button class="rounded-lg bg-slate-100 px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-200" type="button" data-toast-close>Close</button>
           </div>
         `;
-        document.body.appendChild(node);
+        const titleBlock = document.querySelector('#mainContent header h1')?.parentElement;
+        (titleBlock || document.body).appendChild(node);
         const close = node.querySelector('[data-toast-close]');
         close.addEventListener('click', () => node.classList.add('hidden'));
         let timer = null;
