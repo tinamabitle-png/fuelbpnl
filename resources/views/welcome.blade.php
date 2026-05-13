@@ -639,7 +639,7 @@
                 <div class="mt-5 grid gap-3 sm:grid-cols-2">
                     <div class="rounded-2xl bg-gradient-to-br from-[#020DFF]/28 via-cyan-400/22 to-[#020DFF]/10 p-[1px] shadow-[0_10px_24px_-22px_rgba(2,13,255,0.45)]">
                         <div class="rounded-[15px] bg-white p-4">
-                            <div class="stepper-circle repayment-flow-circle">01</div>
+                            <div class="stepper-circle merchant-onboarding-step-number">01</div>
                             <p class="mt-3 text-sm font-semibold text-slate-900">Register</p>
                             <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Capture merchant, station, and business details to start onboarding.</p>
                         </div>
@@ -647,7 +647,7 @@
 
                     <div class="rounded-2xl bg-gradient-to-br from-[#020DFF]/22 via-cyan-400/18 to-slate-200/50 p-[1px]">
                         <div class="rounded-[15px] bg-slate-50/85 p-4">
-                            <div class="stepper-circle repayment-flow-circle">02</div>
+                            <div class="stepper-circle merchant-onboarding-step-number">02</div>
                             <p class="mt-3 text-sm font-semibold text-slate-900">Verify</p>
                             <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Submit KYC and onboarding documents so the account can be approved.</p>
                         </div>
@@ -655,7 +655,7 @@
 
                     <div class="rounded-2xl bg-gradient-to-br from-cyan-400/18 via-[#020DFF]/18 to-slate-200/50 p-[1px]">
                         <div class="rounded-[15px] bg-slate-50/85 p-4">
-                            <div class="stepper-circle repayment-flow-circle">03</div>
+                            <div class="stepper-circle merchant-onboarding-step-number">03</div>
                             <p class="mt-3 text-sm font-semibold text-slate-900">Install</p>
                             <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Set up the POS, train staff, and configure voucher validation for the site.</p>
                         </div>
@@ -663,7 +663,7 @@
 
                     <div class="rounded-2xl bg-gradient-to-br from-[#020DFF]/24 via-cyan-400/18 to-emerald-300/35 p-[1px] shadow-[0_10px_24px_-22px_rgba(15,23,42,0.28)]">
                         <div class="rounded-[15px] bg-white p-4">
-                            <div class="stepper-circle repayment-flow-circle">04</div>
+                            <div class="stepper-circle merchant-onboarding-step-number">04</div>
                             <p class="mt-3 text-sm font-semibold text-slate-900">Go live</p>
                             <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Start accepting Bwiser vouchers with reporting and support already in place.</p>
                         </div>
@@ -1478,7 +1478,8 @@
             background: rgba(2, 13, 255, 0.06);
         }
 
-        .stepper-pending .stepper-circle {
+        .stepper-pending .stepper-circle,
+        .merchant-onboarding-step-number {
             border: 2px solid #cbd5e1;
             color: #64748b;
             background: #ffffff;
