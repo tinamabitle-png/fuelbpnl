@@ -418,10 +418,16 @@
             <img
                 src="{{ asset('images/bwiserafrica.png') }}"
                 alt="Bwiser preview"
-                class="block w-full h-full object-cover rounded-2xl welcome-media-shell__media"
+                class="block w-full h-full object-contain rounded-2xl welcome-media-shell__media"
+                style="object-position: center;"
                 data-welcome-media-target
                 loading="lazy"
             >
+            <div class="mt-3">
+                <p class="text-sm leading-relaxed text-slate-600">
+                    Bwiser helps filling stations convert more confidently with voucher-linked payments, fast settlement visibility, and geofenced tapless validation—so station staff spend less time chasing confirmations and more time serving drivers.
+                </p>
+            </div>
         </div>
     </div>
 
