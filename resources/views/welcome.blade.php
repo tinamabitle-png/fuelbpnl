@@ -416,7 +416,7 @@
 
         <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-media-shell" data-welcome-media>
             <img
-                src="{{ asset('images/bench_sign.png') }}"
+                src="{{ asset('images/bwiserafrica.png') }}"
                 alt="Bwiser preview"
                 class="block w-full h-full object-cover rounded-2xl welcome-media-shell__media"
                 data-welcome-media-target
