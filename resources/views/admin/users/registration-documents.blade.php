@@ -154,6 +154,11 @@
                                             {{ strtoupper((string) $latestDecision->decision) }} | score {{ (int) $latestDecision->score }}
                                         </div>
                                     @endif
+                                    @if($latestUpload && $latestUpload->error_message)
+                                        <div class="mt-1 max-w-xs text-xs text-red-600">
+                                            {{ \Illuminate\Support\Str::limit($latestUpload->error_message, 140) }}
+                                        </div>
+                                    @endif
                                     @if($user->bank_statement_path && (!$hasProcessing || $hasFailed))
                                         <form action="{{ route('admin.users.bank-statement.review', $user) }}" method="POST" class="mt-2">
                                             @csrf
