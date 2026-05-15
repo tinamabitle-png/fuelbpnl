@@ -418,7 +418,7 @@
             <img
                 src="{{ asset('images/bwiserafrica.png') }}"
                 alt="Bwiser preview"
-                class="block w-full h-full object-contain rounded-2xl welcome-media-shell__media"
+                class="block w-full h-full object-cover rounded-2xl welcome-media-shell__media"
                 style="object-position: center;"
                 data-welcome-media-target
                 loading="lazy"
