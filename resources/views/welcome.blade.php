@@ -318,11 +318,11 @@
 		                                            <img class="bw-mrd-card__thumb" src="{{ asset('images/driver-platforms/mrd.png') }}" alt="Mr D logo" loading="lazy" />
 		                                            <div class="bw-mrd-card__header-text">
 		                                                <h3 class="bw-mrd-card__title">Mr D Special</h3>
-		                                                <span class="bw-mrd-card__status">Bwiser shoppers: Pay in 4</span>
-		                                            </div>
+<span class="bw-mrd-card__status">Bwiser shoppers • Pay in 4</span>
+														</div>
 		                                        </div>
 		                                        <p class="bw-mrd-card__description">
-		                                            Bwiser BNPL lets shoppers split checkout into 4 repayments with participating drivers.
+		                                            Built for Africa on the move—split your checkout into 4 easy repayments with trusted drivers and voucher-linked fuel access.
 		                                        </p>
 		                                    </div>
 		                                </a>
@@ -425,14 +425,22 @@
                 >
             </div>
 
-            <div class="rounded-2xl bg-white p-3 overflow-hidden welcome-media-shell welcome-media-shell--fit welcome-media-shell--compact" data-welcome-media>
+            <div class="bwiser-gif-card rounded-2xl overflow-hidden p-0" data-bwiser-gif-card>
                 <img
                     src="{{ asset('images/Bwiser.gif') }}"
-                    alt="Bwiser animated preview"
-                    class="block w-full h-auto object-contain rounded-2xl welcome-media-shell__media welcome-media-shell__media--fit welcome-media-shell__media--compact"
+                    alt="Bwiser renewable energy vouchers and leasing preview"
+                    class="bwiser-gif-card__bg"
                     data-welcome-media-target
                     loading="lazy"
-                >
+                />
+                <div class="bwiser-gif-card__overlay" aria-hidden="true"></div>
+
+                <div class="bwiser-gif-card__content">
+                    <h3 class="bwiser-gif-card__title">Renewable vouchers. Leasing made simple.</h3>
+                    <p class="bwiser-gif-card__text">
+                        Bwiser helps fleets and merchants plan energy with voucher payments and leasing options—so renewable energy stays accessible, trackable, and ready for real operations.
+                    </p>
+                </div>
             </div>
         </div>
     </div>
@@ -1605,15 +1613,17 @@
 	        width: min(26rem, 100%);
 	    }
 
-	    .bw-mrd-card {
-	        position: relative;
-	        display: block;
-	        height: 12.8em;
-	        border-radius: calc(var(--curve) * 1px);
-	        overflow: hidden;
-	        text-decoration: none;
-	        box-shadow: 0 18px 42px -30px rgba(15, 23, 42, 0.7);
-	    }
+.bw-mrd-card {
+			position: relative;
+			display: block;
+			/* Let content define the height so the overlay + description fit cleanly. */
+			min-height: 15.5em;
+			height: auto;
+			border-radius: calc(var(--curve) * 1px);
+			overflow: hidden;
+			text-decoration: none;
+			box-shadow: 0 18px 42px -30px rgba(15, 23, 42, 0.7);
+		}
 
 	    .bw-mrd-card__loader {
 	        position: absolute;
