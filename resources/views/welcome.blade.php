@@ -430,6 +430,7 @@
                     src="{{ asset('images/bwiser.gif') }}"
                     alt="Bwiser animated preview"
                     class="block w-full h-auto object-contain rounded-2xl welcome-media-shell__media welcome-media-shell__media--fit welcome-media-shell__media--compact"
+                    data-welcome-media-target
                     loading="lazy"
                 >
             </div>
@@ -1360,10 +1361,21 @@
             animation: none;
         }
 
+        .welcome-media-shell.is-media-failed::before,
+        .welcome-media-shell.is-media-failed::after {
+            opacity: 0;
+            animation: none;
+        }
+
         .welcome-media-shell__media,
         .welcome-video__poster {
             position: relative;
             z-index: 2;
+        }
+
+        .welcome-media-shell.is-media-failed .welcome-media-shell__media {
+            opacity: 0;
+            visibility: hidden;
         }
 
         .welcome-media-shell__media--fit {
@@ -3944,13 +3956,24 @@
                     const media = shell.querySelector('[data-welcome-media-target]');
                     if (!media) return;
 
-                    const done = () => shell.classList.add('is-media-loaded');
+                    const done = () => {
+                        shell.classList.add('is-media-loaded');
+                        shell.classList.remove('is-media-failed');
+                    };
 
-                    media.addEventListener('error', done, { once: true });
+                    const fail = () => {
+                        shell.classList.add('is-media-loaded', 'is-media-failed');
+                    };
+
+                    media.addEventListener('error', fail, { once: true });
 
                     if (media.complete) {
+                        if (typeof media.naturalWidth === 'number' && media.naturalWidth === 0) {
+                            fail();
+                            return;
+                        }
                         if (typeof media.decode === 'function') {
-                            media.decode().then(done).catch(done);
+                            media.decode().then(done).catch(fail);
                         } else {
                             done();
                         }
@@ -3959,7 +3982,7 @@
 
                     media.addEventListener('load', () => {
                         if (typeof media.decode === 'function') {
-                            media.decode().then(done).catch(done);
+                            media.decode().then(done).catch(fail);
                         } else {
                             done();
                         }
