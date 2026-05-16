@@ -414,14 +414,25 @@
             </div>
         </div>
 
-        <div class="rounded-2xl bg-white p-3 md:p-4 overflow-hidden welcome-media-shell welcome-media-shell--fit" data-welcome-media>
-            <img
-                src="{{ asset('images/bwiserafrica.png') }}"
-                alt="Bwiser preview"
-                class="block w-full h-auto object-contain rounded-2xl welcome-media-shell__media welcome-media-shell__media--fit"
-                data-welcome-media-target
-                loading="lazy"
-            >
+        <div class="space-y-4">
+            <div class="rounded-2xl bg-white p-3 md:p-4 overflow-hidden welcome-media-shell welcome-media-shell--fit" data-welcome-media>
+                <img
+                    src="{{ asset('images/bwiserafrica.png') }}"
+                    alt="Bwiser preview"
+                    class="block w-full h-auto object-contain rounded-2xl welcome-media-shell__media welcome-media-shell__media--fit"
+                    data-welcome-media-target
+                    loading="lazy"
+                >
+            </div>
+
+            <div class="rounded-2xl bg-white p-3 overflow-hidden welcome-media-shell welcome-media-shell--fit welcome-media-shell--compact" data-welcome-media>
+                <img
+                    src="{{ asset('images/bwiser.gif') }}"
+                    alt="Bwiser animated preview"
+                    class="block w-full h-auto object-contain rounded-2xl welcome-media-shell__media welcome-media-shell__media--fit welcome-media-shell__media--compact"
+                    loading="lazy"
+                >
+            </div>
         </div>
     </div>
 
@@ -1313,6 +1324,10 @@
             background: #ffffff;
         }
 
+        .welcome-media-shell--compact {
+            padding: 0.75rem;
+        }
+
         .welcome-media-shell::before,
         .welcome-media-shell::after {
             content: "";
@@ -1355,6 +1370,11 @@
             height: auto;
             max-height: none;
             object-fit: contain;
+        }
+
+        .welcome-media-shell__media--compact {
+            max-height: 18rem;
+            margin-inline: auto;
         }
 
         .welcome-kiosk-image {
