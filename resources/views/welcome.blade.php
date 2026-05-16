@@ -427,7 +427,7 @@
 
             <div class="bwiser-gif-card rounded-2xl overflow-hidden p-0" data-bwiser-gif-card>
                 <img
-                    src="{{ asset('images/Bwiser.gif') }}"
+src="{{ asset('images/Bwisergif') }}"
                     alt="Bwiser renewable energy vouchers and leasing preview"
                     class="bwiser-gif-card__bg"
                     data-welcome-media-target
