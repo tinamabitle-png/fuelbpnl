@@ -427,7 +427,7 @@
 
             <div class="rounded-2xl bg-white p-3 overflow-hidden welcome-media-shell welcome-media-shell--fit welcome-media-shell--compact" data-welcome-media>
                 <img
-                    src="{{ asset('images/bwiser.gif') }}"
+                    src="{{ asset('images/Bwiser.gif') }}"
                     alt="Bwiser animated preview"
                     class="block w-full h-auto object-contain rounded-2xl welcome-media-shell__media welcome-media-shell__media--fit welcome-media-shell__media--compact"
                     data-welcome-media-target
