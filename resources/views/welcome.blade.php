@@ -414,20 +414,14 @@
             </div>
         </div>
 
-        <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-media-shell" data-welcome-media>
+        <div class="rounded-2xl bg-white p-3 md:p-4 overflow-hidden welcome-media-shell welcome-media-shell--fit" data-welcome-media>
             <img
                 src="{{ asset('images/bwiserafrica.png') }}"
                 alt="Bwiser preview"
-                class="block w-full h-full object-cover rounded-2xl welcome-media-shell__media self-start"
-                style="object-position: center;"
+                class="block w-full h-auto object-contain rounded-2xl welcome-media-shell__media welcome-media-shell__media--fit"
                 data-welcome-media-target
                 loading="lazy"
             >
-            <div class="mt-3">
-                <p class="text-sm leading-relaxed text-slate-600">
-                    Bwiser helps filling stations convert more confidently with voucher-linked payments, fast settlement visibility, and geofenced tapless validation—so station staff spend less time chasing confirmations and more time serving drivers.
-                </p>
-            </div>
         </div>
     </div>
 
@@ -1314,6 +1308,11 @@
                 linear-gradient(135deg, rgba(226, 232, 240, 0.78), rgba(248, 250, 252, 0.94));
         }
 
+        .welcome-media-shell--fit {
+            align-self: start;
+            background: #ffffff;
+        }
+
         .welcome-media-shell::before,
         .welcome-media-shell::after {
             content: "";
@@ -1350,6 +1349,12 @@
         .welcome-video__poster {
             position: relative;
             z-index: 2;
+        }
+
+        .welcome-media-shell__media--fit {
+            height: auto;
+            max-height: none;
+            object-fit: contain;
         }
 
         .welcome-kiosk-image {
