@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class WelcomePageSettingsService
@@ -188,12 +189,17 @@ class WelcomePageSettingsService
 
     private function persist(array $settings): void
     {
+        $payload = [
+            'value' => json_encode($settings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        ];
+
+        if (Schema::hasColumn('settings', 'category')) {
+            $payload['category'] = 'welcome_page';
+        }
+
         DB::table('settings')->updateOrInsert(
             ['key' => self::DB_KEY],
-            [
-                'value' => json_encode($settings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-                'category' => 'welcome_page',
-            ]
+            $payload
         );
     }
 

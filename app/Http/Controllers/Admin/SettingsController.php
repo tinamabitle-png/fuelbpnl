@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use App\Services\WelcomePageSettingsService;
 
@@ -438,9 +439,14 @@ class SettingsController extends Controller
 
     private function upsertDbSetting(string $key, string $value, string $category = 'system'): void
     {
+        $payload = ['value' => $value];
+        if (Schema::hasColumn('settings', 'category')) {
+            $payload['category'] = $category;
+        }
+
         DB::table('settings')->updateOrInsert(
             ['key' => $key],
-            ['value' => $value, 'category' => $category]
+            $payload
         );
     }
 
