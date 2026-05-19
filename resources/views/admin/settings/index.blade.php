@@ -23,6 +23,7 @@
     $paymentMethods = ['mpesa', 'bank_transfer', 'card'];
     $cacheDrivers = ['file', 'redis', 'database'];
     $sessionDrivers = ['file', 'cookie', 'database', 'redis'];
+    $isSuperAdmin = auth()->user()?->hasRole('super_admin');
 @endphp
 
 @section('stats')
@@ -145,6 +146,13 @@
                     class="px-5 py-3 font-medium rounded-t-lg border-b-2 border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50">
                 <i class="fas fa-store mr-2"></i> Merchant Branding
             </button>
+            @if($isSuperAdmin)
+                <button onclick="showTab('welcomePage')" 
+                        id="welcomePageTab"
+                        class="px-5 py-3 font-medium rounded-t-lg border-b-2 border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50">
+                    <i class="fas fa-home mr-2"></i> Welcome Page
+                </button>
+            @endif
             <button onclick="showTab('system')" 
                     id="systemTab"
                     class="px-5 py-3 font-medium rounded-t-lg border-b-2 border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50">
@@ -779,6 +787,100 @@
             </form>
         </div>
     </div>
+
+    @if($isSuperAdmin)
+    <div id="welcomePageTabContent" class="tab-content hidden">
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <div class="flex items-start justify-between gap-4 mb-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Welcome Page Settings</h3>
+                    <p class="text-gray-600 text-sm mt-1">Super admin controls for the public homepage copy and images.</p>
+                </div>
+                <span class="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                    Public site editor
+                </span>
+            </div>
+
+            <form action="{{ route('admin.settings.update-welcome-page') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
+                @csrf
+
+                @foreach($welcomePageTextSections as $sectionTitle => $fields)
+                    <div class="rounded-2xl border border-gray-200 p-5">
+                        <h4 class="text-base font-semibold text-gray-900">{{ $sectionTitle }}</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            @foreach($fields as $field)
+                                <div class="{{ ($field['type'] ?? 'text') === 'textarea' ? 'md:col-span-2' : '' }}">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $field['label'] }}</label>
+                                    @if(($field['type'] ?? 'text') === 'textarea')
+                                        <textarea
+                                            name="{{ $field['key'] }}"
+                                            rows="{{ $field['rows'] ?? 3 }}"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        >{{ old($field['key'], data_get($settings, 'welcome_page.' . $field['key'])) }}</textarea>
+                                    @else
+                                        <input
+                                            type="text"
+                                            name="{{ $field['key'] }}"
+                                            value="{{ old($field['key'], data_get($settings, 'welcome_page.' . $field['key'])) }}"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        >
+                                    @endif
+                                    @error($field['key'])
+                                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+
+                @foreach($welcomePageImageSections as $sectionTitle => $fields)
+                    <div class="rounded-2xl border border-gray-200 p-5">
+                        <h4 class="text-base font-semibold text-gray-900">{{ $sectionTitle }}</h4>
+                        <p class="text-sm text-gray-500 mt-1">Paste an existing asset path or upload a replacement image/GIF for the homepage.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
+                            @foreach($fields as $field)
+                                <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $field['label'] }}</label>
+                                    @if(!empty($welcomePageImageUrls[$field['key']]))
+                                        <div class="mb-3 overflow-hidden rounded-xl border border-gray-200 bg-white">
+                                            <img src="{{ $welcomePageImageUrls[$field['key']] }}" alt="{{ $field['label'] }}" class="h-40 w-full object-contain bg-white">
+                                        </div>
+                                    @endif
+                                    <input
+                                        type="text"
+                                        name="{{ $field['key'] }}"
+                                        value="{{ old($field['key'], data_get($settings, 'welcome_page.' . $field['key'])) }}"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="images/example.png or https://..."
+                                    >
+                                    @error($field['key'])
+                                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                    @enderror
+                                    <input
+                                        type="file"
+                                        name="{{ $field['key'] }}_file"
+                                        accept="image/*,.gif,.svg"
+                                        class="mt-3 block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+                                    >
+                                    @error($field['key'] . '_file')
+                                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+
+                <div class="flex justify-end">
+                    <button type="submit" class="px-5 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium">
+                        Save Welcome Page Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
 
     <!-- System Settings -->
     <div id="systemTabContent" class="tab-content hidden">

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use App\Services\WelcomePageSettingsService;
 
 class SettingsController extends Controller
 {
@@ -18,6 +19,8 @@ class SettingsController extends Controller
      */
     public function index()
     {
+        $welcomePageService = app(WelcomePageSettingsService::class);
+
         $settings = [
             'general' => [
                 'app_name' => config('app.name', 'Bwiser'),
@@ -63,6 +66,7 @@ class SettingsController extends Controller
                 'selected_brand' => $this->getDbSetting('merchant_dashboard_selected_brand', ''),
                 'logo_path' => $this->getDbSetting('merchant_dashboard_logo_path', ''),
             ],
+            'welcome_page' => $welcomePageService->settings(),
         ];
 
         $popularBrands = collect($this->merchantBrandCatalog())
@@ -76,7 +80,17 @@ class SettingsController extends Controller
             })
             ->values();
 
-        return view('admin.settings.index', compact('settings', 'popularBrands'));
+        $welcomePageTextSections = $welcomePageService->textSections();
+        $welcomePageImageSections = $welcomePageService->imageSections();
+        $welcomePageImageUrls = $welcomePageService->imageUrls();
+
+        return view('admin.settings.index', compact(
+            'settings',
+            'popularBrands',
+            'welcomePageTextSections',
+            'welcomePageImageSections',
+            'welcomePageImageUrls'
+        ));
     }
 
     /**
@@ -281,6 +295,18 @@ class SettingsController extends Controller
         $this->upsertDbSetting('merchant_dashboard_logo_path', $logoPath, 'merchant_dashboard');
 
         return back()->with('success', 'Merchant dashboard branding updated successfully.');
+    }
+
+    public function updateWelcomePage(Request $request, WelcomePageSettingsService $welcomePageService)
+    {
+        abort_unless(auth()->user()?->hasRole('super_admin'), 403);
+
+        $validated = $request->validate($welcomePageService->validationRules());
+        $welcomePageService->update($request, $validated);
+
+        return redirect()
+            ->route('admin.settings.index', ['tab' => 'welcomePage'])
+            ->with('success', 'Welcome page settings updated successfully.');
     }
 
     /**

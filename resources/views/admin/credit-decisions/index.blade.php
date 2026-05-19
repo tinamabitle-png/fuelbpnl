@@ -89,6 +89,11 @@
                                    class="text-blue-600 hover:text-blue-800 font-medium">View</a>
                             </td>
                         </tr>
+                        <tr class="bg-slate-50/70">
+                            <td colspan="7" class="px-4 pb-3 pt-0 text-xs leading-relaxed text-slate-600">
+                                {{ \App\Support\CreditDecisionSummary::brief($decision) }}
+                            </td>
+                        </tr>
                     @empty
                         <tr>
                             <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-500">No decisions found.</td>

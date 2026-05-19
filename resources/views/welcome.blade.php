@@ -1,12 +1,14 @@
 @extends('Layouts.app')
 
-@section('title', 'Bwiser Fuel Buy Now Pay Later')
-@section('meta_description', 'Bwiser is a South African fuel finance and payments platform for drivers, stations, vouchers, and settlements.')
+@section('title', data_get($welcomePageSettings ?? [], 'meta_title', 'Bwiser Fuel Buy Now Pay Later'))
+@section('meta_description', data_get($welcomePageSettings ?? [], 'meta_description', 'Bwiser is a South African fuel finance and payments platform for drivers, stations, vouchers, and settlements.'))
 @section('canonical', url('/'))
 @php
-    $welcomeOgImage = 'images/NalediTsunke.png';
-    $welcomeOgImagePath = public_path($welcomeOgImage);
-    $welcomeOgImageUrl = asset($welcomeOgImage);
+    $welcomePageSettings = $welcomePageSettings ?? app(\App\Services\WelcomePageSettingsService::class)->settings();
+    $welcomePageImageUrls = $welcomePageImageUrls ?? app(\App\Services\WelcomePageSettingsService::class)->imageUrls();
+    $welcomeText = static fn (string $key, string $default = ''): string => trim((string) data_get($welcomePageSettings, $key, $default));
+    $welcomeImage = static fn (string $key, string $fallback = ''): string => (string) (data_get($welcomePageImageUrls, $key) ?: ($fallback !== '' ? asset($fallback) : ''));
+    $welcomeOgImageUrl = $welcomeImage('og_image', 'images/NalediTsunke.png');
     $welcomeNavigation = [
         [
             '@type' => 'SiteNavigationElement',
@@ -37,9 +39,6 @@
         ];
     }
 
-    if (is_file($welcomeOgImagePath)) {
-        $welcomeOgImageUrl .= '?v=' . filemtime($welcomeOgImagePath);
-    }
 @endphp
 
 @section('og_image', $welcomeOgImageUrl)
@@ -54,9 +53,9 @@
         '@graph' => [
             [
                 '@type' => 'WebPage',
-                'name' => 'Bwiser Fuel Buy Now Pay Later',
+                'name' => $welcomeText('meta_title', 'Bwiser Fuel Buy Now Pay Later'),
                 'url' => url('/'),
-                'description' => 'Bwiser is a South African fuel finance and payments platform for drivers, stations, vouchers, and settlements.',
+                'description' => $welcomeText('meta_description', 'Bwiser is a South African fuel finance and payments platform for drivers, stations, vouchers, and settlements.'),
             ],
             [
                 '@type' => 'MobileApplication',
@@ -103,10 +102,10 @@
         <div class="max-w-4xl relative z-[1]">
             <div class="min-w-0">
                 <h1 class="brand-font text-4xl md:text-6xl font-semibold text-slate-900 mt-4 leading-tight">
-                    <span class="shine">Fuel Infrastructure Finance and Voucher Payments,</span>
+                    <span class="shine">{{ $welcomeText('hero_title_primary', 'Fuel Infrastructure Finance and Voucher Payments,') }}</span>
                     <br>
-                    <span class="text-white italic">easy as padel</span>
-                    <span class="hero-gradient-text block"><span class="inline-block rounded-full bg-white px-3 py-1" style="color: #2563eb;">Built for Real-Time Operations</span></span>
+                    <span class="text-white italic">{{ $welcomeText('hero_title_secondary', 'easy as padel') }}</span>
+                    <span class="hero-gradient-text block"><span class="inline-block rounded-full bg-white px-3 py-1" style="color: #2563eb;">{{ $welcomeText('hero_badge_text', 'Built for Real-Time Operations') }}</span></span>
                 </h1>
                 <div class="mt-7 flex flex-wrap gap-3">
                     @auth
@@ -168,7 +167,7 @@
         ]);
     @endphp
     <div class="glass rounded-2xl p-6 mt-8">
-        <p class="text-xs uppercase tracking-[1px] text-blue-600">Trusted Retail Network</p>
+        <p class="text-xs uppercase tracking-[1px] text-blue-600">{{ $welcomeText('trusted_network_label', 'Trusted Retail Network') }}</p>
         <div class="trusted-ticker-wrap mt-4">
             <div class="trusted-ticker-edge trusted-ticker-edge--left" aria-hidden="true"></div>
             <div class="trusted-ticker-edge trusted-ticker-edge--right" aria-hidden="true"></div>
@@ -193,16 +192,16 @@
             <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <h2 class="brand-font text-2xl font-semibold text-slate-900">Choose your Bwiser path</h2>
+                        <h2 class="brand-font text-2xl font-semibold text-slate-900">{{ $welcomeText('auth_title', 'Choose your Bwiser path') }}</h2>
                         <div class="rounded-md flex items-center bg-slate-100 py-0.5 px-2.5 border border-transparent text-sm text-slate-600 transition-all shadow-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 mr-1.5" aria-hidden="true" focusable="false">
                                 <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM12.735 14c.618 0 1.093-.561.872-1.139a6.002 6.002 0 0 0-11.215 0c-.22.578.254 1.139.872 1.139h9.47Z" />
                             </svg>
-                            driver or merchant
+                            {{ $welcomeText('auth_chip_text', 'driver or merchant') }}
                         </div>
                     </div>
                     <p class="mt-2 max-w-2xl text-sm text-slate-600">
-                        Start with registration, jump into merchant onboarding, or sign in if you already have access.
+                        {{ $welcomeText('auth_description', 'Start with registration, jump into merchant onboarding, or sign in if you already have access.') }}
                     </p>
                 </div>
                 <a href="{{ route('login') }}" class="text-sm font-semibold text-blue-700 hover:text-blue-800">
@@ -250,7 +249,7 @@
             <div>
                 <div class="relative">
 	                    <img
-	                        src="{{ asset('images/shopping.jpg') }}"
+	                        src="{{ $welcomeImage('shopping_card_image', 'images/shopping.jpg') }}"
 	                        alt="Shopping"
 	                        class="float-left block h-40 md:h-44 lg:h-48 w-auto object-contain"
 	                        loading="lazy"
@@ -304,7 +303,7 @@
 		                                <a href="javascript:void(0)" class="bw-mrd-card" aria-label="Mr D special">
 		                                    <span class="bw-mrd-card__loader" aria-hidden="true"></span>
 		                                    <img
-		                                        src="{{ $mrdSpecialUrl ?: asset('images/driver-platforms/mrd.png') }}"
+	                                        src="{{ $mrdSpecialUrl ?: asset('images/driver-platforms/mrd.png') }}"
 		                                        class="bw-mrd-card__image"
 		                                        alt="Mr D special"
 		                                        data-bw-mrd-img
@@ -317,12 +316,12 @@
 		                                            </svg>
 		                                            <img class="bw-mrd-card__thumb" src="{{ asset('images/driver-platforms/mrd.png') }}" alt="Mr D logo" loading="lazy" />
 		                                            <div class="bw-mrd-card__header-text">
-		                                                <h3 class="bw-mrd-card__title">Mr D Special</h3>
-<span class="bw-mrd-card__status">Bwiser shoppers • Pay in 4</span>
+		                                                <h3 class="bw-mrd-card__title">{{ $welcomeText('mrd_title', 'Mr D Special') }}</h3>
+<span class="bw-mrd-card__status">{{ $welcomeText('mrd_status', 'Bwiser shoppers • Pay in 4') }}</span>
 														</div>
 		                                        </div>
 		                                        <p class="bw-mrd-card__description">
-		                                            Built for Africa on the move—split your checkout into 4 easy repayments with trusted drivers and voucher-linked fuel access.
+		                                            {{ $welcomeText('mrd_description', 'Built for Africa on the move—split your checkout into 4 easy repayments with trusted drivers and voucher-linked fuel access.') }}
 		                                        </p>
 		                                    </div>
 		                                </a>
@@ -352,7 +351,7 @@
                                 @endforeach
                             </span>
 	                            <span class="bw-order-grid__text">
-	                                PLACE<br><br>ORDER<br><br>HERE
+	                                {!! nl2br(e($welcomeText('order_grid_text', "PLACE\n\nORDER\n\nHERE"))) !!}
 	                            </span>
 	                            <span class="bw-order-grid__back" aria-hidden="true"></span>
 	                        </button>
@@ -370,38 +369,34 @@
                         <div class="slack-loader"></div>
                     </div>
                     <div class="flex-1">
-                        <h3 class="brand-font text-xl md:text-2xl font-semibold text-slate-900">Request your place in the Bwiser merchant Slack</h3>
+                        <h3 class="brand-font text-xl md:text-2xl font-semibold text-slate-900">{{ $welcomeText('slack_title', 'Request your place in the Bwiser merchant Slack') }}</h3>
                         <p class="text-sm text-slate-600 mt-2 max-w-2xl">
-                            Merchants can request early access to the Bwiser Slack workspace for rollout updates, onboarding help, and support coordination.
+                            {{ $welcomeText('slack_description', 'Merchants can request early access to the Bwiser Slack workspace for rollout updates, onboarding help, and support coordination.') }}
                         </p>
                         <div class="mt-5">
                             <a
                                 href="mailto:support@bwiser.co.za?subject=Slack%20Access%20Request&body=Hi%20Bwiser%2C%20I%20would%20like%20merchant%20Slack%20access.%0A%0ABusiness%20name%3A%0AContact%20name%3A%0AContact%20number%3A%0A"
                                 class="super-button whitespace-nowrap"
                             >
-                                <span>Request Slack Access</span>
+                                <span>{{ $welcomeText('slack_cta_text', 'Request Slack Access') }}</span>
                             </a>
                         </div>
                         <div class="mt-4 inline-flex max-w-sm items-center gap-3 rounded-2xl border border-slate-200 bg-white/85 px-3 py-3 shadow-sm">
                             <div class="h-10 w-10 overflow-hidden rounded-full ring-2 ring-blue-100">
-                                <img src="{{ asset('images/tony.jpg') }}" alt="Tony" class="h-full w-full object-cover" loading="lazy" />
+                                <img src="{{ $welcomeImage('slack_contact_image', 'images/tony.jpg') }}" alt="Tony" class="h-full w-full object-cover" loading="lazy" />
                             </div>
                             <div class="min-w-0">
-                                <p class="truncate text-sm font-semibold text-slate-900">Finance Lead</p>
-                                <p class="text-[11px] leading-5 text-slate-600">Talk to Tony about funding, settlements, and repayments.</p>
+                                <p class="truncate text-sm font-semibold text-slate-900">{{ $welcomeText('slack_contact_name', 'Finance Lead') }}</p>
+                                <p class="text-[11px] leading-5 text-slate-600">{{ $welcomeText('slack_contact_description', 'Talk to Tony about funding, settlements, and repayments.') }}</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
+
             @php
-                $bwiserFuelImage = 'images/bwiserpngvoucher.png';
-                $bwiserFuelImagePath = public_path($bwiserFuelImage);
-                $bwiserFuelImageUrl = asset($bwiserFuelImage);
-                if (is_file($bwiserFuelImagePath)) {
-                    $bwiserFuelImageUrl .= '?v=' . filemtime($bwiserFuelImagePath);
-                }
+                $bwiserFuelImageUrl = $welcomeImage('fuel_preview_image', 'images/bwiserpngvoucher.png');
             @endphp
             <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-media-shell" data-welcome-media>
                 <img
@@ -412,12 +407,16 @@
                     loading="lazy"
                 />
             </div>
+
+
+
+<!--the end-->
         </div>
 
         <div class="space-y-4">
             <div class="rounded-2xl bg-white p-3 md:p-4 overflow-hidden welcome-media-shell welcome-media-shell--fit" data-welcome-media>
                 <img
-                    src="{{ asset('images/bwiserafrica.png') }}"
+                    src="{{ $welcomeImage('africa_card_image', 'images/bwiserafrica.png') }}"
                     alt="Bwiser preview"
                     class="block w-full h-auto object-contain rounded-2xl welcome-media-shell__media welcome-media-shell__media--fit"
                     data-welcome-media-target
@@ -425,9 +424,9 @@
                 >
             </div>
 
-            <div class="bwiser-gif-card rounded-2xl overflow-hidden p-0" data-bwiser-gif-card>
-<img
-                        src="{{ asset('images/Bwiser_2.gif') }}"
+            <div class="bwiser-gif-card rounded-2xl overflow-hidden p-0" data-bwiser-gif-card style="padding:5px;">
+                <img
+                        src="{{ $welcomeImage('renewable_gif_image', 'images/Bwiser_2.gif') }}"
                     alt="Bwiser renewable energy vouchers and leasing preview"
                     class="bwiser-gif-card__bg"
                     data-welcome-media-target
@@ -435,10 +434,10 @@
                 />
                 <div class="bwiser-gif-card__overlay" aria-hidden="true"></div>
 
-                <div class="bwiser-gif-card__content">
-                    <h3 class="bwiser-gif-card__title">Renewable vouchers. Leasing made simple.</h3>
-                    <p class="bwiser-gif-card__text">
-                        Bwiser helps fleets and merchants plan energy with voucher payments and leasing options—so renewable energy stays accessible, trackable, and ready for real operations.
+                <div class="bwiser-gif-card__content" style="background:#6cebff; padding:10px;"> 
+                    <h3 class="bwiser-gif-card__title" style="text-align:centre;"> {{ $welcomeText('renewable_gif_title', 'Renewable vouchers. Leasing made simple.') }}</h3>
+                    <p class="bwiser-gif-card__text" style="padding:20px;margin:10px;">
+                        {{ $welcomeText('renewable_gif_text', 'Bwiser helps fleets and merchants plan energy with voucher payments and leasing options—so renewable energy stays accessible, trackable, and ready for real operations.') }}
                     </p>
                 </div>
             </div>
@@ -449,7 +448,7 @@
         <div class="space-y-6">
             <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-tween-card">
                 <img
-                    src="{{ asset('images/NalediTsunke.png') }}"
+                    src="{{ $welcomeImage('story_feature_image', 'images/NalediTsunke.png') }}"
                     alt="Bwiser preview"
                     class="welcome-tween-image is-in rounded-2xl"
                     loading="lazy"
@@ -461,8 +460,8 @@
             <div class="glass rounded-2xl p-4 md:p-6 welcome-tween-card">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#020DFF]">How Bwiser works</p>
-                        <h3 class="mt-1 text-base md:text-lg font-semibold text-slate-900 leading-tight">From voucher to repayment</h3>
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#020DFF]">{{ $welcomeText('workflow_eyebrow', 'How Bwiser works') }}</p>
+                        <h3 class="mt-1 text-base md:text-lg font-semibold text-slate-900 leading-tight">{{ $welcomeText('workflow_title', 'From voucher to repayment') }}</h3>
                     </div>
                     <span class="shrink-0 rounded-full bg-[#020DFF]/8 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#020DFF]">
                         4 steps
@@ -475,9 +474,9 @@
                         <div class="relative flex gap-3">
                             <div class="stepper-circle repayment-flow-circle">01</div>
                             <div class="min-w-0">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">Create voucher</p>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">{{ $welcomeText('workflow_step_1_title', 'Create voucher') }}</p>
                                 <p class="mt-1 text-[12px] leading-relaxed text-slate-600">
-                                    Issue a Bwiser voucher for a driver or lease with the amount, station, and due items, then share the voucher ID or QR.
+                                    {{ $welcomeText('workflow_step_1_text', 'Issue a Bwiser voucher for a driver or lease with the amount, station, and due items, then share the voucher ID or QR.') }}
                                 </p>
                             </div>
                         </div>
@@ -488,9 +487,9 @@
                         <div class="relative flex gap-3">
                             <div class="stepper-circle repayment-flow-circle">02</div>
                             <div class="min-w-0">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">Validate at station</p>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">{{ $welcomeText('workflow_step_2_title', 'Validate at station') }}</p>
                                 <p class="mt-1 text-[12px] leading-relaxed text-slate-600">
-                                    The station validates the voucher with QR or USSD geofence on the POS, prints a receipt, and settles the payment.
+                                    {{ $welcomeText('workflow_step_2_text', 'The station validates the voucher with QR or USSD geofence on the POS, prints a receipt, and settles the payment.') }}
                                 </p>
                             </div>
                         </div>
@@ -501,9 +500,9 @@
                         <div class="relative flex gap-3">
                             <div class="stepper-circle repayment-flow-circle">03</div>
                             <div class="min-w-0">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">Repayment runs</p>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">{{ $welcomeText('workflow_step_3_title', 'Repayment runs') }}</p>
                                 <p class="mt-1 text-[12px] leading-relaxed text-slate-600">
-                                    Repayments appear on the driver dashboard, and auto-pay can settle balances on due dates while sending confirmation emails.
+                                    {{ $welcomeText('workflow_step_3_text', 'Repayments appear on the driver dashboard, and auto-pay can settle balances on due dates while sending confirmation emails.') }}
                                 </p>
                             </div>
                         </div>
@@ -513,9 +512,9 @@
                         <div class="relative flex gap-3">
                             <div class="stepper-circle repayment-flow-circle">04</div>
                             <div class="min-w-0">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">Track performance</p>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-900">{{ $welcomeText('workflow_step_4_title', 'Track performance') }}</p>
                                 <p class="mt-1 text-[12px] leading-relaxed text-slate-600">
-                                    Monitor settlement reporting, due items, and performance across drivers, leases, and stations from one process.
+                                    {{ $welcomeText('workflow_step_4_text', 'Monitor settlement reporting, due items, and performance across drivers, leases, and stations from one process.') }}
                                 </p>
                             </div>
                         </div>
@@ -523,46 +522,46 @@
                 </div>
 
                 <div class="mt-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-white to-[#020DFF]/5 p-4">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-700">Success</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-700">{{ $welcomeText('workflow_success_eyebrow', 'Success') }}</p>
                     <p class="mt-2 text-sm font-medium leading-relaxed text-slate-800">
-                        Fuel payments stay tracked end-to-end with simple vouchers, predictable repayments, and clean reporting.
+                        {{ $welcomeText('workflow_success_text', 'Fuel payments stay tracked end-to-end with simple vouchers, predictable repayments, and clean reporting.') }}
                     </p>
                 </div>
 
                 <div class="mt-5 flex justify-start">
-                    <a href="{{ asset('images/BWISER.jpg') }}" class="welcome-entry-button welcome-entry-button--type-c" data-tapless-open aria-haspopup="dialog">
+                    <a href="{{ $welcomeImage('tapless_modal_image', 'images/BWISER.jpg') }}" class="welcome-entry-button welcome-entry-button--type-c" data-tapless-open aria-haspopup="dialog">
                         <div class="welcome-entry-button__line"></div>
                         <div class="welcome-entry-button__line"></div>
-                        <span class="welcome-entry-button__text">Tapless payments</span>
+                        <span class="welcome-entry-button__text">{{ $welcomeText('tapless_button_text', 'Tapless payments') }}</span>
                         <div class="welcome-entry-button__drow1"></div>
                         <div class="welcome-entry-button__drow2"></div>
                     </a>
                 </div>
 
                 <div class="mt-5 rounded-2xl bg-white/85 p-4 shadow-[0_12px_30px_-24px_rgba(2,13,255,0.35)]">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#020DFF]">Case study</p>
-                    <h4 class="mt-2 text-sm font-semibold text-slate-900">A founder story behind tapless payments</h4>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#020DFF]">{{ $welcomeText('case_study_eyebrow', 'Case study') }}</p>
+                    <h4 class="mt-2 text-sm font-semibold text-slate-900">{{ $welcomeText('case_study_title', 'A founder story behind tapless payments') }}</h4>
                     <p class="mt-2 text-[12px] leading-relaxed text-slate-600">
-                        After a difficult experience with an earlier payments initiative that Tlhologelo Mabitle felt left him unfairly treated, he decided to build something new for the Flowdosi Merchant Group instead of walking away from the problem.
+                        {{ $welcomeText('case_study_p1', 'After a difficult experience with an earlier payments initiative that Tlhologelo Mabitle felt left him unfairly treated, he decided to build something new for the Flowdosi Merchant Group instead of walking away from the problem.') }}
                     </p>
                     <p class="mt-2 text-[12px] leading-relaxed text-slate-600">
-                        That decision led to a novel approach: USSD geofenced tapless payments designed for merchant environments, turning a frustrating setback into an unexpected breakthrough for Bwiser.
+                        {{ $welcomeText('case_study_p2', 'That decision led to a novel approach: USSD geofenced tapless payments designed for merchant environments, turning a frustrating setback into an unexpected breakthrough for Bwiser.') }}
                     </p>
                     <p class="mt-2 text-[12px] leading-relaxed text-slate-700">
-                        In many ways, it was a happy accident: a reaction to a tough moment that opened the path to a first-of-its-kind payment experience.
+                        {{ $welcomeText('case_study_p3', 'In many ways, it was a happy accident: a reaction to a tough moment that opened the path to a first-of-its-kind payment experience.') }}
                     </p>
                 </div>
 
             </div>
 
             <div class="glass rounded-2xl p-4 md:p-6 welcome-tween-card">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#020DFF]">FAQ</p>
-                <h4 class="mt-2 text-sm font-semibold text-slate-900">How USSD tapless payments work</h4>
+                <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#020DFF]">{{ $welcomeText('faq_eyebrow', 'FAQ') }}</p>
+                <h4 class="mt-2 text-sm font-semibold text-slate-900">{{ $welcomeText('faq_title', 'How USSD tapless payments work') }}</h4>
                 <div class="mt-4 rounded-2xl bg-white/80 p-4 space-y-3">
                     <div class="chat chat-receiver max-w-full">
                         <div class="chat-avatar avatar">
                             <div class="h-7 w-7 shrink-0 overflow-hidden rounded-full">
-                                <img src="{{ asset('images/ask.jpg') }}" alt="Question asker" class="h-full w-full object-cover" loading="lazy" />
+                                <img src="{{ $welcomeImage('faq_question_avatar', 'images/ask.jpg') }}" alt="Question asker" class="h-full w-full object-cover" loading="lazy" />
                             </div>
                         </div>
                         <div class="chat-header text-base-content text-[11px] font-medium">
@@ -570,7 +569,7 @@
                             <time class="text-base-content/50 ml-1 text-[10px]">12:45</time>
                         </div>
                         <div class="chat-bubble max-w-[15rem] rounded-2xl px-3 py-2 text-[11px] leading-relaxed shadow-sm">
-                            How do USSD tapless payments work if there is no physical card tap?
+                            {{ $welcomeText('faq_question_1', 'How do USSD tapless payments work if there is no physical card tap?') }}
                         </div>
                         <div class="chat-footer text-base-content/50 text-[10px]">
                             Delivered
@@ -580,7 +579,7 @@
                     <div class="chat chat-sender max-w-full">
                         <div class="chat-avatar avatar">
                             <div class="h-7 w-7 shrink-0 overflow-hidden rounded-full">
-                                <img src="{{ asset('images/ans.jpg') }}" alt="Answer" class="h-full w-full object-cover" loading="lazy" />
+                                <img src="{{ $welcomeImage('faq_answer_avatar', 'images/ans.jpg') }}" alt="Answer" class="h-full w-full object-cover" loading="lazy" />
                             </div>
                         </div>
                         <div class="chat-header text-base-content text-[11px] font-medium">
@@ -588,7 +587,7 @@
                             <time class="text-base-content/50 ml-1 text-[10px]">12:46</time>
                         </div>
                         <div class="chat-bubble max-w-[15rem] rounded-2xl bg-[#020DFF] px-3 py-2 text-[11px] leading-relaxed text-white shadow-sm">
-                            The driver or merchant starts the payment process with USSD, and Bwiser checks the voucher, the user, and the geofenced station context before the transaction is approved.
+                            {{ $welcomeText('faq_answer_1', 'The driver or merchant starts the payment process with USSD, and Bwiser checks the voucher, the user, and the geofenced station context before the transaction is approved.') }}
                         </div>
                         <div class="chat-footer text-base-content/50 text-[10px]">
                             Seen
@@ -598,7 +597,7 @@
                     <div class="chat chat-receiver max-w-full">
                         <div class="chat-avatar avatar">
                             <div class="h-7 w-7 shrink-0 overflow-hidden rounded-full">
-                                <img src="{{ asset('images/ask.jpg') }}" alt="Question asker" class="h-full w-full object-cover" loading="lazy" />
+                                <img src="{{ $welcomeImage('faq_question_avatar', 'images/ask.jpg') }}" alt="Question asker" class="h-full w-full object-cover" loading="lazy" />
                             </div>
                         </div>
                         <div class="chat-header text-base-content text-[11px] font-medium">
@@ -616,7 +615,7 @@
                     <div class="chat chat-receiver max-w-full">
                         <div class="chat-avatar avatar">
                             <div class="h-7 w-7 shrink-0 overflow-hidden rounded-full">
-                                <img src="{{ asset('images/ask.jpg') }}" alt="Question asker" class="h-full w-full object-cover" loading="lazy" />
+                                <img src="{{ $welcomeImage('faq_question_avatar', 'images/ask.jpg') }}" alt="Question asker" class="h-full w-full object-cover" loading="lazy" />
                             </div>
                         </div>
                         <div class="chat-header text-base-content text-[11px] font-medium">
@@ -624,7 +623,7 @@
                             <time class="text-base-content/50 ml-1 text-[10px]">12:47</time>
                         </div>
                         <div class="chat-bubble max-w-[15rem] rounded-2xl px-3 py-2 text-[11px] leading-relaxed shadow-sm">
-                            So what makes it secure?
+                            {{ $welcomeText('faq_question_2', 'So what makes it secure?') }}
                         </div>
                         <div class="chat-footer text-base-content/50 text-[10px]">
                             Delivered
@@ -634,7 +633,7 @@
                     <div class="chat chat-sender max-w-full">
                         <div class="chat-avatar avatar">
                             <div class="h-7 w-7 shrink-0 overflow-hidden rounded-full">
-                                <img src="{{ asset('images/ans.jpg') }}" alt="Answer" class="h-full w-full object-cover" loading="lazy" />
+                                <img src="{{ $welcomeImage('faq_answer_avatar', 'images/ans.jpg') }}" alt="Answer" class="h-full w-full object-cover" loading="lazy" />
                             </div>
                         </div>
                         <div class="chat-header text-base-content text-[11px] font-medium">
@@ -642,7 +641,7 @@
                             <time class="text-base-content/50 ml-1 text-[10px]">12:48</time>
                         </div>
                         <div class="chat-bubble max-w-[15rem] rounded-2xl bg-[#020DFF] px-3 py-2 text-[11px] leading-relaxed text-white shadow-sm">
-                            Security comes from combining voucher validation, location awareness, merchant rules, and repayment tracking instead of relying only on a plastic card tap.
+                            {{ $welcomeText('faq_answer_2', 'Security comes from combining voucher validation, location awareness, merchant rules, and repayment tracking instead of relying only on a plastic card tap.') }}
                         </div>
                         <div class="chat-footer text-base-content/50 text-[10px]">
                             Seen
@@ -657,11 +656,11 @@
                 <div class="rounded-[21px] bg-gradient-to-br from-white via-white to-blue-50/70 p-4 md:p-5">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#020DFF]">Merchant onboarding</p>
-                        <h3 class="mt-1 text-base md:text-lg font-semibold text-slate-900 leading-tight">Get live in 4 quick steps</h3>
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#020DFF]">{{ $welcomeText('merchant_onboarding_eyebrow', 'Merchant onboarding') }}</p>
+                        <h3 class="mt-1 text-base md:text-lg font-semibold text-slate-900 leading-tight">{{ $welcomeText('merchant_onboarding_title', 'Get live in 4 quick steps') }}</h3>
                     </div>
                     <span class="shrink-0 rounded-full border border-[#020DFF]/15 bg-[#020DFF]/8 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#020DFF]">
-                        Fast setup
+                        {{ $welcomeText('merchant_onboarding_chip', 'Fast setup') }}
                     </span>
                 </div>
 
@@ -669,32 +668,32 @@
                     <div class="rounded-2xl bg-gradient-to-br from-[#020DFF]/28 via-cyan-400/22 to-[#020DFF]/10 p-[1px] shadow-[0_10px_24px_-22px_rgba(2,13,255,0.45)]">
                         <div class="rounded-[15px] bg-white p-4">
                             <div class="stepper-circle merchant-onboarding-step-number">01</div>
-                            <p class="mt-3 text-sm font-semibold text-slate-900">Register</p>
-                            <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Capture merchant, station, and business details to start onboarding.</p>
+                            <p class="mt-3 text-sm font-semibold text-slate-900">{{ $welcomeText('merchant_step_1_title', 'Register') }}</p>
+                            <p class="mt-1 text-[12px] leading-relaxed text-slate-600">{{ $welcomeText('merchant_step_1_text', 'Capture merchant, station, and business details to start onboarding.') }}</p>
                         </div>
                     </div>
 
                     <div class="rounded-2xl bg-gradient-to-br from-[#020DFF]/22 via-cyan-400/18 to-slate-200/50 p-[1px]">
                         <div class="rounded-[15px] bg-slate-50/85 p-4">
                             <div class="stepper-circle merchant-onboarding-step-number">02</div>
-                            <p class="mt-3 text-sm font-semibold text-slate-900">Verify</p>
-                            <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Submit KYC and onboarding documents so the account can be approved.</p>
+                            <p class="mt-3 text-sm font-semibold text-slate-900">{{ $welcomeText('merchant_step_2_title', 'Verify') }}</p>
+                            <p class="mt-1 text-[12px] leading-relaxed text-slate-600">{{ $welcomeText('merchant_step_2_text', 'Submit KYC and onboarding documents so the account can be approved.') }}</p>
                         </div>
                     </div>
 
                     <div class="rounded-2xl bg-gradient-to-br from-cyan-400/18 via-[#020DFF]/18 to-slate-200/50 p-[1px]">
                         <div class="rounded-[15px] bg-slate-50/85 p-4">
                             <div class="stepper-circle merchant-onboarding-step-number">03</div>
-                            <p class="mt-3 text-sm font-semibold text-slate-900">Install</p>
-                            <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Set up the POS, train staff, and configure voucher validation for the site.</p>
+                            <p class="mt-3 text-sm font-semibold text-slate-900">{{ $welcomeText('merchant_step_3_title', 'Install') }}</p>
+                            <p class="mt-1 text-[12px] leading-relaxed text-slate-600">{{ $welcomeText('merchant_step_3_text', 'Set up the POS, train staff, and configure voucher validation for the site.') }}</p>
                         </div>
                     </div>
 
                     <div class="rounded-2xl bg-gradient-to-br from-[#020DFF]/24 via-cyan-400/18 to-emerald-300/35 p-[1px] shadow-[0_10px_24px_-22px_rgba(15,23,42,0.28)]">
                         <div class="rounded-[15px] bg-white p-4">
                             <div class="stepper-circle merchant-onboarding-step-number">04</div>
-                            <p class="mt-3 text-sm font-semibold text-slate-900">Go live</p>
-                            <p class="mt-1 text-[12px] leading-relaxed text-slate-600">Start accepting Bwiser vouchers with reporting and support already in place.</p>
+                            <p class="mt-3 text-sm font-semibold text-slate-900">{{ $welcomeText('merchant_step_4_title', 'Go live') }}</p>
+                            <p class="mt-1 text-[12px] leading-relaxed text-slate-600">{{ $welcomeText('merchant_step_4_text', 'Start accepting Bwiser vouchers with reporting and support already in place.') }}</p>
                         </div>
                     </div>
                 </div>
@@ -702,7 +701,7 @@
                 <div class="mt-4 rounded-2xl bg-gradient-to-r from-[#020DFF]/20 via-cyan-400/18 to-[#020DFF]/10 p-[1px]">
                     <div class="rounded-[15px] bg-white/90 px-4 py-3">
                         <p class="text-[11px] font-medium text-slate-700">
-                            Merchants move from signup to live voucher acceptance in one guided process.
+                            {{ $welcomeText('merchant_onboarding_footer', 'Merchants move from signup to live voucher acceptance in one guided process.') }}
                         </p>
                     </div>
                 </div>
@@ -710,7 +709,7 @@
             </div>
 
             <img
-                src="{{ asset('images/pos4.jpg') }}"
+                src="{{ $welcomeImage('merchant_pos_image', 'images/pos4.jpg') }}"
                 alt="Bwiser preview"
                 class="welcome-tween-image is-in rounded-2xl"
                 loading="lazy"
@@ -818,7 +817,7 @@
 
             <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden mt-4 welcome-media-shell" data-welcome-media>
                 <img
-                    src="{{ asset('images/pos6.jpg') }}"
+                    src="{{ $welcomeImage('countries_image', 'images/pos6.jpg') }}"
                     alt="Bwiser merchant preview"
                     class="block w-full h-full rounded-2xl object-cover welcome-media-shell__media"
                     data-welcome-media-target
@@ -927,7 +926,7 @@
 
         <div class="flex justify-center">
             <img
-                src="{{ asset('images/cups.png') }}"
+                src="{{ $welcomeImage('cups_image', 'images/cups.png') }}"
                 alt="Bwiser kiosk"
                 class="welcome-kiosk-image"
                 loading="lazy"
@@ -1057,7 +1056,7 @@
 	    }
 
 	    .welcome-hero-image {
-	        background-image: url("{{ asset('images/tennis.jpg') }}");
+	        background-image: url("{{ $welcomeImage('hero_background_image', 'images/tennis.jpg') }}");
 	        background-position: center;
 	        background-size: cover;
 	        opacity: 0.9;
@@ -4226,7 +4225,7 @@
 	            const openers = Array.from(document.querySelectorAll('[data-tapless-open]'));
 	            if (!openers.length) return;
 
-	            const imageUrl = @json(asset('images/BWISER.jpg'));
+	            const imageUrl = @json($welcomeImage('tapless_modal_image', 'images/BWISER.jpg'));
 	            const modalHtml = `
 	                <div style="text-align:left;">
 	                    <img src="${imageUrl}" alt="Bwiser tapless payments" style="display:block;width:100%;height:100%;min-height:260px;max-height:48vh;object-fit:cover;border-radius:14px;margin-bottom:12px;">

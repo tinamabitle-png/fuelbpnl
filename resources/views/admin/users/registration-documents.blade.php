@@ -153,6 +153,9 @@
                                         <div class="mt-1 text-xs text-gray-500">
                                             {{ strtoupper((string) $latestDecision->decision) }} | score {{ (int) $latestDecision->score }}
                                         </div>
+                                        <div class="mt-1 max-w-xs text-xs text-blue-800">
+                                            {{ \App\Support\CreditDecisionSummary::brief($latestDecision) }}
+                                        </div>
                                     @endif
                                     @if($latestUpload && $latestUpload->error_message)
                                         <div class="mt-1 max-w-xs text-xs text-red-600">

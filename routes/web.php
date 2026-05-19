@@ -308,8 +308,12 @@ Route::get('/', function () {
         ];
     });
 
+    $welcomePageService = app(\App\Services\WelcomePageSettingsService::class);
+
     return view('welcome', [
         'welcomeStats' => $payload,
+        'welcomePageSettings' => $welcomePageService->settings(),
+        'welcomePageImageUrls' => $welcomePageService->imageUrls(),
     ]);
 });
 
@@ -729,6 +733,11 @@ Route::middleware(['auth'])->group(function () {
                 abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(SettingsController::class)->updateMerchantDashboard(request());
             })->name('update-merchant-dashboard');
+
+            Route::post('/welcome-page', function() {
+                abort_unless(auth()->user()?->hasRole('super_admin'), 403);
+                return app(SettingsController::class)->updateWelcomePage(request(), app(\App\Services\WelcomePageSettingsService::class));
+            })->name('update-welcome-page');
             
             Route::post('/clear-cache', function() {
                 abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);

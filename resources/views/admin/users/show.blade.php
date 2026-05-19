@@ -389,6 +389,11 @@
                                         (score {{ (int) $latestDecision->score }})
                                     @endif
                                 </p>
+                                @if($latestDecision)
+                                    <div class="mt-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs leading-relaxed text-blue-900">
+                                        {{ \App\Support\CreditDecisionSummary::brief($latestDecision) }}
+                                    </div>
+                                @endif
                                 @if($recommendedLimit > 0)
                                     <p class="mt-1 text-sm text-gray-700">
                                         Recommended limit:
@@ -723,6 +728,59 @@
                         <i class="fas fa-external-link-alt mr-2"></i> View All Vouchers
                     </a>
                 </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-4">
+                            <i class="fas fa-receipt text-indigo-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">1Voucher Weekly Cover</h3>
+                            <p class="text-gray-600 text-sm">Admin view of what the next weekly 1Voucher payment should settle.</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {{ ($weeklyOneVoucherSummary['amount'] ?? 0) > 0 ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600' }}">
+                        {{ ($weeklyOneVoucherSummary['amount'] ?? 0) > 0 ? '1Voucher due this week' : 'No weekly due' }}
+                    </span>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p class="text-xs uppercase tracking-wider text-slate-500">Coverage amount</p>
+                    <div class="mt-2 flex flex-wrap items-center gap-3">
+                        <p class="text-2xl font-bold text-slate-900">ZAR {{ number_format((float) ($weeklyOneVoucherSummary['amount'] ?? 0), 2) }}</p>
+                        @if(($weeklyOneVoucherSummary['amount'] ?? 0) > 0)
+                            <span class="inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
+                                Covers {{ (int) ($weeklyOneVoucherSummary['repayment_count'] ?? 0) }} repayment{{ (int) ($weeklyOneVoucherSummary['repayment_count'] ?? 0) === 1 ? '' : 's' }}
+                            </span>
+                        @endif
+                    </div>
+                    <p class="mt-2 text-sm text-slate-600">{{ $weeklyOneVoucherSummary['window_label'] ?? 'Next 7 days' }}</p>
+                    @if(!empty($weeklyOneVoucherSummary['latest_due_date']))
+                        <p class="mt-1 text-xs text-slate-500">Latest due item in this window: {{ $weeklyOneVoucherSummary['latest_due_date'] }}</p>
+                    @endif
+                </div>
+
+                @if(!empty($weeklyOneVoucherSummary['latest_attempt']))
+                    @php
+                        $latestAttempt = $weeklyOneVoucherSummary['latest_attempt'];
+                        $attemptStatus = strtolower((string) ($latestAttempt->status ?? 'pending'));
+                        $attemptStatusClass = $attemptStatus === 'successful'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : ($attemptStatus === 'failed' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700');
+                    @endphp
+                    <div class="mt-4 rounded-2xl border border-slate-200 p-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <p class="text-sm font-semibold text-slate-900">Latest 1Voucher attempt</p>
+                            <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $attemptStatusClass }}">
+                                {{ strtoupper($attemptStatus) }}
+                            </span>
+                        </div>
+                        <p class="mt-2 text-sm text-slate-600">Amount: ZAR {{ number_format((float) $latestAttempt->amount, 2) }}</p>
+                        <p class="mt-1 text-xs text-slate-500">Reference: {{ $latestAttempt->tx_ref }}</p>
+                    </div>
+                @endif
             </div>
 
             <!-- Leases Summary -->

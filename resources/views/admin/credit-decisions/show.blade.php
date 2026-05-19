@@ -78,6 +78,13 @@
                 </div>
             </div>
 
+            <div class="rounded-lg border border-blue-100 bg-blue-50 p-4">
+                <p class="text-sm font-semibold text-blue-900">Why This Score Was Allocated</p>
+                <p class="mt-2 text-sm leading-relaxed text-blue-900">
+                    {{ \App\Support\CreditDecisionSummary::brief($decision) }}
+                </p>
+            </div>
+
             <div>
                 <p class="text-sm text-gray-500 mb-2">Explanation JSON</p>
                 <pre class="bg-gray-900 text-green-200 text-xs p-3 rounded-lg overflow-x-auto">{{ json_encode($decision->explanation_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>

@@ -8,6 +8,8 @@ use App\Models\BankStatementUpload;
 use App\Models\CreditDecision;
 use App\Models\FuelStation;
 use App\Models\MerchantFranchise;
+use App\Models\Repayment;
+use App\Models\RepaymentPaymentAttempt;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\CreditLimit;
@@ -310,7 +312,29 @@ class UserController extends Controller
             $underwritingSummary = $driverUnderwritingService->resolveForUser($user);
         }
 
-        return view('admin.users.show', compact('user', 'underwritingSummary'));
+        $weeklyWindowEnd = now()->copy()->addDays(7)->toDateString();
+        $weeklyDueRepayments = Repayment::query()
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'overdue'])
+            ->whereDate('due_date', '<=', $weeklyWindowEnd)
+            ->orderBy('due_date')
+            ->get();
+
+        $latestOneVoucherAttempt = RepaymentPaymentAttempt::query()
+            ->where('user_id', $user->id)
+            ->where('method', '1voucher')
+            ->latest()
+            ->first();
+
+        $weeklyOneVoucherSummary = [
+            'repayment_count' => $weeklyDueRepayments->count(),
+            'amount' => (float) $weeklyDueRepayments->sum('amount'),
+            'window_label' => 'Due through ' . now()->copy()->addDays(7)->format('d M Y'),
+            'latest_due_date' => optional($weeklyDueRepayments->last()?->due_date)->format('d M Y'),
+            'latest_attempt' => $latestOneVoucherAttempt,
+        ];
+
+        return view('admin.users.show', compact('user', 'underwritingSummary', 'weeklyOneVoucherSummary'));
     }
 
     public function verifyDriverDocument(Request $request, User $user, string $documentType)
