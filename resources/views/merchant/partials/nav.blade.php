@@ -30,3 +30,28 @@
         @endforeach
     </nav>
 </div>
+
+@php
+    $merchantUser = auth()->user();
+    $merchantEmailVerificationPending = $merchantUser
+        && $merchantUser->hasRole('merchant')
+        && method_exists($merchantUser, 'hasVerifiedEmail')
+        && !$merchantUser->hasVerifiedEmail();
+@endphp
+
+@if($merchantEmailVerificationPending)
+    <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+                <p class="font-semibold">Email verification still needed</p>
+                <p class="mt-1 text-amber-800">You can access the merchant dashboard now, but live redemptions and merchant transaction actions stay locked until your email is verified.</p>
+            </div>
+            <a
+                href="{{ route('verification.notice', ['email' => (string) $merchantUser->email]) }}"
+                class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            >
+                Verify Email
+            </a>
+        </div>
+    </div>
+@endif

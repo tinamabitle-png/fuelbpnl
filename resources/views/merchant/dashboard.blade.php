@@ -4,6 +4,13 @@
 
 @section('content')
 <section class="max-w-6xl mx-auto px-6 pt-16 pb-20">
+    @php
+        $merchantUser = auth()->user();
+        $merchantEmailVerificationPending = $merchantUser
+            && $merchantUser->hasRole('merchant')
+            && method_exists($merchantUser, 'hasVerifiedEmail')
+            && !$merchantUser->hasVerifiedEmail();
+    @endphp
     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div class="flex items-start gap-4">
             <div class="merchant-brand-mark" aria-label="Merchant branding">
@@ -228,18 +235,20 @@
                     @csrf
                     <div>
                         <label class="block text-sm text-slate-700 mb-1">Scan Input</label>
-                        <input id="scanInputField" name="scan_input" required class="w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="e.g. VOUCHER-..., code, or JSON payload">
+                        <input id="scanInputField" name="scan_input" required class="w-full rounded-xl border border-slate-300 px-3 py-2 disabled:cursor-not-allowed disabled:bg-slate-100" placeholder="e.g. VOUCHER-..., code, or JSON payload" {{ $merchantEmailVerificationPending ? 'disabled' : '' }}>
                     </div>
                     <div>
                         <label class="block text-sm text-slate-700 mb-1">Pump Number (optional)</label>
-                        <input id="pumpNumberField" name="pump_number" class="w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="Pump 3">
+                        <input id="pumpNumberField" name="pump_number" class="w-full rounded-xl border border-slate-300 px-3 py-2 disabled:cursor-not-allowed disabled:bg-slate-100" placeholder="Pump 3" {{ $merchantEmailVerificationPending ? 'disabled' : '' }}>
                     </div>
                     <div>
                         <label class="block text-sm text-slate-700 mb-1">Transaction Reference (optional)</label>
-                        <input id="transactionReferenceField" name="transaction_reference" class="w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="POS-12345">
+                        <input id="transactionReferenceField" name="transaction_reference" class="w-full rounded-xl border border-slate-300 px-3 py-2 disabled:cursor-not-allowed disabled:bg-slate-100" placeholder="POS-12345" {{ $merchantEmailVerificationPending ? 'disabled' : '' }}>
                     </div>
-                    <button id="prefillLatestVoucherBtn" type="button" class="btn-ghost w-full rounded-xl py-2.5 text-sm font-semibold">Use Latest Voucher</button>
-                    <p id="prefillLatestVoucherHint" class="text-xs text-slate-500">Autofill redeem fields from the latest approved voucher.</p>
+                    <button id="prefillLatestVoucherBtn" type="button" class="btn-ghost w-full rounded-xl py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60" {{ $merchantEmailVerificationPending ? 'disabled' : '' }}>Use Latest Voucher</button>
+                    <p id="prefillLatestVoucherHint" class="text-xs text-slate-500">
+                        {{ $merchantEmailVerificationPending ? 'Verify your email first to unlock voucher redemption.' : 'Autofill redeem fields from the latest approved voucher.' }}
+                    </p>
                     <div id="redeemWalletWarning" class="hidden bw-error-alert bw-error-alert--inline" data-error-alert>
                         <button type="button" aria-label="close-error" class="bw-error-alert-close" data-alert-close>
                             <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="16" width="16" xmlns="http://www.w3.org/2000/svg">
@@ -257,7 +266,9 @@
                         </p>
                     </div>
                     <p id="redeemWalletOk" class="hidden rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700"></p>
-                    <button id="redeemSubmitBtn" class="btn-primary w-full rounded-xl py-2.5 text-sm font-semibold">Redeem Voucher</button>
+                    <button id="redeemSubmitBtn" class="btn-primary w-full rounded-xl py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60" {{ $merchantEmailVerificationPending ? 'disabled' : '' }}>
+                        {{ $merchantEmailVerificationPending ? 'Verify Email To Redeem' : 'Redeem Voucher' }}
+                    </button>
                 </form>
             </div>
 

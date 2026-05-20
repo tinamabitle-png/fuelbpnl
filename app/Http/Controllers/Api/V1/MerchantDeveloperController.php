@@ -186,6 +186,10 @@ class MerchantDeveloperController extends Controller
 
     public function redeem(Request $request): JsonResponse
     {
+        if ($error = $this->ensureVerifiedMerchant($request)) {
+            return $error;
+        }
+
         if ($error = $this->enforceTokenAbility($request, 'vouchers.redeem')) {
             return $error;
         }
@@ -283,6 +287,10 @@ class MerchantDeveloperController extends Controller
 
     public function offlineSync(Request $request): JsonResponse
     {
+        if ($error = $this->ensureVerifiedMerchant($request)) {
+            return $error;
+        }
+
         if ($error = $this->enforceTokenAbility($request, 'vouchers.redeem')) {
             return $error;
         }
@@ -420,6 +428,21 @@ class MerchantDeveloperController extends Controller
             'message' => 'Sandbox API online',
             'timestamp' => now()->toIso8601String(),
         ]);
+    }
+
+    private function ensureVerifiedMerchant(Request $request): ?JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user || !$user->hasRole('merchant') || !method_exists($user, 'hasVerifiedEmail') || $user->hasVerifiedEmail()) {
+            return null;
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Verify your email before redeeming vouchers or processing live merchant transactions.',
+            'verify_url' => route('verification.notice', ['email' => (string) $user->email]),
+        ], 403);
     }
 
     public function sandboxStations(Request $request): JsonResponse

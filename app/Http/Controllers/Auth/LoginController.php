@@ -68,8 +68,9 @@ class LoginController extends Controller
                 ]);
             }
 
-            // Require verified email for driver/merchant web access.
-            if ($user->hasAnyRole(['driver', 'merchant']) && method_exists($user, 'hasVerifiedEmail') && !$user->hasVerifiedEmail()) {
+            // Drivers still require verified email before web access. Merchants can browse their
+            // dashboard before verification, but transactional actions remain gated elsewhere.
+            if ($user->hasRole('driver') && method_exists($user, 'hasVerifiedEmail') && !$user->hasVerifiedEmail()) {
                 return redirect()
                     ->route('verification.notice', ['email' => (string) $user->email])
                     ->with('status', 'Please verify your email to continue.');

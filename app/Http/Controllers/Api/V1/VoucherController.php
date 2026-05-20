@@ -240,6 +240,15 @@ class VoucherController extends Controller
 
     public function redeem(Request $request)
     {
+        $user = $request->user();
+        if ($user && $user->hasRole('merchant') && method_exists($user, 'hasVerifiedEmail') && !$user->hasVerifiedEmail()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Verify your email before redeeming vouchers or processing live merchant transactions.',
+                'verify_url' => route('verification.notice', ['email' => (string) $user->email]),
+            ], 403);
+        }
+
         $request->validate([
             'scan_input' => 'required_without_all:code,voucher_id|string',
             'code' => 'required_without_all:scan_input,voucher_id|string',

@@ -466,6 +466,26 @@ Route::post('/register/merchant', [RegisterController::class, 'storeMerchant'])-
 
 // Email verification (works even if user cannot log in yet due to admin approval flow)
 Route::get('/email/verify', function () {
+    $user = auth()->user();
+
+    if ($user && method_exists($user, 'hasVerifiedEmail') && $user->hasVerifiedEmail()) {
+        if ($user->hasAnyRole(['super_admin', 'admin', 'employee'])) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        if ($user->hasRole('merchant')) {
+            return redirect()->route('merchant.dashboard');
+        }
+
+        if ($user->hasRole('investor')) {
+            return redirect()->route('investor.dashboard');
+        }
+
+        if ($user->hasRole('driver')) {
+            return redirect()->route('driver.dashboard');
+        }
+    }
+
     return view('auth.verify-email');
 })->name('verification.notice');
 

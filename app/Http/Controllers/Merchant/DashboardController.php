@@ -346,6 +346,10 @@ class DashboardController extends Controller
         $user = Auth::user();
         $this->authorizeMerchantPortal($user);
 
+        if ($errorRedirect = $this->verifiedMerchantTransactionRedirect($user)) {
+            return $errorRedirect;
+        }
+
         $abilities = self::developerAbilities();
 
         $validated = $request->validate([
@@ -436,6 +440,10 @@ class DashboardController extends Controller
         $user = Auth::user();
         $this->authorizeMerchantPortal($user);
 
+        if ($errorRedirect = $this->verifiedMerchantTransactionRedirect($user)) {
+            return $errorRedirect;
+        }
+
         $station = $this->resolveMerchantStation($user, $request);
         abort_unless($station, 404, 'No station linked to this account.');
 
@@ -507,6 +515,27 @@ class DashboardController extends Controller
     protected function authorizeMerchantPortal($user): void
     {
         abort_unless($user && $user->hasAnyRole(['super_admin', 'admin', 'merchant']), 403);
+    }
+
+    protected function merchantEmailVerificationPending($user): bool
+    {
+        return (bool) (
+            $user
+            && $user->hasRole('merchant')
+            && method_exists($user, 'hasVerifiedEmail')
+            && !$user->hasVerifiedEmail()
+        );
+    }
+
+    protected function verifiedMerchantTransactionRedirect($user)
+    {
+        if (!$this->merchantEmailVerificationPending($user)) {
+            return null;
+        }
+
+        return redirect()
+            ->route('merchant.dashboard')
+            ->with('error', 'Verify your email before redeeming vouchers or creating live developer credentials.');
     }
 
     private function merchantHeaderBranding(?FuelStation $station = null): array
