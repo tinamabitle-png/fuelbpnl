@@ -9,6 +9,7 @@ use App\Models\FuelStation;
 use App\Models\FuelVoucher;
 use App\Models\Lease;
 use App\Models\Repayment;
+use App\Models\RepaymentPaymentAttempt;
 use App\Models\AuditLog;
 use App\Models\VirtualCard;
 use App\Models\WalletTransaction;
@@ -146,6 +147,8 @@ class DashboardController extends Controller
             ->limit(8)
             ->get();
 
+        $weeklyOneVoucherSummary = $this->buildWeeklyOneVoucherSummary((int) $user->id);
+
         // Determine the oldest overdue repayment using the same logic the dashboard uses for highlighting:
         // due_date is in the past and not today (end-of-day cutoff).
         $mostOverdue = $upcomingRepayments
@@ -197,11 +200,38 @@ class DashboardController extends Controller
             'latestApprovedVoucher',
             'recentVouchers',
             'upcomingRepayments',
+            'weeklyOneVoucherSummary',
             'nextRepaymentCountdownTarget',
             'nextRepayment',
             'mostOverdue',
             'overdueSeconds'
         ));
+    }
+
+    private function buildWeeklyOneVoucherSummary(int $userId): array
+    {
+        $weeklyWindowEnd = now()->copy()->addDays(7)->toDateString();
+
+        $weeklyDueRepayments = Repayment::query()
+            ->where('user_id', $userId)
+            ->whereIn('status', ['pending', 'overdue'])
+            ->whereDate('due_date', '<=', $weeklyWindowEnd)
+            ->orderBy('due_date')
+            ->get();
+
+        $latestOneVoucherAttempt = RepaymentPaymentAttempt::query()
+            ->where('user_id', $userId)
+            ->where('method', '1voucher')
+            ->latest()
+            ->first();
+
+        return [
+            'repayment_count' => $weeklyDueRepayments->count(),
+            'amount' => (float) $weeklyDueRepayments->sum('amount'),
+            'window_label' => 'Due through ' . now()->copy()->addDays(7)->format('d M Y'),
+            'latest_due_date' => optional($weeklyDueRepayments->last()?->due_date)->format('d M Y'),
+            'latest_attempt' => $latestOneVoucherAttempt,
+        ];
     }
 
     public function vouchers(Request $request)

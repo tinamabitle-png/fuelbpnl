@@ -317,6 +317,35 @@
         </div>
     </div>
 
+    <div class="mt-4 glass rounded-2xl p-6 overflow-hidden">
+        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div>
+                <p class="text-xs uppercase tracking-[0.2em] text-slate-500">1Voucher Weekly Cover</p>
+                <h2 class="brand-font text-lg text-slate-900 mt-1">What your next weekly 1Voucher payment should settle</h2>
+                <p class="text-sm text-slate-600 mt-1">This helps you see how much your next 1Voucher should cover for the coming week.</p>
+            </div>
+            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {{ ($weeklyOneVoucherSummary['amount'] ?? 0) > 0 ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600' }}">
+                {{ ($weeklyOneVoucherSummary['amount'] ?? 0) > 0 ? '1Voucher due this week' : 'No weekly due' }}
+            </span>
+        </div>
+
+        <div class="mt-4 rounded-2xl border border-slate-200 bg-white/70 p-4">
+            <p class="text-xs uppercase tracking-wider text-slate-500">Coverage amount</p>
+            <div class="mt-2 flex flex-wrap items-center gap-3">
+                <p class="text-2xl font-bold text-slate-900">ZAR {{ number_format((float) ($weeklyOneVoucherSummary['amount'] ?? 0), 2) }}</p>
+                @if(($weeklyOneVoucherSummary['amount'] ?? 0) > 0)
+                    <span class="inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
+                        Covers {{ (int) ($weeklyOneVoucherSummary['repayment_count'] ?? 0) }} repayment{{ (int) ($weeklyOneVoucherSummary['repayment_count'] ?? 0) === 1 ? '' : 's' }}
+                    </span>
+                @endif
+            </div>
+            <p class="mt-2 text-sm text-slate-600">{{ $weeklyOneVoucherSummary['window_label'] ?? 'Next 7 days' }}</p>
+            @if(!empty($weeklyOneVoucherSummary['latest_due_date']))
+                <p class="mt-1 text-xs text-slate-500">Latest due item in this window: {{ $weeklyOneVoucherSummary['latest_due_date'] }}</p>
+            @endif
+        </div>
+    </div>
+
     @php
         $saBrands = [
             ['name' => 'Shell', 'slug' => 'shell-sa'],
