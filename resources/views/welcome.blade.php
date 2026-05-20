@@ -709,7 +709,7 @@
             </div>
 
             <img
-                src="{{ $welcomeImage('merchant_pos_image', 'images/pos4.jpg') }}"
+                src="{{ $welcomeImage('merchant_pos_image', 'images/posbox1.jpg') }}"
                 alt="Bwiser preview"
                 class="welcome-tween-image is-in rounded-2xl"
                 loading="lazy"
