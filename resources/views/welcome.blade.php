@@ -408,7 +408,16 @@
                 />
             </div>
 
-
+            <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-tween-card" style="margin-top:0;">
+                <img
+                    src="{{ $welcomeImage('story_feature_image', 'images/NalediTsunke.png') }}"
+                    alt="Bwiser preview"
+                    class="welcome-tween-image is-in rounded-2xl"
+                    loading="lazy"
+                    data-welcome-tween="slide-in"
+                    onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
+                >
+            </div>
 
 <!--the end-->
         </div>
@@ -446,17 +455,6 @@
 
     <div class="grid gap-8 md:grid-cols-2 mt-8 items-start">
         <div class="space-y-6">
-            <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-tween-card">
-                <img
-                    src="{{ $welcomeImage('story_feature_image', 'images/NalediTsunke.png') }}"
-                    alt="Bwiser preview"
-                    class="welcome-tween-image is-in rounded-2xl"
-                    loading="lazy"
-                    data-welcome-tween="slide-in"
-                    onerror="this.classList.add('is-in'); this.style.opacity='1'; this.style.transform='none';"
-                >
-            </div>
-
             <div class="glass rounded-2xl p-4 md:p-6 welcome-tween-card">
                 <div class="flex items-start justify-between gap-4">
                     <div>
