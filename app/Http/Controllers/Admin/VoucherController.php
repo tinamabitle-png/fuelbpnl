@@ -25,30 +25,93 @@ class VoucherController extends Controller
         $query = FuelVoucher::with(['user', 'fuelStation', 'lease']);
         
         // Filters
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
         
-        if ($request->has('station_id')) {
+        if ($request->filled('station_id')) {
             $query->where('fuel_station_id', $request->station_id);
         }
         
-        if ($request->has('user_id')) {
+        if ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
         }
         
-        if ($request->has('date_from')) {
+        if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
         }
         
-        if ($request->has('date_to')) {
+        if ($request->filled('date_to')) {
             $query->whereDate('created_at', '<=', $request->date_to);
         }
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->input('search'));
+            $query->where(function ($q) use ($search) {
+                $q->where('code', 'like', "%{$search}%")
+                    ->orWhere('qr_code', 'like', "%{$search}%")
+                    ->orWhere('transaction_reference', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($u) use ($search) {
+                        $u->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('fuelStation', function ($station) use ($search) {
+                        $station->where('name', 'like', "%{$search}%")
+                            ->orWhere('company', 'like', "%{$search}%")
+                            ->orWhere('city', 'like', "%{$search}%");
+                    });
+            });
+        }
         
-        $vouchers = $query->latest()->paginate(20);
-        $stations = FuelStation::all();
+        $vouchers = $query->latest()->paginate(20)->withQueryString();
+        $stations = FuelStation::orderBy('name')->get();
         
         return view('admin.vouchers.index', compact('vouchers', 'stations'));
+    }
+
+    public function suggestions(Request $request)
+    {
+        $search = trim((string) $request->query('q', ''));
+
+        if (mb_strlen($search) < 2) {
+            return response()->json(['items' => []]);
+        }
+
+        $items = FuelVoucher::query()
+            ->with(['user:id,name,email,phone', 'fuelStation:id,name,company,city'])
+            ->where(function ($q) use ($search) {
+                $q->where('code', 'like', "%{$search}%")
+                    ->orWhere('qr_code', 'like', "%{$search}%")
+                    ->orWhere('transaction_reference', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($user) use ($search) {
+                        $user->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('fuelStation', function ($station) use ($search) {
+                        $station->where('name', 'like', "%{$search}%")
+                            ->orWhere('company', 'like', "%{$search}%")
+                            ->orWhere('city', 'like', "%{$search}%");
+                    });
+            })
+            ->latest()
+            ->limit(8)
+            ->get()
+            ->map(fn (FuelVoucher $voucher) => [
+                'label' => $voucher->code ?: ('Voucher #' . $voucher->id),
+                'value' => $voucher->code ?: (string) $voucher->id,
+                'meta' => trim(sprintf(
+                    '%s • %s • ZAR %s',
+                    $voucher->user?->name ?: $voucher->user?->email ?: 'Unknown user',
+                    $voucher->fuelStation?->name ?: 'No station',
+                    number_format((float) $voucher->amount, 2)
+                )),
+                'badge' => strtoupper((string) $voucher->status),
+                'url' => route('admin.vouchers.show', $voucher),
+            ]);
+
+        return response()->json(['items' => $items]);
     }
 
     public function create()

@@ -665,6 +665,11 @@ Route::middleware(['auth'])->group(function () {
             abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin']), 403);
             return app(AdminUserController::class)->index(request());
         })->name('users.index');
+
+        Route::get('/users/api/suggestions', function() {
+            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin']), 403);
+            return app(AdminUserController::class)->suggestions(request());
+        })->name('users.api.suggestions');
         
         Route::get('/users/create', [AdminUserController::class, 'create'])->middleware('role:super_admin|admin')->name('users.create');
         Route::post('/users', [AdminUserController::class, 'store'])->middleware('role:super_admin|admin')->name('users.store');
@@ -924,6 +929,11 @@ Route::middleware(['auth'])->group(function () {
                 abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
                 return app(VoucherController::class)->pending(request());
             })->name('pending');
+
+            Route::get('/api/suggestions', function() {
+                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
+                return app(VoucherController::class)->suggestions(request());
+            })->name('api.suggestions');
             
             // Show single voucher
             Route::get('/{voucher}', [VoucherController::class, 'show'])->name('show');

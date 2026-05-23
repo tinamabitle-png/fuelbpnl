@@ -120,6 +120,7 @@
             <button onclick="toggleFilters()" 
                     class="px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 shadow-sm hover:shadow transition-all duration-300">
                 <i class="fas fa-filter"></i>
+                <span class="sr-only">Focus filters</span>
             </button>
         </div>
     </div>
@@ -147,16 +148,28 @@
     </div>
 
     <!-- Search and Filters Form -->
-    <form id="filterForm" action="{{ route('admin.users.index') }}" method="GET" class="bg-gradient-to-r from-gray-50 to-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-6">
+    <form id="filterForm" action="{{ route('admin.users.index') }}" method="GET" class="bg-gradient-to-r from-gray-50 to-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-6" data-admin-search-form>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <!-- Search Input -->
-            <div class="md:col-span-2 relative">
+            <div class="md:col-span-2 relative" data-admin-typeahead>
                 <input type="text" 
+                       id="userSearchInput"
                        name="search" 
                        value="{{ request('search') }}"
                        placeholder="Search users by name, email, or phone..." 
+                       autocomplete="off"
+                       role="combobox"
+                       aria-expanded="false"
+                       aria-controls="userSearchSuggestions"
+                       data-suggestions-url="{{ route('admin.users.api.suggestions') }}"
                        class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm">
                 <i class="fas fa-search absolute left-4 top-3.5 text-gray-400"></i>
+                <div
+                    id="userSearchSuggestions"
+                    class="admin-search-suggestions hidden"
+                    role="listbox"
+                    aria-label="User search suggestions"
+                ></div>
             </div>
             
             <!-- Role Filter -->
@@ -729,6 +742,82 @@
     </div>
 </div>
 
+<style>
+    .admin-search-suggestions {
+        position: absolute;
+        z-index: 40;
+        top: calc(100% + 0.5rem);
+        left: 0;
+        right: 0;
+        max-height: 21rem;
+        overflow-y: auto;
+        border: 1px solid #dbe4ef;
+        border-radius: 0.875rem;
+        background: #fff;
+        box-shadow: 0 18px 45px -28px rgba(15, 23, 42, 0.55);
+    }
+
+    .admin-search-suggestion {
+        width: 100%;
+        border: 0;
+        border-bottom: 1px solid #eef2f7;
+        background: #fff;
+        padding: 0.85rem 1rem;
+        text-align: left;
+        transition: background-color 120ms ease;
+    }
+
+    .admin-search-suggestion:last-child {
+        border-bottom: 0;
+    }
+
+    .admin-search-suggestion:hover,
+    .admin-search-suggestion:focus {
+        background: #eff6ff;
+        outline: none;
+    }
+
+    .admin-search-suggestion__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+
+    .admin-search-suggestion__label {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .admin-search-suggestion__badge {
+        flex: 0 0 auto;
+        border-radius: 999px;
+        background: #e0f2fe;
+        padding: 0.15rem 0.55rem;
+        font-size: 0.68rem;
+        font-weight: 800;
+        color: #075985;
+    }
+
+    .admin-search-suggestion__meta {
+        margin-top: 0.25rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.78rem;
+        color: #64748b;
+    }
+
+    #filterForm.admin-filter-focus {
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18), 0 18px 42px -34px rgba(15, 23, 42, 0.55);
+    }
+</style>
+
 <script>
     // Bulk actions toggle
     function toggleBulkActions() {
@@ -739,7 +828,10 @@
     // Toggle filters
     function toggleFilters() {
         const filters = document.getElementById('filterForm');
-        filters.classList.toggle('hidden');
+        filters?.classList.remove('hidden');
+        filters?.classList.add('admin-filter-focus');
+        document.getElementById('userSearchInput')?.focus();
+        setTimeout(() => filters?.classList.remove('admin-filter-focus'), 1400);
     }
 
     // Select all checkboxes
@@ -846,6 +938,103 @@
             document.getElementById('filterForm').submit();
         });
     });
+
+    function setupAdminSearchTypeahead(inputId, panelId) {
+        const input = document.getElementById(inputId);
+        const panel = document.getElementById(panelId);
+        const form = document.getElementById('filterForm');
+        if (!input || !panel || !form) return;
+
+        let timer = null;
+        let controller = null;
+
+        const hide = () => {
+            panel.classList.add('hidden');
+            panel.innerHTML = '';
+            input.setAttribute('aria-expanded', 'false');
+        };
+
+        const render = (items) => {
+            if (!items.length) {
+                panel.innerHTML = '<div class="px-4 py-3 text-sm text-slate-500">No matching users yet.</div>';
+                panel.classList.remove('hidden');
+                input.setAttribute('aria-expanded', 'true');
+                return;
+            }
+
+            panel.innerHTML = items.map((item) => `
+                <button type="button" class="admin-search-suggestion" role="option" data-value="${escapeHtml(item.value || '')}">
+                    <span class="admin-search-suggestion__top">
+                        <span class="admin-search-suggestion__label">${escapeHtml(item.label || '')}</span>
+                        <span class="admin-search-suggestion__badge">${escapeHtml(item.badge || 'MATCH')}</span>
+                    </span>
+                    <span class="admin-search-suggestion__meta">${escapeHtml(item.meta || '')}</span>
+                </button>
+            `).join('');
+
+            panel.classList.remove('hidden');
+            input.setAttribute('aria-expanded', 'true');
+        };
+
+        const fetchSuggestions = () => {
+            const query = input.value.trim();
+            if (query.length < 2) {
+                hide();
+                return;
+            }
+
+            controller?.abort();
+            controller = new AbortController();
+            const url = new URL(input.dataset.suggestionsUrl, window.location.origin);
+            url.searchParams.set('q', query);
+
+            fetch(url, {
+                headers: { 'Accept': 'application/json' },
+                signal: controller.signal,
+            })
+                .then((response) => response.ok ? response.json() : { items: [] })
+                .then((payload) => render(Array.isArray(payload.items) ? payload.items : []))
+                .catch((error) => {
+                    if (error.name !== 'AbortError') hide();
+                });
+        };
+
+        input.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(fetchSuggestions, 180);
+        });
+
+        input.addEventListener('focus', () => {
+            if (input.value.trim().length >= 2) fetchSuggestions();
+        });
+
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') hide();
+        });
+
+        panel.addEventListener('click', (event) => {
+            const option = event.target.closest('.admin-search-suggestion');
+            if (!option) return;
+            input.value = option.dataset.value || '';
+            hide();
+            form.submit();
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!panel.contains(event.target) && event.target !== input) hide();
+        });
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    setupAdminSearchTypeahead('userSearchInput', 'userSearchSuggestions');
 
     // Handle form submissions
     document.getElementById('creditLimitForm')?.addEventListener('submit', function(e) {

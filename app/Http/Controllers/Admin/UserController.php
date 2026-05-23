@@ -217,18 +217,18 @@ class UserController extends Controller
         $query = User::with(['wallet', 'creditLimit']);
         
         // Filter by role
-        if ($request->has('role')) {
+        if ($request->filled('role')) {
             $query->role($request->role);
         }
         
         // Filter by status
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
         
         // Search
-        if ($request->has('search')) {
-            $search = $request->search;
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
@@ -236,10 +236,44 @@ class UserController extends Controller
             });
         }
         
-        $users = $query->latest()->paginate(20);
+        $users = $query->latest()->paginate(20)->withQueryString();
         $roles = Role::all();
         
         return view('admin.users.index', compact('users', 'roles'));
+    }
+
+    public function suggestions(Request $request)
+    {
+        $search = trim((string) $request->query('q', ''));
+
+        if (mb_strlen($search) < 2) {
+            return response()->json(['items' => []]);
+        }
+
+        $items = User::query()
+            ->with('roles:id,name')
+            ->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('id_number', 'like', "%{$search}%");
+            })
+            ->latest()
+            ->limit(8)
+            ->get()
+            ->map(fn (User $user) => [
+                'label' => $user->name ?: $user->email ?: ('User #' . $user->id),
+                'value' => $user->email ?: $user->name ?: (string) $user->id,
+                'meta' => trim(sprintf(
+                    '%s • %s',
+                    $user->email ?: 'No email',
+                    $user->phone ?: 'No phone'
+                )),
+                'badge' => strtoupper((string) ($user->roles->pluck('name')->first() ?: $user->status ?: 'user')),
+                'url' => route('admin.users.show', $user),
+            ]);
+
+        return response()->json(['items' => $items]);
     }
 
     public function create()
