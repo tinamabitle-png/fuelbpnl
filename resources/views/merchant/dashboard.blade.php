@@ -221,6 +221,21 @@
             </div>
         </div>
 
+        <div class="glass rounded-2xl p-6 mt-8">
+            <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-blue-600">Station USSD Queue</p>
+                    <h2 class="brand-font text-xl text-slate-900 mt-1">Live Dial-In Order</h2>
+                    <p class="text-sm text-slate-600 mt-1">Only requests for {{ $station->name }} appear here, ordered by arrival time.</p>
+                </div>
+                <span id="ussdQueueCount" class="inline-flex items-center rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
+                    0 waiting
+                </span>
+            </div>
+
+            <div id="ussdQueueList" class="mt-5 space-y-3"></div>
+        </div>
+
         <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="glass rounded-2xl p-6 lg:col-span-1">
                 <h2 class="brand-font text-xl text-slate-900">Manual Redeem</h2>
@@ -340,6 +355,59 @@
         margin: 0;
         line-height: 1;
         isolation: isolate;
+    }
+
+    .ussd-queue-card {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 0.85rem;
+        align-items: center;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.86);
+        padding: 0.9rem;
+    }
+
+    .ussd-queue-card.is-pending {
+        border-color: #bfdbfe;
+        background: linear-gradient(135deg, rgba(239, 246, 255, 0.96), rgba(255, 255, 255, 0.9));
+    }
+
+    .ussd-queue-number {
+        display: grid;
+        width: 2.4rem;
+        height: 2.4rem;
+        place-items: center;
+        border-radius: 999px;
+        background: #0f172a;
+        color: #fff;
+        font-size: 0.82rem;
+        font-weight: 800;
+    }
+
+    .ussd-queue-status {
+        border-radius: 999px;
+        padding: 0.28rem 0.65rem;
+        font-size: 0.68rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .ussd-queue-status--pending { background: #dbeafe; color: #1d4ed8; }
+    .ussd-queue-status--success { background: #dcfce7; color: #047857; }
+    .ussd-queue-status--failed { background: #fee2e2; color: #b91c1c; }
+    .ussd-queue-status--cancelled { background: #f1f5f9; color: #475569; }
+
+    @media (max-width: 640px) {
+        .ussd-queue-card {
+            grid-template-columns: auto minmax(0, 1fr);
+        }
+
+        .ussd-queue-status {
+            grid-column: 2;
+            justify-self: start;
+        }
     }
 
     .action-scan-loader span {
@@ -916,8 +984,11 @@
     const redeemUrl = @json(route('merchant.vouchers.redeem'));
     const wsConfig = @json($wsConfig);
     let feed = @json($initialVouchers);
+    let ussdQueue = @json($initialUssdQueue ?? []);
 
     const feedBody = document.getElementById('voucherFeedBody');
+    const ussdQueueList = document.getElementById('ussdQueueList');
+    const ussdQueueCount = document.getElementById('ussdQueueCount');
     const issuedCount = document.getElementById('issuedCount');
     const approvedCount = document.getElementById('approvedCount');
     const redeemedCount = document.getElementById('redeemedCount');
@@ -962,6 +1033,15 @@
         return d.toLocaleString();
     }
 
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
     function renderFeed() {
         feedBody.innerHTML = feed.map(v => {
             const isApproved = String(v.status || '').toLowerCase() === 'approved';
@@ -987,6 +1067,65 @@
         }).join('');
     }
 
+    function queueStatusClass(status) {
+        const key = String(status || 'pending').toLowerCase();
+        if (key === 'success') return 'ussd-queue-status ussd-queue-status--success';
+        if (key === 'failed') return 'ussd-queue-status ussd-queue-status--failed';
+        if (key === 'cancelled') return 'ussd-queue-status ussd-queue-status--cancelled';
+        return 'ussd-queue-status ussd-queue-status--pending';
+    }
+
+    function formatQueueWait(seconds) {
+        const total = Math.max(0, Number(seconds || 0));
+        if (total < 60) return `${total}s`;
+        const minutes = Math.floor(total / 60);
+        const rest = total % 60;
+        return `${minutes}m ${rest}s`;
+    }
+
+    function renderUssdQueue() {
+        if (!ussdQueueList || !ussdQueueCount) return;
+
+        const pendingCount = ussdQueue.filter((item) => String(item.status || '').toLowerCase() === 'pending').length;
+        ussdQueueCount.textContent = `${pendingCount} waiting`;
+
+        if (!Array.isArray(ussdQueue) || ussdQueue.length === 0) {
+            ussdQueueList.innerHTML = `
+                <div class="rounded-2xl border border-slate-200 bg-white/80 px-4 py-5 text-sm text-slate-500">
+                    No USSD dial-ins for this station right now.
+                </div>
+            `;
+            return;
+        }
+
+        ussdQueueList.innerHTML = ussdQueue.map((item) => {
+            const status = String(item.status || 'pending').toLowerCase();
+            const amount = item.amount === null || typeof item.amount === 'undefined'
+                ? 'Amount pending'
+                : `R ${Number(item.amount || 0).toFixed(2)}`;
+            const pump = item.pump_number ? `Pump ${escapeHtml(item.pump_number)}` : 'Pump not set';
+            const voucher = escapeHtml(item.voucher_code || 'Voucher pending');
+            const driverName = escapeHtml(item.driver_name || 'Unknown driver');
+            const driverPhone = item.driver_phone ? ` • ${escapeHtml(item.driver_phone)}` : '';
+            const completed = item.completed_at ? `Completed ${formatDate(item.completed_at)}` : `Waiting ${formatQueueWait(item.waiting_seconds)}`;
+
+            return `
+                <article class="ussd-queue-card ${status === 'pending' ? 'is-pending' : ''}">
+                    <div class="ussd-queue-number">#${item.queue_number || '-'}</div>
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <p class="truncate text-sm font-semibold text-slate-900">${voucher}</p>
+                            <span class="text-xs font-semibold text-slate-500">${amount}</span>
+                        </div>
+                        <p class="mt-1 truncate text-xs text-slate-600">${driverName}${driverPhone}</p>
+                        <p class="mt-1 text-xs text-slate-500">${pump} • Arrived ${formatDate(item.created_at)} • ${completed}</p>
+                    </div>
+                    <span class="${queueStatusClass(status)}">${status}</span>
+                </article>
+            `;
+        }).join('');
+    }
+
     function upsertVoucher(voucher) {
         if (!voucher || !voucher.voucher_id) return;
         feed = [voucher, ...feed.filter(v => v.voucher_id !== voucher.voucher_id)].slice(0, 60);
@@ -1004,6 +1143,10 @@
                 feed = data.items;
                 applySummary(data.summary);
                 renderFeed();
+            }
+            if (Array.isArray(data.ussd_queue)) {
+                ussdQueue = data.ussd_queue;
+                renderUssdQueue();
             }
         } catch (error) {
             console.error(error);
@@ -1135,6 +1278,7 @@
     }
 
     renderFeed();
+    renderUssdQueue();
     updateRedeemWalletState();
 
     if (prefillLatestVoucherBtn) {

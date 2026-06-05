@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
 class UssdRedemptionEvent extends Model
@@ -33,4 +34,19 @@ class UssdRedemptionEvent extends Model
         'completed_at' => 'datetime',
         'receipt_payload' => 'array',
     ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function fuelVoucher(): BelongsTo
+    {
+        return $this->belongsTo(FuelVoucher::class);
+    }
+
+    public function fuelStation(): BelongsTo
+    {
+        return $this->belongsTo(FuelStation::class);
+    }
 }

@@ -8,6 +8,7 @@ use App\Models\FuelStation;
 use App\Models\FuelVoucher;
 use App\Models\MerchantFranchise;
 use App\Models\Settlement;
+use App\Models\UssdRedemptionEvent;
 use App\Services\FuelPriceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -57,6 +58,7 @@ class DashboardController extends Controller
                 'latestVouchers' => collect(),
                 'approvedVouchers' => collect(),
                 'initialVouchers' => [],
+                'initialUssdQueue' => [],
                 'wsConfig' => $this->websocketConfig(),
                 'stationPrices' => [],
                 'branding' => $this->merchantHeaderBranding(),
@@ -107,6 +109,8 @@ class DashboardController extends Controller
             ->map(fn (FuelVoucher $voucher) => $this->voucherPayload($voucher))
             ->values();
 
+        $initialUssdQueue = $this->stationUssdQueue((int) $station->id);
+
         $fuelPriceService = app(FuelPriceService::class);
         $stationPrices = $fuelPriceService->resolveStationPrices((int) $station->id, true);
 
@@ -117,6 +121,7 @@ class DashboardController extends Controller
             'latestVouchers' => $latestVouchers,
             'approvedVouchers' => $approvedVouchers,
             'initialVouchers' => $initialVouchers,
+            'initialUssdQueue' => $initialUssdQueue,
             'wsConfig' => $this->websocketConfig(),
             'stationPrices' => $stationPrices,
             'branding' => $this->merchantHeaderBranding($station),
@@ -427,6 +432,7 @@ class DashboardController extends Controller
             'success' => true,
             'station_id' => $station->id,
             'items' => $vouchers,
+            'ussd_queue' => $this->stationUssdQueue((int) $station->id),
             'summary' => [
                 'issued' => FuelVoucher::where('fuel_station_id', $station->id)->where('status', 'issued')->count(),
                 'approved' => FuelVoucher::where('fuel_station_id', $station->id)->where('status', 'approved')->count(),
@@ -721,6 +727,43 @@ class DashboardController extends Controller
             'pump_number' => $voucher->pump_number,
             'transaction_reference' => $voucher->transaction_reference,
         ];
+    }
+
+    protected function stationUssdQueue(int $stationId): array
+    {
+        $events = UssdRedemptionEvent::query()
+            ->with(['user:id,name,phone', 'fuelVoucher:id,code,amount,status,pump_number,transaction_reference'])
+            ->where('fuel_station_id', $stationId)
+            ->where(function ($query) {
+                $query->where('status', 'pending')
+                    ->orWhere('created_at', '>=', now()->subMinutes(20));
+            })
+            ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->limit(12)
+            ->get();
+
+        return $events
+            ->values()
+            ->map(fn (UssdRedemptionEvent $event, int $index) => [
+                'id' => (int) $event->id,
+                'queue_number' => $index + 1,
+                'status' => (string) $event->status,
+                'driver_name' => $event->user?->name ?: 'Unknown driver',
+                'driver_phone' => $event->user?->phone ?: $event->phone_normalized,
+                'voucher_code' => $event->voucher_code ?: $event->fuelVoucher?->code,
+                'amount' => $event->fuelVoucher?->amount !== null ? (float) $event->fuelVoucher->amount : null,
+                'pump_number' => $event->pump_number ?: $event->fuelVoucher?->pump_number,
+                'transaction_reference' => $event->fuelVoucher?->transaction_reference,
+                'created_at' => optional($event->created_at)->toIso8601String(),
+                'completed_at' => optional($event->completed_at)->toIso8601String(),
+                'waiting_seconds' => $event->completed_at
+                    ? max(0, (int) $event->created_at?->diffInSeconds($event->completed_at))
+                    : max(0, (int) $event->created_at?->diffInSeconds(now())),
+                'error_message' => $event->error_message,
+            ])
+            ->all();
     }
 
     protected function websocketConfig(): array
