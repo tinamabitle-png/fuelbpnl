@@ -647,11 +647,11 @@
                     </div>
                 </div>
 
-                <div class="mt-4 overflow-hidden rounded-[28px] bg-white p-2 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.5)]">
+                <div class="mt-5 rounded-[30px] bg-white p-3 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.5)]">
                     <img
                         src="{{ $welcomeImage('faq_support_image', 'images/bwiserlady.jpg') }}"
                         alt="Bwiser support specialist explaining USSD tapless payments"
-                        class="h-64 w-full rounded-[24px] object-cover object-center md:h-80"
+                        class="h-auto max-h-[28rem] w-full rounded-[24px] object-contain object-center"
                         loading="lazy"
                     >
                 </div>
