@@ -300,7 +300,7 @@ class WelcomePageSettingsService
             'tapless_modal_image' => 'images/BWISER.jpg',
             'faq_question_avatar' => 'images/ask.jpg',
             'faq_answer_avatar' => 'images/ans.jpg',
-            'merchant_pos_image' => 'images/posbox1.jpg',
+            'merchant_pos_image' => 'images/ladypos.jpg',
             'countries_image' => 'images/pos6.jpg',
             'cups_image' => 'images/cups.png',
         ];
