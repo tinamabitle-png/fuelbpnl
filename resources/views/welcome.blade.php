@@ -425,7 +425,7 @@
         <div class="space-y-4">
             <div class="rounded-2xl bg-white p-3 md:p-4 overflow-hidden welcome-media-shell welcome-media-shell--fit" data-welcome-media>
                 <img
-                    src="{{ $welcomeImage('africa_card_image', 'images/bwiserafrica.png') }}"
+                    src="{{ $welcomeImage('africa_card_image', 'images/afrobwiser.png') }}"
                     alt="Bwiser preview"
                     class="block w-full h-auto object-contain rounded-2xl welcome-media-shell__media welcome-media-shell__media--fit"
                     data-welcome-media-target
@@ -658,7 +658,7 @@
             </div>
         </div>
 
-        <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-tween-card">
+        <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden welcome-tween-card -mt-4 md:-mt-6">
             <div class="rounded-[22px] bg-gradient-to-br from-[#020DFF]/20 via-cyan-400/18 to-[#020DFF]/8 p-[1px] shadow-[0_18px_40px_-30px_rgba(2,13,255,0.28)]">
                 <div class="rounded-[21px] bg-gradient-to-br from-white via-white to-blue-50/70 p-4 md:p-5">
                 <div class="flex items-start justify-between gap-3">
