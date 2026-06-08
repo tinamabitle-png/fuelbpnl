@@ -294,7 +294,7 @@ class WelcomePageSettingsService
             'shopping_card_image' => 'images/shopping.jpg',
             'slack_contact_image' => 'images/tony.jpg',
             'fuel_preview_image' => 'images/bwiserpngvoucher.png',
-            'africa_card_image' => 'images/bwiserafrica.png',
+            'africa_card_image' => 'images/afrobwiser.png',
             'renewable_gif_image' => 'images/Bwiser_2.gif',
             'story_feature_image' => 'images/NalediTsunke.png',
             'tapless_modal_image' => 'images/BWISER.jpg',
