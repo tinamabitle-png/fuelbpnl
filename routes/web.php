@@ -557,40 +557,32 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/account/delete', [AccountDeletionController::class, 'destroy'])->name('account.delete');
     
     // ========== INVESTOR ROUTES ==========
-    Route::prefix('investor')->name('investor.')->group(function () {
+    Route::prefix('investor')->name('investor.')->middleware('role:investor')->group(function () {
         Route::get('/dashboard', function() {
-            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'investor']), 403);
-            
-          
             return app(InvestorDashboardController::class)->index();
         })->name('dashboard');
         
          Route::get('/investments', function() {
-            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'investor']), 403);
             return app(InvestorDashboardController::class)->investments(request());
         })->name('investments');
         
         Route::get('/investments/{investment}', [InvestorDashboardController::class, 'showInvestment'])->name('investments.show');
         
         Route::get('/opportunities', function() {
-            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'investor']), 403);
             return app(InvestorDashboardController::class)->opportunities(request());
         })->name('opportunities');
         
         Route::post('/invest', function() {
-            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'investor']), 403);
             return app(InvestorDashboardController::class)->invest(request());
         })->name('invest');
         
         Route::get('/profile', [InvestorDashboardController::class, 'profile'])->name('profile');
         
         Route::put('/preferences', function() {
-            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'investor']), 403);
             return app(InvestorDashboardController::class)->updatePreferences(request());
         })->name('preferences.update');
         
         Route::get('/statements', function() {
-            abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'investor']), 403);
             return app(InvestorDashboardController::class)->statements(request());
         })->name('statements');
     });
@@ -1032,9 +1024,8 @@ Route::middleware(['auth'])->group(function () {
         })->name('reports.export');
         
         // ========== INVESTORS MANAGEMENT ROUTES ==========
-        Route::prefix('investors')->name('investors.')->group(function () {
+        Route::prefix('investors')->name('investors.')->middleware('role:super_admin|admin|employee')->group(function () {
             Route::get('/', function() {
-                abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee', 'investor']), 403);
                 return app(AdminInvestorController::class)->index(request());
             })->name('index');
             

@@ -101,6 +101,11 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this->hasOne(Wallet::class);
     }
 
+    public function investor()
+    {
+        return $this->hasOne(Investor::class);
+    }
+
     public function creditLimit()
     {
         return $this->hasOne(CreditLimit::class);

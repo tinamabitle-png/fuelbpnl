@@ -8,6 +8,7 @@ use App\Models\Lease;
 use App\Models\LeaseInvestment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class InvestorDashboardController extends Controller
 {
@@ -18,32 +19,33 @@ class InvestorDashboardController extends Controller
      */
     public function index()
     {
-        // Check if user has investor role
-        if (!Auth::user()->hasRole('investor')) {
+        $user = Auth::user();
+
+        if (!$user?->hasRole('investor')) {
             return redirect('/')
                 ->with('error', 'You are not authorized to access the investor dashboard.');
         }
         
-        $investor = Auth::user()->investor;
+        $investor = $user->investor;
         
         if (!$investor) {
             return redirect('/')
                 ->with('error', 'You are not registered as an investor. Please contact support.');
         }
 
-        // If you want to use stats, make sure the methods exist
-        // Temporarily comment out or fix any non-existent methods
+        $portfolio = $investor->getInvestmentPortfolio();
         
         $stats = [
-            'total_invested' => $investor->invested_capital ?? 0,
-            'available_capital' => $investor->available_capital ?? 0,
-            'interest_earned' => $investor->interest_earned ?? 0,
-            'active_investments' => $investor->leaseInvestments()->where('status', 'active')->count() ?? 0,
-            'completed_investments' => $investor->leaseInvestments()->where('status', 'completed')->count() ?? 0,
-            'defaulted_investments' => $investor->leaseInvestments()->where('status', 'defaulted')->count() ?? 0,
+            'total_invested' => $portfolio['total_invested'] ?? 0,
+            'available_capital' => $portfolio['available_capital'] ?? 0,
+            'interest_earned' => $portfolio['total_earned'] ?? 0,
+            'active_investments' => $portfolio['active_investments'] ?? 0,
+            'completed_investments' => $portfolio['completed_investments'] ?? 0,
+            'defaulted_investments' => $portfolio['defaulted_investments'] ?? 0,
             'total_returns' => $investor->leaseInvestments()->sum('interest_earned') ?? 0,
-            // 'average_return' => $investor->getInvestmentPortfolio()['average_return'] ?? 0, // Comment out if method doesn't exist
-            'average_return' => 0, // Temporary placeholder
+            'average_return' => $portfolio['average_return'] ?? 0,
+            'wallet_balance' => $investor->wallet_balance,
+            'wallet_available_balance' => $investor->wallet_available_balance,
         ];
 
         // Recent investments
@@ -148,10 +150,16 @@ class InvestorDashboardController extends Controller
         }
         
         $query = Lease::where('status', 'active')
+            ->whereHas('user', function ($q) {
+                $q->where('credit_score', '<', 650);
+            })
+            ->whereHas('vouchers', function ($q) {
+                $q->whereIn('status', ['approved', 'redeemed']);
+            })
             ->whereDoesntHave('leaseInvestments', function ($q) use ($investor) {
                 $q->where('investor_id', $investor->id);
             })
-            ->with(['user']);
+            ->with(['user', 'vouchers', 'leaseInvestments']);
 
         // Check if these fields exist before using them
         if (isset($investor->maximum_investment_amount) && isset($investor->minimum_investment_amount)) {
@@ -207,42 +215,55 @@ class InvestorDashboardController extends Controller
                 ->with('error', 'You are not registered as an investor.');
         }
         
-        $request->validate([
+        $validated = $request->validate([
             'lease_id' => 'required|exists:leases,id',
             'amount' => 'required|numeric|min:1000',
         ]);
 
-        // Check available capital if field exists
-        if (isset($investor->available_capital) && $request->amount > $investor->available_capital) {
-            return back()->with('error', 'Insufficient available capital.');
-        }
+        try {
+            $investment = DB::transaction(function () use ($investor, $validated) {
+                $lockedInvestor = Investor::whereKey($investor->id)->lockForUpdate()->firstOrFail();
+                $lease = Lease::with(['user', 'vouchers', 'leaseInvestments'])
+                    ->whereKey($validated['lease_id'])
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-        $lease = Lease::findOrFail($request->lease_id);
+                $amount = (float) $validated['amount'];
+                $remaining = (float) $lease->investor_funding_remaining;
 
-        // Calculate percentage ownership
-        $percentage = ($request->amount / $lease->total_amount) * 100;
+                if (!$lease->is_investor_approved) {
+                    throw new \RuntimeException('Only approved subprime voucher leases can be funded by investors.');
+                }
 
-        // Create investment
-        $investment = $investor->leaseInvestments()->create([
-            'lease_id' => $lease->id,
-            'amount_invested' => $request->amount,
-            'percentage_ownership' => $percentage,
-            'interest_rate' => $lease->interest_rate,
-            'expected_interest' => $request->amount * ($lease->interest_rate / 100) * ($lease->term_days / 365),
-            'status' => 'active',
-            'investment_date' => now(),
-            'expected_maturity_date' => $lease->due_date,
-            'maturity_date' => $lease->due_date,
-        ]);
+                if ($amount > $remaining) {
+                    throw new \RuntimeException('This investment would overfund the lease. Remaining capacity is R ' . number_format($remaining, 2) . '.');
+                }
 
-        // Update investor capital if method exists
-        if (method_exists($investor, 'invest')) {
-            $investor->invest($request->amount, $lease);
-        } else {
-            // Fallback: manually update
-            $investor->invested_capital += $request->amount;
-            $investor->available_capital -= $request->amount;
-            $investor->save();
+                if (!$lockedInvestor->canInvest($amount)) {
+                    throw new \RuntimeException('Investor capital or investment limits do not allow this amount.');
+                }
+
+                $percentage = $lease->total_amount > 0 ? ($amount / (float) $lease->total_amount) * 100 : 0;
+
+                $investment = $lockedInvestor->leaseInvestments()->create([
+                    'lease_id' => $lease->id,
+                    'amount_invested' => $amount,
+                    'percentage_ownership' => $percentage,
+                    'interest_rate' => $lease->interest_rate,
+                    'expected_interest' => $amount * ((float) $lease->interest_rate / 100) * ((int) $lease->term_days / 365),
+                    'status' => 'active',
+                    'investment_date' => now(),
+                    'expected_maturity_date' => $lease->due_date,
+                    'maturity_date' => $lease->due_date,
+                    'payment_schedule' => 'daily',
+                ]);
+
+                $lockedInvestor->invest($amount, $lease);
+
+                return $investment;
+            });
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage())->withInput();
         }
 
         return redirect()->route('investor.investments.show', $investment)

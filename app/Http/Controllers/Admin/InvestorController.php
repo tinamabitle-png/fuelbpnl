@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Investor;
+use App\Models\Lease;
 use App\Models\User;
 use App\Models\InvestorDocument;
 use Illuminate\Http\Request;
@@ -18,8 +19,8 @@ class InvestorController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Investor::with(['user', 'investments'])
-            ->withCount(['investments', 'leaseInvestments']);
+        $query = Investor::with(['user.wallet', 'leaseInvestments.lease.user'])
+            ->withCount(['leaseInvestments']);
 
         // Search
         if ($request->has('search')) {
@@ -59,6 +60,9 @@ class InvestorController extends Controller
             'total_invested_capital' => Investor::sum('invested_capital'),
             'total_available_capital' => Investor::sum('available_capital'),
             'total_interest_earned' => Investor::sum('interest_earned'),
+            'total_wallet_balance' => Investor::with('user.wallet')
+                ->get()
+                ->sum(fn (Investor $investor) => $investor->wallet_balance),
         ];
 
         return view('admin.investors.index', compact('investors', 'stats'));
@@ -69,7 +73,12 @@ class InvestorController extends Controller
      */
     public function create()
     {
-        return view('admin.investors.create');
+        $users = User::with('roles')
+            ->whereDoesntHave('investor')
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.investors.create', compact('users'));
     }
 
     /**
@@ -130,8 +139,10 @@ class InvestorController extends Controller
     {
         $investor->load([
             'user', 
+            'user.wallet',
             'documents',
             'leaseInvestments.lease.user',
+            'leaseInvestments.lease.vouchers',
             'leaseInvestments.returns'
         ]);
 
@@ -152,11 +163,22 @@ class InvestorController extends Controller
             ->take(10)
             ->get();
 
+        $approvedLeases = $investor->leaseInvestments()
+            ->with(['lease.user', 'lease.vouchers'])
+            ->whereHas('lease', function ($query) {
+                $query->where('status', 'active')
+                    ->whereHas('user', fn ($q) => $q->where('credit_score', '<', 650))
+                    ->whereHas('vouchers', fn ($q) => $q->whereIn('status', ['approved', 'redeemed']));
+            })
+            ->latest()
+            ->paginate(10, ['*'], 'approved_leases_page');
+
         return view('admin.investors.show', compact(
             'investor',
             'portfolio',
             'recentInvestments',
-            'recentReturns'
+            'recentReturns',
+            'approvedLeases'
         ));
     }
 
@@ -201,6 +223,24 @@ class InvestorController extends Controller
 
         return redirect()->route('admin.investors.show', $investor)
             ->with('success', 'Investor updated successfully.');
+    }
+
+    /**
+     * Remove the specified investor profile.
+     */
+    public function destroy(Investor $investor)
+    {
+        DB::transaction(function () use ($investor) {
+            $user = $investor->user;
+            $investor->delete();
+
+            if ($user && $user->hasRole('investor')) {
+                $user->removeRole('investor');
+            }
+        });
+
+        return redirect()->route('admin.investors.index')
+            ->with('success', 'Investor removed successfully.');
     }
 
     /**
@@ -310,10 +350,16 @@ class InvestorController extends Controller
     public function investmentOpportunities(Request $request, Investor $investor)
     {
         $query = Lease::where('status', 'active')
+            ->whereHas('user', function ($q) {
+                $q->where('credit_score', '<', 650);
+            })
+            ->whereHas('vouchers', function ($q) {
+                $q->whereIn('status', ['approved', 'redeemed']);
+            })
             ->whereDoesntHave('leaseInvestments', function ($q) use ($investor) {
                 $q->where('investor_id', $investor->id);
             })
-            ->with(['user', 'vouchers'])
+            ->with(['user', 'vouchers', 'leaseInvestments'])
             ->where('total_amount', '<=', $investor->maximum_investment_amount)
             ->where('total_amount', '>=', $investor->minimum_investment_amount);
 
@@ -348,45 +394,60 @@ class InvestorController extends Controller
             'percentage_ownership' => 'nullable|numeric|min:1|max:100',
         ]);
 
-        $lease = Lease::findOrFail($validated['lease_id']);
+        try {
+            DB::transaction(function () use ($investor, $validated) {
+                $lockedInvestor = Investor::whereKey($investor->id)->lockForUpdate()->firstOrFail();
+                $lease = Lease::with(['user', 'vouchers', 'leaseInvestments'])
+                    ->whereKey($validated['lease_id'])
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-        DB::transaction(function () use ($investor, $lease, $validated) {
-            // Calculate percentage if not provided
-            $percentage = $validated['percentage_ownership'] ?? 
-                ($validated['amount'] / $lease->total_amount) * 100;
+                $amount = (float) $validated['amount'];
+                $remaining = (float) $lease->investor_funding_remaining;
 
-            // Create investment
-            $investment = $investor->leaseInvestments()->create([
-                'lease_id' => $lease->id,
-                'amount_invested' => $validated['amount'],
-                'percentage_ownership' => $percentage,
-                'interest_rate' => $lease->interest_rate,
-                'expected_interest' => $validated['amount'] * ($lease->interest_rate / 100) * ($lease->term_days / 365),
-                'status' => 'active',
-                'investment_date' => now(),
-                'expected_maturity_date' => $lease->due_date,
-                'maturity_date' => $lease->due_date,
-                'payment_schedule' => 'daily',
-            ]);
+                if (!$lease->is_investor_approved) {
+                    throw new \RuntimeException('Only approved subprime voucher leases can be funded by investors.');
+                }
 
-            // Update investor capital
-            $investor->invest($validated['amount'], $lease);
+                if ($amount > $remaining) {
+                    throw new \RuntimeException('This investment would overfund the lease. Remaining capacity is R ' . number_format($remaining, 2) . '.');
+                }
 
-            // Update lease with investor funding
-            $lease->update(['investor_funded' => true]);
+                if (!$lockedInvestor->canInvest($amount)) {
+                    throw new \RuntimeException('Investor capital or investment limits do not allow this amount.');
+                }
 
-            // Log activity
-            activity()
-                ->performedOn($investment)
-                ->causedBy(auth()->user())
-                ->withProperties([
-                    'investor_id' => $investor->id,
+                $percentage = $validated['percentage_ownership'] ?? ($lease->total_amount > 0 ? ($amount / (float) $lease->total_amount) * 100 : 0);
+
+                $investment = $lockedInvestor->leaseInvestments()->create([
                     'lease_id' => $lease->id,
-                    'amount' => $validated['amount'],
-                    'percentage' => $percentage,
-                ])
-                ->log('investment_made');
-        });
+                    'amount_invested' => $amount,
+                    'percentage_ownership' => $percentage,
+                    'interest_rate' => $lease->interest_rate,
+                    'expected_interest' => $amount * ((float) $lease->interest_rate / 100) * ((int) $lease->term_days / 365),
+                    'status' => 'active',
+                    'investment_date' => now(),
+                    'expected_maturity_date' => $lease->due_date,
+                    'maturity_date' => $lease->due_date,
+                    'payment_schedule' => 'daily',
+                ]);
+
+                $lockedInvestor->invest($amount, $lease);
+
+                activity()
+                    ->performedOn($investment)
+                    ->causedBy(auth()->user())
+                    ->withProperties([
+                        'investor_id' => $lockedInvestor->id,
+                        'lease_id' => $lease->id,
+                        'amount' => $amount,
+                        'percentage' => $percentage,
+                    ])
+                    ->log('investment_made');
+            });
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage())->withInput();
+        }
 
         return redirect()->route('admin.investors.show', $investor)
             ->with('success', 'Investment made successfully.');

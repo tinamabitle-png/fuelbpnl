@@ -83,33 +83,70 @@ class Lease extends Model
         return $this->status === 'active';
     }
    
-// Add to relationships section: Investor
-public function leaseInvestments()
-{
-    return $this->hasMany(LeaseInvestment::class);
-}
+    public function leaseInvestments()
+    {
+        return $this->hasMany(LeaseInvestment::class);
+    }
 
-public function investors()
-{
-    return $this->hasManyThrough(Investor::class, LeaseInvestment::class, 'lease_id', 'id', 'id', 'investor_id');
-}
+    public function investors()
+    {
+        return $this->hasManyThrough(Investor::class, LeaseInvestment::class, 'lease_id', 'id', 'id', 'investor_id');
+    }
 
-// Add accessor:
-public function getIsInvestorFundedAttribute()
-{
-    return $this->leaseInvestments()->exists();
-}
+    public function getIsInvestorFundedAttribute()
+    {
+        return $this->leaseInvestments()->exists();
+    }
 
-public function getTotalInvestorFundingAttribute()
-{
-    return $this->leaseInvestments()->sum('amount_invested');
-}
+    public function getTotalInvestorFundingAttribute()
+    {
+        return $this->leaseInvestments()->sum('amount_invested');
+    }
 
-public function getInvestorOwnershipPercentageAttribute()
-{
-    $totalInvestment = $this->leaseInvestments()->sum('amount_invested');
-    return $totalInvestment > 0 ? ($totalInvestment / $this->total_amount) * 100 : 0;
-}
+    public function getInvestorOwnershipPercentageAttribute()
+    {
+        $totalInvestment = $this->leaseInvestments()->sum('amount_invested');
+        return $totalInvestment > 0 ? ($totalInvestment / $this->total_amount) * 100 : 0;
+    }
+
+    public function getInvestorFundedAmountAttribute(): float
+    {
+        return (float) $this->leaseInvestments()
+            ->whereIn('status', ['active', 'completed'])
+            ->sum('amount_invested');
+    }
+
+    public function getInvestorFundingRemainingAttribute(): float
+    {
+        return max(0.0, (float) $this->total_amount - (float) $this->investor_funded_amount);
+    }
+
+    public function getRiskBandAttribute(): string
+    {
+        $score = (int) ($this->user?->credit_score ?? 0);
+
+        if ($score > 0 && $score < 650) {
+            return 'subprime';
+        }
+
+        if ($score >= 650 && $score < 720) {
+            return 'near-prime';
+        }
+
+        return 'prime';
+    }
+
+    public function getIsSubprimeAttribute(): bool
+    {
+        return $this->risk_band === 'subprime';
+    }
+
+    public function getIsInvestorApprovedAttribute(): bool
+    {
+        return $this->status === 'active'
+            && $this->is_subprime
+            && $this->vouchers()->whereIn('status', ['approved', 'redeemed'])->exists();
+    }
 
     public function getIsDefaultedAttribute()
     {

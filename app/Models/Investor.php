@@ -129,6 +129,16 @@ class Investor extends Model
         ];
     }
 
+    public function getWalletBalanceAttribute(): float
+    {
+        return (float) ($this->user?->wallet?->balance ?? 0);
+    }
+
+    public function getWalletAvailableBalanceAttribute(): float
+    {
+        return (float) ($this->user?->wallet?->available_balance ?? 0);
+    }
+
     private function calculateAverageReturn()
     {
         $completedInvestments = $this->leaseInvestments()->where('status', 'completed')->get();
