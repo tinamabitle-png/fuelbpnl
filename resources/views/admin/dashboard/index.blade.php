@@ -71,6 +71,125 @@
     </div>
 </div>
 
+<div class="rounded-[1.75rem] bg-slate-950 p-5 shadow-xl shadow-slate-900/10 overflow-hidden">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-5">
+        <div>
+            <p class="text-sm uppercase tracking-[0.24em] text-blue-300">Analytics</p>
+            <h3 class="text-2xl font-bold text-white mt-1">Operations Pulse</h3>
+            <p class="text-sm text-slate-400 mt-1">Hover cards styled like the requested analytics pattern, using live dashboard data.</p>
+        </div>
+        <a href="{{ route('admin.reports.index') }}" class="inline-flex items-center rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15">
+            Open Reports
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="admin-analytics-card group">
+            <div class="relative z-10 p-5">
+                <p class="text-sm font-semibold text-blue-300">Voucher Flow</p>
+                <h4 class="mt-1 text-lg font-bold text-slate-100">Daily voucher creation</h4>
+                <p class="mt-1 text-sm text-slate-400">Tracks issued demand over the last 7 days.</p>
+            </div>
+            <div class="relative z-10 px-4 pb-4 transition-transform duration-500 ease-out group-hover:-translate-y-1" style="height: 170px;">
+                <canvas id="adminVoucherPulseChart" height="150"></canvas>
+            </div>
+        </div>
+
+        <div class="admin-analytics-card group">
+            <div class="relative z-10 p-5">
+                <p class="text-sm font-semibold text-emerald-300">Lease Pipeline</p>
+                <h4 class="mt-1 text-lg font-bold text-slate-100">New leases</h4>
+                <p class="mt-1 text-sm text-slate-400">Shows finance origination activity by day.</p>
+            </div>
+            <div class="relative z-10 px-4 pb-4 transition-transform duration-500 ease-out group-hover:-translate-y-1" style="height: 170px;">
+                <canvas id="adminLeasePulseChart" height="150"></canvas>
+            </div>
+        </div>
+
+        <div class="admin-analytics-card group">
+            <div class="relative z-10 p-5">
+                <p class="text-sm font-semibold text-amber-300">Portfolio Risk</p>
+                <h4 class="mt-1 text-lg font-bold text-slate-100">Lease status mix</h4>
+                <p class="mt-1 text-sm text-slate-400">Quick read of active, completed, defaulted and cancelled exposure.</p>
+            </div>
+            <div class="relative z-10 px-4 pb-4 transition-transform duration-500 ease-out group-hover:-translate-y-1" style="height: 170px;">
+                <canvas id="adminLeaseStatusChart" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+        <div>
+            <p class="text-sm uppercase tracking-[0.22em] text-blue-600">Finance Desk</p>
+            <h3 class="text-xl font-bold text-slate-900 mt-1">Fund Companies & Send Leases</h3>
+            <p class="text-sm text-slate-600 mt-1">Choose an elected finance company, fund its capital account or wallet, then allocate eligible subprime voucher leases.</p>
+        </div>
+        <a href="{{ route('admin.investors.index') }}" class="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+            Manage Finance Companies
+        </a>
+    </div>
+
+    <div class="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        @forelse(($financeCompanies ?? collect())->take(3) as $company)
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h4 class="font-bold text-slate-900">{{ $company->company_name }}</h4>
+                        <p class="text-xs text-slate-500 mt-1">{{ $company->user?->email ?? $company->contact_email }}</p>
+                    </div>
+                    <span class="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">{{ $company->lease_investments_count }} leases</span>
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div class="rounded-xl bg-white border border-slate-200 p-3">
+                        <p class="text-slate-500">Capital</p>
+                        <p class="font-bold text-slate-900">R {{ number_format((float) $company->available_capital, 2) }}</p>
+                    </div>
+                    <div class="rounded-xl bg-white border border-slate-200 p-3">
+                        <p class="text-slate-500">Wallet</p>
+                        <p class="font-bold text-slate-900">R {{ number_format((float) $company->wallet_balance, 2) }}</p>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ route('admin.investors.capital.update', $company) }}" class="mt-4 space-y-3">
+                    @csrf
+                    <input type="hidden" name="type" value="add">
+                    <input type="hidden" name="reason" value="Dashboard finance company funding">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" name="amount" min="100" step="0.01" required placeholder="Amount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <select name="destination" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            <option value="capital">Capital</option>
+                            <option value="wallet">Wallet</option>
+                            <option value="both">Both</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Fund Account</button>
+                </form>
+
+                <form method="POST" action="{{ route('admin.investors.invest', $company) }}" class="mt-3 space-y-3">
+                    @csrf
+                    <select name="lease_id" required class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <option value="">Send eligible lease...</option>
+                        @foreach(($financeAssignableLeases ?? collect()) as $lease)
+                            <option value="{{ $lease->id }}">
+                                #{{ $lease->id }} • {{ $lease->user?->name ?? 'Driver' }} • Remaining R {{ number_format((float) $lease->investor_funding_remaining, 2) }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <input type="number" name="amount" min="1000" step="0.01" required placeholder="Investment amount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                    <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Send Lease To Company</button>
+                </form>
+            </div>
+        @empty
+            <div class="lg:col-span-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                No active finance companies found. Create an investor company first.
+            </div>
+        @endforelse
+    </div>
+</div>
+
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
     <!-- Recent Vouchers -->
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm">
@@ -352,11 +471,140 @@
     .adminhub-dashboard .font-semibold {
         color: var(--adminhub-ink);
     }
+
+    .adminhub-dashboard .admin-analytics-card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid transparent;
+        border-radius: 1.25rem;
+        background:
+            linear-gradient(#0f172a, #0f172a) padding-box,
+            linear-gradient(45deg, rgba(30, 41, 59, 0.95), rgba(148, 163, 184, 0.45), rgba(30, 41, 59, 0.95)) border-box;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        min-height: 310px;
+    }
+
+    .adminhub-dashboard .admin-analytics-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0.26;
+        background-image:
+            radial-gradient(circle at 20% 10%, rgba(59, 130, 246, 0.28), transparent 28%),
+            radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.16), transparent 30%),
+            linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+        background-size: auto, auto, 28px 28px, 28px 28px;
+        pointer-events: none;
+    }
+
+    .adminhub-dashboard .admin-analytics-card::after {
+        content: "";
+        position: absolute;
+        left: 12%;
+        right: 12%;
+        bottom: -52px;
+        height: 120px;
+        border-radius: 999px;
+        background: rgba(59, 130, 246, 0.15);
+        filter: blur(30px);
+        transition: opacity 240ms ease, transform 240ms ease;
+    }
+
+    .adminhub-dashboard .admin-analytics-card:hover::after {
+        opacity: 0.9;
+        transform: translateY(-10px);
+    }
+
+    .adminhub-dashboard .admin-analytics-card h4,
+    .adminhub-dashboard .admin-analytics-card .font-bold,
+    .adminhub-dashboard .admin-analytics-card .font-semibold {
+        color: #f8fafc;
+    }
 </style>
 @endpush
 
 @push('scripts')
 <script>
+(() => {
+    if (typeof Chart === 'undefined') return;
+
+    const analytics = @json($analytics ?? []);
+    const labels = analytics.labels || [];
+
+    const chartDefaults = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#020617',
+                borderColor: 'rgba(148, 163, 184, 0.25)',
+                borderWidth: 1,
+                padding: 10,
+                titleColor: '#f8fafc',
+                bodyColor: '#cbd5e1',
+            },
+        },
+        scales: {
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+            y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.12)' }, ticks: { color: '#94a3b8', precision: 0 } },
+        },
+    };
+
+    const makeLineChart = (id, data, color, fillColor) => {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+
+        new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    data: data || [],
+                    borderColor: color,
+                    backgroundColor: fillColor,
+                    tension: 0.42,
+                    fill: true,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    pointBackgroundColor: color,
+                    borderWidth: 2,
+                }],
+            },
+            options: chartDefaults,
+        });
+    };
+
+    makeLineChart('adminVoucherPulseChart', analytics.voucher_counts, '#60a5fa', 'rgba(96, 165, 250, 0.16)');
+    makeLineChart('adminLeasePulseChart', analytics.lease_counts, '#34d399', 'rgba(52, 211, 153, 0.14)');
+
+    const statusCanvas = document.getElementById('adminLeaseStatusChart');
+    if (statusCanvas) {
+        new Chart(statusCanvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: analytics.lease_status_labels || [],
+                datasets: [{
+                    data: analytics.lease_status_counts || [],
+                    backgroundColor: ['#60a5fa', '#34d399', '#f43f5e', '#f59e0b', '#94a3b8'],
+                    borderColor: '#0f172a',
+                    borderWidth: 3,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#cbd5e1', boxWidth: 10, padding: 12 } },
+                    tooltip: chartDefaults.plugins.tooltip,
+                },
+                cutout: '62%',
+            },
+        });
+    }
+})();
+
 (() => {
     const endpoint = @json(route('admin.live.form-interactions'));
     const list = document.querySelector('[data-livefeed-list]');

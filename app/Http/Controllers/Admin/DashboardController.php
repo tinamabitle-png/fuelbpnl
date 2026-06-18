@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\FuelVoucher;
+use App\Models\Investor;
 use App\Models\Lease;
 use App\Models\FuelStation;
 use App\Models\Settlement;
@@ -60,7 +61,65 @@ class DashboardController extends Controller
             'next_cycle' => $this->getNextCycleInfo(),
         ];
 
-        return view('admin.dashboard.index', compact('stats', 'recent_vouchers', 'recent_users', 'recent_feedback', 'currentUser', 'weeklyCycleStatus'));
+        $analytics = $this->buildDashboardAnalytics();
+        $financeCompanies = Investor::with('user.wallet')
+            ->withCount('leaseInvestments')
+            ->where('status', 'active')
+            ->orderByDesc('available_capital')
+            ->take(6)
+            ->get();
+
+        $financeAssignableLeases = Lease::with(['user', 'vouchers', 'leaseInvestments'])
+            ->where('status', 'active')
+            ->whereHas('user', fn ($query) => $query->where('credit_score', '<', 650))
+            ->whereHas('vouchers', fn ($query) => $query->whereIn('status', ['approved', 'redeemed']))
+            ->latest()
+            ->take(30)
+            ->get()
+            ->filter(fn (Lease $lease) => (float) $lease->investor_funding_remaining > 0)
+            ->values();
+
+        return view('admin.dashboard.index', compact(
+            'stats',
+            'recent_vouchers',
+            'recent_users',
+            'recent_feedback',
+            'currentUser',
+            'weeklyCycleStatus',
+            'analytics',
+            'financeCompanies',
+            'financeAssignableLeases'
+        ));
+    }
+
+    private function buildDashboardAnalytics(): array
+    {
+        $labels = [];
+        $voucherCounts = [];
+        $leaseCounts = [];
+        $userCounts = [];
+
+        for ($i = 6; $i >= 0; $i--) {
+            $day = now()->subDays($i);
+            $labels[] = $day->format('D');
+            $voucherCounts[] = FuelVoucher::whereDate('created_at', $day)->count();
+            $leaseCounts[] = Lease::whereDate('created_at', $day)->count();
+            $userCounts[] = User::whereDate('created_at', $day)->count();
+        }
+
+        $leaseStatuses = Lease::query()
+            ->select('status', DB::raw('COUNT(*) as total'))
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        return [
+            'labels' => $labels,
+            'voucher_counts' => $voucherCounts,
+            'lease_counts' => $leaseCounts,
+            'user_counts' => $userCounts,
+            'lease_status_labels' => $leaseStatuses->keys()->map(fn ($status) => ucfirst((string) $status))->values(),
+            'lease_status_counts' => $leaseStatuses->values(),
+        ];
     }
 
     private function weeklyCyclesEnabled(): bool

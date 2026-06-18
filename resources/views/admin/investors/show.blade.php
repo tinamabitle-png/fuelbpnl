@@ -44,6 +44,79 @@
         </div>
     </div>
 
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-sm uppercase tracking-[0.2em] text-emerald-600">Fund Account</p>
+                    <h3 class="text-xl font-bold text-gray-900 mt-1">Finance Company Funding</h3>
+                    <p class="text-sm text-gray-500 mt-1">Top up capital for lease funding, the linked wallet, or both.</p>
+                </div>
+                <span class="inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">Admin action</span>
+            </div>
+
+            <form method="POST" action="{{ route('admin.investors.capital.update', $investor) }}" class="mt-5 space-y-4">
+                @csrf
+                <input type="hidden" name="type" value="add">
+                <div>
+                    <label class="text-sm font-semibold text-slate-700">Amount</label>
+                    <input type="number" name="amount" min="100" step="0.01" required class="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="e.g. 25000">
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-slate-700">Destination</label>
+                    <select name="destination" class="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <option value="capital">Capital account only</option>
+                        <option value="wallet">Wallet only</option>
+                        <option value="both">Capital and wallet</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-slate-700">Reason</label>
+                    <input type="text" name="reason" required value="Admin finance company funding" class="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                </div>
+                <button type="submit" class="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
+                    Fund {{ $investor->company_name }}
+                </button>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-sm uppercase tracking-[0.2em] text-blue-600">Send Lease</p>
+                    <h3 class="text-xl font-bold text-gray-900 mt-1">Allocate Approved Lease</h3>
+                    <p class="text-sm text-gray-500 mt-1">Only approved subprime voucher leases with remaining funding capacity are listed.</p>
+                </div>
+                <span class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">{{ ($assignableLeases ?? collect())->count() }} available</span>
+            </div>
+
+            <form method="POST" action="{{ route('admin.investors.invest', $investor) }}" class="mt-5 space-y-4">
+                @csrf
+                <div>
+                    <label class="text-sm font-semibold text-slate-700">Lease</label>
+                    <select name="lease_id" required class="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <option value="">Choose eligible lease</option>
+                        @foreach(($assignableLeases ?? collect()) as $lease)
+                            @php
+                                $voucher = $lease->vouchers?->firstWhere('status', 'approved') ?: $lease->vouchers?->firstWhere('status', 'redeemed');
+                            @endphp
+                            <option value="{{ $lease->id }}">
+                                #{{ $lease->id }} • {{ $lease->user?->name ?? 'Driver' }} • Score {{ $lease->user?->credit_score ?? 'N/A' }} • {{ $voucher?->code ?? 'Voucher' }} • Remaining R {{ number_format((float) $lease->investor_funding_remaining, 2) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-slate-700">Investment Amount</label>
+                    <input type="number" name="amount" min="1000" step="0.01" required class="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="e.g. 5000">
+                </div>
+                <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
+                    Send Lease To {{ $investor->company_name }}
+                </button>
+            </form>
+        </div>
+    </div>
+
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
         <h3 class="text-xl font-bold text-gray-900">Approved Subprime Funded Leases</h3>
         <div class="mt-4 overflow-x-auto">

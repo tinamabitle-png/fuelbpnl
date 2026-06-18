@@ -173,12 +173,24 @@ class InvestorController extends Controller
             ->latest()
             ->paginate(10, ['*'], 'approved_leases_page');
 
+        $assignableLeases = Lease::with(['user', 'vouchers', 'leaseInvestments'])
+            ->where('status', 'active')
+            ->whereHas('user', fn ($query) => $query->where('credit_score', '<', 650))
+            ->whereHas('vouchers', fn ($query) => $query->whereIn('status', ['approved', 'redeemed']))
+            ->whereDoesntHave('leaseInvestments', fn ($query) => $query->where('investor_id', $investor->id))
+            ->latest()
+            ->take(40)
+            ->get()
+            ->filter(fn (Lease $lease) => (float) $lease->investor_funding_remaining > 0)
+            ->values();
+
         return view('admin.investors.show', compact(
             'investor',
             'portfolio',
             'recentInvestments',
             'recentReturns',
-            'approvedLeases'
+            'approvedLeases',
+            'assignableLeases'
         ));
     }
 
@@ -250,21 +262,54 @@ class InvestorController extends Controller
     {
         $validated = $request->validate([
             'type' => 'required|in:add,withdraw',
+            'destination' => 'nullable|in:capital,wallet,both',
             'amount' => 'required|numeric|min:100',
             'reason' => 'required|string',
         ]);
 
         DB::transaction(function () use ($investor, $validated) {
+            $destination = $validated['destination'] ?? 'capital';
+            $amount = (float) $validated['amount'];
+
             if ($validated['type'] === 'add') {
-                $investor->increment('total_investment_capital', $validated['amount']);
-                $investor->increment('available_capital', $validated['amount']);
+                if (in_array($destination, ['capital', 'both'], true)) {
+                    $investor->increment('total_investment_capital', $amount);
+                    $investor->increment('available_capital', $amount);
+                }
+
+                if (in_array($destination, ['wallet', 'both'], true)) {
+                    if (!$investor->user) {
+                        throw new \RuntimeException('This finance company does not have a linked user wallet.');
+                    }
+
+                    $wallet = $investor->user->wallet()->firstOrCreate([], [
+                        'balance' => 0,
+                        'outstanding_balance' => 0,
+                        'total_credit_used' => 0,
+                        'total_repayments' => 0,
+                        'currency' => 'ZAR',
+                    ]);
+
+                    $wallet->addFunds($amount, 'Admin finance company funding: ' . $validated['reason'], [
+                        'source' => 'admin_investor_funding',
+                        'investor_id' => $investor->id,
+                        'admin_id' => auth()->id(),
+                        'destination' => $destination,
+                    ]);
+                }
             } else {
-                if ($investor->available_capital < $validated['amount']) {
+                if ($destination !== 'capital') {
+                    throw new \RuntimeException('Withdrawals are currently limited to the finance company capital account.');
+                }
+
+                if ($investor->available_capital < $amount) {
                     throw new \Exception('Insufficient available capital.');
                 }
-                $investor->decrement('total_investment_capital', $validated['amount']);
-                $investor->decrement('available_capital', $validated['amount']);
+                $investor->decrement('total_investment_capital', $amount);
+                $investor->decrement('available_capital', $amount);
             }
+
+            $investor->refresh();
 
             // Log the transaction
             activity()
@@ -272,12 +317,14 @@ class InvestorController extends Controller
                 ->causedBy(auth()->user())
                 ->withProperties([
                     'old_capital' => $validated['type'] === 'add' ? 
-                        $investor->total_investment_capital - $validated['amount'] : 
-                        $investor->total_investment_capital + $validated['amount'],
+                        $investor->total_investment_capital - (in_array($destination, ['capital', 'both'], true) ? $amount : 0) : 
+                        $investor->total_investment_capital + $amount,
                     'new_capital' => $investor->total_investment_capital,
                     'available_capital' => $investor->available_capital,
-                    'amount' => $validated['amount'],
+                    'wallet_balance' => $investor->wallet_balance,
+                    'amount' => $amount,
                     'type' => $validated['type'],
+                    'destination' => $destination,
                     'reason' => $validated['reason'],
                 ])
                 ->log('investor_capital_adjusted');
