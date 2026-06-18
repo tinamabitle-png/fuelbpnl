@@ -74,7 +74,7 @@
                     <label class="text-sm font-semibold text-slate-700">Reason</label>
                     <input type="text" name="reason" required value="Admin finance company funding" class="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                 </div>
-                <button type="submit" class="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
+                <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
                     Fund {{ $investor->company_name }}
                 </button>
             </form>
@@ -110,7 +110,7 @@
                     <label class="text-sm font-semibold text-slate-700">Investment Amount</label>
                     <input type="number" name="amount" min="1000" step="0.01" required class="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="e.g. 5000">
                 </div>
-                <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
+                <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
                     Send Lease To {{ $investor->company_name }}
                 </button>
             </form>
