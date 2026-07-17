@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:nfc_manager/nfc_manager.dart';
+import 'package:nfc_manager/platform_tags.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -15,6 +16,7 @@ import '../../core/app_loader.dart';
 import '../../core/app_sfx.dart';
 import '../../core/fx_button.dart';
 import '../../core/logo_mark.dart';
+import '../../core/pro545_printer_bridge.dart';
 import '../../core/theme.dart';
 import '../../core/ussd_call_bridge.dart';
 import '../../data/api_client.dart';
@@ -204,6 +206,7 @@ class StationHomePage extends StatefulWidget {
 
 class _StationHomePageState extends State<StationHomePage> {
   bool loading = true;
+  int? printingVoucherId;
   String? error;
   List<VoucherItem> active = [];
   List<VoucherItem> items = [];
@@ -272,7 +275,7 @@ class _StationHomePageState extends State<StationHomePage> {
           ...items.map(
             (v) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _voucherCard(v),
+              child: _voucherCard(v, showPrint: true),
             ),
           ),
         ],
@@ -280,7 +283,48 @@ class _StationHomePageState extends State<StationHomePage> {
     );
   }
 
-  Widget _voucherCard(VoucherItem v) {
+  Future<void> _printVoucher(VoucherItem voucher) async {
+    if (printingVoucherId != null) return;
+    setState(() => printingVoucherId = voucher.id);
+
+    try {
+      final available = await Pro545PrinterBridge.isAvailable();
+      if (!available) {
+        throw Exception('POS printer is not available.');
+      }
+
+      await Pro545PrinterBridge.printReceipt({
+        'voucher_id': voucher.id,
+        'voucher_code': voucher.code,
+        'code': voucher.code,
+        'qr_code': voucher.qrCode.isEmpty ? voucher.code : voucher.qrCode,
+        'amount': voucher.amount,
+        'fuel_type': voucher.fuelType,
+        'status': voucher.status,
+        'station': {'name': voucher.stationName ?? 'Station'},
+        'driver': {'name': voucher.driverName ?? 'Unknown'},
+        'issued_at': voucher.expiresAt?.toIso8601String(),
+        'transaction_status': voucher.status == 'redeemed'
+            ? 'successful'
+            : voucher.status,
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Voucher ${voucher.code} sent to printer.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => printingVoucherId = null);
+    }
+  }
+
+  Widget _voucherCard(VoucherItem v, {bool showPrint = false}) {
+    final printing = printingVoucherId == v.id;
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -326,6 +370,23 @@ class _StationHomePageState extends State<StationHomePage> {
                 fontWeight: FontWeight.w700,
               ),
             ),
+            if (showPrint) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: printing ? null : () => _printVoucher(v),
+                  icon: printing
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.print_rounded, size: 18),
+                  label: Text(printing ? 'Printing...' : 'Print Voucher'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -1044,6 +1105,20 @@ class StationRedeemPage extends StatefulWidget {
 
 class _StationRedeemPageState extends State<StationRedeemPage>
     with SingleTickerProviderStateMixin {
+  static const List<int> _bwiserSelectAidApdu = <int>[
+    0x00,
+    0xA4,
+    0x04,
+    0x00,
+    0x05,
+    0xF2,
+    0x22,
+    0x22,
+    0x22,
+    0x22,
+    0x00,
+  ];
+
   final inputCtrl = TextEditingController();
   final FocusNode scannerFocusNode = FocusNode();
   Timer? _scanDebounce;
@@ -1550,42 +1625,12 @@ class _StationRedeemPageState extends State<StationRedeemPage>
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
       inputCtrl.clear();
-      final failureCode = _extractCodeFromScan(value);
-      await _showPrintReceiptDialog({
-        'voucher_id': null,
-        'voucher_code': failureCode,
-        'qr_code': failureCode,
-        'amount': 0,
-        'status': 'failed',
-        'driver': {'name': 'Unknown'},
-        'station': {'name': 'Station'},
-        'redeemed_at': DateTime.now().toIso8601String(),
-        'transaction_status': 'failed',
-      });
     } finally {
       if (mounted) {
         setState(() => submitting = false);
         scannerFocusNode.requestFocus();
       }
     }
-  }
-
-  String _extractCodeFromScan(String input) {
-    final normalized = _normalizeScanInput(input);
-    try {
-      final decoded = jsonDecode(normalized);
-      if (decoded is Map<String, dynamic>) {
-        return (decoded['voucher_code'] ??
-                decoded['code'] ??
-                decoded['qr_code'] ??
-                decoded['voucher_id'] ??
-                normalized)
-            .toString();
-      }
-    } catch (_) {
-      // keep raw value
-    }
-    return normalized;
   }
 
   Future<pw.Font> _loadReceiptFont(String fontKey) async {
@@ -2170,6 +2215,12 @@ class _StationRedeemPageState extends State<StationRedeemPage>
     final bytes = await _buildReceiptPdf(receipt);
     if (!mounted) return;
     try {
+      final nativeAvailable = await Pro545PrinterBridge.isAvailable();
+      if (nativeAvailable) {
+        await Pro545PrinterBridge.printReceipt(receipt);
+        return;
+      }
+
       if (selectedPrinter != null) {
         await Printing.directPrintPdf(
           printer: selectedPrinter!,
@@ -2178,32 +2229,13 @@ class _StationRedeemPageState extends State<StationRedeemPage>
         return;
       }
 
-      final chosen = await Printing.pickPrinter(context: context);
-      if (chosen == null) {
-        // Fallback: open system print/share dialog when no printer is selected.
-        await Printing.layoutPdf(onLayout: (_) async => bytes);
-        return;
-      }
-      if (!mounted) return;
-      setState(() => selectedPrinter = chosen);
-      await Printing.directPrintPdf(
-        printer: chosen,
-        onLayout: (_) async => bytes,
+      throw Exception(
+        'No POS printer selected. Use Select Android Printer first.',
       );
     } catch (e) {
       if (!mounted) return;
-      // Printer can disconnect or not support direct mode; fallback to print dialog.
       setState(() => selectedPrinter = null);
-      await Printing.layoutPdf(onLayout: (_) async => bytes);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Direct POS print failed. Opened system print dialog. '
-            '${e.toString().replaceFirst('Exception: ', '')}',
-          ),
-        ),
-      );
+      throw Exception(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 
@@ -2316,6 +2348,53 @@ class _StationRedeemPageState extends State<StationRedeemPage>
     return utf8.decode(textBytes, allowMalformed: true);
   }
 
+  String _cleanNfcToken(String raw) {
+    var token = raw.trim();
+    if (token.endsWith('\u{9000}')) {
+      token = token.substring(0, token.length - 1).trim();
+    }
+    return token.replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), '').trim();
+  }
+
+  String _decodeNdefRecord(NdefRecord record) {
+    if (record.payload.isEmpty) return '';
+    final type = utf8.decode(record.type, allowMalformed: true);
+    if (type == 'T') {
+      return _decodeNdefPayload(record.payload);
+    }
+    return utf8.decode(record.payload, allowMalformed: true);
+  }
+
+  Future<String> _readNdefToken(NfcTag tag) async {
+    final ndef = Ndef.from(tag);
+    if (ndef == null) return '';
+
+    final message = ndef.cachedMessage ?? await ndef.read();
+    for (final record in message.records) {
+      final raw = _cleanNfcToken(_decodeNdefRecord(record));
+      if (raw.isNotEmpty) return raw;
+    }
+
+    return '';
+  }
+
+  Future<String> _readBwiserHceToken(NfcTag tag) async {
+    final isoDep = IsoDep.from(tag);
+    if (isoDep == null) return '';
+
+    final response = await isoDep.transceive(
+      data: Uint8List.fromList(_bwiserSelectAidApdu),
+    );
+    if (response.length < 2) return '';
+
+    final sw1 = response[response.length - 2];
+    final sw2 = response[response.length - 1];
+    if (sw1 != 0x90 || sw2 != 0x00) return '';
+
+    final payload = response.sublist(0, response.length - 2);
+    return _cleanNfcToken(utf8.decode(payload, allowMalformed: true));
+  }
+
   Future<void> scanNfcAndRedeem() async {
     if (submitting || nfcListening) return;
     setState(() => nfcListening = true);
@@ -2329,25 +2408,10 @@ class _StationRedeemPageState extends State<StationRedeemPage>
       await NfcManager.instance.startSession(
         onDiscovered: (tag) async {
           try {
-            final ndef = Ndef.from(tag);
-            if (ndef == null) {
-              throw Exception('NFC tag not supported.');
-            }
-
-            final message = ndef.cachedMessage ?? await ndef.read();
-            if (message.records.isEmpty) {
-              throw Exception('No NFC payload found.');
-            }
-
-            String raw = '';
-            for (final record in message.records) {
-              if (record.payload.isEmpty) continue;
-              raw = _decodeNdefPayload(record.payload).trim();
-              if (raw.isNotEmpty) break;
-            }
-
+            String raw = await _readNdefToken(tag);
+            raw = raw.isNotEmpty ? raw : await _readBwiserHceToken(tag);
             if (raw.isEmpty) {
-              throw Exception('Empty NFC payload.');
+              throw Exception('No supported Bwiser NFC token was found.');
             }
 
             await NfcManager.instance.stopSession();
@@ -2389,18 +2453,23 @@ class _StationRedeemPageState extends State<StationRedeemPage>
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          SizedBox(
-            height: 0,
-            width: 0,
-            child: TextField(
-              controller: inputCtrl,
-              focusNode: scannerFocusNode,
-              autofocus: true,
-              enableSuggestions: false,
-              autocorrect: false,
-              keyboardType: TextInputType.visiblePassword,
-              onChanged: _onScannerChanged,
-              onSubmitted: (_) => _submitScannerInput(),
+          Opacity(
+            opacity: 0.01,
+            child: SizedBox(
+              height: 1,
+              width: 1,
+              child: TextField(
+                controller: inputCtrl,
+                focusNode: scannerFocusNode,
+                autofocus: true,
+                showCursor: false,
+                enableSuggestions: false,
+                autocorrect: false,
+                keyboardType: TextInputType.visiblePassword,
+                textInputAction: TextInputAction.done,
+                onChanged: _onScannerChanged,
+                onSubmitted: (_) => _submitScannerInput(),
+              ),
             ),
           ),
           Card(
@@ -2474,21 +2543,11 @@ class _StationRedeemPageState extends State<StationRedeemPage>
                     onPressed: () => setState(() => scanMode = !scanMode),
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        scanMode
-                            ? 'Laser scanner active'
-                            : 'Laser scanner standby',
-                        style: const TextStyle(color: Color(0xFF94A3B8)),
-                      ),
-                      Opacity(
-                        opacity: scanMode ? 1 : 0.45,
-                        child: _laserScanIndicator(),
-                      ),
-                    ],
-                  ),
+                  if (scanMode)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: _laserScanIndicator(),
+                    ),
                   const SizedBox(height: 8),
                   FxButton(
                     label: nfcListening
