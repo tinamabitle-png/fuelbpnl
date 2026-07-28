@@ -475,7 +475,6 @@
                         </div>
                     </a>
                     <nav class="flex items-center gap-3 text-sm">
-                        <span class="preprod-badge" aria-label="Pre-production environment">PRE-PRODUCTION</span>
                         <a
                             href="{{ route('developers.docs') }}"
                             class="inline-flex text-sm font-medium text-slate-600 hover:text-slate-900"

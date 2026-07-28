@@ -161,7 +161,6 @@
                         <p class="text-[11px] uppercase tracking-[0.18em] text-blue-700">Control Platform</p>
                     </div>
                 </div>
-                <span class="preprod-badge" aria-label="Pre-production environment">PRE-PRODUCTION</span>
             </div>
         </div>
     </header>
