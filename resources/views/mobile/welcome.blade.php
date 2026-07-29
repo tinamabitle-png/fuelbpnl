@@ -63,6 +63,23 @@
             overflow-y: scroll;
         }
 
+        [data-scroll-nav-root] .mobile-card,
+        [data-scroll-nav-root] [class*="-card"],
+        [data-scroll-nav-root] [class*="__card"],
+        [data-scroll-nav-root] [class*="-shell"],
+        [data-scroll-nav-root] [class*="-panel"],
+        [data-scroll-nav-root] [class*="-box"],
+        [data-scroll-nav-root] [class*="-tab"] {
+            border-radius: 1.5rem;
+        }
+
+        [data-scroll-nav-root] img,
+        [data-scroll-nav-root] video,
+        [data-scroll-nav-root] canvas,
+        [data-scroll-nav-root] iframe {
+            border-radius: inherit;
+        }
+
         .mobile-auth-step--merchant {
             position: relative;
             overflow: hidden;

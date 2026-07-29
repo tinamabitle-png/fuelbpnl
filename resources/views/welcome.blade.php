@@ -193,7 +193,7 @@
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="brand-font text-2xl font-semibold text-slate-900">{{ $welcomeText('auth_title', 'Choose your Bwiser path') }}</h2>
-                        <div class="rounded-md flex items-center bg-slate-100 py-0.5 px-2.5 border border-transparent text-sm text-slate-600 transition-all shadow-sm">
+                        <div class="rounded-full flex items-center bg-slate-100 py-0.5 px-2.5 border border-transparent text-sm text-slate-600 transition-all shadow-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 mr-1.5" aria-hidden="true" focusable="false">
                                 <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM12.735 14c.618 0 1.093-.561.872-1.139a6.002 6.002 0 0 0-11.215 0c-.22.578.254 1.139.872 1.139h9.47Z" />
                             </svg>
@@ -1032,21 +1032,39 @@
     </div>
 </div>
 
-	<style>
-        html {
-            scroll-behavior: smooth;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
+		<style>
+	        html {
+	            scroll-behavior: smooth;
+	            scrollbar-width: none;
+	            -ms-overflow-style: none;
+	        }
 
         html::-webkit-scrollbar {
             width: 0;
             height: 0;
         }
 
-        body {
-            overflow-y: scroll;
-        }
+	        body {
+	            overflow-y: scroll;
+	        }
+
+	        [data-scroll-nav-root] .glass,
+	        [data-scroll-nav-root] .surface-card,
+	        [data-scroll-nav-root] [class*="-card"],
+	        [data-scroll-nav-root] [class*="__card"],
+	        [data-scroll-nav-root] [class*="-shell"],
+	        [data-scroll-nav-root] [class*="-panel"],
+	        [data-scroll-nav-root] [class*="-box"],
+	        [data-scroll-nav-root] [class*="-tab"] {
+	            border-radius: 1.5rem;
+	        }
+
+	        [data-scroll-nav-root] img,
+	        [data-scroll-nav-root] video,
+	        [data-scroll-nav-root] canvas,
+	        [data-scroll-nav-root] iframe {
+	            border-radius: inherit;
+	        }
 
 	    .welcome-hero-surface {
 	        position: relative;
@@ -2180,7 +2198,7 @@
         min-height: 96px;
         padding: 16px;
         background: #fff;
-        border-radius: 18px;
+        border-radius: 1.75rem;
         display: flex;
         gap: 18px;
         justify-content: flex-start;
@@ -2525,7 +2543,7 @@
 
     .bw-merchant-story-card:hover {
         transform: scale(1.03);
-        border-radius: 22px;
+        border-radius: 2rem;
     }
 
     .bw-merchant-story-card:hover::after {
@@ -2856,7 +2874,7 @@
     }
 
     .prov545-plan {
-        border-radius: 1rem;
+        border-radius: 1.5rem;
         border: 1px solid rgba(226, 232, 240, 0.9);
         background: rgba(255, 255, 255, 0.88);
         padding: 1rem;
@@ -3051,7 +3069,7 @@
         flex: 1 1 220px;
         min-height: 56px;
         padding: 12px 14px;
-        border-radius: 14px;
+        border-radius: 1.25rem;
         border: 1px solid rgba(226, 232, 240, 0.95);
         background: rgba(255, 255, 255, 0.65);
         color: #0f172a;
@@ -3061,36 +3079,8 @@
         transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
     }
 
-    .steps-main .bw-step-tab::after {
-        content: "";
-        position: absolute;
-        top: 50%;
-        right: -10px;
-        transform: translateY(-50%);
-        width: 0;
-        height: 0;
-        border-top: 10px solid transparent;
-        border-bottom: 10px solid transparent;
-        border-left: 10px solid rgba(226, 232, 240, 0.95);
-        opacity: 0.8;
-    }
-
+    .steps-main .bw-step-tab::after,
     .steps-main .bw-step-tab::before {
-        content: "";
-        position: absolute;
-        top: 50%;
-        right: -9px;
-        transform: translateY(-50%);
-        width: 0;
-        height: 0;
-        border-top: 9px solid transparent;
-        border-bottom: 9px solid transparent;
-        border-left: 9px solid rgba(255, 255, 255, 0.65);
-        opacity: 0.95;
-    }
-
-    .steps-main .bw-step-tab.is-last::after,
-    .steps-main .bw-step-tab.is-last::before {
         display: none;
     }
 
@@ -3107,7 +3097,7 @@
     .steps-main .bw-step-ico {
         width: 38px;
         height: 38px;
-        border-radius: 12px;
+        border-radius: 1rem;
         display: grid;
         place-items: center;
         background: rgba(2, 13, 255, 0.1);
