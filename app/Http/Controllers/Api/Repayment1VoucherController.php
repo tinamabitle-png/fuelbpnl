@@ -66,27 +66,6 @@ class Repayment1VoucherController extends Controller
         $now = now();
         $to = $now->copy()->addDays($days);
 
-        $repaymentsQuery = Repayment::query()
-            ->where('user_id', $user->id)
-            ->whereIn('status', ['pending', 'overdue'])
-            ->whereDate('due_date', '<=', $to->toDateString());
-
-        if (!$includeOverdue) {
-            $repaymentsQuery->whereDate('due_date', '>=', $now->toDateString());
-        }
-
-        $repayments = $repaymentsQuery
-            ->orderBy('due_date')
-            ->get();
-
-        if ($repayments->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No repayments due within the selected period.',
-            ], 422);
-        }
-
-        $amount = (float) $repayments->sum('amount');
         $currency = (string) config('services.flutterwave.one_voucher_currency', 'ZAR');
         $email = trim((string) ($user->email ?? ''));
         $phone = $this->normalizeZaVoucherPhone((string) ($user->phone ?? ''));
@@ -100,20 +79,62 @@ class Repayment1VoucherController extends Controller
         $txRef = '1VOUCHER-WEEK-' . (int) $user->id . '-' . $now->format('YmdHis') . '-' . Str::upper(Str::random(6));
 
         /** @var RepaymentPaymentAttempt $attempt */
-        $attempt = RepaymentPaymentAttempt::create([
-            'user_id' => $user->id,
-            'provider' => 'flutterwave',
-            'method' => '1voucher',
-            'tx_ref' => $txRef,
-            'amount' => $amount,
-            'currency' => strtoupper($currency),
-            'status' => 'pending',
-            'repayment_ids' => $repayments->pluck('id')->all(),
-            'meta' => [
-                'days' => $days,
-                'include_overdue' => $includeOverdue,
-            ],
-        ]);
+        $attempt = DB::transaction(function () use ($user, $to, $now, $includeOverdue, $txRef, $currency, $days) {
+            $repaymentsQuery = Repayment::query()
+                ->where('user_id', $user->id)
+                ->whereIn('status', ['pending', 'overdue'])
+                ->whereDate('due_date', '<=', $to->toDateString())
+                ->where(function ($query) {
+                    $query->whereNull('autopay_status')
+                        ->orWhere('autopay_status', '!=', 'processing_1voucher')
+                        ->orWhereNull('autopay_next_attempt_at')
+                        ->orWhere('autopay_next_attempt_at', '<=', now());
+                });
+
+            if (!$includeOverdue) {
+                $repaymentsQuery->whereDate('due_date', '>=', $now->toDateString());
+            }
+
+            $repayments = $repaymentsQuery
+                ->orderBy('due_date')
+                ->lockForUpdate()
+                ->get();
+
+            if ($repayments->isEmpty()) {
+                return null;
+            }
+
+            $repaymentIds = $repayments->pluck('id')->all();
+            Repayment::query()
+                ->whereIn('id', $repaymentIds)
+                ->update([
+                    'autopay_status' => 'processing_1voucher',
+                    'autopay_next_attempt_at' => now()->addMinutes(30),
+                    'autopay_last_attempt_at' => now(),
+                ]);
+
+            return RepaymentPaymentAttempt::create([
+                'user_id' => $user->id,
+                'provider' => 'flutterwave',
+                'method' => '1voucher',
+                'tx_ref' => $txRef,
+                'amount' => (float) $repayments->sum('amount'),
+                'currency' => strtoupper($currency),
+                'status' => 'pending',
+                'repayment_ids' => $repaymentIds,
+                'meta' => [
+                    'days' => $days,
+                    'include_overdue' => $includeOverdue,
+                ],
+            ]);
+        });
+
+        if (!$attempt) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No repayments due within the selected period, or a payment is already processing.',
+            ], 422);
+        }
 
         try {
             $charge = $flutterwave->charge(
@@ -129,6 +150,7 @@ class Repayment1VoucherController extends Controller
                 'status' => 'failed',
                 'provider_response' => ['error' => $e->getMessage()],
             ]);
+            $this->releaseProcessingRepayments($attempt);
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
@@ -150,6 +172,7 @@ class Repayment1VoucherController extends Controller
         ]);
 
         if ($attempt->status !== 'successful') {
+            $this->releaseProcessingRepayments($attempt);
             return response()->json([
                 'success' => false,
                 'message' => '1Voucher payment was not successful.',
@@ -270,6 +293,8 @@ class Repayment1VoucherController extends Controller
         }
 
         if ((string) $attempt->status === 'successful') {
+            $this->settleSuccessfulAttempt($attempt, $settler);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Payment already confirmed.',
@@ -351,5 +376,42 @@ class Repayment1VoucherController extends Controller
                 'status' => 'successful',
             ],
         ]);
+    }
+
+    private function settleSuccessfulAttempt(RepaymentPaymentAttempt $attempt, RepaymentSettlementService $settler): void
+    {
+        $reference = $attempt->flw_ref ?: $attempt->tx_ref;
+
+        DB::transaction(function () use ($attempt, $settler, $reference) {
+            $lockedAttempt = RepaymentPaymentAttempt::whereKey($attempt->id)->lockForUpdate()->firstOrFail();
+            if ((string) $lockedAttempt->status !== 'successful') {
+                return;
+            }
+
+            $repayments = Repayment::query()
+                ->where('user_id', $lockedAttempt->user_id)
+                ->whereIn('id', (array) $lockedAttempt->repayment_ids)
+                ->get();
+
+            foreach ($repayments as $repayment) {
+                $settler->settleRepayment($repayment, 'flutterwave_1voucher', $reference, [
+                    'tx_ref' => (string) $lockedAttempt->tx_ref,
+                    'flw_ref' => (string) ($lockedAttempt->flw_ref ?? ''),
+                ]);
+            }
+        });
+    }
+
+    private function releaseProcessingRepayments(RepaymentPaymentAttempt $attempt): void
+    {
+        Repayment::query()
+            ->where('user_id', (int) $attempt->user_id)
+            ->whereIn('id', (array) $attempt->repayment_ids)
+            ->where('autopay_status', 'processing_1voucher')
+            ->whereIn('status', ['pending', 'overdue'])
+            ->update([
+                'autopay_status' => null,
+                'autopay_next_attempt_at' => null,
+            ]);
     }
 }

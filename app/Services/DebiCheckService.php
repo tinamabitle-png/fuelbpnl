@@ -151,6 +151,10 @@ class DebiCheckService
 
     private function assertConfigured(): void
     {
+        if (!(bool) config('services.billing.enabled', false)) {
+            throw new \RuntimeException('Billing is disabled for this environment. Set BILLING_ENABLED=true only on approved payment environments.');
+        }
+
         if (!$this->configured()) {
             throw new \RuntimeException('DebiCheck is not configured. Set RAPIDPAY_BASE_URL, RAPIDPAY_USERNAME, RAPIDPAY_PASSWORD.');
         }

@@ -16,6 +16,11 @@ class RepaymentForcePayTest extends TestCase
 
     public function test_missing_payment_intent_defaults_to_force_now_checkout(): void
     {
+        config([
+            'services.billing.enabled' => true,
+            'services.paystack.secret_key' => 'sk_test_force_pay',
+        ]);
+
         $user = $this->makeDriverUser();
         $repayment = $this->makeRepaymentForUser($user);
 
@@ -38,6 +43,11 @@ class RepaymentForcePayTest extends TestCase
 
     public function test_force_now_initializes_paystack_and_redirects(): void
     {
+        config([
+            'services.billing.enabled' => true,
+            'services.paystack.secret_key' => 'sk_test_force_pay',
+        ]);
+
         $user = $this->makeDriverUser();
         $repayment = $this->makeRepaymentForUser($user);
 

@@ -31,6 +31,11 @@ class RunDailyRepaymentAutopay extends Command
         RepaymentPolicyService $policyService
     ): int
     {
+        if (!(bool) config('services.billing.enabled', false)) {
+            $this->warn('Billing is disabled for this environment. Skipping daily autopay run.');
+            return self::SUCCESS;
+        }
+
         if (!$paystack->configured() && !$debiCheck->configured()) {
             $this->warn('No AutoPay rails configured (Paystack/DebiCheck). Skipping daily autopay run.');
             return self::SUCCESS;
@@ -51,6 +56,7 @@ class RunDailyRepaymentAutopay extends Command
             'repayment_not_found' => 0,
             'user_not_eligible' => 0,
             'user_backoff_not_due' => 0,
+            'repayment_processing' => 0,
         ];
 
         $dueRepaymentIds = Repayment::query()
@@ -141,6 +147,19 @@ class RunDailyRepaymentAutopay extends Command
                 continue;
             }
 
+            $reserved = $this->reserveRepaymentForAutopay((int) $repayment->id);
+            if ($reserved === null) {
+                $skipped++;
+                $skipReasons['repayment_processing']++;
+                continue;
+            }
+
+            /** @var Repayment $repayment */
+            $repayment = $reserved['repayment'];
+            /** @var User $user */
+            $user = $reserved['user'];
+            $providerReference = (string) $reserved['reference'];
+
             try {
                 $gatewayUsed = 'paystack';
                 $charge = null;
@@ -149,18 +168,18 @@ class RunDailyRepaymentAutopay extends Command
                         $charge = $debiCheck->collect(
                             $debiMandateId,
                             (float) $repayment->amount,
-                            'DBC-RPY-' . $repayment->id . '-' . strtoupper(substr(md5((string) now()->timestamp), 0, 8))
+                            $providerReference
                         );
                         $gatewayUsed = 'debicheck';
                     } catch (\Throwable $debiError) {
                         if (!$paystackReady) {
                             throw $debiError;
                         }
-                        $charge = $paystack->chargeAuthorization($user, $repayment, 'daily_24h_cycle');
+                        $charge = $paystack->chargeAuthorization($user, $repayment, 'daily_24h_cycle', $providerReference);
                         $gatewayUsed = 'paystack_fallback';
                     }
                 } else {
-                    $charge = $paystack->chargeAuthorization($user, $repayment, 'daily_24h_cycle');
+                    $charge = $paystack->chargeAuthorization($user, $repayment, 'daily_24h_cycle', $providerReference);
                     $gatewayUsed = 'paystack';
                 }
 
@@ -290,6 +309,7 @@ class RunDailyRepaymentAutopay extends Command
             . 'repayment_not_found=' . $skipReasons['repayment_not_found']
             . ', user_not_eligible=' . $skipReasons['user_not_eligible']
             . ', user_backoff_not_due=' . $skipReasons['user_backoff_not_due']
+            . ', repayment_processing=' . $skipReasons['repayment_processing']
         );
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
@@ -332,6 +352,61 @@ class RunDailyRepaymentAutopay extends Command
             ['subject' => $subject, 'message' => $message],
             'Repayment user notification emitted'
         );
+    }
+
+    /**
+     * Reserve before calling an external rail so concurrent runs do not debit the same repayment twice.
+     */
+    private function reserveRepaymentForAutopay(int $repaymentId): ?array
+    {
+        return DB::transaction(function () use ($repaymentId) {
+            /** @var Repayment|null $locked */
+            $locked = Repayment::query()
+                ->visibleInSystem()
+                ->whereKey($repaymentId)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$locked || !in_array((string) $locked->status, ['pending', 'overdue'], true)) {
+                return null;
+            }
+
+            if ($locked->autopay_next_attempt_at && $locked->autopay_next_attempt_at->isFuture()) {
+                return null;
+            }
+
+            /** @var User|null $user */
+            $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->first();
+            if (!$user || !$user->autopay_enabled) {
+                return null;
+            }
+
+            if ($user->autopay_next_attempt_at && $user->autopay_next_attempt_at->isFuture()) {
+                return null;
+            }
+
+            $attemptNumber = (int) $locked->autopay_attempts + 1;
+            $reference = 'AUTO-RPY-' . (int) $locked->id . '-A' . $attemptNumber;
+            $metadata = (array) ($locked->metadata ?? []);
+            $metadata['autopay_processing'] = [
+                'reference' => $reference,
+                'attempt' => $attemptNumber,
+                'reserved_at' => now()->toDateTimeString(),
+            ];
+
+            $locked->forceFill([
+                'autopay_status' => 'processing',
+                'autopay_last_attempt_at' => now(),
+                'autopay_next_attempt_at' => now()->addMinutes(15),
+                'metadata' => $metadata,
+            ])->save();
+
+            return [
+                'repayment' => $locked->fresh(['user', 'lease.vouchers.fuelStation']),
+                'user' => $user->fresh(),
+                'reference' => $reference,
+            ];
+        });
     }
 
     private function buildVoucherTicketPayload(User $user, Repayment $repayment): array

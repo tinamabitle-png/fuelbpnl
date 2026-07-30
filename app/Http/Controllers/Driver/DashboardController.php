@@ -932,9 +932,6 @@ class DashboardController extends Controller
                 ]);
             });
 
-            // Reuse the existing integration behavior: capture authorization/customer for future autopay.
-            $this->paystackService->storeAuthorizationFromTransaction($user, $verified);
-
             AuditTrailService::record(
                 'wallet_topup_checkout_verified',
                 $user,
@@ -1277,8 +1274,6 @@ class DashboardController extends Controller
                 ['source' => 'driver_checkout_callback']
             );
 
-            $this->paystackService->storeAuthorizationFromTransaction($user, $verified);
-
             $repayment->forceFill([
                 'autopay_status' => 'paid',
                 'autopay_last_attempt_at' => now(),
@@ -1305,7 +1300,7 @@ class DashboardController extends Controller
 
             return redirect()
                 ->route('driver.repayments.index')
-                ->with('success', 'Repayment paid successfully. Daily 24-hour auto-pay is now ready.');
+                ->with('success', 'Repayment paid successfully.');
         } catch (\Throwable $e) {
             $this->notifyRepaymentUser(
                 $user,

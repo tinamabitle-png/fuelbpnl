@@ -146,7 +146,7 @@ class PaystackService
         return $data;
     }
 
-    public function chargeAuthorization(User $user, Repayment $repayment, string $reason = 'daily_autopay'): array
+    public function chargeAuthorization(User $user, Repayment $repayment, string $reason = 'daily_autopay', ?string $reference = null): array
     {
         $this->assertConfigured();
 
@@ -155,7 +155,9 @@ class PaystackService
             throw new \RuntimeException('Missing saved Paystack authorization token.');
         }
 
-        $reference = 'AUTO-RPY-' . $repayment->id . '-' . strtoupper(Str::random(8));
+        $reference = trim((string) $reference) !== ''
+            ? trim((string) $reference)
+            : 'AUTO-RPY-' . $repayment->id . '-' . strtoupper(Str::random(8));
         $payload = [
             'email' => $this->resolveEmail($user),
             'amount' => $this->toMinor((float) $repayment->amount),
@@ -281,9 +283,20 @@ class PaystackService
 
     private function assertConfigured(): void
     {
+        $this->assertBillingEnabled();
+
         if (!$this->configured()) {
             throw new \RuntimeException('Paystack is not configured. Please set PAYSTACK_SECRET_KEY.');
         }
+    }
+
+    private function assertBillingEnabled(): void
+    {
+        if ((bool) config('services.billing.enabled', false)) {
+            return;
+        }
+
+        throw new \RuntimeException('Billing is disabled for this environment. Set BILLING_ENABLED=true only on approved payment environments.');
     }
 
     private function baseUrl(): string

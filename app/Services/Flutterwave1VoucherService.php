@@ -21,6 +21,8 @@ class Flutterwave1VoucherService
      */
     public function charge(string $txRef, float $amount, string $currency, string $email, string $phoneNumber, string $pin): array
     {
+        $this->assertBillingEnabled();
+
         $secretKey = trim((string) config('services.flutterwave.secret_key'));
         if ($secretKey === '') {
             throw new \RuntimeException('Flutterwave secret key is not configured.');
@@ -70,6 +72,8 @@ class Flutterwave1VoucherService
      */
     public function verifyByReference(string $txRef): array
     {
+        $this->assertBillingEnabled();
+
         $secretKey = trim((string) config('services.flutterwave.secret_key'));
         if ($secretKey === '') {
             throw new \RuntimeException('Flutterwave secret key is not configured.');
@@ -155,5 +159,14 @@ class Flutterwave1VoucherService
             'serial' => $serial,
             'expiry' => $expiry,
         ];
+    }
+
+    private function assertBillingEnabled(): void
+    {
+        if ((bool) config('services.billing.enabled', false)) {
+            return;
+        }
+
+        throw new \RuntimeException('Billing is disabled for this environment. Set BILLING_ENABLED=true only on approved payment environments.');
     }
 }

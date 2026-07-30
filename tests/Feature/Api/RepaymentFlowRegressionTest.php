@@ -127,12 +127,6 @@ class RepaymentFlowRegressionTest extends TestCase
                     'customer_code' => 'CUS_test_123',
                 ],
             ]);
-        $mock->shouldReceive('storeAuthorizationFromTransaction')
-            ->once()
-            ->withArgs(function ($passedUser, array $transaction) use ($user) {
-                return (int) $passedUser->id === (int) $user->id
-                    && (string) ($transaction['reference'] ?? '') === 'RPY-REF-001';
-            });
         $this->app->instance(PaystackService::class, $mock);
 
         $response = $this->postJson('/api/v1/repayments/paystack/verify', [
@@ -156,6 +150,8 @@ class RepaymentFlowRegressionTest extends TestCase
         $this->assertSame(100.0, (float) $user->wallet->total_repayments);
         $this->assertSame(0.0, (float) $user->creditLimit->used);
         $this->assertSame('completed', $lease->status);
+        $this->assertFalse((bool) $user->autopay_enabled);
+        $this->assertEmpty($user->autopay_token);
     }
 
     public function test_repayment_due_today_is_not_marked_overdue(): void

@@ -44,6 +44,10 @@ return [
         'timeout' => env('PAYSTACK_TIMEOUT', 15),
     ],
 
+    'billing' => [
+        'enabled' => env('BILLING_ENABLED', env('APP_ENV', 'development') === 'production'),
+    ],
+
     'peach' => [
         'enabled' => env('PEACH_ENABLED', false),
         'base_url' => env('PEACH_BASE_URL', 'https://testapi-v2.peachpayments.com'),

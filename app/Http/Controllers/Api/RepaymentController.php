@@ -136,8 +136,6 @@ class RepaymentController extends Controller
                 ['source' => 'api_paystack_verify']
             );
 
-            $paystack->storeAuthorizationFromTransaction($user, $verified);
-
             return response()->json([
                 'success' => true,
                 'message' => 'Paystack payment verified.',
@@ -352,6 +350,7 @@ class RepaymentController extends Controller
                 $repayments = $user->repayments()
                     ->whereIn('id', $request->repayment_ids)
                     ->whereIn('status', ['pending', 'overdue'])
+                    ->lockForUpdate()
                     ->get();
 
                 if ($repayments->count() !== count(array_unique(array_map('intval', (array) $request->repayment_ids)))) {
@@ -371,6 +370,7 @@ class RepaymentController extends Controller
                                     ->whereDate('due_date', '<', now()->toDateString());
                               });
                     })
+                    ->lockForUpdate()
                     ->get();
 
                 $processedRepayments = $overdueRepayments->values();
@@ -908,6 +908,7 @@ class RepaymentController extends Controller
                       });
             })
             ->orderBy('due_date')
+            ->lockForUpdate()
             ->get();
 
         foreach ($overdueRepayments as $repayment) {
@@ -925,6 +926,7 @@ class RepaymentController extends Controller
                 ->where('status', 'pending')
                 ->whereDate('due_date', '>=', now()->toDateString())
                 ->orderBy('due_date')
+                ->lockForUpdate()
                 ->get();
 
             foreach ($upcomingRepayments as $repayment) {
@@ -953,15 +955,16 @@ class RepaymentController extends Controller
             throw new \RuntimeException('External repayment processing must use the dedicated checkout flow.');
         }
 
-        if (!$user->wallet) {
+        $wallet = $user->wallet()->lockForUpdate()->first();
+        if (!$wallet) {
             throw new \RuntimeException('Wallet not found for this user.');
         }
 
-        if (!$user->wallet->canAfford($amount)) {
+        if (!$wallet->canAfford($amount)) {
             throw new \Exception('Insufficient wallet balance');
         }
 
-        $transaction = $user->wallet->deductFunds($amount, 'Repayment payment', [
+        $transaction = $wallet->deductFunds($amount, 'Repayment payment', [
             'repayment_ids' => (array) ($details['repayment_ids'] ?? []),
         ]);
 
