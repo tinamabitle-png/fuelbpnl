@@ -1067,12 +1067,12 @@
 	                            placeholder="Contact person"
 	                            class="{{ $highlight ? 'border-white/30 bg-white/95 text-slate-900 placeholder:text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400' }} w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-pink-200"
 	                        >
-	                        <button
-	                            type="submit"
-	                            class="{{ $highlight ? 'bg-slate-950 text-white hover:bg-slate-800' : 'border border-pink-400 bg-pink-500 text-white hover:bg-pink-600' }} w-full rounded-full px-5 py-3 text-sm font-bold transition"
-	                        >
-	                            Pay
-	                        </button>
+		                        <button
+		                            type="submit"
+		                            class="flex min-h-12 w-full items-center justify-center rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-slate-900/20 transition hover:bg-slate-800"
+		                        >
+		                            Pay
+		                        </button>
 	                    </form>
 	                </div>
 	            @endforeach

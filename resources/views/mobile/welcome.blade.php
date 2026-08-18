@@ -292,9 +292,9 @@
                             <input type="hidden" name="plan_slug" value="{{ $plan['slug'] }}">
                             <input name="company_name" value="{{ $prefillCompany }}" required placeholder="Finance company" class="w-full rounded-2xl border border-white/30 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400">
                             <input name="email" type="email" value="{{ $prefillEmail }}" required placeholder="Work email" class="w-full rounded-2xl border border-white/30 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400">
-                            <button type="submit" class="{{ $highlight ? 'bg-slate-950 text-white' : 'border border-pink-400 bg-pink-500 text-white' }} w-full rounded-full px-4 py-2.5 text-sm font-bold">
-                                Pay
-                            </button>
+	                            <button type="submit" class="flex min-h-11 w-full items-center justify-center rounded-full bg-slate-950 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-slate-900/20">
+	                                Pay
+	                            </button>
                         </form>
                     </div>
                 @endforeach
