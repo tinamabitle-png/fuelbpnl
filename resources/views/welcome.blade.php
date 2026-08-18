@@ -9,6 +9,7 @@
     $welcomeText = static fn (string $key, string $default = ''): string => trim((string) data_get($welcomePageSettings, $key, $default));
     $welcomeImage = static fn (string $key, string $fallback = ''): string => (string) (data_get($welcomePageImageUrls, $key) ?: ($fallback !== '' ? asset($fallback) : ''));
     $welcomeOgImageUrl = $welcomeImage('og_image', 'images/NalediTsunke.png');
+    $financeTeamPlans = \App\Models\FinanceTeamSubscription::plans();
     $welcomeNavigation = [
         [
             '@type' => 'SiteNavigationElement',
@@ -77,8 +78,14 @@
 @endpush
 
 	@section('content')
-	<section class="max-w-7xl mx-auto px-6 pt-16 pb-20" data-scroll-nav-root>
-	    <div class="glass welcome-hero-surface rounded-3xl p-8 md:p-12">
+		<section class="max-w-7xl mx-auto px-6 pt-16 pb-20" data-scroll-nav-root>
+		    @if(session('success') || session('error') || $errors->any())
+		        <div class="mb-5 rounded-3xl border {{ session('success') ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-rose-200 bg-rose-50 text-rose-900' }} px-5 py-4 text-sm font-semibold shadow-sm">
+		            {{ session('success') ?: (session('error') ?: $errors->first()) }}
+		        </div>
+		    @endif
+
+		    <div class="glass welcome-hero-surface rounded-3xl p-8 md:p-12">
 	        <div class="welcome-hero-image" aria-hidden="true"></div>
 	        @php
 	            $recentDrivers = collect((array) (($welcomeStats ?? [])['recent_drivers'] ?? []))->take(4);
@@ -798,16 +805,34 @@
                     </ul>
                 </div>
 
-                <div class="mt-4 flex justify-end">
-                    <a
-                        href="mailto:support@bwiser.co.za?subject=Bwiser%20Pro%20Purchase%20Request"
-                        class="button-86"
-                        role="button"
-                        aria-label="Buy Bwiser Pro"
-                    >
-                        Buy now
-                    </a>
-                </div>
+                <form method="POST" action="{{ route('device-purchases.paystack.start') }}" class="mt-4 space-y-3 rounded-2xl bg-white p-3 ring-1 ring-slate-100">
+                    @csrf
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <input
+                            name="buyer_name"
+                            value="{{ old('buyer_name', auth()->user()?->name ?? '') }}"
+                            placeholder="Your name"
+                            class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-100"
+                        >
+                        <input
+                            name="email"
+                            type="email"
+                            value="{{ old('email', auth()->user()?->email ?? '') }}"
+                            placeholder="Email for receipt"
+                            required
+                            class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-100"
+                        >
+                    </div>
+                    <div class="flex justify-end">
+                        <button
+                            type="submit"
+                            class="button-86"
+                            aria-label="Buy Bwiser Pro"
+                        >
+                            Buy now
+                        </button>
+                    </div>
+                </form>
             </div>
 
             <div class="glass rounded-2xl p-3 md:p-4 overflow-hidden mt-4">
@@ -947,9 +972,9 @@
             ->map(fn ($path) => asset('images/'.basename($path)))
             ->values();
     @endphp
-    <div class="voucher-split-card mt-5">
-        <div class="voucher-split-card__grid">
-            <div class="voucher-split-card__media">
+	    <div class="voucher-split-card mt-5">
+	        <div class="voucher-split-card__grid">
+	            <div class="voucher-split-card__media">
                 <div class="voucher-split-slider" data-voucher-slider>
                     @foreach($groceriesImages as $index => $image)
                         <img
@@ -970,10 +995,91 @@
                     <div class="voucher-split-card__break" aria-hidden="true"></div>
                 </div>
             </div>
-        </div>
-    </div>
+	        </div>
+	    </div>
 
-</section>
+	    <div id="finance-team-pricing" class="mt-8 rounded-3xl bg-[#fff0fa] px-4 py-10 shadow-sm ring-1 ring-pink-100 md:px-10 md:py-14">
+	        <div class="mx-auto max-w-3xl text-center">
+	            <p class="text-xs font-bold uppercase tracking-[0.24em] text-pink-500">Finance Teams</p>
+	            <h2 class="mt-3 text-3xl font-semibold tracking-tight text-[#170b37] md:text-4xl">Choose your loan-book access plan</h2>
+	        </div>
+
+	        <div class="mt-8 grid gap-5 lg:grid-cols-2">
+	            @foreach($financeTeamPlans as $plan)
+	                @php
+	                    $highlight = (bool) ($plan['highlight'] ?? false);
+	                    $features = (array) ($plan['features'] ?? []);
+	                    $oldPlan = old('plan_slug');
+	                    $prefillCompany = $oldPlan === $plan['slug'] ? old('company_name') : '';
+	                    $prefillEmail = $oldPlan === $plan['slug'] ? old('email') : (auth()->user()?->email ?? '');
+	                    $prefillContact = $oldPlan === $plan['slug'] ? old('contact_name') : (auth()->user()?->name ?? '');
+	                @endphp
+		                <div class="{{ $highlight ? 'bg-[#ff35b6] text-slate-950 shadow-pink-300/40' : 'bg-white text-slate-900 shadow-slate-200/70' }} rounded-3xl p-5 shadow-xl ring-1 {{ $highlight ? 'ring-pink-200' : 'ring-white' }}">
+		                    <div class="flex items-start justify-between gap-3">
+		                        <span class="{{ $highlight ? 'border-slate-950/30 bg-white/80 text-slate-950' : 'border-pink-300 text-pink-500' }} rounded-full border px-3 py-1 text-xs font-bold">
+		                            {{ $plan['name'] }}
+		                        </span>
+		                        <span class="{{ $highlight ? 'bg-white/80 text-slate-950' : 'bg-pink-50 text-pink-500' }} rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide">
+		                            {{ number_format((int) $plan['loan_book_limit']) }} leases
+		                        </span>
+	                    </div>
+
+	                    <div class="mt-6 flex items-end gap-2">
+	                        <span class="text-4xl font-black">R {{ number_format((float) $plan['amount'], 0) }}</span>
+		                        <span class="{{ $highlight ? 'text-slate-950/75' : 'text-slate-500' }} mb-1 text-xs font-semibold">/ month</span>
+		                    </div>
+		                    <p class="{{ $highlight ? 'text-slate-950/85' : 'text-slate-600' }} mt-3 text-sm leading-relaxed">{{ $plan['description'] }}</p>
+
+	                    <ul class="mt-5 space-y-3 text-sm">
+	                        @foreach($features as $feature)
+	                            <li class="flex gap-3">
+		                                <span class="{{ $highlight ? 'bg-white/85 text-slate-950' : 'bg-slate-100 text-slate-500' }} mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full">
+	                                    <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" aria-hidden="true">
+	                                        <path fill="currentColor" d="M8.1 13.6 4.7 10.2l1.4-1.4 2 2 5.8-5.8 1.4 1.4-7.2 7.2Z"></path>
+	                                    </svg>
+	                                </span>
+	                                <span>{{ $feature }}</span>
+	                            </li>
+	                        @endforeach
+	                    </ul>
+
+	                    <form method="POST" action="{{ route('finance-team-subscriptions.paystack.start') }}" class="mt-6 space-y-3">
+	                        @csrf
+	                        <input type="hidden" name="plan_slug" value="{{ $plan['slug'] }}">
+	                        <input
+	                            name="company_name"
+	                            value="{{ $prefillCompany }}"
+	                            placeholder="Finance company"
+	                            required
+	                            class="{{ $highlight ? 'border-white/30 bg-white/95 text-slate-900 placeholder:text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400' }} w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-pink-200"
+	                        >
+	                        <input
+	                            name="email"
+	                            type="email"
+	                            value="{{ $prefillEmail }}"
+	                            placeholder="Work email"
+	                            required
+	                            class="{{ $highlight ? 'border-white/30 bg-white/95 text-slate-900 placeholder:text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400' }} w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-pink-200"
+	                        >
+	                        <input
+	                            name="contact_name"
+	                            value="{{ $prefillContact }}"
+	                            placeholder="Contact person"
+	                            class="{{ $highlight ? 'border-white/30 bg-white/95 text-slate-900 placeholder:text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400' }} w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-pink-200"
+	                        >
+	                        <button
+	                            type="submit"
+	                            class="{{ $highlight ? 'bg-slate-950 text-white hover:bg-slate-800' : 'border border-pink-400 bg-pink-500 text-white hover:bg-pink-600' }} w-full rounded-full px-5 py-3 text-sm font-bold transition"
+	                        >
+	                            Pay
+	                        </button>
+	                    </form>
+	                </div>
+	            @endforeach
+	        </div>
+	    </div>
+
+	</section>
 
 <div class="scroll-nav-rail" data-scroll-nav-rail hidden aria-hidden="true">
     <span class="scroll-nav-rail__thumb" data-scroll-nav-thumb></span>

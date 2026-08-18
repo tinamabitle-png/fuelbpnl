@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\DevicePurchase;
+use App\Models\FinanceTeamSubscription;
 use App\Models\Repayment;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
@@ -108,6 +110,64 @@ class PaystackService
                 'user_id' => (int) $user->id,
                 'requested_amount' => $amount,
                 'requested_by' => 'driver_portal',
+            ],
+        ];
+
+        return $this->initializeTransaction($payload, (string) $reference);
+    }
+
+    public function initializeFinanceTeamSubscriptionCheckout(
+        FinanceTeamSubscription $subscription,
+        string $callbackUrl
+    ): array {
+        $this->assertConfigured();
+
+        $reference = 'FTS-' . $subscription->id . '-' . strtoupper(Str::random(10));
+        $callbackUrl = $this->normalizeCallbackUrl($callbackUrl);
+
+        $payload = [
+            'email' => (string) $subscription->email,
+            'amount' => $this->toMinor((float) $subscription->amount),
+            'currency' => strtoupper((string) ($subscription->currency ?: config('services.paystack.currency', 'ZAR'))),
+            'reference' => $reference,
+            'callback_url' => $callbackUrl,
+            'channels' => ['card'],
+            'metadata' => [
+                'scope' => 'finance_team_subscription',
+                'subscription_id' => (int) $subscription->id,
+                'user_id' => $subscription->user_id ? (int) $subscription->user_id : null,
+                'company_name' => (string) $subscription->company_name,
+                'plan_slug' => (string) $subscription->plan_slug,
+                'billing_cycle' => (string) $subscription->billing_cycle,
+                'loan_book_limit' => (int) $subscription->loan_book_limit,
+                'requested_by' => 'welcome_pricing',
+            ],
+        ];
+
+        return $this->initializeTransaction($payload, (string) $reference);
+    }
+
+    public function initializeDevicePurchaseCheckout(DevicePurchase $purchase, string $callbackUrl): array
+    {
+        $this->assertConfigured();
+
+        $reference = 'DEV-' . $purchase->id . '-' . strtoupper(Str::random(10));
+        $callbackUrl = $this->normalizeCallbackUrl($callbackUrl);
+
+        $payload = [
+            'email' => (string) $purchase->email,
+            'amount' => $this->toMinor((float) $purchase->amount),
+            'currency' => strtoupper((string) ($purchase->currency ?: config('services.paystack.currency', 'ZAR'))),
+            'reference' => $reference,
+            'callback_url' => $callbackUrl,
+            'channels' => ['card'],
+            'metadata' => [
+                'scope' => 'device_purchase',
+                'purchase_id' => (int) $purchase->id,
+                'user_id' => $purchase->user_id ? (int) $purchase->user_id : null,
+                'product_slug' => (string) $purchase->product_slug,
+                'product_name' => (string) $purchase->product_name,
+                'requested_by' => 'welcome_device_card',
             ],
         ];
 

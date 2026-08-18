@@ -203,6 +203,12 @@
 @section('content')
 <main class="px-4 pb-8 pt-6">
     <div class="mx-auto max-w-md space-y-4" data-scroll-nav-root>
+        @if(session('success') || session('error') || $errors->any())
+            <div class="mobile-card border {{ session('success') ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-rose-200 bg-rose-50 text-rose-900' }} p-4 text-sm font-semibold">
+                {{ session('success') ?: (session('error') ?: $errors->first()) }}
+            </div>
+        @endif
+
         <section class="mobile-card p-5">
             @php
                 $dashboardUrl = null;
@@ -245,15 +251,53 @@
                     >
                         Get Started
                     </a>
-                    @if(config('services.registration.public_merchant_enabled'))
-                        <a href="{{ route('register.merchant') }}" class="rounded-xl border border-blue-200 px-4 py-3 text-center text-sm font-semibold text-blue-700 bg-white">
-                            Merchant Registration
-                        </a>
-                    @endif
-                    <a href="{{ route('login') }}" class="rounded-xl border border-slate-300 px-4 py-3 text-center text-sm font-semibold text-slate-700 bg-white">
-                        Login
-                    </a>
+	                    @if(config('services.registration.public_merchant_enabled'))
+	                        <a href="{{ route('register.merchant') }}" class="rounded-xl border border-blue-200 px-4 py-3 text-center text-sm font-semibold text-blue-700 bg-white">
+	                            Merchant Registration
+	                        </a>
+	                    @endif
+	                    <a href="{{ route('login') }}" class="rounded-xl border border-slate-300 px-4 py-3 text-center text-sm font-semibold text-slate-700 bg-white">
+	                        Login
+	                    </a>
                 @endguest
+            </div>
+        </section>
+
+        @php($financeTeamPlans = \App\Models\FinanceTeamSubscription::plans())
+	        <section id="finance-team-pricing" class="mobile-card bg-[#fff0fa] p-4 scroll-mt-20">
+	            <p class="text-xs font-bold uppercase tracking-[0.18em] text-pink-500">Finance Teams</p>
+	            <h2 class="mt-2 text-xl font-semibold text-[#170b37]">Loan-book subscription plans</h2>
+
+	            <div class="mt-4 space-y-4">
+                @foreach($financeTeamPlans as $plan)
+                    @php
+                        $highlight = (bool) ($plan['highlight'] ?? false);
+                        $oldPlan = old('plan_slug');
+                        $prefillCompany = $oldPlan === $plan['slug'] ? old('company_name') : '';
+                        $prefillEmail = $oldPlan === $plan['slug'] ? old('email') : (auth()->user()?->email ?? '');
+                    @endphp
+	                    <div class="{{ $highlight ? 'bg-[#ff35b6] text-slate-950' : 'bg-white text-slate-900' }} rounded-3xl p-4 shadow-sm">
+	                        <div class="flex items-center justify-between gap-3">
+	                            <span class="{{ $highlight ? 'border-slate-950/30 bg-white/80 text-slate-950' : 'border-pink-300 text-pink-500' }} rounded-full border px-3 py-1 text-xs font-bold">{{ $plan['name'] }}</span>
+	                            <span class="{{ $highlight ? 'bg-white/80 text-slate-950' : 'bg-pink-50 text-pink-500' }} rounded-full px-2.5 py-1 text-[11px] font-bold">{{ number_format((int) $plan['loan_book_limit']) }} leases</span>
+	                        </div>
+	                        <div class="mt-4">
+	                            <span class="text-3xl font-black">R {{ number_format((float) $plan['amount'], 0) }}</span>
+	                            <span class="{{ $highlight ? 'text-slate-950/75' : 'text-slate-500' }} text-xs">/ month</span>
+	                        </div>
+	                        <p class="{{ $highlight ? 'text-slate-950/85' : 'text-slate-600' }} mt-2 text-xs leading-relaxed">{{ $plan['description'] }}</p>
+
+                        <form method="POST" action="{{ route('finance-team-subscriptions.paystack.start') }}" class="mt-4 space-y-2">
+                            @csrf
+                            <input type="hidden" name="plan_slug" value="{{ $plan['slug'] }}">
+                            <input name="company_name" value="{{ $prefillCompany }}" required placeholder="Finance company" class="w-full rounded-2xl border border-white/30 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400">
+                            <input name="email" type="email" value="{{ $prefillEmail }}" required placeholder="Work email" class="w-full rounded-2xl border border-white/30 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400">
+                            <button type="submit" class="{{ $highlight ? 'bg-slate-950 text-white' : 'border border-pink-400 bg-pink-500 text-white' }} w-full rounded-full px-4 py-2.5 text-sm font-bold">
+                                Pay
+                            </button>
+                        </form>
+                    </div>
+                @endforeach
             </div>
         </section>
 

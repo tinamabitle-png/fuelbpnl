@@ -39,6 +39,8 @@ use App\Http\Controllers\Driver\Repayment1VoucherController as DriverRepayment1V
 use App\Http\Controllers\Driver\RepaymentPayShapController as DriverRepaymentPayShapController;
 use App\Http\Controllers\Driver\RepaymentCryptoController as DriverRepaymentCryptoController;
 use App\Http\Controllers\Driver\BankStatementController as DriverBankStatementController;
+use App\Http\Controllers\DevicePurchaseController;
+use App\Http\Controllers\FinanceTeamSubscriptionController;
 use App\Http\Controllers\Investor\InvestorDashboardController;
 use App\Http\Controllers\Admin\InvestorController as AdminInvestorController;
 use App\Http\Controllers\FeedbackController;
@@ -403,6 +405,15 @@ Route::post('/repayments/request/{repayment}/pay', [DriverDashboardController::c
     ->name('driver.repayments.request.pay');
 Route::get('/repayments/request/paystack/callback', [DriverDashboardController::class, 'publicRepaymentRequestCallback'])
     ->name('driver.repayments.request.callback');
+
+Route::post('/finance-team-subscriptions/paystack/start', [FinanceTeamSubscriptionController::class, 'start'])
+    ->name('finance-team-subscriptions.paystack.start');
+Route::get('/finance-team-subscriptions/paystack/callback', [FinanceTeamSubscriptionController::class, 'callback'])
+    ->name('finance-team-subscriptions.paystack.callback');
+Route::post('/device-purchases/paystack/start', [DevicePurchaseController::class, 'start'])
+    ->name('device-purchases.paystack.start');
+Route::get('/device-purchases/paystack/callback', [DevicePurchaseController::class, 'callback'])
+    ->name('device-purchases.paystack.callback');
 
 // ========== SETUP & FIX ROUTES (LOCAL ONLY) ==========
 if (app()->environment(['local', 'development', 'testing'])) {
