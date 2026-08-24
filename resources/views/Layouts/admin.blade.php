@@ -298,6 +298,7 @@
                     ['route' => 'admin.users.registration-documents', 'icon' => 'fas fa-file-invoice', 'label' => 'Registration Docs', 'badge' => null],
                     ['route' => 'admin.users.account-approvals', 'icon' => 'fas fa-user-check', 'label' => 'Account Approvals', 'badge' => null],
                     ['route' => 'admin.stations.index', 'icon' => 'fas fa-gas-pump', 'label' => 'Stations', 'badge' => null],
+                    ['route' => 'admin.tapless-checkout.index', 'icon' => 'fas fa-plug', 'label' => 'Tapless Checkout', 'badge' => null],
                     ['route' => 'admin.vouchers.index', 'icon' => 'fas fa-ticket-alt', 'label' => 'Vouchers', 'badge' => $pendingVouchers],
                     ['route' => 'admin.leases.index', 'icon' => 'fas fa-file-contract', 'label' => 'Leases', 'badge' => '3'],
                     ['route' => 'admin.settlements.index', 'icon' => 'fas fa-money-check-alt', 'label' => 'Settlements', 'badge' => $pendingSettlements],

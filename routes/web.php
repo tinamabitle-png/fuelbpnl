@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Admin\RepaymentOpsController as AdminRepaymentOpsController;
 use App\Http\Controllers\Admin\SupportTicketController as AdminSupportTicketController;
 use App\Http\Controllers\Admin\InvestorOutreachController as AdminInvestorOutreachController;
+use App\Http\Controllers\Admin\TaplessCheckoutController as AdminTaplessCheckoutController;
 use App\Http\Controllers\Employee\DashboardController as EmployeeDashboardController;
 use App\Http\Controllers\Employee\ApprovalController as EmployeeApprovalController;
 use App\Http\Controllers\Merchant\DashboardController as MerchantDashboardController;
@@ -637,6 +638,14 @@ Route::middleware(['auth'])->group(function () {
             abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'employee']), 403);
             return app(AdminRepaymentOpsController::class)->runDefaultChargesNow();
         })->name('repayments.ops.default-charges.run-now');
+
+        Route::prefix('tapless-checkout')->name('tapless-checkout.')->middleware('role:super_admin|admin')->group(function () {
+            Route::get('/', [AdminTaplessCheckoutController::class, 'index'])->name('index');
+            Route::post('/', [AdminTaplessCheckoutController::class, 'store'])->name('store');
+            Route::put('/{partner}', [AdminTaplessCheckoutController::class, 'update'])->whereNumber('partner')->name('update');
+            Route::post('/{partner}/rotate-secret', [AdminTaplessCheckoutController::class, 'rotateSecret'])->whereNumber('partner')->name('rotate-secret');
+            Route::delete('/{partner}', [AdminTaplessCheckoutController::class, 'destroy'])->whereNumber('partner')->name('destroy');
+        });
 
         // ========== SUPPORT INBOX ==========
         Route::get('/support/tickets', function () {
