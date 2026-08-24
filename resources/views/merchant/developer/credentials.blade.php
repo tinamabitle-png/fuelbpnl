@@ -25,6 +25,24 @@
         @endif
 
         <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">One-line Checkout Plugin</h2>
+                        <p class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
+                            Use this on a station website, kiosk page, or POS web view. Replace the station and public key values with the Tapless partner credentials issued for that station.
+                        </p>
+                    </div>
+                    <span class="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">Public key only</span>
+                </div>
+                <div class="mt-4 rounded-2xl border border-slate-200 bg-slate-950 p-4">
+                    <code class="block overflow-x-auto whitespace-nowrap text-xs text-white">&lt;script src="{{ url('/js/bwiser-checkout.js') }}" data-bwiser-station="STATION_ID" data-bwiser-public-key="bw_pk_xxxxx" data-bwiser-reference="ORDER-1001" data-bwiser-amount="250.00"&gt;&lt;/script&gt;</code>
+                </div>
+                <p class="mt-3 text-xs leading-relaxed text-slate-500">
+                    This creates a checkout intent only. Voucher authorization and redemption remain protected through the merchant dashboard or server-side API credentials.
+                </p>
+            </div>
+
             <div class="glass rounded-2xl p-6">
                 <h2 class="text-lg font-semibold text-slate-900">Create Credential</h2>
                 <form method="POST" action="{{ route('merchant.developer.tokens.store') }}" class="mt-5 space-y-4">

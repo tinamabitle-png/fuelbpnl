@@ -39,6 +39,7 @@ use App\Http\Controllers\Driver\Repayment1VoucherController as DriverRepayment1V
 use App\Http\Controllers\Driver\RepaymentPayShapController as DriverRepaymentPayShapController;
 use App\Http\Controllers\Driver\RepaymentCryptoController as DriverRepaymentCryptoController;
 use App\Http\Controllers\Driver\BankStatementController as DriverBankStatementController;
+use App\Http\Controllers\Checkout\BwiserCheckoutController;
 use App\Http\Controllers\DevicePurchaseController;
 use App\Http\Controllers\FinanceTeamSubscriptionController;
 use App\Http\Controllers\Investor\InvestorDashboardController;
@@ -405,6 +406,9 @@ Route::post('/repayments/request/{repayment}/pay', [DriverDashboardController::c
     ->name('driver.repayments.request.pay');
 Route::get('/repayments/request/paystack/callback', [DriverDashboardController::class, 'publicRepaymentRequestCallback'])
     ->name('driver.repayments.request.callback');
+
+Route::get('/checkout/bwiser/embed', [BwiserCheckoutController::class, 'embed'])
+    ->name('checkout.bwiser.embed');
 
 Route::post('/finance-team-subscriptions/paystack/start', [FinanceTeamSubscriptionController::class, 'start'])
     ->name('finance-team-subscriptions.paystack.start');

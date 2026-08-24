@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\VoucherController;
 use App\Http\Controllers\Api\V1\StationController;
 use App\Http\Controllers\Api\V1\MerchantDeveloperController;
 use App\Http\Controllers\Api\V1\TaplessPartnerController;
+use App\Http\Controllers\Api\V1\PublicTaplessCheckoutController;
 use App\Http\Controllers\Api\UssdController;
 
 Route::get('/', function () {
@@ -81,6 +82,13 @@ Route::prefix('v1')->group(function () {
             Route::get('/intents/{publicId}', [TaplessPartnerController::class, 'showIntent']);
             Route::post('/intents/{publicId}/authorize', [TaplessPartnerController::class, 'authorizeIntent']);
             Route::post('/intents/{publicId}/redeem', [TaplessPartnerController::class, 'redeemIntent']);
+        });
+
+    Route::prefix('checkout')
+        ->middleware('throttle:api')
+        ->group(function () {
+            Route::post('/intents', [PublicTaplessCheckoutController::class, 'createIntent']);
+            Route::get('/intents/{publicId}', [PublicTaplessCheckoutController::class, 'showIntent']);
         });
 
     // Protected routes
