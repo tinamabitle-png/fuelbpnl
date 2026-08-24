@@ -6,7 +6,7 @@
 <section class="max-w-6xl mx-auto px-6 py-12">
     <div class="glass rounded-3xl p-8">
         <h1 class="brand-font text-2xl text-slate-900">Developer Credentials</h1>
-        <p class="text-slate-600 mt-2">Create and manage API credentials for direct system integrations.</p>
+        <p class="text-slate-600 mt-2">Manage the keys your station uses for checkout widgets, POS integrations and back-office API access.</p>
         @include('merchant.partials.nav')
 
         @if(session('success'))
@@ -30,7 +30,7 @@
                     <div>
                         <h2 class="text-lg font-semibold text-slate-900">One-line Checkout Plugin</h2>
                         <p class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
-                            Use this on a station website, kiosk page, or POS web view. Replace the station and public key values with the Tapless partner credentials issued for that station.
+                            Paste this into a station website, kiosk page or POS web view to open a Bwiser checkout panel. Use only the public checkout key here; server API tokens must never be placed in browser code.
                         </p>
                     </div>
                     <span class="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">Public key only</span>
@@ -38,13 +38,22 @@
                 <div class="mt-4 rounded-2xl border border-slate-200 bg-slate-950 p-4">
                     <code class="block overflow-x-auto whitespace-nowrap text-xs text-white">&lt;script src="{{ url('/js/bwiser-checkout.js') }}" data-bwiser-station="STATION_ID" data-bwiser-public-key="bw_pk_xxxxx" data-bwiser-reference="ORDER-1001" data-bwiser-amount="250.00"&gt;&lt;/script&gt;</code>
                 </div>
-                <p class="mt-3 text-xs leading-relaxed text-slate-500">
-                    This creates a checkout intent only. Voucher authorization and redemption remain protected through the merchant dashboard or server-side API credentials.
-                </p>
+                <div class="mt-4 grid gap-3 md:grid-cols-3 text-xs leading-relaxed">
+                    <div class="rounded-xl border border-slate-200 bg-white p-3 text-slate-600">
+                        <span class="font-semibold text-slate-900">Reference:</span> pass your POS order number so attendants can match the customer quickly.
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-white p-3 text-slate-600">
+                        <span class="font-semibold text-slate-900">Domain:</span> ask Bwiser to allowlist your live station or POS website before rollout.
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-white p-3 text-slate-600">
+                        <span class="font-semibold text-slate-900">Security:</span> checkout creates the request; redemption stays protected in the dashboard or server API.
+                    </div>
+                </div>
             </div>
 
             <div class="glass rounded-2xl p-6">
-                <h2 class="text-lg font-semibold text-slate-900">Create Credential</h2>
+                <h2 class="text-lg font-semibold text-slate-900">Create Server Credential</h2>
+                <p class="mt-2 text-sm text-slate-600">Use server credentials for backend integrations only: reconciliation, voucher lookup, repayment data and protected redemption calls.</p>
                 <form method="POST" action="{{ route('merchant.developer.tokens.store') }}" class="mt-5 space-y-4">
                     @csrf
                     <div>

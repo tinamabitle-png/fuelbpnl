@@ -7,13 +7,45 @@
     <div class="glass rounded-3xl p-8 overflow-hidden relative">
         <div class="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none"></div>
         <div class="absolute -bottom-24 -left-16 w-56 h-56 rounded-full bg-sky-400/10 blur-3xl pointer-events-none"></div>
-        <h1 class="brand-font text-2xl text-slate-900">Developer API Documentation</h1>
-        <p class="text-slate-600 mt-2">Integrate your petroleum systems directly with Bwiser safely.</p>
+        <h1 class="brand-font text-2xl text-slate-900">Developer Documentation</h1>
+        <p class="text-slate-600 mt-2">A clean guide for connecting station websites, POS screens and back-office systems to Bwiser.</p>
         @include('merchant.partials.nav')
+
+        <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="glass rounded-2xl p-6 lg:col-span-2">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Fastest path</p>
+                <h2 class="mt-2 text-lg font-semibold text-slate-900">One-line checkout plugin</h2>
+                <p class="mt-2 text-sm leading-relaxed text-slate-600">
+                    Use this when your station website, kiosk page or POS web view only needs to open a Bwiser checkout panel. The browser uses a public checkout key; the station staff complete the actual redemption from the merchant dashboard.
+                </p>
+                <pre class="mt-4 overflow-x-auto rounded-2xl bg-slate-950 p-4 text-xs text-slate-100"><code>&lt;script
+  src="{{ $baseUrl }}/js/bwiser-checkout.js"
+  data-bwiser-public-key="bw_pk_live_xxxxx"
+  data-bwiser-station="STATION_ID"
+  data-bwiser-reference="POS-10001"
+  data-bwiser-amount="250.00"
+  data-bwiser-pump="P3"&gt;
+&lt;/script&gt;</code></pre>
+                <p class="mt-3 text-xs leading-relaxed text-slate-500">
+                    Before going live, ask Bwiser to allowlist the exact station website or POS domain. This keeps the public key usable by your approved pages only.
+                </p>
+            </div>
+
+            <div class="glass rounded-2xl p-6">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Production checklist</p>
+                <div class="mt-4 space-y-3 text-sm text-slate-700">
+                    <p><span class="font-semibold text-slate-900">1.</span> Station approved by Bwiser admin.</p>
+                    <p><span class="font-semibold text-slate-900">2.</span> Public key issued for browser checkout.</p>
+                    <p><span class="font-semibold text-slate-900">3.</span> Website/POS domain allowlisted.</p>
+                    <p><span class="font-semibold text-slate-900">4.</span> Server token created only if you need backend API calls.</p>
+                </div>
+            </div>
+        </div>
 
         <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="glass rounded-2xl p-6">
-                <h2 class="text-lg font-semibold text-slate-900">Base URL</h2>
+                <h2 class="text-lg font-semibold text-slate-900">Server API Base URL</h2>
+                <p class="mt-2 text-sm text-slate-600">Use these endpoints from your backend when you need direct voucher, repayment and station data access.</p>
                 <code class="mt-3 block rounded-lg bg-slate-900 text-slate-100 px-3 py-2 text-xs overflow-x-auto">{{ $baseUrl }}/api/v1</code>
                 <div class="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
                     <p class="text-sm font-semibold text-blue-900">Sandbox is available</p>
@@ -21,7 +53,7 @@
                 </div>
 
                 <h3 class="text-sm font-semibold text-slate-900 mt-6">Authentication</h3>
-                <p class="text-sm text-slate-600 mt-2">Use the credential token in the `Authorization` header:</p>
+                <p class="text-sm text-slate-600 mt-2">Use your server credential token in the <code>Authorization</code> header. Do not place this token inside browser JavaScript.</p>
                 <code class="mt-2 block rounded-lg bg-slate-900 text-slate-100 px-3 py-2 text-xs overflow-x-auto">Authorization: Bearer {token}</code>
 
                 <h3 class="text-sm font-semibold text-slate-900 mt-6">Available Scopes</h3>
@@ -33,7 +65,7 @@
             </div>
 
             <div class="glass rounded-2xl p-6">
-                <h2 class="text-lg font-semibold text-slate-900">Endpoints</h2>
+                <h2 class="text-lg font-semibold text-slate-900">Merchant API Endpoints</h2>
                 <div class="mt-4 space-y-3 text-sm">
                     <div class="rounded-lg border border-slate-200 p-3">
                         <p><span class="font-mono text-blue-700">GET</span> `/merchant/developer/stations`</p>
@@ -63,6 +95,24 @@
                         <p><span class="font-mono text-blue-700">SANDBOX</span> `/merchant/developer/sandbox/*`</p>
                         <p class="text-blue-700 mt-1">Test calls with realistic responses while keeping production data untouched.</p>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass rounded-2xl p-6 mt-6">
+            <h2 class="text-lg font-semibold text-slate-900">How checkout requests appear at the station</h2>
+            <div class="mt-4 grid gap-4 md:grid-cols-3 text-sm">
+                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                    <p class="font-semibold text-slate-900">Request created</p>
+                    <p class="mt-1 text-slate-600">The website or POS sends station, amount, pump and reference details to Bwiser.</p>
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                    <p class="font-semibold text-slate-900">Queue updated</p>
+                    <p class="mt-1 text-slate-600">The merchant dashboard lists open checkout intents by newest request, showing reference, amount and pump number.</p>
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                    <p class="font-semibold text-slate-900">Staff completes payment</p>
+                    <p class="mt-1 text-slate-600">The attendant selects the matching request and completes authorization or redemption through protected merchant tools.</p>
                 </div>
             </div>
         </div>
