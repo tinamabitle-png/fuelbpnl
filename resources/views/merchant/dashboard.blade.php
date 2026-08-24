@@ -236,6 +236,48 @@
             <div id="ussdQueueList" class="mt-5 space-y-3"></div>
         </div>
 
+        <div class="glass rounded-2xl p-6 mt-8">
+            <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-blue-600">Embedded Checkout</p>
+                    <h2 class="brand-font text-xl text-slate-900 mt-1">Website / POS Payment Intents</h2>
+                    <p class="text-sm text-slate-600 mt-1">Requests created from the one-line Bwiser checkout plugin for {{ $station->name }}.</p>
+                </div>
+                <span class="inline-flex items-center rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
+                    {{ collect($checkoutIntents ?? [])->whereIn('status', ['created', 'authorized'])->count() }} open
+                </span>
+            </div>
+
+            <div class="mt-5 grid gap-3 md:grid-cols-2">
+                @forelse(collect($checkoutIntents ?? []) as $intent)
+                    <article class="rounded-2xl border border-slate-200 bg-white p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-sm font-bold text-slate-900">{{ $intent['reference'] ?? 'Checkout' }}</p>
+                                <p class="mt-1 text-xs text-slate-500">{{ $intent['partner'] ?? 'Bwiser Checkout' }} • {{ $intent['intent_id'] ?? '' }}</p>
+                            </div>
+                            <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{{ ucfirst($intent['status'] ?? 'created') }}</span>
+                        </div>
+                        <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <p class="text-xs text-slate-500">Amount</p>
+                                <p class="font-semibold text-slate-900">{{ $intent['currency'] ?? 'ZAR' }} {{ isset($intent['amount']) ? number_format((float) $intent['amount'], 2) : '0.00' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-500">Pump</p>
+                                <p class="font-semibold text-slate-900">{{ $intent['pump_number'] ?: '-' }}</p>
+                            </div>
+                        </div>
+                        @if(!empty($intent['scan_input']))
+                            <p class="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">Input: {{ $intent['scan_input'] }}</p>
+                        @endif
+                    </article>
+                @empty
+                    <p class="text-sm text-slate-500">No embedded checkout requests yet.</p>
+                @endforelse
+            </div>
+        </div>
+
         <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="glass rounded-2xl p-6 lg:col-span-1">
                 <h2 class="brand-font text-xl text-slate-900">Manual Redeem</h2>
@@ -250,19 +292,19 @@
                     @csrf
                     <div>
                         <label class="block text-sm text-slate-700 mb-1">Scan Input</label>
-                        <input id="scanInputField" name="scan_input" required class="w-full rounded-xl border border-slate-300 px-3 py-2 disabled:cursor-not-allowed disabled:bg-slate-100" placeholder="e.g. VOUCHER-..., code, or JSON payload" {{ $merchantEmailVerificationPending ? 'disabled' : '' }}>
+                        <input id="scanInputField" name="scan_input" required class="w-full rounded-xl border border-slate-300 px-3 py-2 disabled:cursor-not-allowed disabled:bg-slate-100" placeholder="e.g. VOUCHER-..., code, or JSON payload">
                     </div>
                     <div>
                         <label class="block text-sm text-slate-700 mb-1">Pump Number (optional)</label>
-                        <input id="pumpNumberField" name="pump_number" class="w-full rounded-xl border border-slate-300 px-3 py-2 disabled:cursor-not-allowed disabled:bg-slate-100" placeholder="Pump 3" {{ $merchantEmailVerificationPending ? 'disabled' : '' }}>
+                        <input id="pumpNumberField" name="pump_number" class="w-full rounded-xl border border-slate-300 px-3 py-2 disabled:cursor-not-allowed disabled:bg-slate-100" placeholder="Pump 3">
                     </div>
                     <div>
                         <label class="block text-sm text-slate-700 mb-1">Transaction Reference (optional)</label>
-                        <input id="transactionReferenceField" name="transaction_reference" class="w-full rounded-xl border border-slate-300 px-3 py-2 disabled:cursor-not-allowed disabled:bg-slate-100" placeholder="POS-12345" {{ $merchantEmailVerificationPending ? 'disabled' : '' }}>
+                        <input id="transactionReferenceField" name="transaction_reference" class="w-full rounded-xl border border-slate-300 px-3 py-2 disabled:cursor-not-allowed disabled:bg-slate-100" placeholder="POS-12345">
                     </div>
-                    <button id="prefillLatestVoucherBtn" type="button" class="btn-ghost w-full rounded-xl py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60" {{ $merchantEmailVerificationPending ? 'disabled' : '' }}>Use Latest Voucher</button>
+                    <button id="prefillLatestVoucherBtn" type="button" class="btn-ghost w-full rounded-xl py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60">Use Latest Voucher</button>
                     <p id="prefillLatestVoucherHint" class="text-xs text-slate-500">
-                        {{ $merchantEmailVerificationPending ? 'Verify your email first to unlock voucher redemption.' : 'Autofill redeem fields from the latest approved voucher.' }}
+                        Autofill redeem fields from the latest approved voucher.
                     </p>
                     <div id="redeemWalletWarning" class="hidden bw-error-alert bw-error-alert--inline" data-error-alert>
                         <button type="button" aria-label="close-error" class="bw-error-alert-close" data-alert-close>
@@ -281,8 +323,8 @@
                         </p>
                     </div>
                     <p id="redeemWalletOk" class="hidden rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700"></p>
-                    <button id="redeemSubmitBtn" class="btn-primary w-full rounded-xl py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60" {{ $merchantEmailVerificationPending ? 'disabled' : '' }}>
-                        {{ $merchantEmailVerificationPending ? 'Verify Email To Redeem' : 'Redeem Voucher' }}
+                    <button id="redeemSubmitBtn" class="btn-primary w-full rounded-xl py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60">
+                        Redeem Voucher
                     </button>
                 </form>
             </div>

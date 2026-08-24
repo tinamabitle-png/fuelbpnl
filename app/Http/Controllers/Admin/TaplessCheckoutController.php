@@ -50,6 +50,7 @@ class TaplessCheckoutController extends Controller
             'station_ids' => ['required', 'array', 'min:1'],
             'station_ids.*' => ['integer', 'exists:fuel_stations,id'],
             'webhook_url' => ['nullable', 'url', 'max:1000'],
+            'allowed_origins' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $name = trim((string) $validated['name']);
@@ -71,6 +72,7 @@ class TaplessCheckoutController extends Controller
                 'created_via' => 'admin_tapless_checkout',
                 'created_by_user_id' => auth()->id(),
                 'checkout_plugin_enabled' => true,
+                'allowed_origins' => $this->parseAllowedOrigins((string) ($validated['allowed_origins'] ?? '')),
             ],
         ]);
 
@@ -96,12 +98,17 @@ class TaplessCheckoutController extends Controller
             'station_ids' => ['required', 'array', 'min:1'],
             'station_ids.*' => ['integer', 'exists:fuel_stations,id'],
             'webhook_url' => ['nullable', 'url', 'max:1000'],
+            'allowed_origins' => ['nullable', 'string', 'max:2000'],
         ]);
+
+        $meta = (array) $partner->meta;
+        $meta['allowed_origins'] = $this->parseAllowedOrigins((string) ($validated['allowed_origins'] ?? ''));
 
         $partner->update([
             'name' => $validated['name'],
             'status' => $validated['status'],
             'webhook_url' => $validated['webhook_url'] ?? null,
+            'meta' => $meta,
         ]);
         $partner->stations()->sync(array_values($validated['station_ids']));
 
@@ -139,5 +146,18 @@ class TaplessCheckoutController extends Controller
         return redirect()
             ->route('admin.tapless-checkout.index')
             ->with('success', 'Tapless checkout partner suspended.');
+    }
+
+    private function parseAllowedOrigins(string $value): array
+    {
+        return collect(preg_split('/[\s,]+/', $value) ?: [])
+            ->map(function ($origin) {
+                $origin = strtolower(trim((string) $origin));
+                return parse_url($origin, PHP_URL_HOST) ?: $origin;
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 }

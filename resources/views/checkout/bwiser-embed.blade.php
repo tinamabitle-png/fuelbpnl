@@ -159,6 +159,7 @@
                 <form id="bwiserCheckoutForm" class="grid">
                     <input type="hidden" name="public_key" value="{{ $publicKey }}">
                     <input type="hidden" name="station_id" value="{{ $stationId }}">
+                    <input type="hidden" name="checkout_token" value="{{ $checkoutToken }}">
 
                     <div class="row">
                         <div>

@@ -8,6 +8,7 @@ use App\Models\FuelStation;
 use App\Models\FuelVoucher;
 use App\Models\MerchantFranchise;
 use App\Models\Settlement;
+use App\Models\TaplessPaymentIntent;
 use App\Models\UssdRedemptionEvent;
 use App\Services\FuelPriceService;
 use Illuminate\Http\Request;
@@ -59,6 +60,7 @@ class DashboardController extends Controller
                 'approvedVouchers' => collect(),
                 'initialVouchers' => [],
                 'initialUssdQueue' => [],
+                'checkoutIntents' => collect(),
                 'wsConfig' => $this->websocketConfig(),
                 'stationPrices' => [],
                 'branding' => $this->merchantHeaderBranding(),
@@ -110,6 +112,7 @@ class DashboardController extends Controller
             ->values();
 
         $initialUssdQueue = $this->stationUssdQueue((int) $station->id);
+        $checkoutIntents = $this->stationCheckoutIntents((int) $station->id);
 
         $fuelPriceService = app(FuelPriceService::class);
         $stationPrices = $fuelPriceService->resolveStationPrices((int) $station->id, true);
@@ -122,6 +125,7 @@ class DashboardController extends Controller
             'approvedVouchers' => $approvedVouchers,
             'initialVouchers' => $initialVouchers,
             'initialUssdQueue' => $initialUssdQueue,
+            'checkoutIntents' => $checkoutIntents,
             'wsConfig' => $this->websocketConfig(),
             'stationPrices' => $stationPrices,
             'branding' => $this->merchantHeaderBranding($station),
@@ -433,6 +437,7 @@ class DashboardController extends Controller
             'station_id' => $station->id,
             'items' => $vouchers,
             'ussd_queue' => $this->stationUssdQueue((int) $station->id),
+            'checkout_intents' => $this->stationCheckoutIntents((int) $station->id),
             'summary' => [
                 'issued' => FuelVoucher::where('fuel_station_id', $station->id)->where('status', 'issued')->count(),
                 'approved' => FuelVoucher::where('fuel_station_id', $station->id)->where('status', 'approved')->count(),
@@ -445,10 +450,6 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $this->authorizeMerchantPortal($user);
-
-        if ($errorRedirect = $this->verifiedMerchantTransactionRedirect($user)) {
-            return $errorRedirect;
-        }
 
         $station = $this->resolveMerchantStation($user, $request);
         abort_unless($station, 404, 'No station linked to this account.');
@@ -764,6 +765,36 @@ class DashboardController extends Controller
                 'error_message' => $event->error_message,
             ])
             ->all();
+    }
+
+    protected function stationCheckoutIntents(int $stationId)
+    {
+        return TaplessPaymentIntent::query()
+            ->with(['partner:id,name,public_key'])
+            ->where('fuel_station_id', $stationId)
+            ->where(function ($query) {
+                $query->whereIn('status', ['created', 'authorized'])
+                    ->orWhere('created_at', '>=', now()->subMinutes(30));
+            })
+            ->latest()
+            ->limit(12)
+            ->get()
+            ->map(function (TaplessPaymentIntent $intent) {
+                return [
+                    'intent_id' => $intent->public_id,
+                    'reference' => (string) data_get($intent->metadata, 'pos_reference', $intent->external_reference),
+                    'stored_reference' => $intent->external_reference,
+                    'partner' => $intent->partner?->name,
+                    'amount' => $intent->amount !== null ? (float) $intent->amount : null,
+                    'currency' => $intent->currency ?: 'ZAR',
+                    'status' => $intent->status,
+                    'pump_number' => $intent->pump_number,
+                    'scan_input' => $intent->scan_input,
+                    'created_at' => optional($intent->created_at)->toIso8601String(),
+                    'expires_at' => optional($intent->expires_at)->toIso8601String(),
+                ];
+            })
+            ->values();
     }
 
     protected function websocketConfig(): array

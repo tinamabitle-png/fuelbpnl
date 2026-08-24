@@ -54,6 +54,12 @@
                     @error('webhook_url')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
+                    <label class="text-sm font-semibold text-slate-700">Allowed website domains optional</label>
+                    <input name="allowed_origins" value="{{ old('allowed_origins') }}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5" placeholder="station.example.com, pos.example.com">
+                    <p class="mt-1 text-xs text-slate-500">Leave empty to allow any website with the public key. Add domains to lock the widget to approved station/POS sites.</p>
+                    @error('allowed_origins')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
+                </div>
+                <div>
                     <label class="text-sm font-semibold text-slate-700">Stations</label>
                     <select name="station_ids[]" multiple required class="mt-1 min-h-48 w-full rounded-xl border border-slate-300 px-3 py-2.5">
                         @foreach($stations as $station)
@@ -151,6 +157,7 @@
                         </select>
                         <div class="space-y-2">
                             <input name="webhook_url" value="{{ old('webhook_url', $partner->webhook_url) }}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="Webhook URL">
+                            <input name="allowed_origins" value="{{ old('allowed_origins', implode(', ', (array) data_get($partner->meta, 'allowed_origins', []))) }}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="Allowed domains">
                             <button class="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white">Save</button>
                         </div>
                     </form>
