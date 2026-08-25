@@ -16,7 +16,6 @@ import '../../core/app_loader.dart';
 import '../../core/app_sfx.dart';
 import '../../core/fx_button.dart';
 import '../../core/logo_mark.dart';
-import '../../core/pro545_printer_bridge.dart';
 import '../../core/theme.dart';
 import '../../core/ussd_call_bridge.dart';
 import '../../data/api_client.dart';
@@ -106,7 +105,7 @@ class _StationShellState extends State<StationShell> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      StationHomePage(api: widget.api),
+      StationHomePage(api: widget.api, receiptSettings: receiptSettings),
       StationRedeemPage(api: widget.api, receiptSettings: receiptSettings),
       StationReportsPage(api: widget.api),
       StationReceiptSettingsPage(
@@ -197,8 +196,14 @@ class _StationMenuBar extends StatelessWidget {
 }
 
 class StationHomePage extends StatefulWidget {
-  const StationHomePage({super.key, required this.api});
+  const StationHomePage({
+    super.key,
+    required this.api,
+    required this.receiptSettings,
+  });
+
   final ApiClient api;
+  final ReceiptTemplateSettings receiptSettings;
 
   @override
   State<StationHomePage> createState() => _StationHomePageState();
@@ -288,30 +293,15 @@ class _StationHomePageState extends State<StationHomePage> {
     setState(() => printingVoucherId = voucher.id);
 
     try {
-      final available = await Pro545PrinterBridge.isAvailable();
-      if (!available) {
-        throw Exception('POS printer is not available.');
-      }
-
-      await Pro545PrinterBridge.printReceipt({
-        'voucher_id': voucher.id,
-        'voucher_code': voucher.code,
-        'code': voucher.code,
-        'qr_code': voucher.qrCode.isEmpty ? voucher.code : voucher.qrCode,
-        'amount': voucher.amount,
-        'fuel_type': voucher.fuelType,
-        'status': voucher.status,
-        'station': {'name': voucher.stationName ?? 'Station'},
-        'driver': {'name': voucher.driverName ?? 'Unknown'},
-        'issued_at': voucher.expiresAt?.toIso8601String(),
-        'transaction_status': voucher.status == 'redeemed'
-            ? 'successful'
-            : voucher.status,
-      });
+      final bytes = await _buildVoucherPdf(voucher);
+      await Printing.layoutPdf(
+        name: 'Bwiser voucher ${voucher.code}',
+        onLayout: (_) async => bytes,
+      );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Voucher ${voucher.code} sent to printer.')),
+        SnackBar(content: Text('Voucher ${voucher.code} ready to print.')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -321,6 +311,143 @@ class _StationHomePageState extends State<StationHomePage> {
     } finally {
       if (mounted) setState(() => printingVoucherId = null);
     }
+  }
+
+  Future<pw.Font> _loadReceiptFont(String fontKey) async {
+    switch (fontKey) {
+      case 'goldman':
+        return PdfGoogleFonts.goldmanRegular();
+      case 'silkscreen':
+        return PdfGoogleFonts.silkscreenRegular();
+      case 'days_one':
+        return PdfGoogleFonts.daysOneRegular();
+      case 'righteous':
+      default:
+        return PdfGoogleFonts.righteousRegular();
+    }
+  }
+
+  Future<Uint8List> _buildVoucherPdf(VoucherItem voucher) async {
+    final doc = pw.Document();
+    final receiptFont = await _loadReceiptFont(widget.receiptSettings.fontKey);
+    final bwiserLogo = await _tryLoadAssetImage('assets/images/app_logo.png');
+    final qrData = voucher.qrCode.isEmpty ? voucher.code : voucher.qrCode;
+
+    doc.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.roll80,
+        margin: const pw.EdgeInsets.fromLTRB(14, 14, 14, 18),
+        build: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            if (bwiserLogo != null)
+              pw.Center(
+                child: pw.Image(
+                  bwiserLogo,
+                  width: 56,
+                  height: 56,
+                  fit: pw.BoxFit.contain,
+                ),
+              ),
+            if (bwiserLogo != null) pw.SizedBox(height: 6),
+            pw.Center(
+              child: pw.Text(
+                'BWISER POS RECEIPT',
+                style: pw.TextStyle(font: receiptFont, fontSize: 15),
+              ),
+            ),
+            pw.SizedBox(height: 10),
+            _receiptLine(
+              receiptFont,
+              'Station',
+              voucher.stationName ?? 'Station',
+            ),
+            _receiptLine(
+              receiptFont,
+              'Driver',
+              voucher.driverName ?? 'Unknown',
+            ),
+            _receiptLine(receiptFont, 'Voucher Number', '${voucher.id}'),
+            _receiptLine(receiptFont, 'Voucher Code', voucher.code),
+            _receiptLine(
+              receiptFont,
+              'Amount',
+              'R ${voucher.amount.toStringAsFixed(2)}',
+            ),
+            _receiptLine(
+              receiptFont,
+              'Voucher Status',
+              voucher.status.toUpperCase(),
+            ),
+            if (voucher.expiresAt != null)
+              _receiptLine(
+                receiptFont,
+                'Expires',
+                voucher.expiresAt!.toIso8601String(),
+              ),
+            pw.SizedBox(height: 12),
+            pw.Center(
+              child: pw.BarcodeWidget(
+                barcode: pw.Barcode.qrCode(),
+                data: qrData,
+                width: 130,
+                height: 130,
+              ),
+            ),
+            pw.SizedBox(height: 8),
+            pw.Center(
+              child: pw.Text(
+                'Scan to verify voucher',
+                style: pw.TextStyle(font: receiptFont, fontSize: 9.5),
+              ),
+            ),
+            pw.SizedBox(height: 4),
+            pw.Center(
+              child: pw.Text(
+                'www.bwiser.co.za',
+                style: pw.TextStyle(font: receiptFont, fontSize: 9.5),
+              ),
+            ),
+            pw.SizedBox(height: 6),
+          ],
+        ),
+      ),
+    );
+
+    return doc.save();
+  }
+
+  Future<pw.MemoryImage?> _tryLoadAssetImage(String assetPath) async {
+    try {
+      final data = await rootBundle.load(assetPath);
+      return pw.MemoryImage(data.buffer.asUint8List());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  pw.Widget _receiptLine(pw.Font font, String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 4),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(
+            width: 76,
+            child: pw.Text(
+              '$label:',
+              style: pw.TextStyle(font: font, fontSize: 10.2),
+            ),
+          ),
+          pw.Expanded(
+            child: pw.Text(
+              value,
+              style: pw.TextStyle(font: font, fontSize: 10.2),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _voucherCard(VoucherItem v, {bool showPrint = false}) {
@@ -1121,7 +1248,9 @@ class _StationRedeemPageState extends State<StationRedeemPage>
 
   final inputCtrl = TextEditingController();
   final FocusNode scannerFocusNode = FocusNode();
+  final FocusNode scannerTextFocusNode = FocusNode();
   Timer? _scanDebounce;
+  Timer? _hardwareScanDebounce;
   Timer? _ussdPollTimer;
   bool submitting = false;
   bool nfcListening = false;
@@ -1139,6 +1268,7 @@ class _StationRedeemPageState extends State<StationRedeemPage>
   Printer? selectedPrinter;
   final Set<int> seenUssdEventIds = <int>{};
   late final AnimationController _laserController;
+  String _hardwareScanBuffer = '';
   String _lastSubmittedScan = '';
   String? ussdServiceCode;
   DateTime _lastSubmittedAt = DateTime.fromMillisecondsSinceEpoch(0);
@@ -1153,9 +1283,10 @@ class _StationRedeemPageState extends State<StationRedeemPage>
     _loadStations();
     _loadApprovedVouchers();
     _loadUssdConfiguration();
+    inputCtrl.addListener(_onInputControllerChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        scannerFocusNode.requestFocus();
+        _requestScannerFocus();
       }
     });
   }
@@ -1163,11 +1294,18 @@ class _StationRedeemPageState extends State<StationRedeemPage>
   @override
   void dispose() {
     _scanDebounce?.cancel();
+    _hardwareScanDebounce?.cancel();
     _ussdPollTimer?.cancel();
     _laserController.dispose();
     scannerFocusNode.dispose();
+    scannerTextFocusNode.dispose();
     inputCtrl.dispose();
     super.dispose();
+  }
+
+  void _requestScannerFocus() {
+    if (!mounted) return;
+    scannerTextFocusNode.requestFocus();
   }
 
   Widget _laserScanIndicator() {
@@ -1238,6 +1376,7 @@ class _StationRedeemPageState extends State<StationRedeemPage>
 
   Future<void> _submitScannerInput() async {
     if (submitting) return;
+    _scanDebounce?.cancel();
     final payload = _normalizeScanInput(inputCtrl.text);
     if (payload.isEmpty) return;
     final now = DateTime.now();
@@ -1249,16 +1388,69 @@ class _StationRedeemPageState extends State<StationRedeemPage>
     _lastSubmittedAt = now;
     await redeem(payload);
     if (mounted) {
-      scannerFocusNode.requestFocus();
+      _requestScannerFocus();
     }
   }
 
-  void _onScannerChanged(String _) {
+  void _queueScannerSubmit() {
     _scanDebounce?.cancel();
-    _scanDebounce = Timer(const Duration(milliseconds: 180), () {
+    _scanDebounce = Timer(const Duration(milliseconds: 220), () {
       if (!mounted) return;
       _submitScannerInput();
     });
+  }
+
+  void _onInputControllerChanged() {
+    if (inputCtrl.text.isEmpty) return;
+    _queueScannerSubmit();
+  }
+
+  KeyEventResult _handleScannerKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent || submitting) {
+      return KeyEventResult.ignored;
+    }
+
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.numpadEnter ||
+        key == LogicalKeyboardKey.tab) {
+      if (_hardwareScanBuffer.isNotEmpty) {
+        _submitHardwareScanBuffer();
+        return KeyEventResult.handled;
+      }
+      _submitScannerInput();
+      return KeyEventResult.handled;
+    }
+
+    final keyLabel = key.keyLabel;
+    final character =
+        event.character ?? (keyLabel.length == 1 ? keyLabel : null);
+    if (character == null ||
+        character.isEmpty ||
+        character.length != 1 ||
+        character.codeUnitAt(0) < 32) {
+      return KeyEventResult.ignored;
+    }
+
+    _hardwareScanBuffer += character;
+    _hardwareScanDebounce?.cancel();
+    _hardwareScanDebounce = Timer(const Duration(milliseconds: 260), () {
+      if (!mounted || _hardwareScanBuffer.isEmpty) return;
+      _submitHardwareScanBuffer();
+    });
+    return KeyEventResult.handled;
+  }
+
+  void _submitHardwareScanBuffer() {
+    final payload = _normalizeScanInput(_hardwareScanBuffer);
+    _hardwareScanBuffer = '';
+    _hardwareScanDebounce?.cancel();
+    if (payload.isEmpty) return;
+    inputCtrl.text = payload;
+    inputCtrl.selection = TextSelection.collapsed(
+      offset: inputCtrl.text.length,
+    );
+    unawaited(_submitScannerInput());
   }
 
   Future<void> _loadStations() async {
@@ -1595,7 +1787,7 @@ class _StationRedeemPageState extends State<StationRedeemPage>
     } finally {
       if (mounted) {
         setState(() => ussdLaunching = false);
-        scannerFocusNode.requestFocus();
+        _requestScannerFocus();
       }
     }
   }
@@ -1618,7 +1810,22 @@ class _StationRedeemPageState extends State<StationRedeemPage>
         ...receiptData,
         'transaction_status': 'successful',
       });
-      await _showPrintReceiptDialog(printable);
+      try {
+        await _printReceipt(printable);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Receipt sent to printer.')),
+        );
+      } catch (printError) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Redeemed, but print failed: ${printError.toString().replaceFirst('Exception: ', '')}',
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1628,7 +1835,7 @@ class _StationRedeemPageState extends State<StationRedeemPage>
     } finally {
       if (mounted) {
         setState(() => submitting = false);
-        scannerFocusNode.requestFocus();
+        _requestScannerFocus();
       }
     }
   }
@@ -1965,6 +2172,13 @@ class _StationRedeemPageState extends State<StationRedeemPage>
                 style: pw.TextStyle(font: receiptFont, fontSize: 9.5),
               ),
             ),
+            pw.SizedBox(height: 4),
+            pw.Center(
+              child: pw.Text(
+                'www.bwiser.co.za',
+                style: pw.TextStyle(font: receiptFont, fontSize: 9.5),
+              ),
+            ),
             pw.SizedBox(height: 6),
           ],
         ),
@@ -2215,12 +2429,6 @@ class _StationRedeemPageState extends State<StationRedeemPage>
     final bytes = await _buildReceiptPdf(receipt);
     if (!mounted) return;
     try {
-      final nativeAvailable = await Pro545PrinterBridge.isAvailable();
-      if (nativeAvailable) {
-        await Pro545PrinterBridge.printReceipt(receipt);
-        return;
-      }
-
       if (selectedPrinter != null) {
         await Printing.directPrintPdf(
           printer: selectedPrinter!,
@@ -2229,8 +2437,10 @@ class _StationRedeemPageState extends State<StationRedeemPage>
         return;
       }
 
-      throw Exception(
-        'No POS printer selected. Use Select Android Printer first.',
+      await Printing.layoutPdf(
+        name:
+            'Bwiser receipt ${(receipt['voucher_code'] ?? receipt['code'] ?? '').toString()}',
+        onLayout: (_) async => bytes,
       );
     } catch (e) {
       if (!mounted) return;
@@ -2427,7 +2637,7 @@ class _StationRedeemPageState extends State<StationRedeemPage>
           } finally {
             if (mounted) {
               setState(() => nfcListening = false);
-              scannerFocusNode.requestFocus();
+              _requestScannerFocus();
             }
           }
         },
@@ -2447,46 +2657,144 @@ class _StationRedeemPageState extends State<StationRedeemPage>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => scannerFocusNode.requestFocus(),
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Opacity(
-            opacity: 0.01,
-            child: SizedBox(
-              height: 1,
+    return Focus(
+      focusNode: scannerFocusNode,
+      autofocus: true,
+      onKeyEvent: _handleScannerKeyEvent,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _requestScannerFocus,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
               width: 1,
-              child: TextField(
-                controller: inputCtrl,
-                focusNode: scannerFocusNode,
-                autofocus: true,
-                showCursor: false,
-                enableSuggestions: false,
-                autocorrect: false,
-                keyboardType: TextInputType.visiblePassword,
-                textInputAction: TextInputAction.done,
-                onChanged: _onScannerChanged,
-                onSubmitted: (_) => _submitScannerInput(),
+              height: 1,
+              child: Opacity(
+                opacity: 0.01,
+                child: TextField(
+                  controller: inputCtrl,
+                  focusNode: scannerTextFocusNode,
+                  autofocus: true,
+                  keyboardType: TextInputType.visiblePassword,
+                  textInputAction: TextInputAction.done,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  showCursor: false,
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    isCollapsed: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  onSubmitted: (_) => unawaited(_submitScannerInput()),
+                ),
               ),
             ),
-          ),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<int>(
+            ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: DropdownButtonFormField<int>(
+                                isExpanded: true,
+                                initialValue:
+                                    stations.any(
+                                      (s) =>
+                                          '${s['id']}' == '$selectedStationId',
+                                    )
+                                    ? selectedStationId
+                                    : null,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                                iconEnabledColor: Colors.white,
+                                decoration: const InputDecoration(
+                                  labelText: 'Station (Wallet)',
+                                  labelStyle: TextStyle(
+                                    color: Color(0xFFE2E8F0),
+                                    fontSize: 12,
+                                  ),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 10,
+                                  ),
+                                ),
+                                items: stations
+                                    .map(
+                                      (s) => DropdownMenuItem<int>(
+                                        value: int.tryParse('${s['id']}'),
+                                        child: Text(
+                                          (s['name'] ?? 'Station').toString(),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: stationLoading
+                                    ? null
+                                    : (value) => setState(() {
+                                        selectedStationId = value;
+                                        _syncSelectedUssdVoucher();
+                                        _requestScannerFocus();
+                                      }),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            IconButton(
+                              icon: const Icon(Icons.refresh_rounded),
+                              onPressed: stationLoading ? null : _loadStations,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        FxButton(
+                          label: scanMode ? 'Close Scanner' : 'Open Scanner',
+                          icon: Icons.qr_code_scanner,
+                          fullWidth: true,
+                          onPressed: () {
+                            setState(() => scanMode = !scanMode);
+                            _requestScannerFocus();
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        if (scanMode)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: _laserScanIndicator(),
+                          ),
+                        const SizedBox(height: 8),
+                        FxButton(
+                          label: nfcListening
+                              ? 'Waiting for NFC...'
+                              : 'Scan NFC Token',
+                          icon: Icons.nfc_rounded,
+                          fullWidth: true,
+                          onPressed: (submitting || nfcListening)
+                              ? null
+                              : scanNfcAndRedeem,
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<int>(
                           isExpanded: true,
                           initialValue:
-                              stations.any(
-                                (s) => '${s['id']}' == '$selectedStationId',
+                              _filteredApprovedVouchers.any(
+                                (voucher) =>
+                                    voucher.id == selectedUssdVoucherId,
                               )
-                              ? selectedStationId
+                              ? selectedUssdVoucherId
                               : null,
                           style: const TextStyle(
                             color: Colors.white,
@@ -2494,7 +2802,7 @@ class _StationRedeemPageState extends State<StationRedeemPage>
                           ),
                           iconEnabledColor: Colors.white,
                           decoration: const InputDecoration(
-                            labelText: 'Station (Wallet)',
+                            labelText: 'Approved Voucher for USSD',
                             labelStyle: TextStyle(
                               color: Color(0xFFE2E8F0),
                               fontSize: 12,
@@ -2504,12 +2812,12 @@ class _StationRedeemPageState extends State<StationRedeemPage>
                               vertical: 10,
                             ),
                           ),
-                          items: stations
+                          items: _filteredApprovedVouchers
                               .map(
-                                (s) => DropdownMenuItem<int>(
-                                  value: int.tryParse('${s['id']}'),
+                                (voucher) => DropdownMenuItem<int>(
+                                  value: voucher.id,
                                   child: Text(
-                                    (s['name'] ?? 'Station').toString(),
+                                    '${voucher.id} • ${voucher.code} • ${voucher.stationName ?? 'Station'} • R ${voucher.amount.toStringAsFixed(2)}',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
@@ -2520,168 +2828,99 @@ class _StationRedeemPageState extends State<StationRedeemPage>
                                 ),
                               )
                               .toList(),
-                          onChanged: stationLoading
+                          onChanged:
+                              approvedVoucherLoading ||
+                                  _filteredApprovedVouchers.isEmpty
                               ? null
                               : (value) => setState(() {
-                                  selectedStationId = value;
-                                  _syncSelectedUssdVoucher();
+                                  selectedUssdVoucherId = value;
+                                  _requestScannerFocus();
                                 }),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      IconButton(
-                        icon: const Icon(Icons.refresh_rounded),
-                        onPressed: stationLoading ? null : _loadStations,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  FxButton(
-                    label: scanMode ? 'Close Scanner' : 'Open Scanner',
-                    icon: Icons.qr_code_scanner,
-                    fullWidth: true,
-                    onPressed: () => setState(() => scanMode = !scanMode),
-                  ),
-                  const SizedBox(height: 8),
-                  if (scanMode)
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: _laserScanIndicator(),
-                    ),
-                  const SizedBox(height: 8),
-                  FxButton(
-                    label: nfcListening
-                        ? 'Waiting for NFC...'
-                        : 'Scan NFC Token',
-                    icon: Icons.nfc_rounded,
-                    fullWidth: true,
-                    onPressed: (submitting || nfcListening)
-                        ? null
-                        : scanNfcAndRedeem,
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<int>(
-                    isExpanded: true,
-                    initialValue:
-                        _filteredApprovedVouchers.any(
-                          (voucher) => voucher.id == selectedUssdVoucherId,
-                        )
-                        ? selectedUssdVoucherId
-                        : null,
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                    iconEnabledColor: Colors.white,
-                    decoration: const InputDecoration(
-                      labelText: 'Approved Voucher for USSD',
-                      labelStyle: TextStyle(
-                        color: Color(0xFFE2E8F0),
-                        fontSize: 12,
-                      ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                    ),
-                    items: _filteredApprovedVouchers
-                        .map(
-                          (voucher) => DropdownMenuItem<int>(
-                            value: voucher.id,
-                            child: Text(
-                              '${voucher.id} • ${voucher.code} • ${voucher.stationName ?? 'Station'} • R ${voucher.amount.toStringAsFixed(2)}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
+                        const SizedBox(height: 8),
+                        FxButton(
+                          label: ussdLaunching
+                              ? 'Starting USSD...'
+                              : 'Start USSD Payment',
+                          icon: Icons.call_rounded,
+                          fullWidth: true,
+                          onPressed:
+                              (ussdLaunching ||
+                                  approvedVoucherLoading ||
+                                  ussdConfigLoading)
+                              ? null
+                              : _launchUssdPayment,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          ussdConfigLoading
+                              ? 'Loading admin USSD configuration...'
+                              : (ussdServiceCode ?? '').trim().isEmpty
+                              ? 'No admin USSD service code is configured yet.'
+                              : _selectedUssdVoucher == null
+                              ? 'Choose an approved voucher to start the USSD payment flow.'
+                              : 'USSD will call ${(ussdServiceCode ?? '').trim()} for voucher number ${_selectedUssdVoucher!.id}.',
+                          style: const TextStyle(color: Color(0xFF94A3B8)),
+                        ),
+                        const SizedBox(height: 8),
+                        FxButton(
+                          label: ussdListening
+                              ? 'Stop USSD Listener'
+                              : 'Listen for USSD',
+                          icon: Icons.podcasts_rounded,
+                          fullWidth: true,
+                          onPressed: _toggleUssdListener,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          selectedStationId == null
+                              ? 'Select a station before listening for USSD.'
+                              : (ussdListening
+                                    ? 'USSD listener is active on ${_selectedStationLabel()}.'
+                                    : 'USSD listener is off.'),
+                          style: const TextStyle(color: Color(0xFF94A3B8)),
+                        ),
+                        const SizedBox(height: 12),
+                        if (scanMode)
+                          SizedBox(
+                            height: 280,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: MobileScanner(
+                                onDetect: (capture) {
+                                  final code = capture.barcodes.isNotEmpty
+                                      ? capture.barcodes.first.rawValue
+                                      : null;
+                                  if (code == null || submitting) return;
+                                  inputCtrl.text = code;
+                                  inputCtrl.selection = TextSelection.collapsed(
+                                    offset: inputCtrl.text.length,
+                                  );
+                                  _submitScannerInput();
+                                },
                               ),
                             ),
                           ),
-                        )
-                        .toList(),
-                    onChanged:
-                        approvedVoucherLoading ||
-                            _filteredApprovedVouchers.isEmpty
-                        ? null
-                        : (value) =>
-                              setState(() => selectedUssdVoucherId = value),
-                  ),
-                  const SizedBox(height: 8),
-                  FxButton(
-                    label: ussdLaunching
-                        ? 'Starting USSD...'
-                        : 'Start USSD Payment',
-                    icon: Icons.call_rounded,
-                    fullWidth: true,
-                    onPressed:
-                        (ussdLaunching ||
-                            approvedVoucherLoading ||
-                            ussdConfigLoading)
-                        ? null
-                        : _launchUssdPayment,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    ussdConfigLoading
-                        ? 'Loading admin USSD configuration...'
-                        : (ussdServiceCode ?? '').trim().isEmpty
-                        ? 'No admin USSD service code is configured yet.'
-                        : _selectedUssdVoucher == null
-                        ? 'Choose an approved voucher to start the USSD payment flow.'
-                        : 'USSD will call ${(ussdServiceCode ?? '').trim()} for voucher number ${_selectedUssdVoucher!.id}.',
-                    style: const TextStyle(color: Color(0xFF94A3B8)),
-                  ),
-                  const SizedBox(height: 8),
-                  FxButton(
-                    label: ussdListening
-                        ? 'Stop USSD Listener'
-                        : 'Listen for USSD',
-                    icon: Icons.podcasts_rounded,
-                    fullWidth: true,
-                    onPressed: _toggleUssdListener,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    selectedStationId == null
-                        ? 'Select a station before listening for USSD.'
-                        : (ussdListening
-                              ? 'USSD listener is active on ${_selectedStationLabel()}.'
-                              : 'USSD listener is off.'),
-                    style: const TextStyle(color: Color(0xFF94A3B8)),
-                  ),
-                  const SizedBox(height: 12),
-                  if (scanMode)
-                    SizedBox(
-                      height: 280,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: MobileScanner(
-                          onDetect: (capture) {
-                            final code = capture.barcodes.isNotEmpty
-                                ? capture.barcodes.first.rawValue
-                                : null;
-                            if (code == null || submitting) return;
-                            inputCtrl.text = code;
-                            _submitScannerInput();
-                          },
-                        ),
-                      ),
+                        if (scanMode) const SizedBox(height: 12),
+                        submitting
+                            ? const SizedBox(
+                                height: 54,
+                                child: Center(
+                                  child: AppLoader(size: 28, showText: false),
+                                ),
+                              )
+                            : const Text(
+                                'Auto redeem is active.',
+                                style: TextStyle(color: Color(0xFF94A3B8)),
+                              ),
+                      ],
                     ),
-                  if (scanMode) const SizedBox(height: 12),
-                  submitting
-                      ? const SizedBox(
-                          height: 54,
-                          child: Center(
-                            child: AppLoader(size: 28, showText: false),
-                          ),
-                        )
-                      : const Text(
-                          'Auto redeem is active.',
-                          style: TextStyle(color: Color(0xFF94A3B8)),
-                        ),
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

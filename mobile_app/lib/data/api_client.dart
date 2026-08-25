@@ -1375,6 +1375,8 @@ class ApiClient {
                 decoded['voucher_code'] ??
                 decoded['qr_code'] ??
                 decoded['voucher_id'] ??
+                decoded['token'] ??
+                decoded['scan_input'] ??
                 normalized)
             .toString();
       }
@@ -1382,9 +1384,36 @@ class ApiClient {
       // raw token or code
     }
 
+    final uri = Uri.tryParse(normalized);
+    if (uri != null && uri.hasQuery) {
+      for (final key in const [
+        'code',
+        'voucher_code',
+        'qr_code',
+        'voucher_id',
+        'token',
+        'scan_input',
+      ]) {
+        final value = uri.queryParameters[key]?.trim();
+        if (value != null && value.isNotEmpty) return value;
+      }
+    }
+
+    final queryMatch = RegExp(
+      r'(?:^|[?&])(?:code|voucher_code|qr_code|voucher_id|token|scan_input)=([^&#]+)',
+      caseSensitive: false,
+    ).firstMatch(normalized);
+    if (queryMatch != null) {
+      final encoded = queryMatch.group(1) ?? '';
+      final decoded = Uri.decodeComponent(encoded).trim();
+      if (decoded.isNotEmpty) return decoded;
+    }
+
     if (normalized.contains(':')) {
       final parts = normalized.split(':');
-      if (parts.length >= 2 && parts[0].trim().isNotEmpty) {
+      if (parts.length >= 4 &&
+          int.tryParse(parts[0].trim()) != null &&
+          parts[1].trim().isNotEmpty) {
         return parts[1].trim();
       }
     }
