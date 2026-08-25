@@ -50,6 +50,36 @@ class _LoginPageState extends State<LoginPage>
     super.dispose();
   }
 
+  String _normalizedSaPhone() {
+    final raw = phoneCtrl.text.trim();
+    if (raw.isEmpty) return raw;
+
+    var digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('00')) {
+      digits = digits.substring(2);
+    }
+    if (digits.startsWith('27')) {
+      return '+$digits';
+    }
+    if (digits.startsWith('0') && digits.length >= 10) {
+      return '+27${digits.substring(1)}';
+    }
+    if (digits.length == 9) {
+      return '+27$digits';
+    }
+
+    return raw.startsWith('+') ? raw : '+$digits';
+  }
+
+  void _normalizePhoneField() {
+    final normalized = _normalizedSaPhone();
+    if (normalized.isEmpty || normalized == phoneCtrl.text.trim()) return;
+    phoneCtrl.value = TextEditingValue(
+      text: normalized,
+      selection: TextSelection.collapsed(offset: normalized.length),
+    );
+  }
+
   Widget _heroBanner() {
     const stroke = 3.0;
     const radius = 14.0;
@@ -150,8 +180,9 @@ class _LoginPageState extends State<LoginPage>
 
     try {
       await _ensureBaseUrl();
+      _normalizePhoneField();
       await widget.api.login(
-        phone: phoneCtrl.text.trim(),
+        phone: _normalizedSaPhone(),
         password: passCtrl.text,
       );
       final activeRole = (await _store.role()) ?? 'driver';
@@ -176,7 +207,8 @@ class _LoginPageState extends State<LoginPage>
   }
 
   Future<void> _openForgotPasswordFlow() async {
-    final phone = phoneCtrl.text.trim();
+    _normalizePhoneField();
+    final phone = _normalizedSaPhone();
     final otpCtrl = TextEditingController();
     final newPassCtrl = TextEditingController();
     final confirmPassCtrl = TextEditingController();
@@ -381,8 +413,20 @@ class _LoginPageState extends State<LoginPage>
                     const SizedBox(height: 4),
                     TextField(
                       controller: phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
                       style: const TextStyle(color: Color(0xFFE2E8F0)),
-                      decoration: _inputDecoration(),
+                      decoration: _inputDecoration().copyWith(
+                        hintText: '+27 82 123 4567',
+                        helperText: 'Use SA format. We auto-add +27 if needed.',
+                        hintStyle: const TextStyle(color: Color(0xFF64748B)),
+                        helperStyle: const TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 11,
+                        ),
+                      ),
+                      onEditingComplete: _normalizePhoneField,
+                      onSubmitted: (_) => _normalizePhoneField(),
                     ),
                     const SizedBox(height: 12),
                     const Text(
