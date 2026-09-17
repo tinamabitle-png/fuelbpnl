@@ -31,6 +31,10 @@ class AfricasTalkingUssdService
             return 'END Missing phone number.';
         }
 
+        if ($completedEvent = $this->findCompletedEventForSession($sessionId, $phoneNormalized)) {
+            return $this->completedEventResponse($completedEvent);
+        }
+
         if (count($steps) === 0) {
             return "CON Fuel Voucher USSD\n1. Redeem Voucher\n2. Help";
         }
@@ -155,6 +159,7 @@ class AfricasTalkingUssdService
         $fuelAmount = (float) $voucher->amount;
         $airtimeReference = null;
         $airtimeStatus = 'not_requested';
+        $airtimeError = null;
 
         if ($isSplitChoice) {
             $splitDetails = $this->calculateSplitAmounts((float) $voucher->amount);
@@ -169,23 +174,11 @@ class AfricasTalkingUssdService
 
             $airtimeAmount = $splitDetails['airtime_amount'];
             $fuelAmount = $splitDetails['fuel_amount'];
-
-            $airtime = $this->sendAirtime($phoneNormalized, $airtimeAmount, $voucher->code);
-            if (!$airtime['success']) {
-                $event->update([
-                    'status' => 'failed',
-                    'completed_at' => now(),
-                    'error_message' => 'Airtime transfer failed: ' . $airtime['error'],
-                ]);
-                return 'END Airtime transfer failed. Please try again.';
-            }
-
-            $airtimeReference = $airtime['reference'];
-            $airtimeStatus = 'sent';
+            $airtimeStatus = 'pending';
         }
 
         try {
-            DB::transaction(function () use (&$voucher, $fuelAmount, $airtimeAmount, $phoneNormalized, $airtimeReference, $airtimeStatus) {
+            DB::transaction(function () use (&$voucher, $fuelAmount, $airtimeAmount, $phoneNormalized, $airtimeStatus) {
                 $lockedVoucher = FuelVoucher::query()->whereKey($voucher->id)->lockForUpdate()->firstOrFail();
                 if ($lockedVoucher->status !== 'approved') {
                     throw new \RuntimeException("Voucher must be APPROVED before redemption. Current status: {$lockedVoucher->status}.");
@@ -206,7 +199,7 @@ class AfricasTalkingUssdService
                     'redeemed_fuel_amount' => round($fuelAmount, 2),
                     'redeemed_airtime_amount' => round($airtimeAmount, 2),
                     'airtime_phone' => $airtimeAmount > 0 ? $phoneNormalized : null,
-                    'airtime_reference' => $airtimeReference,
+                    'airtime_reference' => null,
                     'airtime_status' => $airtimeStatus,
                 ]);
 
@@ -223,6 +216,18 @@ class AfricasTalkingUssdService
 
         if ($voucher->lease) {
             $voucher->lease->ensureRepaymentSchedule(now());
+        }
+
+        if ($airtimeAmount > 0) {
+            $airtime = $this->sendAirtime($phoneNormalized, $airtimeAmount, $voucher->code);
+            $airtimeReference = $airtime['reference'];
+            $airtimeStatus = $airtime['success'] ? 'sent' : 'failed';
+            $airtimeError = $airtime['success'] ? null : 'Airtime transfer failed: ' . $airtime['error'];
+
+            $voucher->forceFill([
+                'airtime_reference' => $airtimeReference,
+                'airtime_status' => $airtimeStatus,
+            ])->save();
         }
 
         $fresh = $voucher->fresh([
@@ -247,8 +252,13 @@ class AfricasTalkingUssdService
             'dispatched_at' => now(),
             'dispatch_token' => (string) Str::uuid(),
             'completed_at' => now(),
+            'error_message' => $airtimeError,
             'receipt_payload' => $payload,
         ]);
+
+        if ($airtimeStatus === 'failed') {
+            return 'END Fuel redeemed successfully. Airtime could not be sent; support has been notified. Ref: ' . ($fresh->transaction_reference ?? $fresh->code);
+        }
 
         return 'END Voucher redeemed successfully. Ref: ' . ($fresh->transaction_reference ?? $fresh->code);
     }
@@ -262,7 +272,7 @@ class AfricasTalkingUssdService
     {
         $expected = trim((string) config('services.africastalking.ussd_token', ''));
         if ($expected === '') {
-            return true;
+            return !app()->environment('production');
         }
 
         $provided = trim((string) ($input['token'] ?? $input['ussd_token'] ?? ''));
@@ -283,6 +293,10 @@ class AfricasTalkingUssdService
         $digits = preg_replace('/\D+/', '', (string) $phone) ?? '';
         if ($digits === '') {
             return '';
+        }
+
+        if (Str::startsWith($digits, '00')) {
+            $digits = substr($digits, 2);
         }
 
         if (Str::startsWith($digits, '0') && strlen($digits) === 10) {
@@ -371,15 +385,43 @@ class AfricasTalkingUssdService
 
     private function findPendingEventForSession(string $sessionId, string $phoneNormalized): ?UssdRedemptionEvent
     {
-        $query = UssdRedemptionEvent::query()
-            ->where('status', 'pending')
-            ->where('phone_normalized', $phoneNormalized);
-
-        if ($sessionId !== '') {
-            $query->where('session_id', $sessionId);
+        if ($sessionId === '') {
+            return null;
         }
 
+        $query = UssdRedemptionEvent::query()
+            ->where('status', 'pending')
+            ->where('phone_normalized', $phoneNormalized)
+            ->where('session_id', $sessionId);
+
         return $query->latest()->first();
+    }
+
+    private function findCompletedEventForSession(string $sessionId, string $phoneNormalized): ?UssdRedemptionEvent
+    {
+        if ($sessionId === '') {
+            return null;
+        }
+
+        return UssdRedemptionEvent::query()
+            ->where('phone_normalized', $phoneNormalized)
+            ->where('session_id', $sessionId)
+            ->whereIn('status', ['success', 'cancelled'])
+            ->latest()
+            ->first();
+    }
+
+    private function completedEventResponse(UssdRedemptionEvent $event): string
+    {
+        if ($event->status === 'cancelled') {
+            return 'END Redemption already cancelled.';
+        }
+
+        $receipt = (array) $event->receipt_payload;
+        $reference = (string) ($receipt['transaction_reference'] ?? $receipt['voucher_code'] ?? $event->voucher_code ?? '');
+        $suffix = $reference !== '' ? ' Ref: ' . $reference : '';
+
+        return 'END Voucher already redeemed successfully.' . $suffix;
     }
 
     private function calculateSplitAmounts(float $totalAmount): ?array
@@ -503,6 +545,8 @@ class AfricasTalkingUssdService
 
         if ($sessionId !== '') {
             $query->where('session_id', $sessionId);
+        } else {
+            $query->whereNull('session_id');
         }
 
         $event = $query->latest()->first();
