@@ -42,7 +42,7 @@ class AfricasTalkingUssdService
 
         $command = strtolower($steps[0]);
         if (in_array($command, ['2', 'help'], true)) {
-            return "END Enter your voucher number or voucher code and confirm redemption.\nContact support if voucher is not found.";
+            return "END Press 1 to pay with your latest approved voucher.\nYou can also enter a voucher number or voucher code if support asks for it.";
         }
 
         if (!in_array($command, ['1', 'redeem'], true)) {
@@ -120,6 +120,10 @@ class AfricasTalkingUssdService
         $choiceStep = $isAutoSelectionChoice
             ? $secondStep
             : trim((string) ($steps[2] ?? ''));
+
+        if ($voucherCode === '' && count($steps) === 1) {
+            $choiceStep = '1';
+        }
 
         if ($choiceStep === '') {
             $amount = number_format((float) $voucher->amount, 2);
