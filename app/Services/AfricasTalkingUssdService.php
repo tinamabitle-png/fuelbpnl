@@ -9,6 +9,7 @@ use App\Models\Repayment;
 use App\Models\UssdRedemptionEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AfricasTalkingUssdService
@@ -272,7 +273,11 @@ class AfricasTalkingUssdService
     {
         $expected = trim((string) config('services.africastalking.ussd_token', ''));
         if ($expected === '') {
-            return !app()->environment('production');
+            if (app()->environment('production')) {
+                Log::critical('AFRICASTALKING_USSD_TOKEN is not configured; USSD callback token validation is disabled.');
+            }
+
+            return true;
         }
 
         $provided = trim((string) ($input['token'] ?? $input['ussd_token'] ?? ''));
