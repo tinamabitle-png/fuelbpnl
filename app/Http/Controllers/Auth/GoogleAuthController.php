@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -29,10 +30,12 @@ class GoogleAuthController extends Controller
 
     public function redirect(Request $request): RedirectResponse
     {
+        abort_unless((bool) config('services.google.enabled'), 404);
+
         $clientId = (string) config('services.google.client_id');
         $redirectUri = (string) config('services.google.redirect');
 
-        abort_if($clientId === '' || $redirectUri === '', 500, 'Google OAuth is not configured.');
+        abort_if($clientId === '' || $redirectUri === '', 503, 'Google sign-in is temporarily unavailable.');
 
         $state = Str::random(40);
         $request->session()->put('google_oauth_state', $state);
@@ -52,6 +55,8 @@ class GoogleAuthController extends Controller
 
     public function callback(Request $request): RedirectResponse
     {
+        abort_unless((bool) config('services.google.enabled'), 404);
+
         $request->validate([
             'code' => ['nullable', 'string'],
             'state' => ['nullable', 'string'],
@@ -78,15 +83,25 @@ class GoogleAuthController extends Controller
             ]);
         }
 
-        $tokenResponse = Http::asForm()
-            ->timeout(15)
-            ->post('https://oauth2.googleapis.com/token', [
-                'code' => $code,
-                'client_id' => (string) config('services.google.client_id'),
-                'client_secret' => (string) config('services.google.client_secret'),
-                'redirect_uri' => (string) config('services.google.redirect'),
-                'grant_type' => 'authorization_code',
+        try {
+            $tokenResponse = Http::asForm()
+                ->timeout(15)
+                ->post('https://oauth2.googleapis.com/token', [
+                    'code' => $code,
+                    'client_id' => (string) config('services.google.client_id'),
+                    'client_secret' => (string) config('services.google.client_secret'),
+                    'redirect_uri' => (string) config('services.google.redirect'),
+                    'grant_type' => 'authorization_code',
+                ]);
+        } catch (\Throwable $exception) {
+            Log::warning('Google OAuth token exchange failed.', [
+                'exception' => $exception::class,
             ]);
+
+            return redirect()->route('login')->withErrors([
+                'email' => 'Google sign-in is temporarily unavailable. Please try again.',
+            ]);
+        }
 
         if (!$tokenResponse->ok()) {
             return redirect()->route('login')->withErrors([
@@ -101,8 +116,18 @@ class GoogleAuthController extends Controller
             ]);
         }
 
-        $tokenInfo = Http::timeout(15)
-            ->get('https://oauth2.googleapis.com/tokeninfo', ['id_token' => $idToken]);
+        try {
+            $tokenInfo = Http::timeout(15)
+                ->get('https://oauth2.googleapis.com/tokeninfo', ['id_token' => $idToken]);
+        } catch (\Throwable $exception) {
+            Log::warning('Google OAuth token verification failed.', [
+                'exception' => $exception::class,
+            ]);
+
+            return redirect()->route('login')->withErrors([
+                'email' => 'Google sign-in could not be verified. Please try again.',
+            ]);
+        }
 
         if (!$tokenInfo->ok()) {
             return redirect()->route('login')->withErrors([
@@ -113,12 +138,21 @@ class GoogleAuthController extends Controller
         $payload = $tokenInfo->json();
         $clientId = (string) config('services.google.client_id');
         $aud = (string) ($payload['aud'] ?? '');
+        $issuer = (string) ($payload['iss'] ?? '');
+        $expiresAt = (int) ($payload['exp'] ?? 0);
         $sub = (string) ($payload['sub'] ?? '');
         $email = strtolower((string) ($payload['email'] ?? ''));
         $name = (string) ($payload['name'] ?? '');
-        $emailVerified = ((string) ($payload['email_verified'] ?? '')) === 'true';
+        $emailVerified = filter_var($payload['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-        if ($aud !== $clientId || $sub === '' || $email === '' || !$emailVerified) {
+        if (
+            $aud !== $clientId
+            || !in_array($issuer, ['accounts.google.com', 'https://accounts.google.com'], true)
+            || $expiresAt <= now()->timestamp
+            || $sub === ''
+            || $email === ''
+            || !$emailVerified
+        ) {
             return redirect()->route('login')->withErrors([
                 'email' => 'Google sign-in returned an invalid profile.',
             ]);
@@ -510,7 +544,7 @@ class GoogleAuthController extends Controller
             return false;
         }
 
-        if ($user->hasAnyRole(['super_admin', 'admin', 'employee'])) {
+        if ($user->hasAnyRole(['super_admin', 'admin', 'employee', 'investor'])) {
             return true;
         }
 
@@ -529,6 +563,9 @@ class GoogleAuthController extends Controller
         }
         if ($user->hasRole('merchant')) {
             return redirect()->route('merchant.dashboard');
+        }
+        if ($user->hasRole('investor')) {
+            return redirect()->route('investor.dashboard');
         }
         return redirect()->route('driver.dashboard');
     }
