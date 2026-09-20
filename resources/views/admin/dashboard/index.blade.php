@@ -5,7 +5,7 @@
 
 @section('content')
 <div class="space-y-8 adminhub-dashboard">
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="adminhub-stats grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
     <!-- Stats Cards -->
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
         <div class="flex items-center">
@@ -57,7 +57,7 @@
 </div>
 
 <!-- Welcome Card -->
-<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+<div class="adminhub-welcome bg-white rounded-xl border border-slate-200 shadow-sm p-5">
     <div class="flex items-center">
         <div class="p-2 rounded-lg bg-blue-50 text-blue-600 mr-3">
             <i class="fas fa-user text-base"></i>
@@ -367,7 +367,7 @@
 
 </div>
 
-<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5" id="adminLiveFeed">
+<div class="adminhub-dashboard adminhub-live-feed bg-white rounded-xl border border-slate-200 shadow-sm p-5" id="adminLiveFeed">
     <div class="flex items-center justify-between gap-3">
         <div>
             <h3 class="text-lg font-semibold text-slate-900">Live Form Feed</h3>
@@ -389,39 +389,137 @@
 @push('styles')
 <style>
     .adminhub-dashboard {
-        --adminhub-blue: #3c91e6;
-        --adminhub-ink: #342e37;
+        --adminhub-blue: #2563eb;
+        --adminhub-ink: #172033;
+        --adminhub-muted: #64748b;
         --adminhub-surface: #ffffff;
-        --adminhub-line: rgba(203, 213, 225, 0.72);
+        --adminhub-line: rgba(203, 213, 225, 0.78);
+        color: var(--adminhub-ink);
+        font-family: "Inter", system-ui, sans-serif;
+        letter-spacing: -0.006em;
     }
 
     .adminhub-dashboard .rounded-xl.bg-white {
-        border-radius: 1.35rem;
+        border-radius: 1.25rem;
         border-color: var(--adminhub-line);
-        box-shadow: 0 20px 46px -36px rgba(15, 23, 42, 0.38);
+        box-shadow: 0 14px 34px -28px rgba(15, 23, 42, 0.42);
     }
 
     .adminhub-dashboard .rounded-lg {
-        border-radius: 1rem;
+        border-radius: 0.875rem;
     }
 
-    .adminhub-dashboard .grid:first-child > div {
-        transition: transform 180ms ease, box-shadow 180ms ease;
+    .adminhub-dashboard h3,
+    .adminhub-dashboard h4 {
+        font-family: "Cal Sans", "Inter", system-ui, sans-serif;
+        letter-spacing: -0.025em;
     }
 
-    .adminhub-dashboard .grid:first-child > div:hover {
+    .adminhub-stats > div {
+        position: relative;
+        overflow: hidden;
+        min-height: 112px;
+        transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .adminhub-stats > div::after {
+        content: "";
+        position: absolute;
+        inset: auto -2rem -3rem auto;
+        width: 7rem;
+        height: 7rem;
+        border-radius: 999px;
+        background: radial-gradient(circle, rgba(37, 99, 235, 0.07), transparent 68%);
+        pointer-events: none;
+    }
+
+    .adminhub-stats > div:hover {
         transform: translateY(-2px);
-        box-shadow: 0 26px 54px -36px rgba(60, 145, 230, 0.42);
+        border-color: rgba(148, 163, 184, 0.78);
+        box-shadow: 0 22px 42px -30px rgba(37, 99, 235, 0.48);
     }
 
-    .adminhub-dashboard .grid:first-child i {
+    .adminhub-stats i {
         color: currentColor;
+    }
+
+    .adminhub-stats .p-2.rounded-lg {
+        display: grid;
+        width: 2.75rem;
+        height: 2.75rem;
+        flex: 0 0 auto;
+        place-items: center;
+        margin-right: 0.875rem;
+    }
+
+    .adminhub-stats .text-2xl {
+        margin-top: 0.2rem;
+        font-size: clamp(1.45rem, 2vw, 1.75rem);
+        line-height: 1.1;
+        letter-spacing: -0.045em;
+        color: var(--adminhub-ink);
+    }
+
+    .adminhub-welcome {
+        background:
+            linear-gradient(110deg, rgba(239, 246, 255, 0.82), rgba(255, 255, 255, 0) 48%),
+            #fff;
+    }
+
+    .adminhub-dashboard input,
+    .adminhub-dashboard select,
+    .adminhub-dashboard textarea {
+        border-color: #cbd5e1;
+        background-color: rgba(255, 255, 255, 0.96);
+        color: #1e293b;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    }
+
+    .adminhub-dashboard input:focus,
+    .adminhub-dashboard select:focus,
+    .adminhub-dashboard textarea:focus {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.13);
+    }
+
+    .adminhub-dashboard button,
+    .adminhub-dashboard a {
+        text-underline-offset: 3px;
+    }
+
+    .adminhub-dashboard p.text-gray-600,
+    .adminhub-dashboard p.text-slate-600 {
+        color: var(--adminhub-muted);
     }
 
     .adminhub-dashboard h3,
     .adminhub-dashboard .font-bold,
     .adminhub-dashboard .font-semibold {
         color: var(--adminhub-ink);
+    }
+
+    .adminhub-live-feed {
+        margin-top: 2rem;
+    }
+
+    @media (max-width: 767px) {
+        .adminhub-dashboard {
+            letter-spacing: 0;
+        }
+
+        .adminhub-dashboard.space-y-8 > :not([hidden]) ~ :not([hidden]) {
+            margin-top: 1.25rem;
+        }
+
+        .adminhub-stats > div {
+            min-height: 96px;
+            padding: 1rem;
+        }
+
+        .adminhub-dashboard .rounded-xl.bg-white,
+        .adminhub-live-feed {
+            border-radius: 1rem;
+        }
     }
 
 </style>
