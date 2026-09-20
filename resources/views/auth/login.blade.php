@@ -228,7 +228,6 @@
                             'label' => 'Continue with Google',
                             'class' => 'w-full'
                         ])
-                        <p class="text-xs text-slate-500 mt-1 text-center">If this is a new account, you will complete the same role-specific registration fields next.</p>
                     </div>
                 @endif
 
