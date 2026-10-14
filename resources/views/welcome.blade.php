@@ -1013,6 +1013,7 @@
 	                    $prefillCompany = $oldPlan === $plan['slug'] ? old('company_name') : '';
 	                    $prefillEmail = $oldPlan === $plan['slug'] ? old('email') : (auth()->user()?->email ?? '');
 	                    $prefillContact = $oldPlan === $plan['slug'] ? old('contact_name') : (auth()->user()?->name ?? '');
+	                    $prefillPhone = $oldPlan === $plan['slug'] ? old('phone') : (auth()->user()?->phone ?? '');
 	                @endphp
 		                <div class="{{ $highlight ? 'bg-[#ff35b6] text-slate-950 shadow-pink-300/40' : 'bg-white text-slate-900 shadow-slate-200/70' }} rounded-3xl p-5 shadow-xl ring-1 {{ $highlight ? 'ring-pink-200' : 'ring-white' }}">
 		                    <div class="flex items-start justify-between gap-3">
@@ -1043,9 +1044,10 @@
 	                        @endforeach
 	                    </ul>
 
-	                    <form method="POST" action="{{ route('finance-team-subscriptions.paystack.start') }}" class="mt-6 space-y-3">
+	                    <form method="POST" action="{{ route('finance-team-subscriptions.request-access') }}" class="mt-6 space-y-3">
 	                        @csrf
 	                        <input type="hidden" name="plan_slug" value="{{ $plan['slug'] }}">
+	                        <input type="text" name="website" value="" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
 	                        <input
 	                            name="company_name"
 	                            value="{{ $prefillCompany }}"
@@ -1065,13 +1067,27 @@
 	                            name="contact_name"
 	                            value="{{ $prefillContact }}"
 	                            placeholder="Contact person"
+	                            required
 	                            class="{{ $highlight ? 'border-white/30 bg-white/95 text-slate-900 placeholder:text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400' }} w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-pink-200"
 	                        >
+	                        <input
+	                            name="phone"
+	                            type="tel"
+	                            value="{{ $prefillPhone }}"
+	                            placeholder="Phone number (optional)"
+	                            class="{{ $highlight ? 'border-white/30 bg-white/95 text-slate-900 placeholder:text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400' }} w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-pink-200"
+	                        >
+	                        <textarea
+	                            name="message"
+	                            rows="3"
+	                            placeholder="Tell us about your loan book (optional)"
+	                            class="{{ $highlight ? 'border-white/30 bg-white/95 text-slate-900 placeholder:text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400' }} w-full resize-y rounded-2xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-pink-200"
+	                        >{{ $oldPlan === $plan['slug'] ? old('message') : '' }}</textarea>
 		                        <button
 		                            type="submit"
 		                            class="flex min-h-12 w-full items-center justify-center rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-slate-900/20 transition hover:bg-slate-800"
 		                        >
-		                            Pay
+	                            Request access
 		                        </button>
 	                    </form>
 	                </div>

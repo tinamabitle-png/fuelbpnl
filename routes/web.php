@@ -413,6 +413,9 @@ Route::get('/checkout/bwiser/embed', [BwiserCheckoutController::class, 'embed'])
 
 Route::post('/finance-team-subscriptions/paystack/start', [FinanceTeamSubscriptionController::class, 'start'])
     ->name('finance-team-subscriptions.paystack.start');
+Route::post('/finance-team-subscriptions/request-access', [FinanceTeamSubscriptionController::class, 'requestAccess'])
+    ->middleware('throttle:6,1')
+    ->name('finance-team-subscriptions.request-access');
 Route::get('/finance-team-subscriptions/paystack/callback', [FinanceTeamSubscriptionController::class, 'callback'])
     ->name('finance-team-subscriptions.paystack.callback');
 Route::post('/device-purchases/paystack/start', [DevicePurchaseController::class, 'start'])

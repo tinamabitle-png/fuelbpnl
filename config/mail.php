@@ -115,6 +115,8 @@ return [
         'name' => env('MAIL_FROM_NAME', env('SEO_SITE_NAME', 'Bwiser')),
     ],
 
+    'finance_team_requests_to' => env('FINANCE_TEAM_REQUESTS_TO', 'tlhologelo.mabitle3@gmail.com'),
+
     'investor_outreach_from' => [
         'address' => env('MAIL_INVESTOR_OUTREACH_FROM_ADDRESS', 'tlhologelo.mabitle@bwiser.co.za'),
         'name' => env('MAIL_INVESTOR_OUTREACH_FROM_NAME', 'Tlhologelo Mabitle'),

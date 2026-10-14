@@ -2,16 +2,59 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\FinanceTeamPlanRequestMail;
 use App\Models\FinanceTeamSubscription;
 use App\Services\PaystackService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 
 class FinanceTeamSubscriptionController extends Controller
 {
+    public function requestAccess(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'plan_slug' => ['required', 'string', Rule::in(array_keys(FinanceTeamSubscription::plans()))],
+            'company_name' => ['required', 'string', 'max:255'],
+            'contact_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:40'],
+            'message' => ['nullable', 'string', 'max:2000'],
+            'website' => ['nullable', 'max:0'],
+        ]);
+
+        $plan = FinanceTeamSubscription::plan($validated['plan_slug']);
+        if (!$plan) {
+            return back()->withInput()->with('error', 'Please choose a valid finance-team plan.');
+        }
+
+        $details = [
+            'plan_slug' => $plan['slug'],
+            'plan_name' => $plan['name'],
+            'amount' => $plan['amount'],
+            'company_name' => trim($validated['company_name']),
+            'contact_name' => trim($validated['contact_name']),
+            'email' => strtolower(trim($validated['email'])),
+            'phone' => trim((string) ($validated['phone'] ?? '')),
+            'message' => trim((string) ($validated['message'] ?? '')),
+            'requested_at' => now()->timezone(config('app.timezone'))->format('d M Y H:i T'),
+        ];
+
+        try {
+            Mail::to(config('mail.finance_team_requests_to'))->send(new FinanceTeamPlanRequestMail($details));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withInput()->with('error', 'We could not send your request. Please try again shortly.');
+        }
+
+        return redirect('/#finance-team-pricing')
+            ->with('success', 'Your finance-team access request has been sent. We will contact you shortly.');
+    }
+
     public function start(Request $request, PaystackService $paystack): RedirectResponse
     {
         $planSlugs = array_keys(FinanceTeamSubscription::plans());
