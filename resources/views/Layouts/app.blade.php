@@ -471,7 +471,7 @@
                         </x-logo-shell>
                         <div>
                             <p class="brand-font text-lg font-semibold text-slate-900">Bwiser</p>
-                            <p class="text-xs text-slate-500">Buy now, pay later for fuel</p>
+                            <p class="text-xs text-slate-500">Infrastructure Payments</p>
                         </div>
                     </a>
                     <nav class="flex items-center gap-3 text-sm">
