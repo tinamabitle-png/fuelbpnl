@@ -1,6 +1,6 @@
 @extends('mobile.layouts.app')
 
-@section('title', 'Bwiser Fuel Buy Now Pay Later')
+@section('title', 'Bwiser Infrastructure Finance')
 @section('meta_description', 'Bwiser fuel finance, login, and registration platform for drivers and merchants in South Africa.')
 
 @push('head')
@@ -10,7 +10,7 @@
         '@graph' => [
             [
                 '@type' => 'WebPage',
-                'name' => 'Bwiser Fuel Buy Now Pay Later',
+                'name' => 'Bwiser Infrastructure Finance',
                 'url' => url('/'),
                 'description' => 'Bwiser fuel finance, login, and registration platform for drivers and merchants in South Africa.',
             ],
@@ -275,6 +275,8 @@
                         $oldPlan = old('plan_slug');
                         $prefillCompany = $oldPlan === $plan['slug'] ? old('company_name') : '';
                         $prefillEmail = $oldPlan === $plan['slug'] ? old('email') : (auth()->user()?->email ?? '');
+                        $prefillContact = $oldPlan === $plan['slug'] ? old('contact_name') : (auth()->user()?->name ?? '');
+                        $prefillPhone = $oldPlan === $plan['slug'] ? old('phone') : (auth()->user()?->phone ?? '');
                     @endphp
 	                    <div class="{{ $highlight ? 'bg-[#ff35b6] text-slate-950' : 'bg-white text-slate-900' }} rounded-3xl p-4 shadow-sm">
 	                        <div class="flex items-center justify-between gap-3">
@@ -286,14 +288,26 @@
 	                            <span class="{{ $highlight ? 'text-slate-950/75' : 'text-slate-500' }} text-xs">/ month</span>
 	                        </div>
 	                        <p class="{{ $highlight ? 'text-slate-950/85' : 'text-slate-600' }} mt-2 text-xs leading-relaxed">{{ $plan['description'] }}</p>
+	                        <ul class="mt-4 space-y-2 text-xs">
+	                            @foreach((array) ($plan['features'] ?? []) as $feature)
+	                                <li class="flex gap-2">
+	                                    <span class="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white/85 text-slate-950">&#10003;</span>
+	                                    <span>{{ $feature }}</span>
+	                                </li>
+	                            @endforeach
+	                        </ul>
 
-                        <form method="POST" action="{{ route('finance-team-subscriptions.paystack.start') }}" class="mt-4 space-y-2">
+                        <form method="POST" action="{{ route('finance-team-subscriptions.request-access') }}" class="mt-4 space-y-2">
                             @csrf
                             <input type="hidden" name="plan_slug" value="{{ $plan['slug'] }}">
+                            <input type="text" name="website" value="" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
                             <input name="company_name" value="{{ $prefillCompany }}" required placeholder="Finance company" class="w-full rounded-2xl border border-white/30 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400">
                             <input name="email" type="email" value="{{ $prefillEmail }}" required placeholder="Work email" class="w-full rounded-2xl border border-white/30 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400">
+	                            <input name="contact_name" value="{{ $prefillContact }}" required placeholder="Contact person" class="w-full rounded-2xl border border-white/30 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400">
+	                            <input name="phone" type="tel" value="{{ $prefillPhone }}" placeholder="Phone number (optional)" class="w-full rounded-2xl border border-white/30 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400">
+	                            <textarea name="message" rows="3" placeholder="Tell us about your loan book or email setup (optional)" class="w-full resize-y rounded-2xl border border-white/30 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400">{{ $oldPlan === $plan['slug'] ? old('message') : '' }}</textarea>
 	                            <button type="submit" class="flex min-h-11 w-full items-center justify-center rounded-full bg-slate-950 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-slate-900/20">
-	                                Pay
+	                                Request access
 	                            </button>
                         </form>
                     </div>

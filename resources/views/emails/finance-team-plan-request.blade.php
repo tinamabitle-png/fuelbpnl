@@ -22,6 +22,15 @@
                 <tr><td style="padding:7px 0;color:#64748b;">Requested at</td><td style="padding:7px 0;">{{ $details['requested_at'] }}</td></tr>
             </table>
 
+            <div style="margin-top:22px;padding:18px;border-radius:14px;background:#f8fafc;border:1px solid #e2e8f0;">
+                <strong>Included plan services</strong>
+                <ul style="margin:10px 0 0;padding-left:20px;line-height:1.7;">
+                    @foreach($details['features'] as $feature)
+                        <li>{{ $feature }}</li>
+                    @endforeach
+                </ul>
+            </div>
+
             @if($details['message'])
                 <div style="margin-top:22px;padding:18px;border-radius:14px;background:#fdf2f8;border:1px solid #fbcfe8;">
                     <strong>Additional information</strong>

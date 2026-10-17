@@ -1,6 +1,6 @@
 @extends('Layouts.app')
 
-@section('title', data_get($welcomePageSettings ?? [], 'meta_title', 'Bwiser Fuel Buy Now Pay Later'))
+@section('title', data_get($welcomePageSettings ?? [], 'meta_title', 'Bwiser Infrastructure Finance'))
 @section('meta_description', data_get($welcomePageSettings ?? [], 'meta_description', 'Bwiser is a South African fuel finance and payments platform for drivers, stations, vouchers, and settlements.'))
 @section('canonical', url('/'))
 @php
@@ -43,7 +43,7 @@
 @endphp
 
 @section('og_image', $welcomeOgImageUrl)
-@section('og_image_alt', 'Bwiser Fuel Buy Now Pay Later')
+@section('og_image_alt', 'Bwiser Infrastructure Finance')
 
 @push('head')
     <link rel="stylesheet" href="{{ asset('vendor/flyonui/flyonui.css') }}">
@@ -54,7 +54,7 @@
         '@graph' => [
             [
                 '@type' => 'WebPage',
-                'name' => $welcomeText('meta_title', 'Bwiser Fuel Buy Now Pay Later'),
+                'name' => $welcomeText('meta_title', 'Bwiser Infrastructure Finance'),
                 'url' => url('/'),
                 'description' => $welcomeText('meta_description', 'Bwiser is a South African fuel finance and payments platform for drivers, stations, vouchers, and settlements.'),
             ],

@@ -14,7 +14,13 @@ class WelcomePageSettingsService
 
     public function settings(): array
     {
-        return array_merge($this->defaults(), $this->storedOverrides());
+        $settings = array_merge($this->defaults(), $this->storedOverrides());
+
+        if (($settings['meta_title'] ?? null) === 'Bwiser Fuel Buy Now Pay Later') {
+            $settings['meta_title'] = 'Bwiser Infrastructure Finance';
+        }
+
+        return $settings;
     }
 
     public function imageUrls(): array
@@ -233,7 +239,7 @@ class WelcomePageSettingsService
     private function defaults(): array
     {
         return [
-            'meta_title' => 'Bwiser Fuel Buy Now Pay Later',
+            'meta_title' => 'Bwiser Infrastructure Finance',
             'meta_description' => 'Bwiser is a South African fuel finance and payments platform for drivers, stations, vouchers, and settlements.',
             'hero_title_primary' => 'Fuel Infrastructure Finance and Voucher Payments,',
             'hero_title_secondary' => 'easy as padel',

@@ -35,6 +35,7 @@ class FinanceTeamSubscriptionController extends Controller
             'plan_slug' => $plan['slug'],
             'plan_name' => $plan['name'],
             'amount' => $plan['amount'],
+            'features' => $plan['features'],
             'company_name' => trim($validated['company_name']),
             'contact_name' => trim($validated['contact_name']),
             'email' => strtolower(trim($validated['email'])),

@@ -31,7 +31,10 @@ class FinanceTeamPlanRequestTest extends TestCase
             return $mail->hasTo('tlhologelo.mabitle3@gmail.com')
                 && $mail->requestDetails['plan_name'] === 'Portfolio Pro'
                 && $mail->requestDetails['company_name'] === 'Example Finance'
-                && $mail->requestDetails['email'] === 'jane@example.test';
+                && $mail->requestDetails['email'] === 'jane@example.test'
+                && in_array('Assisted business email-server connection', $mail->requestDetails['features'], true)
+                && in_array('Account and data recovery support', $mail->requestDetails['features'], true)
+                && in_array('Priority call-centre support', $mail->requestDetails['features'], true);
         });
     }
 

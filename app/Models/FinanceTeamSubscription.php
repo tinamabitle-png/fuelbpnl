@@ -73,7 +73,9 @@ class FinanceTeamSubscription extends Model
                     'Finance-company wallet visibility',
                     'Investor-approved lease tracking',
                     'Risk score notes on loan files',
-                    'Priority onboarding support',
+                    'Assisted business email-server connection',
+                    'Account and data recovery support',
+                    'Priority call-centre support',
                 ],
             ],
         ];
