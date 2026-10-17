@@ -1,6 +1,6 @@
 @extends('Layouts.app')
 
-@section('title', data_get($welcomePageSettings ?? [], 'meta_title', 'Bwiser Infrastructure Finance'))
+@section('title', 'Bwiser Infrastructure Finance')
 @section('meta_description', data_get($welcomePageSettings ?? [], 'meta_description', 'Bwiser is a South African fuel finance and payments platform for drivers, stations, vouchers, and settlements.'))
 @section('canonical', url('/'))
 @php
